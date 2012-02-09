@@ -72,13 +72,14 @@ class AudioStream(object):
         if channels == 1:
             frames = sndfile.read_frames(nframes,dtype=self.encoding)
         elif channels == 2:
-            frames = sndfile.read_frames(nframes,dtype=self.encoding).sum(1)
-        assert len(frames) == nframes
+            frames = sndfile.read_frames(\
+                    nframes,dtype=self.encoding).sum(1) / 2.
         return frames
         
         
     def __iter__(self):
         sndfile = Sndfile(self.filename)
+        print sndfile
         channels = sndfile.channels
         self._check_samplerate(sndfile)
         
@@ -97,11 +98,9 @@ class AudioStream(object):
             lastchunk = framesleft <= self._chunksize
             if lastchunk:
                 # read all remaining frames
-                #frames = sndfile.read_frames(framesleft,dtype=self.encoding)
                 frames = self._read_frames(framesleft,sndfile,channels)
             else:
-                # read the next chunk
-                #frames = sndfile.read_frames(self._chunksize,dtype=self.encoding) 
+                # read the next chunk 
                 frames = self._read_frames(self._chunksize, sndfile, channels)
             if lastchunk:
                 for ic in self._iter_interchunk(interchunk,frames):
