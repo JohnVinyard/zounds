@@ -7,8 +7,8 @@ from os.path import exists
 # TODO: Write tests
 # TODO: Write docs
 # TODO: Handle stereo files
-# TODO: Handle encodings other than int16
-# TODO: Handle other sample rates by re-sampling
+
+
 
 
 class BadSampleRateException(BaseException):
@@ -32,6 +32,8 @@ class AudioStream(object):
     '''
     '''
     
+    _windows_in_chunk = 10
+    
     def __init__(self,filename,samplerate=44100,windowsize=2048,stepsize=1024):
         '''
         '''
@@ -40,64 +42,84 @@ class AudioStream(object):
             raise IOError('%s does not exist' % filename)
         
         self.samplerate = samplerate
+        self.encoding = np.int16
         self.windowsize = windowsize
         self.stepsize = stepsize
-        self._chunksize = self.windowsize*10
-        self._nsteps = self._checkstep() 
+        self._chunksize = self.windowsize * AudioStream._windows_in_chunk
+        self._nsteps = self._check_step() 
         
-    def _checkstep(self):
+    def _check_step(self):
         nsteps = self.windowsize / self.stepsize 
         if (nsteps) % 1:
             raise BadStepSizeException()
         return int(nsteps)
         
-    def _checksamplerate(self,sndfile):
+    def _check_samplerate(self,sndfile):
         if sndfile.samplerate != self.samplerate:
             raise BadSampleRateException(self.samplerate,sndfile.samplerate)
         
+    
+    def _iter_interchunk(self,interchunk,frames):
+        ss = self.stepsize
+        ws = self.windowsize
+        if interchunk is not None and len(interchunk):
+            for i in xrange(0,self._nsteps-1):
+                offset = ss*i
+                yield pad(np.concatenate(\
+                            [interchunk[offset:],frames[:ss+offset]]),ws)
+                
+    def _read_frames(self,nframes,sndfile,channels):
+        if channels == 1:
+            frames = sndfile.read_frames(nframes,dtype=self.encoding)
+        elif channels == 2:
+            frames = sndfile.read_frames(nframes,dtype=self.encoding).sum(1)
+        assert len(frames) == nframes
+        return frames
+        
+        
     def __iter__(self):
         sndfile = Sndfile(self.filename)
-        self._checksamplerate(sndfile)
+        channels = sndfile.channels
+        self._check_samplerate(sndfile)
+        
+        ws = self.windowsize
+        ss = self.stepsize
         
         f = 0
         nframes = sndfile.nframes
         firstchunk = True
         interchunk = None
-        
+        diff = ws - ss
         while f < nframes:
+            # get number of remaining frames
             framesleft = nframes - f 
+            # determine if this will be the last chunk we read
             lastchunk = framesleft <= self._chunksize
             if lastchunk:
-                frames = sndfile.read_frames(framesleft,dtype=np.int16)
+                # read all remaining frames
+                #frames = sndfile.read_frames(framesleft,dtype=self.encoding)
+                frames = self._read_frames(framesleft,sndfile,channels)
             else:
-                frames = sndfile.read_frames(self._chunksize,dtype=np.int16) 
-            
-            
+                # read the next chunk
+                #frames = sndfile.read_frames(self._chunksize,dtype=self.encoding) 
+                frames = self._read_frames(self._chunksize, sndfile, channels)
             if lastchunk:
-                # interchunk
-                if interchunk is not None and len(interchunk):
-                    for i in xrange(1,self._nsteps):
-                        offset = self.stepsize*i
-                        yield np.concatenate(\
-                            [interchunk[offset:],frames[:self.windowsize-offset]])
-                    
-                for i in xrange(0,len(frames),self.stepsize):
-                    yield pad(frames[i:i+self.windowsize],self.windowsize)
+                for ic in self._iter_interchunk(interchunk,frames):
+                    yield ic
+                
+                for i in xrange(0,(len(frames)+1) - ss,ss):
+                    yield pad(frames[i:i+ws],ws)
             elif firstchunk:
                 
-                for i in xrange(0,len(frames)-self.stepsize,self.stepsize):
-                    yield frames[i:i+self.windowsize]
-                interchunk = frames[-self.windowsize:]
+                for i in xrange(0,len(frames)-diff,ss):
+                    yield frames[i:i+ws]
+                interchunk = frames[-diff:]
             else:
-                # interchunk
-                for i in xrange(1,self._nsteps):
-                    offset = self.stepsize*i
-                    yield np.concatenate(\
-                        [interchunk[offset:],frames[:self.windowsize-offset]])
-                
-                for i in xrange(0,len(frames)-self.stepsize,self.stepsize):
-                    yield frames[i:i+self.windowsize]   
-                interchunk = frames[-self.windowsize:]
+                for ic in self._iter_interchunk(interchunk,frames):
+                    yield ic
+                for i in xrange(0,len(frames)-diff,ss):
+                    yield frames[i:i+ws]   
+                interchunk = frames[-diff:]
                 
             firstchunk = False
             f += len(frames)

@@ -4,7 +4,7 @@ from analyze.audiostream import *
 from scikits.audiolab import Sndfile,Format
 from uuid import uuid4
 from os import remove
-from math import ceil
+from math import floor
 
 # TODO: How do I cleanup wave files for failed tests?
  
@@ -15,15 +15,17 @@ class AudioStreamTests(unittest.TestCase):
         return '%s.wav' % str(uuid4())
     
     def make_signal(self,length,winsize,samplerate):
-        signal = np.ndarray(length,dtype=np.int16)
-        for i,w, in enumerate(xrange(0,length,winsize)):
+        signal = np.ndarray(int(length),dtype=np.int16)
+        for i,w, in enumerate(xrange(0,int(length),winsize)):
             signal[w:w+winsize] = i
         return signal
     
-    def make_sndfile(self,length,winsize,samplerate):
+    def make_sndfile(self,length,winsize,samplerate,channels=1):
         signal = self.make_signal(length, winsize, samplerate)
         filename = self.filename() 
-        sndfile = Sndfile(filename,'w',Format(),1,samplerate)
+        sndfile = Sndfile(filename,'w',Format(),channels,samplerate)
+        if channels == 2:
+            signal = np.tile(signal,(2,1)).T
         sndfile.write_frames(signal)
         sndfile.close()
         return filename
@@ -49,54 +51,61 @@ class AudioStreamTests(unittest.TestCase):
         self.assertRaises(BadStepSizeException,AudioStream,fn,44100,2048,1023)
         self.remove_sndfile(fn)
         
-    def test_fileshorterthanchunksize(self):
-        step = 1024
-        ws = 2048
-        length = ws*9
-        fn = self.make_sndfile(length, ws, 44100)
-        a = AudioStream(fn,44100,ws,step)
+    def get_frames(self,
+                   length,
+                   step = 1024,
+                   ws = 2048,
+                   samplerate = 44100,
+                   channels = 1):
+        
+        fn = self.make_sndfile(length, ws, samplerate, channels)
+        a = AudioStream(fn,samplerate,ws,step)
         l = [w for w in a]
+        for q in l:
+            print q
+        # check that all frames are the proper length
         [self.assertEqual(ws,len(q)) for q in l]
-        el = ceil(length/step)
+        # get the expected length, in frames
+        el = floor(length/step)
+        # check that the number of frames is as expected
         self.assertEqual(el,len(l))
-        self.assertEqual(l[0][0],0)
-        self.assertEqual(l[1][0],0)
-        self.assertAlmostEqual(l[1][step],1,4)
+        n = (ws/step)
+        # do we expect the last frame to be padded?
+        padded = (length/step) % 1
+        for i,q in enumerate(l):
+            qs = set(q)
+            print i,qs
+            if el > 1 and padded and i >= len(l) - (n-1):
+                self.assertEqual(3,len(qs))
+            elif not i or not i % n:
+                self.assertEqual(1,len(qs))
+            else:
+                self.assertEqual(2,len(qs))
         self.remove_sndfile(fn)
+        
+    def test_fileshorterthanwindowsize(self):
+        self.get_frames(2000)
+        
+    def test_fileshorterthanstepsize(self):
+        self.get_frames(1000)
+        
+    def test_fileshorterthanchunksize(self):
+        self.get_frames(2048*(AudioStream._windows_in_chunk-1))
         
     def test_fileevenlydivisiblebychunksize(self):
-        step = 1024
-        ws = 2048
-        length = ws * 20
-        fn = self.make_sndfile(length, ws, 44100)
-        a = AudioStream(fn,44100,ws,step)
-        l = [w for w in a]
-        [self.assertEqual(ws,len(q)) for q in l]
-        el = ceil(length/step)
-        self.assertEqual(el,len(l))
-        self.assertEqual(l[0][0],0)
-        self.assertAlmostEqual(l[3][0],1,4)
-        self.assertAlmostEqual(l[3][step],2,4)
-        self.remove_sndfile(fn)
+        self.get_frames(2048*(AudioStream._windows_in_chunk*2))
         
     def test_filenotevenlydivisiblebychunksize(self):
-        step = 1024
-        ws = 2048
-        length = int(ws * 20.3)
-        fn = self.make_sndfile(length, ws, 44100)
-        a = AudioStream(fn,44100,ws,step)
-        l = [w for w in a]
-        el = ceil(length/step)
-        [self.assertEqual(ws,len(q)) for q in l]
-        self.assertEqual(el,len(l))
-        self.remove_sndfile(fn)
+        self.get_frames(2048*(AudioStream._windows_in_chunk*1.53))
+            
+    def test_quarterstepsize(self):
+        self.get_frames(2048*(AudioStream._windows_in_chunk*2),step=512)  
+    
+    def test_quarterstepsize_notevenlydivisible(self):
+        self.get_frames(2048*(AudioStream._windows_in_chunk*(2.1)),step=512)
         
-        
-        
-    def test_encoding(self):
-        #TODO: I've got the encoding (int16) hardcoded in a few places.
-        # Fix it!
-        self.fail()
+    def test_stereo(self):
+        self.get_frames(2048*(AudioStream._windows_in_chunk*2),channels=2)
 
 
 
