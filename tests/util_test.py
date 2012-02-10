@@ -1,7 +1,6 @@
 import numpy as np
 import unittest
 from util import pad
-from testhelper import TestBase
 
 
 class UtilTests(unittest.TestCase):
