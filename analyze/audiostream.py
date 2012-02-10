@@ -4,9 +4,9 @@ from scikits.audiolab import Sndfile
 from util import pad
 from os.path import exists
 
-# TODO: Write tests
+
 # TODO: Write docs
-# TODO: Handle stereo files
+
 
 
 
@@ -72,8 +72,13 @@ class AudioStream(object):
         if channels == 1:
             frames = sndfile.read_frames(nframes,dtype=self.encoding)
         elif channels == 2:
-            frames = sndfile.read_frames(\
-                    nframes,dtype=self.encoding).sum(1) / 2.
+            frames = sndfile.read_frames(nframes,dtype=self.encoding)
+            # KLUDGE: This is ugly. Is there a quicker, easier, prettier
+            # way to get the results I want?
+            frames = \
+                np.concatenate([frames[:,0],frames[:,1]])\
+                .reshape((len(frames),2))
+            frames = frames.sum(1) / 2
         return frames
         
         

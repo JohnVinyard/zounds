@@ -112,15 +112,10 @@ class AudioStreamTests(unittest.TestCase):
         self.get_frames(2048*(AudioStream._windows_in_chunk*2),channels=2)
     
     def test_stepsize_equals_windowsize_evenly_divisible(self):
-        self.fail()
+        self.get_frames(2048*(AudioStream._windows_in_chunk*2),step=2048)
         
     def test_stepsize_equals_windowsize_not_evenly_divisible(self):
-        self.fail()
+        self.get_frames(2048*(AudioStream._windows_in_chunk*3.97),step=2048)
 
 
-if __name__ == '__main__':
-    ast = AudioStreamTests()
-    signal = ast.make_signal(2048*4,2048)
-    print signal
-    print np.tile(signal,(2,1)).T
 
