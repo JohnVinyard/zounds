@@ -9,6 +9,7 @@ def pad(a,desiredlength):
     desired length.  Return it unchanged if it is greater than or
     equal to the desired length
     '''
+    a = np.array(a)
     
     if len(a) >= desiredlength:
         return a

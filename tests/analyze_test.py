@@ -9,7 +9,7 @@ from os import remove
 from math import floor
 
 # TODO: How do I cleanup wave files for failed tests?
- 
+ ## AudioStreamTests ##########################################################
 class AudioStreamTests(unittest.TestCase):
     
         
@@ -118,4 +118,114 @@ class AudioStreamTests(unittest.TestCase):
         self.get_frames(2048*(AudioStream._windows_in_chunk*3.97),step=2048)
 
 
+## ExtractorTests #############################################################
+from analyze.extractor import \
+    Extractor,ExtractorChain,CircularDependencyException,RootlessExtractorChainException
 
+class ExtractorTests(unittest.TestCase):
+    
+    def test_bad_frames_count(self):
+        self.fail()
+        
+    def test_bad_step_size(self):
+        self.fail()
+
+## ExtractorChainTests ########################################################
+class RootExtractor(Extractor):
+    
+    def __init__(self,shape=1,totalframes=10):
+        self.shape = shape
+        Extractor.__init__(self)
+        self.framesleft = totalframes + 1
+    
+    def _process(self):
+        self.framesleft -= 1
+        
+        # TODO: Derived classes shouldn't have to know to set done to
+        # True and return None. There should be a simpler way
+        if not self.framesleft:
+            self.done = True
+            return None
+        
+        if self.shape == 1:
+            return 1
+        return np.ones(self.shape)
+
+class SumExtractor(Extractor):
+    
+    def __init__(self,needs,nframes,step):
+        Extractor.__init__(self,needs,nframes,step)
+        
+    def _process(self):
+        return np.sum([v for v in self.input.values()]) 
+        
+class ExtractorChainTests(unittest.TestCase):
+    
+    def test_circular_dependency(self):
+        # is it *possible* to create a circular dependency?
+        self.fail()
+        
+    def test_sort(self):
+        re = RootExtractor()
+        se = SumExtractor(needs=re,nframes=5,step=1)
+        se2 = SumExtractor(needs=se,nframes=1,step=1)
+        ec = ExtractorChain([se,se2,re])
+        self.assertEqual(re,ec.chain[0])
+        self.assertEqual(se,ec.chain[1])
+        self.assertEqual(se2,ec.chain[2])
+    
+    def test_sort_multiple_dependencies(self):
+        re = RootExtractor()
+        se1 = SumExtractor(needs=re,nframes=1,step=1)
+        se2 = SumExtractor(needs=se1,nframes=2,step=1)
+        se3 = SumExtractor(needs=[re,se1],nframes=3,step=1)
+        ec = ExtractorChain([se3,re,se1,se2])
+        self.assertEqual(re,ec.chain[0])
+        self.assertEqual(se1,ec.chain[1])
+        self.assertTrue(se2 in ec.chain[2:])
+        self.assertTrue(se3 in ec.chain[2:])
+    
+    def test_empty_extractor_chain(self):
+        self.assertRaises(ValueError,lambda : ExtractorChain([]))
+        
+    def test_single_extractor_chain(self):
+        re = RootExtractor()
+        ec = ExtractorChain(re)
+        d = ec.collect()
+        self.assertEqual(1,len(d))
+        self.assertTrue(d.has_key(re))
+        v = d[re]
+        self.assertEqual(10,len(v))
+        self.assertTrue(all([q == 1 for q in v]))
+        
+        
+    def test_two_extractor_chain_no_step(self):
+        re = RootExtractor()
+        se = SumExtractor(needs=re,nframes=2,step=1)
+        ec = ExtractorChain([se,re])
+        d = ec.collect()
+        self.assertEqual(2,len(d))
+        self.assertTrue(d.has_key(re))
+        self.assertTrue(d.has_key(se))
+        rev = d[re]
+        sev = d[se]
+        self.assertEqual(10,len(rev))
+        self.assertEqual(10,len(sev))
+        self.fail()
+        self.assertTrue(all([q == 1 for q in rev]))
+        self.assertTrue(all([q == 2 for q in sev[:-1]]))
+        self.assertEqual(1,sev[-1])
+        
+    def test_two_extractor_chain_two_step(self):
+        # TODO: Sum extractor with a step size of 2
+        self.fail()
+        
+    def test_no_root(self):
+        re = RootExtractor()
+        se = SumExtractor(needs=re,nframes=1,step=1)
+        self.assertRaises(RootlessExtractorChainException,
+                          lambda : ExtractorChain([se]))
+        
+    
+        
+    

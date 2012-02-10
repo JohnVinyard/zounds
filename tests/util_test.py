@@ -42,3 +42,9 @@ class UtilTests(unittest.TestCase):
         self.assertTrue(np.allclose(a,b[:10]))
         self.assertTrue(np.all(b[10:] == 0))
         
+    def test_pad_list(self):
+        l = [1,2,3]
+        b = pad(l,4)
+        self.assertEqual(4,len(b))
+        self.assertEqual(0,b[-1])
+        
