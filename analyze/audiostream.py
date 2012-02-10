@@ -7,12 +7,10 @@ from os.path import exists
 
 # TODO: Write docs
 
-
-
-
-
 class BadSampleRateException(BaseException):
     '''
+    Raised when the sample rate of an audio file
+    doesn't match the sample rate of the AudioStream.
     '''
     def __init__(self,expectedrate,actualrate):
         BaseException.__init__(\
@@ -22,6 +20,8 @@ class BadSampleRateException(BaseException):
         
 class BadStepSizeException(BaseException):
     '''
+    Raised when the window size is not evenly
+    divisible by the step size
     '''
     def __init__(self):
         BaseException.__init__(\
@@ -30,13 +30,14 @@ class BadStepSizeException(BaseException):
 
 class AudioStream(object):
     '''
+    Iterates over frames of an audio file. Frames can overlap, as long
+    as the window size is evenly divisible by the overlap size.  Low level
+    features such as FFT and DCT usually rely on overlapping windows of audio.
     '''
     
     _windows_in_chunk = 10
     
     def __init__(self,filename,samplerate=44100,windowsize=2048,stepsize=1024):
-        '''
-        '''
         self.filename = filename
         if not exists(self.filename):
             raise IOError('%s does not exist' % filename)
@@ -49,17 +50,28 @@ class AudioStream(object):
         self._nsteps = self._check_step() 
         
     def _check_step(self):
+        '''
+        Ensure that the window size is evenly divisible by the
+        step size.
+        '''
         nsteps = self.windowsize / self.stepsize 
         if (nsteps) % 1:
             raise BadStepSizeException()
         return int(nsteps)
         
     def _check_samplerate(self,sndfile):
+        '''
+        Ensure that the file's sample rate matches the sample rate
+        used to create this AudioStream instance.
+        '''
         if sndfile.samplerate != self.samplerate:
             raise BadSampleRateException(self.samplerate,sndfile.samplerate)
         
     
     def _iter_interchunk(self,interchunk,frames):
+        '''
+        Iterate over frames that span the gap between chunks
+        '''
         ss = self.stepsize
         ws = self.windowsize
         if interchunk is not None and len(interchunk):
@@ -69,6 +81,9 @@ class AudioStream(object):
                             [interchunk[offset:],frames[:ss+offset]]),ws)
                 
     def _read_frames(self,nframes,sndfile,channels):
+        '''
+        Read audio samples from a file
+        '''
         if channels == 1:
             frames = sndfile.read_frames(nframes,dtype=self.encoding)
         elif channels == 2:
@@ -78,13 +93,13 @@ class AudioStream(object):
             frames = \
                 np.concatenate([frames[:,0],frames[:,1]])\
                 .reshape((len(frames),2))
+            # average the values from the two channels
             frames = frames.sum(1) / 2
         return frames
         
         
     def __iter__(self):
         sndfile = Sndfile(self.filename)
-        print sndfile
         channels = sndfile.channels
         self._check_samplerate(sndfile)
         
@@ -107,6 +122,7 @@ class AudioStream(object):
             else:
                 # read the next chunk 
                 frames = self._read_frames(self._chunksize, sndfile, channels)
+            
             if lastchunk:
                 for ic in self._iter_interchunk(interchunk,frames):
                     yield ic
@@ -114,7 +130,6 @@ class AudioStream(object):
                 for i in xrange(0,(len(frames)+1) - ss,ss):
                     yield pad(frames[i:i+ws],ws)
             elif firstchunk:
-                
                 for i in xrange(0,len(frames)-diff,ss):
                     yield frames[i:i+ws]
                 interchunk = frames[-diff:]
