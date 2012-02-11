@@ -8,11 +8,11 @@ BFCC(needs=FFT)
 Onset(needs=[Bark,Audio],10)
 Tempo(needs=Bark,10)
 RBM1(needs=Bark,5)
-CONVRBM(needs=RBM1,15)
+CONVRBM(needs=RBM1,3)
 
 
 '''
-# TODO: Write tests
+
 
 # TODO: Write Docs
 
@@ -20,15 +20,21 @@ CONVRBM(needs=RBM1,15)
 # useful queue items to be placed into a data store
 
 class CircularDependencyException(BaseException):
+    '''
+    Raised when two extractors directly or indirectly depend
+    on one another. 
+    '''
     def __init__(self,e1,e2):
         BaseException.__init__(\
             'Circular dependency detected between %s and %s' % (e1,e2))
         
 class Extractor(object):
     '''
-    TODO: Write docs
+    An extractor collects input from one or more sources until it
+    has enough data to perform some arbitrary calculation.  It then
+    makes this calculation available to other extractors that may
+    depend on it.
     '''
-    
     
     def __init__(self,needs=None,nframes=1,step=1):
         
@@ -88,17 +94,20 @@ class Extractor(object):
     
     def collect(self):
         
-        if all([s.done for s in self.sources]):
-            for src in self.sources:
-                if len(self.input[src]):
-                    # we have a partial input that needs to be padded
-                    self.input[src] = pad(self.input[src],self.nframes)
-            self.done = True
-            return
-         
         if all([s.out is not None for s in self.sources]):
             for src in self.sources:
                 self.input[src].append(src.out)
+                        
+        if all([s.done for s in self.sources]):
+            for src in self.sources:
+                if len(self.input[src]):
+                    # maybe have a partial input that needs to be padded
+                    self.input[src] = pad(self.input[src],self.nframes)
+                    
+            self.done = True
+        
+         
+        
         
     def _process(self):
         raise NotImplemented()
@@ -114,7 +123,8 @@ class Extractor(object):
             self.out = None
             
     def __hash__(self):
-        return hash((self.__class__,self.nframes,self.step))
+        return hash(\
+            (self.__class__,tuple(self.sources),self.nframes,self.step))
     
     def __repr__(self):
         return '%s(nframes = %i, step = %i)' % \

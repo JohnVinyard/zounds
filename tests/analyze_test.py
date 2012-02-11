@@ -148,7 +148,6 @@ class SumExtractor(Extractor):
         Extractor.__init__(self,needs,nframes,step)
         
     def _process(self):
-        print self.input.values()
         return np.sum([v for v in self.input.values()]) 
 
 class ExtractorTests(unittest.TestCase):
@@ -285,6 +284,25 @@ class ExtractorChainTests(unittest.TestCase):
         self.assertEqual((10,),sev.shape)
         self.assertTrue(all([s == 2 for s in sev]))
         
+    def test_extractor_multi_resolution(self):
+        re = RootExtractor()
+        se1 = SumExtractor(needs = re, nframes = 2, step = 1)
+        se2 = SumExtractor(needs = se1, nframes = 2, step = 1)
+        ec = ExtractorChain([se2,re,se1])
+        d = ec.collect()
+        self.assertTrue(4,len(d))
+        self.assertTrue(d.has_key(re))
+        self.assertTrue(d.has_key(se1))
+        self.assertTrue(d.has_key(se2))
+        rev = d[re]
+        se1v = d[se1]
+        se2v = d[se2]
+        print rev
+        print se1v
+        print se2v
+        self.assertEqual(10,len(rev))
+        self.assertEqual(10,len(se1v))
+        self.assertEqual(10,len(se2v))
         
     
         
