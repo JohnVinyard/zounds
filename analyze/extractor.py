@@ -13,7 +13,9 @@ CONVRBM(needs=RBM1,15)
 
 '''
 # TODO: Write tests
+
 # TODO: Write Docs
+
 # TODO: ExtractorChains need to know about _id, so they can create
 # useful queue items to be placed into a data store
 
@@ -88,7 +90,9 @@ class Extractor(object):
         
         if all([s.done for s in self.sources]):
             for src in self.sources:
-                self.input[src] = pad(self.input[src],self.nframes)
+                if len(self.input[src]):
+                    # we have a partial input that needs to be padded
+                    self.input[src] = pad(self.input[src],self.nframes)
             self.done = True
             return
          

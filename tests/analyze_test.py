@@ -121,16 +121,7 @@ class AudioStreamTests(unittest.TestCase):
 ## ExtractorTests #############################################################
 from analyze.extractor import \
     Extractor,ExtractorChain,CircularDependencyException,RootlessExtractorChainException
-
-class ExtractorTests(unittest.TestCase):
     
-    def test_bad_frames_count(self):
-        self.fail()
-        
-    def test_bad_step_size(self):
-        self.fail()
-
-## ExtractorChainTests ########################################################
 class RootExtractor(Extractor):
     
     def __init__(self,shape=1,totalframes=10):
@@ -157,7 +148,52 @@ class SumExtractor(Extractor):
         Extractor.__init__(self,needs,nframes,step)
         
     def _process(self):
+        print self.input.values()
         return np.sum([v for v in self.input.values()]) 
+
+class ExtractorTests(unittest.TestCase):
+    
+    def test_bad_frames_count(self):
+        self.assertRaises(ValueError, lambda : Extractor(nframes=-1))
+        
+    def test_bad_step_size(self):
+        self.assertRaises(ValueError,lambda : Extractor(step=0))
+        
+    def test_is_root(self):
+        self.assertTrue(Extractor().is_root)
+        
+    def test_is_not_root(self):
+        re = Extractor()
+        se = Extractor(needs=re)
+        self.assertFalse(se.is_root)
+        
+    def test_directly_depends_on(self):
+        re = Extractor()
+        se = Extractor(needs = re)
+        self.assertTrue(se.depends_on(re))
+        
+    def test_indirectly_depends_on(self):
+        re = Extractor()
+        se1 = Extractor(needs = re)
+        se2 = Extractor(needs = se1)
+        self.assertTrue(se2.depends_on(se1))
+        self.assertTrue(se2.depends_on(re))
+    
+    def test_does_not_depend_on(self):
+        re = Extractor()
+        se1 = Extractor(needs = re)
+        se2 = Extractor(needs = re)
+        self.assertFalse(se1.depends_on(se2))
+        self.assertFalse(se2.depends_on(se1))
+        
+    def test_depends_on_multi_dependency(self):
+        re = Extractor()
+        se1 = Extractor(needs = [re])
+        se2 = Extractor(needs = [re,se1])
+        self.assertTrue(se2.depends_on(re))
+        self.assertTrue(se2.depends_on(se1))
+
+## ExtractorChainTests ########################################################
         
 class ExtractorChainTests(unittest.TestCase):
     
@@ -211,20 +247,44 @@ class ExtractorChainTests(unittest.TestCase):
         sev = d[se]
         self.assertEqual(10,len(rev))
         self.assertEqual(10,len(sev))
-        self.fail()
         self.assertTrue(all([q == 1 for q in rev]))
         self.assertTrue(all([q == 2 for q in sev[:-1]]))
         self.assertEqual(1,sev[-1])
         
-    def test_two_extractor_chain_two_step(self):
-        # TODO: Sum extractor with a step size of 2
-        self.fail()
+    def test_two_extractor_chain_twodim(self):
+        re = RootExtractor(shape=10)
+        se = SumExtractor(needs=re,nframes=2,step=2)
+        ec = ExtractorChain([se,re])
+        d = ec.collect()
+        self.assertTrue(2,len(d))
+        self.assertTrue(d.has_key(re))
+        self.assertTrue(d.has_key(se))
+        rev = np.array(d[re])
+        sev = np.array(d[se])
+        self.assertEqual((10,10),rev.shape)
+        self.assertEqual((5,),sev.shape)
+        self.assertTrue(all([s==20 for s in sev]))
         
     def test_no_root(self):
         re = RootExtractor()
         se = SumExtractor(needs=re,nframes=1,step=1)
         self.assertRaises(RootlessExtractorChainException,
                           lambda : ExtractorChain([se]))
+        
+    def test_extractor_chain_with_multi_dependency_extractor(self):
+        re = RootExtractor()
+        se1 = SumExtractor(needs = re, nframes = 1, step = 1)
+        se2 = SumExtractor(needs = [re,se1], nframes = 1, step = 1)
+        ec = ExtractorChain([se1,re,se2])
+        d = ec.collect()
+        self.assertTrue(3,len(d))
+        self.assertTrue(d.has_key(re))
+        self.assertTrue(d.has_key(se1))
+        self.assertTrue(d.has_key(se2))
+        sev = np.array(d[se2])
+        self.assertEqual((10,),sev.shape)
+        self.assertTrue(all([s == 2 for s in sev]))
+        
         
     
         
