@@ -1,0 +1,15 @@
+1. aptitude install 
+   - python-dev 
+   - libblas-dev 
+   - liblapack-dev 
+   - gfortran
+   - libsndfile1-dev
+1. mkvirtualenv zounds2
+1. pip install 
+   - numpy
+   - scipy
+   - matplotlib
+   - libsndfile
+   - scikits.audiolab
+   - nose
+1. in zounds2 root run "nosetests"

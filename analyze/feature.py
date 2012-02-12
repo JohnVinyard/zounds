@@ -42,16 +42,16 @@ class Loudness(Extractor):
 
 from extractor import ExtractorChain
 from matplotlib import pyplot as plt
-import argparse
+import optparse
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    aa = parser.add_argument
-    aa('--filename',help='path to a wav, aiff, or flac file')
-    args = parser.parse_args()
+    parser = optparse.OptionParser()
+    aa = parser.add_option
+    aa('--filename', help='path to a wav, aiff, or flac file', dest='filename')
+    options, args = parser.parse_args()
     
-    raw = RawAudio(args.filename)
+    raw = RawAudio(options.filename)
     fft = FFT(needs=raw)
     loud = Loudness(needs=fft,nframes=2,step=2)
     d = ExtractorChain([loud,raw,fft]).collect()
