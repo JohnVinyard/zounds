@@ -53,7 +53,7 @@ if __name__ == '__main__':
     
     raw = RawAudio(args.filename)
     fft = FFT(needs=raw)
-    loud = Loudness(needs=fft)
+    loud = Loudness(needs=fft,nframes=2,step=2)
     d = ExtractorChain([loud,raw,fft]).collect()
     
     fftdata = np.array(d[fft])
