@@ -71,7 +71,8 @@ class Extractor(object):
         # a flag letting other dependent extractors know that
         # we've reached the end of available data
         self.done = False
-    
+        
+            
     @property
     def is_root(self):
         return not self.sources
@@ -97,18 +98,17 @@ class Extractor(object):
         if all([s.out is not None for s in self.sources]):
             for src in self.sources:
                 self.input[src].append(src.out)
-                        
+        
         if all([s.done for s in self.sources]):
             for src in self.sources:
                 if len(self.input[src]):
                     # maybe have a partial input that needs to be padded
                     self.input[src] = pad(self.input[src],self.nframes)
+        
                     
             self.done = True
         
-         
-        
-        
+
     def _process(self):
         raise NotImplemented()
     
@@ -161,6 +161,7 @@ class ExtractorChain(object):
                 c.process()
                 if c.out is not None:
                     yield c,c.out
+                    
                 
     def collect(self):
         bucket = dict([(c,[]) for c in self.chain])

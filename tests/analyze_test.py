@@ -127,15 +127,16 @@ class RootExtractor(Extractor):
     def __init__(self,shape=1,totalframes=10):
         self.shape = shape
         Extractor.__init__(self)
-        self.framesleft = totalframes + 1
+        self.framesleft = totalframes
     
     def _process(self):
         self.framesleft -= 1
         
         # TODO: Derived classes shouldn't have to know to set done to
         # True and return None. There should be a simpler way
-        if not self.framesleft:
+        if self.framesleft < 0:
             self.done = True
+            self.out = None
             return None
         
         if self.shape == 1:
@@ -300,6 +301,8 @@ class ExtractorChainTests(unittest.TestCase):
         print rev
         print se1v
         print se2v
+        # extractors with a step size of one should always have the same
+        # output length as the extractor below them
         self.assertEqual(10,len(rev))
         self.assertEqual(10,len(se1v))
         self.assertEqual(10,len(se2v))
