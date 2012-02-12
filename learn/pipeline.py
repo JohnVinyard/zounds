@@ -21,7 +21,23 @@ class Pipeline(object):
     def __init__(self,datadir):
         object.__init__(self)
         
-        # the path to a directory where
-        # all data for this pipeline will be
-        # stored
-        self.datadir = datadir
+        # something that knows how to fetch training examples
+        fetch = None
+        
+        # something that knows how to preprocess data 
+        preprocess = None
+        
+        # something that knows how to train on data, and can
+        # describe future data based on that training.
+        learner = None
+        
+        # example 1: an rbm that trains on bark bands
+        #   - fetch grabs bark bands from disk
+        #   - preprocess does mean and std regularization
+        #   - the rbm learns and then can output features
+        
+        # example 2: minhash of rbm activations
+        #   - no fetcher
+        #   - no preprocessor
+        #   - the "training" stage just consists of picking the
+        #     hash functions (permutations), and saving them
