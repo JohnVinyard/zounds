@@ -22,6 +22,7 @@ class FFT(Extractor):
         Extractor.__init__(self,needs=needs,nframes=nframes,step=step)
         
     def _process(self):
+        # TODO: These inputs are the wrong shape.
         inp = self.input.items()
         return np.abs(np.fft.rfft(inp[0][1][0])[1:])
     
@@ -33,6 +34,7 @@ class Loudness(Extractor):
         
     def _process(self):
         inp = self.input.items()
+        # TODO: These inputs are the wrong shape.
         return np.sum(inp[0][1][0])
     
     
