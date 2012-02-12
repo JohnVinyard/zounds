@@ -5,8 +5,6 @@ from util import pad
 from os.path import exists
 
 
-# TODO: Write docs
-
 class BadSampleRateException(BaseException):
     '''
     Raised when the sample rate of an audio file
@@ -88,7 +86,7 @@ class AudioStream(object):
             frames = sndfile.read_frames(nframes,dtype=self.encoding)
         elif channels == 2:
             frames = sndfile.read_frames(nframes,dtype=self.encoding)
-            # KLUDGE: This is ugly. Is there a quicker, easier, prettier
+            # TODO: This is ugly. Is there a quicker, easier, prettier
             # way to get the results I want?
             frames = \
                 np.concatenate([frames[:,0],frames[:,1]])\

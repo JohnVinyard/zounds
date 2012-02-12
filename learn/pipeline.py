@@ -41,3 +41,12 @@ class Pipeline(object):
         #   - no preprocessor
         #   - the "training" stage just consists of picking the
         #     hash functions (permutations), and saving them
+        
+        # example 3: an rbm that trains on 
+        # random samples from self-similarity matrices
+        #
+        #   - fetcher that remembers coordinates of points
+        #   - no preprocessor
+        #   - rbm
+        
+        # Wishlist : Multiple pipelines can be chained together

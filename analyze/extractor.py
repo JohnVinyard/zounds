@@ -71,7 +71,6 @@ class Extractor(object):
         # a flag letting other dependent extractors know that
         # we've reached the end of available data
         self.done = False
-        
             
     @property
     def is_root(self):
@@ -104,7 +103,6 @@ class Extractor(object):
                 if len(self.input[src]):
                     # maybe have a partial input that needs to be padded
                     self.input[src] = pad(self.input[src],self.nframes)
-        
                     
             self.done = True
         
@@ -113,13 +111,14 @@ class Extractor(object):
         raise NotImplemented()
     
     def process(self):
-        if all([len(v) == self.nframes for v in self.input.values()]):
+        full = all([len(v) == self.nframes for v in self.input.values()]) 
+        if full:
             # we have enough info to do some processing
             self.out = self._process()
             # remove step size from our inputs
             for src in self.sources:
                 self.input[src] = self.input[src][self.step:]
-        else:
+        if not full or self.done:
             self.out = None
             
     def __hash__(self):

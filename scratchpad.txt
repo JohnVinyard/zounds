@@ -1,0 +1,10 @@
+Observation - Sequences are sometimes considered similar because of background
+noise, as opposed to the events in the sequence that a human would consider
+salient.
+
+
+TOOO:
+-------------
+Finish Extractor tests
+fix import / PYTHONPATH stuff
+work on pipeline

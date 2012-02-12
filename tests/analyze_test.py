@@ -246,10 +246,9 @@ class ExtractorChainTests(unittest.TestCase):
         rev = d[re]
         sev = d[se]
         self.assertEqual(10,len(rev))
-        self.assertEqual(10,len(sev))
+        self.assertEqual(9,len(sev))
         self.assertTrue(all([q == 1 for q in rev]))
-        self.assertTrue(all([q == 2 for q in sev[:-1]]))
-        self.assertEqual(1,sev[-1])
+        self.assertTrue(all([q == 2 for q in sev]))
         
     def test_two_extractor_chain_twodim(self):
         re = RootExtractor(shape=10)
@@ -298,14 +297,11 @@ class ExtractorChainTests(unittest.TestCase):
         rev = d[re]
         se1v = d[se1]
         se2v = d[se2]
-        print rev
-        print se1v
-        print se2v
-        # extractors with a step size of one should always have the same
-        # output length as the extractor below them
         self.assertEqual(10,len(rev))
-        self.assertEqual(10,len(se1v))
-        self.assertEqual(10,len(se2v))
+        self.assertEqual(9,len(se1v))
+        self.assertEqual(8,len(se2v))
+        self.assertTrue(all([s == 2 for s in se1v]))
+        self.assertTrue(all([s == 4 for s in se2v]))
         
     
         
