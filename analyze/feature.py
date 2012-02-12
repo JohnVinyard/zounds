@@ -62,7 +62,7 @@ if __name__ == '__main__':
     plt.subplot(2,1,2)
     plt.plot(d[loud])
     plt.show()
-    plt.savefig('%s_data.png' % args.filename)
+    plt.savefig('features.png')
     plt.clf()
     
     
