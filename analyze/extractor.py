@@ -1,23 +1,4 @@
 from util import pad
-'''
-Audio()
-FFT()
-DCT()
-Bark(needs=FFT)
-BFCC(needs=FFT)
-Onset(needs=[Bark,Audio],10)
-Tempo(needs=Bark,10)
-RBM1(needs=Bark,5)
-CONVRBM(needs=RBM1,3)
-
-
-'''
-
-
-# TODO: Write Docs
-
-# TODO: ExtractorChains need to know about _id, so they can create
-# useful queue items to be placed into a data store
 
 class CircularDependencyException(BaseException):
     '''
@@ -74,9 +55,17 @@ class Extractor(object):
             
     @property
     def is_root(self):
+        '''
+        True if this extractor has no sources. True indicates that this
+        extractor generates data, rather than drawing it from another extractor
+        source.
+        '''
         return not self.sources
     
     def _deep_sources(self,accum=None):
+        '''
+        Gets all direct and indirect dependencies
+        '''
         if not accum:
             accum = []
         
@@ -87,12 +76,22 @@ class Extractor(object):
         return accum
     
     def depends_on(self,e):
+        '''
+        Returns true if this extractor directly or indirectly depends on e
+        '''
         return e in self._deep_sources()
     
     def _root_collect(self):
+        '''
+        This noop method is called by root extractors. They generate data, so
+        there's nothing to collect.
+        '''
         pass
     
     def collect(self):
+        '''
+        Collect data from the extractors on which we depend
+        '''
         
         if all([s.out is not None for s in self.sources]):
             for src in self.sources:
@@ -108,9 +107,18 @@ class Extractor(object):
         
 
     def _process(self):
+        '''
+        A hook that derived classes must implement. This is where the feature
+        extraction happens
+        '''
         raise NotImplemented()
     
     def process(self):
+        '''
+        Decide if we have enough data to perform feature extraction. If so,
+        process the data and get rid of any input data we won't be needing 
+        again.
+        '''
         full = all([len(v) == self.nframes for v in self.input.values()]) 
         if full:
             # we have enough info to do some processing
@@ -134,6 +142,9 @@ class Extractor(object):
 
 class SingleInput(Extractor):
     '''
+    This class addresses the common case in which an extractor
+    will only have a single input. It exposes a property, in_data,
+    which is equivalent to self.input[self.sources[0]]
     '''
     def __init__(self,needs,nframes=1,step=1):
         if needs is None:
@@ -143,16 +154,25 @@ class SingleInput(Extractor):
     @property
     def in_data(self):
         '''
+        A convenience method allowing easier access to the data from this
+        extractor's sole input.
         '''
         return self.input[self.sources[0]]
     
 class RootlessExtractorChainException(BaseException):
+    '''
+    Raised when an extractor chain is made up entirely of consumers; there's
+    no producer at the head of the line to fetch or generate data.
+    '''
     def __init__(self):
         BaseException.__init__(self,\
             'An extractor chain must contain at least root extractor.')
             
 class ExtractorChain(object):
     '''
+    A pipeline of feature extractors. An example might be:
+    
+    raw audio -> FFT -> MFCC
     '''
     
     def __init__(self,extractors):
@@ -167,6 +187,9 @@ class ExtractorChain(object):
             raise RootlessExtractorChainException()
     
     def process(self):
+        '''
+        A generator that will extract features until the source data runs out
+        '''
         while not all([c.done for c in self.chain]):
             for c in self.chain:
                 c.collect()
@@ -176,6 +199,9 @@ class ExtractorChain(object):
                     
                 
     def collect(self):
+        '''
+        Turn the crank until we run out of data
+        '''
         bucket = dict([(c,[]) for c in self.chain])
         for k,v in self.process():
             bucket[k].append(v)
@@ -183,6 +209,9 @@ class ExtractorChain(object):
 
     def _sort(self,e1,e2):
         '''
+        Sort extractors based on their dependencies. The root extractor
+        should always be the first in list, followed by extractors that
+        depend on it, etc. 
         '''
         if e1.depends_on(e2) and e2.depends_on(e1):
             raise CircularDependencyException(e1,e2)
