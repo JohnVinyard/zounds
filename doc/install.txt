@@ -12,4 +12,12 @@
    - libsndfile
    - scikits.audiolab
    - nose
+1. add 
+	export OLD_PYTHONPATH="$PYTHONPATH"
+	export PYTHONPATH="/home/john/workspace/zounds2"
+	to end of ~/.virtualenvs/zounds2/bin/activate
+1. add
+	export PYTHONPATH="$OLD_PYTHONPATH"
+	to end of ~/.virtualenvs/zounds2/bin/postdeactivate
+
 1. in zounds2 root run "nosetests"

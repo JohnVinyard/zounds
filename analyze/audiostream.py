@@ -26,6 +26,7 @@ class BadStepSizeException(BaseException):
             Exception('Window size must be evenly divisible by step size'))
         
 
+# TODO: Write test for encoding bug
 class AudioStream(object):
     '''
     Iterates over frames of an audio file. Frames can overlap, as long
@@ -41,7 +42,6 @@ class AudioStream(object):
             raise IOError('%s does not exist' % filename)
         
         self.samplerate = samplerate
-        self.encoding = np.int16
         self.windowsize = windowsize
         self.stepsize = stepsize
         self._chunksize = self.windowsize * AudioStream._windows_in_chunk
@@ -83,16 +83,10 @@ class AudioStream(object):
         Read audio samples from a file
         '''
         if channels == 1:
-            frames = sndfile.read_frames(nframes,dtype=self.encoding)
+            frames = sndfile.read_frames(nframes)
         elif channels == 2:
-            frames = sndfile.read_frames(nframes,dtype=self.encoding)
-            # TODO: This is ugly. Is there a quicker, easier, prettier
-            # way to get the results I want?
-            frames = \
-                np.concatenate([frames[:,0],frames[:,1]])\
-                .reshape((len(frames),2))
             # average the values from the two channels
-            frames = frames.sum(1) / 2
+            frames = sndfile.read_frames(nframes).sum(1) / 2
         return frames
         
         

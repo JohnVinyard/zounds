@@ -17,7 +17,7 @@ class AudioStreamTests(unittest.TestCase):
         return '%s.wav' % str(uuid4())
     
     def make_signal(self,length,winsize):
-        signal = np.ndarray(int(length),dtype=np.int16)
+        signal = np.ndarray(int(length))
         for i,w, in enumerate(xrange(0,int(length),winsize)):
             signal[w:w+winsize] = i
         return signal
@@ -28,8 +28,6 @@ class AudioStreamTests(unittest.TestCase):
         sndfile = Sndfile(filename,'w',Format(),channels,samplerate)
         if channels == 2:
             signal = np.tile(signal,(2,1)).T
-        print signal.dtype
-        print signal
         sndfile.write_frames(signal)
         sndfile.close()
         return filename
@@ -65,8 +63,6 @@ class AudioStreamTests(unittest.TestCase):
         fn = self.make_sndfile(length, ws, samplerate, channels)
         a = AudioStream(fn,samplerate,ws,step)
         l = [w for w in a]
-        for q in l:
-            print q
         # check that all frames are the proper length
         [self.assertEqual(ws,len(q)) for q in l]
         # get the expected length, in frames
@@ -78,7 +74,6 @@ class AudioStreamTests(unittest.TestCase):
         padded = (length/step) % 1
         for i,q in enumerate(l):
             qs = set(q)
-            print i,qs
             if el > 1 and padded and i >= len(l) - (n-1):
                 self.assertEqual(3,len(qs))
             elif not i or not i % n:
