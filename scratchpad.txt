@@ -1,0 +1,19 @@
+Observation - Sequences are sometimes considered similar because of background
+noise, as opposed to the events in the sequence that a human would consider
+salient.
+
+There are 3 types of similarity
+- substitution
+- timbre
+- association or co-occurence
+
+TOOO:
+-------------
+DONE figure out import problem
+Fix encoding bug
+Fix extractor input awkwardness
+setuptools / VM
+Finish Extractor tests
+fix import / PYTHONPATH stuff
+work on pipeline
+

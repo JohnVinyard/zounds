@@ -1,0 +1,23 @@
+1. aptitude install 
+   - python-dev 
+   - libblas-dev 
+   - liblapack-dev 
+   - gfortran
+   - libsndfile1-dev
+1. mkvirtualenv zounds2
+1. pip install 
+   - numpy
+   - scipy
+   - matplotlib
+   - libsndfile
+   - scikits.audiolab
+   - nose
+1. add 
+	export OLD_PYTHONPATH="$PYTHONPATH"
+	export PYTHONPATH="/home/john/workspace/zounds2"
+	to end of ~/.virtualenvs/zounds2/bin/activate
+1. add
+	export PYTHONPATH="$OLD_PYTHONPATH"
+	to end of ~/.virtualenvs/zounds2/bin/postdeactivate
+
+1. in zounds2 root run "nosetests"
