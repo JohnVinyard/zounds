@@ -9,6 +9,7 @@ from os import remove
 from math import floor
 
 # TODO: How do I cleanup wave files for failed tests?
+
  ## AudioStreamTests ##########################################################
 class AudioStreamTests(unittest.TestCase):
     
@@ -115,7 +116,7 @@ class AudioStreamTests(unittest.TestCase):
 
 ## ExtractorTests #############################################################
 from analyze.extractor import \
-    Extractor,ExtractorChain,CircularDependencyException,RootlessExtractorChainException
+    Extractor,SingleInput,ExtractorChain,CircularDependencyException,RootlessExtractorChainException
     
 class RootExtractor(Extractor):
     
@@ -145,6 +146,14 @@ class SumExtractor(Extractor):
         
     def _process(self):
         return np.sum([v for v in self.input.values()]) 
+    
+class NoOpExtractor(Extractor):
+    
+    def __init__(self,needs):
+        Extractor.__init__(self,needs)
+        
+    def _process(self):
+        return self.input[self.sources[0]]
 
 class ExtractorTests(unittest.TestCase):
     
@@ -187,6 +196,34 @@ class ExtractorTests(unittest.TestCase):
         se2 = Extractor(needs = [re,se1])
         self.assertTrue(se2.depends_on(re))
         self.assertTrue(se2.depends_on(se1))
+
+class SingleInputTests(unittest.TestCase):
+    
+    def test_root(self):
+        self.assertRaises(ValueError, lambda : SingleInput(None))
+        
+    def test_in_data_singledim(self):
+        re = RootExtractor()
+        si = SingleInput(re)
+        re.collect()
+        re.process()
+        si.collect()
+        data = si.in_data
+        self.assertTrue(data is not None)
+        self.assertEqual([1],data)
+    
+    def test_in_data_multidim(self):
+        re = RootExtractor(shape=2)
+        si = SingleInput(re)
+        re.collect()
+        re.process()
+        si.collect()
+        data = np.array(si.in_data)
+        self.assertTrue(data is not None)
+        compare = np.array([[1,1]])
+        self.assertEqual(compare.shape,data.shape)
+        self.assertTrue(np.all(data == compare))
+        
 
 ## ExtractorChainTests ########################################################
         
@@ -297,7 +334,26 @@ class ExtractorChainTests(unittest.TestCase):
         self.assertEqual(8,len(se2v))
         self.assertTrue(all([s == 2 for s in se1v]))
         self.assertTrue(all([s == 4 for s in se2v]))
-        
     
+    def test_noop_singledim(self):
+        re = RootExtractor()
+        se = NoOpExtractor(needs = re)
+        ec = ExtractorChain([se,re])
+        d = ec.collect()
+        input = np.array(d[re])
+        self.assertEqual((10,),input.shape)
+        output = np.array(d[se])
+        self.assertEqual((10,1),output.shape)
+        
+    def test_noop_multidim(self):
+        re = RootExtractor(shape=10)
+        se = NoOpExtractor(needs = re)
+        ec = ExtractorChain([se,re])
+        d = ec.collect()
+        input = np.array(d[re])
+        self.assertEqual((10,10),input.shape)
+        output = np.array(d[se])
+        self.assertEqual((10,1,10),output.shape)
+            
         
     

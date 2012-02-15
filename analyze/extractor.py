@@ -131,7 +131,20 @@ class Extractor(object):
             
     def __str__(self):
         return self.__repr__()
-    
+
+class SingleInput(Extractor):
+    '''
+    '''
+    def __init__(self,needs,nframes=1,step=1):
+        if needs is None:
+            raise ValueError('SingleInput extractor cannot be root')
+        Extractor.__init__(self,needs=needs,nframes=nframes,step=step)
+        
+    @property
+    def in_data(self):
+        '''
+        '''
+        return self.input[self.sources[0]]
     
 class RootlessExtractorChainException(BaseException):
     def __init__(self):

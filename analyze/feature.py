@@ -1,5 +1,5 @@
 from audiostream import AudioStream
-from extractor import Extractor
+from extractor import Extractor,SingleInput
 import numpy as np
 
 
@@ -16,26 +16,22 @@ class RawAudio(Extractor):
             self.out = None
             self.done = True
 
-class FFT(Extractor):
+class FFT(SingleInput):
     
-    def __init__(self,needs,nframes=1,step=1):
-        Extractor.__init__(self,needs=needs,nframes=nframes,step=step)
+    def __init__(self,needs):
+        SingleInput.__init__(self,needs=needs,nframes=1,step=1)
         
     def _process(self):
-        # TODO: These inputs are the wrong shape.
-        inp = self.input.items()
-        return np.abs(np.fft.rfft(inp[0][1][0])[1:])
+        return np.abs(np.fft.rfft(self.in_data[0]))[1:]
     
 
-class Loudness(Extractor):
+class Loudness(SingleInput):
     
     def __init__(self,needs,nframes=1,step=1):
-        Extractor.__init__(self,needs=needs,nframes=nframes,step=step)
+        SingleInput.__init__(self,needs=needs,nframes=nframes,step=step)
         
     def _process(self):
-        inp = self.input.items()
-        # TODO: These inputs are the wrong shape.
-        return np.sum(inp[0][1][0])
+        return np.sum(self.in_data)
     
     
     
