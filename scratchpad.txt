@@ -9,11 +9,6 @@ There are 3 types of similarity
 
 TOOO:
 -------------
-DONE figure out import problem
-Fix encoding bug
-Fix extractor input awkwardness
 setuptools / VM
-Finish Extractor tests
-fix import / PYTHONPATH stuff
 work on pipeline
 

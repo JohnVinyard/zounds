@@ -1,3 +1,5 @@
+
+# TODO: Should a pipeline be Extractor-derived?
 class Pipeline(object):
     '''
     A pipeline knows how to
@@ -18,18 +20,30 @@ class Pipeline(object):
     multiple layers of an nnet in row?
     '''
     
-    def __init__(self,datadir):
+    def __init__(self,fetch,source,preprocess,learner):
         object.__init__(self)
         
-        # something that knows how to fetch training examples
-        fetch = None
+        # e.g. Pipeline( RowModel.Bark, db, MeanStd, LinearRbm ) for a 
+        # pipeline whose training data is drawn from an already existing
+        # database
+        
+        # or Pipeline(RowModel.Bark, '/home/john/snd/FreeSound', MeanStd, LinearRbm)
+        # for a pipeline whose training data is drawn from disk
+        
+        # Fetch should simply be a feature, like bark bands, or rbm activations.
+        # If we know what out current FrameModel is, we can get samples from
+        # disk or the db.  Additionally, if fetching from disk, we can only
+        # run the branches of the extractor that are necessary.
+        self.fetch = fetch
+        self.source = source
+        
         
         # something that knows how to preprocess data 
-        preprocess = None
+        self.preprocess = preprocess
         
         # something that knows how to train on data, and can
         # describe future data based on that training.
-        learner = None
+        self.learner = learner
         
         # example 1: an rbm that trains on bark bands
         #   - fetch grabs bark bands from disk
@@ -50,3 +64,19 @@ class Pipeline(object):
         #   - rbm
         
         # Wishlist : Multiple pipelines can be chained together
+        
+    def save(self):
+        pass
+    
+    def train(self):
+        data = self.fetch()
+        data = self.preprocess(data)
+        self.save()
+        # TODO checkpoints, incremental save
+        self.learner.train(data)
+        self.save()
+        
+    
+    def activate(self,data):
+        data = self.preprocess(data)
+        return self.learner(data)
