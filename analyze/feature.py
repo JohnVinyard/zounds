@@ -2,6 +2,8 @@ from audiostream import AudioStream
 from extractor import Extractor,SingleInput
 import numpy as np
 
+# TODO: Implement Pitch, BFCC, Centroid, Flatness, Bark, Tempo, Chroma, 
+# Onset, Autocorrelation, DCT
 
 class RawAudio(Extractor):
     
