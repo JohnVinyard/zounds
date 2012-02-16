@@ -8,7 +8,9 @@ stepsize = windowsize / 2.
 
 
 # Data backend
-
+frame_controller = None
+pattern_controller = None
+learn_controller = None
 
 
 # RowModel definition

@@ -2,7 +2,6 @@ from __future__ import division
 import numpy as np
 
 
-# TODO: Write tests
 def pad(a,desiredlength):
     '''
     Pad an n-dimensional numpy array with zeros so that it is the
