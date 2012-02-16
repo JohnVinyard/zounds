@@ -1,6 +1,18 @@
-import config
 
-print config.pattern_controller
+
+
+class MetaPattern(type):
+    def __new__(cls,name,bases,attrs):            
+        return super(MetaPattern,cls).__new__(cls,name,bases,attrs)
+    
+    def __init__(self,name,bases,attrs):
+        super(MetaPattern,self).__init__(name,bases,attrs)
+
+    def __getitem__(self,_id):
+        return config.pattern_controller[_id]
+    
+    def __setitem__(self,_id,pattern):
+        config.pattern_controller[_id] = pattern
 
 class Pattern(object):
     '''
@@ -8,6 +20,7 @@ class Pattern(object):
     a "leaf" pattern represents a list of ids which point to audio frames.
     A "branch" pattern points to other patterns.
     '''
+    __metaclass__ = MetaPattern
     
     class FrameSequence(list):
         '''
@@ -32,13 +45,15 @@ class Pattern(object):
             pass
         
     
-    def __init__(self):
+    def __init__(self,_id):
         object.__init__(self)
         
         # a unique identifier for this pattern
-        self._id = None
+        self._id = _id
         
         # a list of frame ids and/or two-tuples that can synthesize
         # this pattern.
         self.frames = Pattern.FrameSequence()
+        
+import config
         

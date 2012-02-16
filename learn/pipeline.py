@@ -1,3 +1,4 @@
+import config
 
 # TODO: Should a pipeline be Extractor-derived?
 class Pipeline(object):
