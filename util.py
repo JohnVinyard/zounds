@@ -1,6 +1,7 @@
 from __future__ import division
 import numpy as np
 
+# TODO: Get rid of this file! Move pad into a more appropriate location
 
 def pad(a,desiredlength):
     '''

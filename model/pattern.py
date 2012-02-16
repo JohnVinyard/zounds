@@ -1,19 +1,13 @@
+from model import Model
 
 
-
-class MetaPattern(type):
-    def __new__(cls,name,bases,attrs):            
-        return super(MetaPattern,cls).__new__(cls,name,bases,attrs)
+class MetaPattern(Model):
+        
+    @property
+    def controller(self):
+        return config.data[self]
     
-    def __init__(self,name,bases,attrs):
-        super(MetaPattern,self).__init__(name,bases,attrs)
-
-    def __getitem__(self,_id):
-        return config.pattern_controller[_id]
     
-    def __setitem__(self,_id,pattern):
-        config.pattern_controller[_id] = pattern
-
 class Pattern(object):
     '''
     A pattern is the central concept in zounds.  Patterns can be nested.
@@ -56,4 +50,3 @@ class Pattern(object):
         self.frames = Pattern.FrameSequence()
         
 import config
-        

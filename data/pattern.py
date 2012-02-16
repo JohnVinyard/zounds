@@ -11,6 +11,9 @@ class PatternController(Controller):
     def __setitem__(self):
         raise NotImplemented()
     
+    def __delitem__(self):
+        raise NotImplemented()
+    
 class InMemory(PatternController):
     
     def __init__(self,cls):
@@ -22,5 +25,8 @@ class InMemory(PatternController):
     
     def __setitem__(self,key,pattern):
         self.store[key] = pattern._id
+        
+    def __delitem__(self,key):
+        del self.store[key]
         
 
