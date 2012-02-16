@@ -13,7 +13,7 @@ class Controller(object):
     # config -> data - > model -> config
     #
     # I'm breaking data's dependence on model by instantiating a controller
-    # with a model class in config
+    # with a model class in config, hence breaking the circular dependency
     def __init__(self,model_class):
         object.__init__(self)
         self.cls = model_class

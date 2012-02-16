@@ -7,9 +7,10 @@ import numpy as np
 
 class RawAudio(Extractor):
     
-    def __init__(self,filename):
+    def __init__(self,filename,samplerate,windowsize,stepsize):
         Extractor.__init__(self)
-        self.stream = AudioStream(filename).__iter__()
+        self.stream = AudioStream(\
+                            filename,samplerate,windowsize,stepsize).__iter__()
         
     def _process(self):
         try:
