@@ -1,25 +1,16 @@
-import config
+from model import Model
+
+class MetaPipeline(Model):
+    
+    @property
+    def controller(self):
+        return config.data[self]
 
 # TODO: Should a pipeline be Extractor-derived?
 class Pipeline(object):
     '''
-    A pipeline knows how to
-        - fetch training samples
-        - preprocess them
-        - train a learning machine
-        - save preprocessing and learning machine parameters
-        - reconstruct this pipeline in the future
-        
-    This implies
-        - generalized fetchers
-        - preprocessors than can save state
-        - learning machines that can save state
-        
-    Checkpoints during training would also be nice
-    
-    What about a chain of pipelines, for training
-    multiple layers of an nnet in row?
     '''
+    __metaclass__ = MetaPipeline
     
     def __init__(self,fetch,source,preprocess,learner):
         object.__init__(self)
@@ -81,3 +72,5 @@ class Pipeline(object):
     def activate(self,data):
         data = self.preprocess(data)
         return self.learner(data)
+    
+import config

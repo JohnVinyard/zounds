@@ -1,6 +1,5 @@
 from model import Model
 
-
 class MetaPattern(Model):
         
     @property
