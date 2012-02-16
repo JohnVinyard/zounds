@@ -1,3 +1,6 @@
+import config
+
+print config.pattern_controller
 
 class Pattern(object):
     '''

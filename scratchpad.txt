@@ -9,6 +9,18 @@ There are 3 types of similarity
 
 TOOO:
 -------------
+speed and storage size tests for
+	- mongodb
+	- PyTables
+	- Cassandra
+	- SqlLite
+Doing the following
+	- writes
+	- random reads
+	- range reads
+	- binary feature similarity
+	- minhash similarity
+	
 setuptools / VM
 work on pipeline
 
