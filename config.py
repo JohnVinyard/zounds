@@ -5,7 +5,7 @@ from data.learn import LearningController
 
 # Data backends
 # TODO: I don't like the redundancy here, i.e., the model class is a key in 
-# the doctionary, *and* must be passed to the data controller
+# the doctionary, *and* must be passed to the data controller's constructor
 data = {
     Pattern  : InMemory(Pattern),
     Pipeline : LearningController(Pipeline)
