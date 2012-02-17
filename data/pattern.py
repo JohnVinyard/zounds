@@ -1,5 +1,10 @@
 from controller import Controller
 
+# TODO: A big question that needs to be answered is this:
+# How will I store new patterns, i.e. frames arranged in novel orders,
+# so that they're searchable just like the original sounds are.
+# Put another way, given a query sound, how will I search for other
+# frame sequences *and* user-created patterns that are similar?
 class PatternController(Controller):
     
     def __init__(self,cls):

@@ -21,7 +21,7 @@ class RawAudio(Extractor):
 
 class FFT(SingleInput):
     
-    def __init__(self,needs):
+    def __init__(self,needs=None):
         SingleInput.__init__(self,needs=needs,nframes=1,step=1)
         
     def _process(self):
@@ -30,7 +30,7 @@ class FFT(SingleInput):
 
 class Loudness(SingleInput):
     
-    def __init__(self,needs,nframes=1,step=1):
+    def __init__(self,needs=None,nframes=1,step=1):
         SingleInput.__init__(self,needs=needs,nframes=nframes,step=step)
         
     def _process(self):

@@ -32,3 +32,56 @@ def testsignal(hz,seconds=5.,sr=44100.):
     return np.sin(np.arange(0,ts*cps,cps) * (2*np.pi))
 
 
+def recurse(fn):
+    '''
+    For classes with a nested, tree-like structure, whose nodes
+    are of the same class, or at least implement the same interface,
+    this function can be used as a decorator which will perform 
+    a depth-first flattening of the tree, e.g.
+    
+    class Node:
+    
+        @recurse
+        def descendants(self):
+            return self.children
+    '''
+    def wrapped(inst,accum=None):
+        if accum == None:
+            accum = []
+        s = fn(inst)
+        try:
+            accum.extend(s)
+            for q in s:
+                getattr(q,fn.__name__)(accum)
+        except TypeError:
+            # the object was not iterable
+            pass
+        return accum
+    
+    return wrapped 
+        
+def sort_by_lineage(class_method,allow_circular = False):
+    '''
+    Return a function that will compare two objects of or
+    inherited from the same class based on their ancestry
+    '''
+    def _sort(lhs,rhs):
+        # the lineages of the left and right hand sides
+        lhs_l = class_method(lhs)
+        rhs_l = class_method(rhs)
+        
+        if lhs in rhs_l and rhs in lhs_l and not allow_circular:
+            raise ValueError('lhs and rhs are ancestors of each other')
+        
+        if rhs in lhs_l:
+            return 1
+        
+        if lhs in rhs_l:
+            return -1
+        
+        return 0
+    
+    return _sort
+    
+
+    
