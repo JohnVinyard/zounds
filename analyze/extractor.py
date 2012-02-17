@@ -1,4 +1,4 @@
-from util import pad
+from util import pad,recurse,sort_by_lineage
 
 class CircularDependencyException(BaseException):
     '''
@@ -19,16 +19,7 @@ class Extractor(object):
     
     def __init__(self,needs=None,nframes=1,step=1):
         
-        # a list of other extractors needed by this one
-        # to do work
-        if not needs:
-            # this is a root extractor; it relies on no one.
-            self.sources = []
-            self.collect = self._root_collect
-        elif not isinstance(needs,list):
-            self.sources = [needs]
-        else:
-            self.sources = needs
+        self.set_sources(needs = needs)
             
         # the number of frames needed from all sources to
         # do work
@@ -42,17 +33,29 @@ class Extractor(object):
             raise ValueError('step must be greater than or equal to 1')
         self.step = step
         
-        # a dictionary mapping the extractors on which we depend
-        # to the input we'll be collecting from them
-        self.input = dict([(src,[]) for src in self.sources])
-        
         # a variable into which we'll put our processed data
         self.out = None
         
         # a flag letting other dependent extractors know that
         # we've reached the end of available data
         self.done = False
+    
+    def set_sources(self,needs = None):
+        # a list of other extractors needed by this one
+        # to do work
+        if not needs:
+            # this is a root extractor; it relies on no one.
+            self.sources = []
+            self.collect = self._root_collect
+        elif not isinstance(needs,list):
+            self.sources = [needs]
+        else:
+            self.sources = needs
             
+        # a dictionary mapping the extractors on which we depend
+        # to the input we'll be collecting from them
+        self.input = dict([(src,[]) for src in self.sources])
+        
     @property
     def is_root(self):
         '''
@@ -62,18 +65,9 @@ class Extractor(object):
         '''
         return not self.sources
     
-    def _deep_sources(self,accum=None):
-        '''
-        Gets all direct and indirect dependencies
-        '''
-        if not accum:
-            accum = []
-        
-        accum.extend(self.sources)
-        for src in self.sources:
-            src._deep_sources(accum)
-        
-        return accum
+    @recurse
+    def _deep_sources(self):
+        return self.sources
     
     def depends_on(self,e):
         '''
@@ -182,7 +176,8 @@ class ExtractorChain(object):
             self.chain = [extractors]
         else:
             self.chain = extractors
-        self.chain.sort(self._sort)
+        #self.chain.sort(self._sort)
+        self.chain.sort(sort_by_lineage(Extractor._deep_sources))
         if not self.chain[0].is_root:
             raise RootlessExtractorChainException()
     
@@ -207,20 +202,4 @@ class ExtractorChain(object):
             bucket[k].append(v)
         return bucket
 
-    def _sort(self,e1,e2):
-        '''
-        Sort extractors based on their dependencies. The root extractor
-        should always be the first in list, followed by extractors that
-        depend on it, etc. 
-        '''
-        if e1.depends_on(e2) and e2.depends_on(e1):
-            raise CircularDependencyException(e1,e2)
-        
-        if e1.depends_on(e2):
-            return 1
-        
-        if e2.depends_on(e1):
-            return -1
-        
-        return 0
         
