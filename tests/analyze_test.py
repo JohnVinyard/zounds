@@ -116,7 +116,7 @@ class AudioStreamTests(unittest.TestCase):
 
 ## ExtractorTests #############################################################
 from analyze.extractor import \
-    Extractor,SingleInput,ExtractorChain,CircularDependencyException,RootlessExtractorChainException
+    Extractor,SingleInput,ExtractorChain,RootlessExtractorChainException
     
 class RootExtractor(Extractor):
     
@@ -229,9 +229,6 @@ class SingleInputTests(unittest.TestCase):
         
 class ExtractorChainTests(unittest.TestCase):
     
-    def test_circular_dependency(self):
-        # is it *possible* to create a circular dependency?
-        self.fail()
         
     def test_sort(self):
         re = RootExtractor()
