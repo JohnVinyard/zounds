@@ -176,10 +176,15 @@ class ExtractorChain(object):
             self.chain = [extractors]
         else:
             self.chain = extractors
-        #self.chain.sort(self._sort)
         self.chain.sort(sort_by_lineage(Extractor._deep_sources))
         if not self.chain[0].is_root:
             raise RootlessExtractorChainException()
+        
+    def __len__(self):
+        '''
+        The number of extractors in this chain
+        '''
+        return self.chain.__len__()
     
     def process(self):
         '''

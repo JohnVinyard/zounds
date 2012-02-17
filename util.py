@@ -32,6 +32,8 @@ def testsignal(hz,seconds=5.,sr=44100.):
     return np.sin(np.arange(0,ts*cps,cps) * (2*np.pi))
 
 
+# TODO: This is used in analyze.extractor and model.frame. Can it be
+# factored out into a *better*, common location?
 def recurse(fn):
     '''
     For classes with a nested, tree-like structure, whose nodes
@@ -56,11 +58,13 @@ def recurse(fn):
         except TypeError:
             # the object was not iterable
             pass
-        return accum
+        
+        # We don't want to return any node more than once
+        return list(set(accum))
     
     return wrapped 
         
-def sort_by_lineage(class_method,allow_circular = False):
+def sort_by_lineage(class_method):
     '''
     Return a function that will compare two objects of or
     inherited from the same class based on their ancestry
@@ -70,7 +74,7 @@ def sort_by_lineage(class_method,allow_circular = False):
         lhs_l = class_method(lhs)
         rhs_l = class_method(rhs)
         
-        if lhs in rhs_l and rhs in lhs_l and not allow_circular:
+        if lhs in rhs_l and rhs in lhs_l:
             raise ValueError('lhs and rhs are ancestors of each other')
         
         if rhs in lhs_l:
