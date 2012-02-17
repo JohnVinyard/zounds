@@ -23,7 +23,7 @@ class Pipeline(object):
         # for a pipeline whose training data is drawn from disk
         
         # Fetch should simply be a feature, like bark bands, or rbm activations.
-        # If we know what out current FrameModel is, we can get samples from
+        # If we know what our current FrameModel is, we can get samples from
         # disk or the db.  Additionally, if fetching from disk, we can only
         # run the branches of the extractor that are necessary.
         self.fetch = fetch

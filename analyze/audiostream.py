@@ -26,7 +26,6 @@ class BadStepSizeException(BaseException):
             Exception('Window size must be evenly divisible by step size'))
         
 
-# TODO: Write test for encoding bug
 class AudioStream(object):
     '''
     Iterates over frames of an audio file. Frames can overlap, as long
