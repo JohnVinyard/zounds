@@ -1,87 +1,12 @@
 import numpy as np
 from matplotlib import pyplot as plt
-from bitarray import bitarray
-from random import choice
-import struct
 
-# BEGIN KLUDGE:
-# I'm not sure this is the right place for this stuff
-
-powers_of_2 = [i**2 for i in range(1024)]
-
-def flipbit(x,bits=32):
-    '''
-    Flip one bit in x, at random, and return it
-    '''
-    return x ^ choice(powers_of_2[:bits])
-
-fmts = {8 : 'B', 16 : 'H', 32 : 'I', 64 : 'L'}
-def gethash(act):
-    '''
-    Take the binary activations of a hidden
-    layer and encode them as a number
-    '''
-    try:
-        fmt = fmts[len(act)]
-    except KeyError:
-        raise ValueError('act\'s length must correspond to the length\
-in bits of a char,short,int, or long')
-
-    b = bitarray()
-    b.extend(act)
-    return struct.unpack(fmt,b.tobytes())[0]
-
-# END KLUDGE
-
+# TODO: package up these activation functions somehow
 def sigmoid(a):
     return 1. / (1 + np.exp(-a))
 
 def stochastic_binary(a):
     return a > np.random.random_sample(a.shape)
-
-def normalize_examplewise(samples):
-    # normalize example-wise
-    samples[samples == 0] = .0000001
-    samples = samples.T
-    samples *= .99 / samples.max(0)
-    samples = samples.T
-    return samples
-
-def binarize(samples):
-    bin = np.zeros(samples.shape)
-    for i,s in enumerate(samples):
-        current = s.copy()
-        # find the top 10 freqs
-        top = np.argsort(s)[-20:]      
-        # inhibit the neighbors of those freqs
-        inhibit = .5
-        for t in top:
-            if t > 0:
-                current[t - 1] -= current[t] * inhibit
-            if t < len(current) - 1:
-                current [t + 1] -= current[t] * inhibit
-
-        top = np.argsort(current)[-10:]      
-        bin[i][top] = 1
-        toolow = s < 2
-        bin[i][toolow] = 0
-    return bin
-
-def binarize2(samples):
-    bin = samples.copy()
-    down = np.roll(bin,-1,axis=1)
-    down[:,-1:] = 0
-    up = np.roll(bin,1,axis=1)
-    up[:,:1] = 0
-
-    inhibit = .3
-    bin -= down * inhibit
-    bin -= up * inhibit
-
-    thresh = 3
-    bin[bin <= 3] = 0
-    bin[bin > 3] = 1
-    return bin
 
 class nnet(object):
 

@@ -27,17 +27,17 @@ class MeanStd(Preprocess):
         self.axis = axis
      
     def _preprocess(self,data):
-        if not self.mean:
+        if self.mean is None:
             self.mean = data.mean(self.axis)
             
-        data -= self.mean
+        newdata = data - self.mean
         
-        if not self.std:
-            self.std = data.std(self.axis)
+        if self.std is None:
+            self.std = newdata.std(self.axis)
             
-        data /= self.std
+        newdata /= self.std
         
-        return data
+        return newdata
         
         
 
