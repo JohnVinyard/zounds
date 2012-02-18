@@ -51,13 +51,14 @@ def recurse(fn):
         if accum == None:
             accum = []
         s = fn(inst)
+        funcname = fn.__name__
         try:
             accum.extend(s)
             for q in s:
-                getattr(q,fn.__name__)(accum)
+                getattr(q,funcname)(accum)
         except TypeError:
             # the object was not iterable
-            pass
+            accum.append(s)
         
         # We don't want to return any node more than once
         return list(set(accum))
