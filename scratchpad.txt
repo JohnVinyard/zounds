@@ -9,6 +9,10 @@ There are 3 types of similarity
 
 TOOO:
 -------------
+Create env or app class that clients must instantiate
+Get rid of metaclasses, app or env will assign controllers to classes
+Write tests for Feature and Frame
+
 speed and storage size tests for
 	- mongodb
 	- PyTables
