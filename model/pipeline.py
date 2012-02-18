@@ -1,19 +1,14 @@
 from model import Model
 
-class MetaPipeline(Model):
-    
-    @property
-    def controller(self):
-        return config.data[self]
+
 
 # TODO: Should a pipeline be Extractor-derived?
-class Pipeline(object):
+class Pipeline(Model):
     '''
     '''
-    __metaclass__ = MetaPipeline
     
-    def __init__(self,fetch,source,preprocess,learner):
-        object.__init__(self)
+    def __init__(self,_id,fetch,source,preprocess,learner):
+        Model.__init__(self)
         
         # e.g. Pipeline( RowModel.Bark, db, MeanStd, LinearRbm ) for a 
         # pipeline whose training data is drawn from an already existing
@@ -21,6 +16,9 @@ class Pipeline(object):
         
         # or Pipeline(RowModel.Bark, '/home/john/snd/FreeSound', MeanStd, LinearRbm)
         # for a pipeline whose training data is drawn from disk
+        
+        # a unique identifier
+        self._id = _id
         
         # Fetch should simply be a feature, like bark bands, or rbm activations.
         # If we know what our current FrameModel is, we can get samples from

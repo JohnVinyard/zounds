@@ -32,7 +32,7 @@ class Feature(object):
 
 # TODO: MultiFeature class (like for minhash features)
 
-class MetaFrame(Model):
+class MetaFrame(type):
 
     def __init__(self,name,bases,attrs):
         
@@ -46,14 +46,22 @@ class MetaFrame(Model):
         
         super(MetaFrame,self).__init__(name,bases,attrs)
         
-    # TODO: Grabs features, builds an Extractor chain, can check db for
-    # consistency, etc    
-    @property
-    def controller(self):
-        return config.data[self]
     
     
-    def extractor_chain(self,filename):
+    
+class Frames(Model):
+    '''
+    '''
+    __metaclass__ = MetaFrame
+    
+    def __init__(self):
+        Model.__init__(self)
+        
+        
+    # TODO: This should be a class method on Frames
+    @classmethod
+    def extractor_chain(cls,filename):
+        config = cls.env().audio
         
         # Our root element will always read audio samples from
         # files on disk (for now).
@@ -66,7 +74,7 @@ class MetaFrame(Model):
         # We now need to build the extractor chain, but we can't be sure
         # which order we'll iterate over the extractors in, so, we need
         # to sort based on dependencies
-        features = self.features.values()
+        features = cls.features.values()
         features.sort(sort_by_lineage(Feature.depends_on))
         
         # Now that the extractors have been sorted by dependency, we can
@@ -95,15 +103,3 @@ class MetaFrame(Model):
             
         return ExtractorChain(chain)
             
-    
-    
-class Frames(object):
-    '''
-    '''
-    __metaclass__ = MetaFrame
-    
-    def __init__(self):
-        object.__init__(self)
-        
-        
-import config
