@@ -59,3 +59,7 @@ class FrameModelTests(unittest.TestCase):
         # it does
         self.fail()
         
+    def test_removed_feature_upon_which_other_feature_depends(self):
+        self.fail()
+        
+        

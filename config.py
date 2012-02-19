@@ -1,3 +1,6 @@
+'''
+Example configuration file
+'''
 
 # Audio config
 class AudioConfig:
@@ -40,9 +43,4 @@ data = {
 from environment import Environment
 Z = Environment(source,FrameModel,data,AudioConfig)
 
-if __name__ == '__main__':
-    
-    print Pattern
-    print Pattern.controller() 
-    print Pipeline
-    print Pipeline.controller()
+

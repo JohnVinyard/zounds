@@ -18,6 +18,14 @@ class RawAudio(Extractor):
         except StopIteration:
             self.out = None
             self.done = True
+    
+    def __hash__(self):
+        return hash(\
+                    (self.__class__.__name__,
+                     self.filename,
+                     self.samplerate,
+                     self.windowsize,
+                     self.step))
 
 class FFT(SingleInput):
     
