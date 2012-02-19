@@ -38,7 +38,6 @@ data = {
 
 
 from environment import Environment
-# TODO: This has to work with multi-threaded and/or multi-process applications
 Z = Environment(source,FrameModel,data,AudioConfig)
 
 if __name__ == '__main__':

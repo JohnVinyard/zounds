@@ -1,24 +1,31 @@
 
+class AudioConfig:
+    samplerate = 44100
+    windowsize = 2048
+    stepsize = 1048
+    
 class Environment(object):
     '''
     A Zounds client application
     '''
     
+    _test = False 
     instance = None
     def __new__(cls, *args, **kwargs):
-        
-        if not cls.instance:
+        if cls.instance or cls._test:       
             cls.instance = super(Environment, cls).__new__(
-                                cls, *args, **kwargs)
-            return cls.instance
+                                            cls, *args, **kwargs)
         
         return cls.instance
+        
+        
+ 
     
     def __init__(self,
                  source,
                  framemodel,
                  data,
-                 audio):
+                 audio = AudioConfig):
         
         object.__init__(self)
         

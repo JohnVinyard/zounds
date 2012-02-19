@@ -196,6 +196,35 @@ class ExtractorTests(unittest.TestCase):
         se2 = Extractor(needs = [re,se1])
         self.assertTrue(se2.depends_on(re))
         self.assertTrue(se2.depends_on(se1))
+    
+    def test_equality_different_classes(self):
+        re = RootExtractor()
+        se = SumExtractor(re,1,1)
+        self.assertNotEqual(re,se)
+        
+    def test_equality_same_class_different_sources(self):
+        re = RootExtractor()
+        se = SumExtractor(None,1,1)
+        
+        d1 = SumExtractor(se,1,1)
+        d2 = SumExtractor(re,1,1)
+        self.assertNotEqual(d1,d2)
+    
+    def test_equality_different_nframes(self):
+        se1 = SumExtractor(None,1,1)
+        se2 = SumExtractor(None,2,1)
+        self.assertNotEqual(se1,se2)
+    
+    def test_equality_different_step(self):
+        se1 = SumExtractor(None,1,1)
+        se2 = SumExtractor(None,1,2)
+        self.assertNotEqual(se1,se2)
+    
+    def test_equality_equal(self):
+        re = RootExtractor()
+        se1 = SumExtractor(re,1,1)
+        se2 = SumExtractor(re,1,1)
+        self.assertEqual(se1,se2)
 
 class SingleInputTests(unittest.TestCase):
     
@@ -337,8 +366,8 @@ class ExtractorChainTests(unittest.TestCase):
         se = NoOpExtractor(needs = re)
         ec = ExtractorChain([se,re])
         d = ec.collect()
-        input = np.array(d[re])
-        self.assertEqual((10,),input.shape)
+        inp = np.array(d[re])
+        self.assertEqual((10,),inp.shape)
         output = np.array(d[se])
         self.assertEqual((10,1),output.shape)
         
@@ -347,8 +376,8 @@ class ExtractorChainTests(unittest.TestCase):
         se = NoOpExtractor(needs = re)
         ec = ExtractorChain([se,re])
         d = ec.collect()
-        input = np.array(d[re])
-        self.assertEqual((10,10),input.shape)
+        inp = np.array(d[re])
+        self.assertEqual((10,10),inp.shape)
         output = np.array(d[se])
         self.assertEqual((10,1,10),output.shape)
             
