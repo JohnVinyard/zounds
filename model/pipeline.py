@@ -70,5 +70,3 @@ class Pipeline(Model):
     def activate(self,data):
         data = self.preprocess(data)
         return self.learner(data)
-    
-import config

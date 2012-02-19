@@ -9,9 +9,14 @@ There are 3 types of similarity
 
 TOOO:
 -------------
-Create env or app class that clients must instantiate
-Get rid of metaclasses, app or env will assign controllers to classes
-Write tests for Feature and Frame
+Add appropriate stuff to .hgignore
+move tests into packages
+
+Write tests for Feature and FrameModel
+?write tests for Frames db synch?
+
+Write Pipeline
+Write Pipeline tests w/ 
 
 speed and storage size tests for
 	- mongodb

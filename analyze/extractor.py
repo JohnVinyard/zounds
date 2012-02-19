@@ -8,7 +8,8 @@ class CircularDependencyException(BaseException):
     def __init__(self,e1,e2):
         BaseException.__init__(\
             'Circular dependency detected between %s and %s' % (e1,e2))
-        
+
+# TODO: This should be an abstract base class
 class Extractor(object):
     '''
     An extractor collects input from one or more sources until it
@@ -125,7 +126,13 @@ class Extractor(object):
             
     def __hash__(self):
         return hash(\
-            (self.__class__,tuple(self.sources),self.nframes,self.step))
+            (self.__class__.__name__,
+             frozenset(self.sources),
+             self.nframes,
+             self.step))
+    
+    def __eq__(self,other):
+        return self.__hash__() == other.__hash__()
     
     def __repr__(self):
         return '%s(nframes = %i, step = %i)' % \
