@@ -62,4 +62,7 @@ class FrameModelTests(unittest.TestCase):
     def test_removed_feature_upon_which_other_feature_depends(self):
         self.fail()
         
+    def test_duplicate_feature(self):
+        self.fail()
+        
         

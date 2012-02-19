@@ -75,9 +75,33 @@ class Frames(Model):
     
     def __init__(self):
         Model.__init__(self)
+         
+    @classmethod
+    def update_report(cls,newframesmodel):
+        '''
+        1) Produce about changed Features and their dependencies.
+        2) Produce an extractor chain that creates proxies for features that 
+           have not changed, and have no changed ancestors.  This extractor
+           chain should then be capable of re-computing only the necessary
+           features.
+           
+        Any keys in the current FrameModel not in newframes model should be 
+        excluded
         
+        Any keys in newframes model not in FrameModel are new, and must be
+        computed from scratch
         
-    # TODO: This should be a class method on Frames
+        Any keys in both FrameModel and newframesmodel that have differing
+        values must also be computed from scratch. Also, all features that
+        depend on the changed feature must be re-computed
+        
+        Any keys in both FrameModel and newframesmodel that have the same 
+        values can simply be read from the db
+        
+        CHANGING A NAME SHOULDN'T MATTER!!
+        '''
+        pass
+    
     @classmethod
     def extractor_chain(cls,filename):
         config = cls.env().audio
