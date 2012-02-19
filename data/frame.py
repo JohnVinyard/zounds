@@ -4,11 +4,13 @@ from abc import ABCMeta,abstractmethod
 class FrameController(Controller):
     __metaclass__ = ABCMeta
     
-    def __init__(self):
+    def __init__(self,framesmodel):
         Controller.__init__(self)
+        self.metadata = framesmodel.features
+    
     
     @abstractmethod
-    def in_sync(self,framesmodel):
+    def check(self,framesmodel):
         '''
         Returns true if the the FrameModel is in sync with the data store,
         i.e., all the features defined on the FrameModel with store = True
@@ -44,8 +46,9 @@ class FrameController(Controller):
 
 class DictFrameController(FrameController):
     
-    def __init__(self):
-        FrameController.__init__(self)
+    def __init__(self,framesmodel):
+        FrameController.__init__(self,framesmodel)
     
-    def in_sync(self,framesmodel):
-        pass  
+    
+        
+        

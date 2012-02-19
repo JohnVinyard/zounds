@@ -23,11 +23,31 @@ class Feature(object):
             self.needs = [needs]
         
     def extractor(self,needs = None):
+        '''
+        '''
         return self.extractor_cls(needs = needs,**self.args)
     
     @recurse
     def depends_on(self):
+        '''
+        '''
         return self.needs
+    
+    # TODO: Write tests
+    def __eq__(self,other):
+        return self.__class__ == other.__class__ \
+        and self.extractor_cls == other.extractor_cls \
+        and self.store == other.store \
+        and self.args == other.args \
+        and set(self.needs) == set(other.needs)
+    
+    def __hash__(self):
+        return hash((\
+                self.__class__.__name__,
+                self.store,
+                frozenset(self.args.keys()),
+                frozenset(self.args.values()),
+                frozenset(self.needs)))
     
 
 # TODO: MultiFeature class (like for minhash features)
@@ -46,7 +66,6 @@ class MetaFrame(type):
         
         super(MetaFrame,self).__init__(name,bases,attrs)
         
-    
     
     
 class Frames(Model):

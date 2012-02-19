@@ -125,6 +125,11 @@ class Extractor(object):
             self.out = None
             
     def __hash__(self):
+        '''
+        Hash this instance based on class name, sources, frame and step size.
+        IMPORTANT!!: Derived classes with more/fewer/different parameters
+        should always override this method
+        '''
         return hash(\
             (self.__class__.__name__,
              frozenset(self.sources),
