@@ -43,3 +43,16 @@ class Environment(object):
         # a dictionary-like object mapping classes to data backends
         self.data = data
             
+    @property
+    def windowsize(self):
+        return self.audio.windowsize
+    
+    @property
+    def stepsize(self):
+        return self.audio.stepsize
+    
+    @property
+    def samplerate(self):
+        return self.audio.samplerate
+    
+    

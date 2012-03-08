@@ -18,7 +18,7 @@ class Extractor(object):
     depend on it.
     '''
     
-    def __init__(self,needs=None,nframes=1,step=1):
+    def __init__(self,needs=None,nframes=1,step=1,key=None):
         
         self.set_sources(needs = needs)
             
@@ -40,6 +40,8 @@ class Extractor(object):
         # a flag letting other dependent extractors know that
         # we've reached the end of available data
         self.done = False
+        
+        self.key = None
     
     def set_sources(self,needs = None):
         # a list of other extractors needed by this one
@@ -139,6 +141,9 @@ class Extractor(object):
     def __eq__(self,other):
         return self.__hash__() == other.__hash__()
     
+    def __ne__(self,other):
+        return not self.__eq__(other)
+    
     def __repr__(self):
         return '%s(nframes = %i, step = %i)' % \
             (self.__class__.__name__,self.nframes,self.step)
@@ -152,10 +157,10 @@ class SingleInput(Extractor):
     will only have a single input. It exposes a property, in_data,
     which is equivalent to self.input[self.sources[0]]
     '''
-    def __init__(self,needs,nframes=1,step=1):
+    def __init__(self,needs,nframes=1,step=1,key=None):
         if needs is None:
             raise ValueError('SingleInput extractor cannot be root')
-        Extractor.__init__(self,needs=needs,nframes=nframes,step=step)
+        Extractor.__init__(self,needs=needs,nframes=nframes,step=step,key=key)
         
     @property
     def in_data(self):
@@ -207,7 +212,7 @@ class ExtractorChain(object):
                 c.collect()
                 c.process()
                 if c.out is not None:
-                    yield c,c.out
+                    yield c.key if c.key else c,c.out
                     
                 
     def collect(self):
