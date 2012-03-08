@@ -9,8 +9,8 @@ There are 3 types of similarity
 
 TOOO:
 -------------
-Add appropriate stuff to .hgignore
-move tests into packages
+
+
 
 Write tests for Feature and FrameModel
 ?write tests for Frames db synch?
@@ -31,5 +31,5 @@ Doing the following
 	- minhash similarity
 	
 setuptools / VM
-work on pipeline
+
 

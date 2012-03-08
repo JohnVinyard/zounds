@@ -11,6 +11,7 @@ class RawAudio(Extractor):
         Extractor.__init__(self)
         self.stream = AudioStream(\
                             filename,samplerate,windowsize,stepsize).__iter__()
+        self.key = 'audio'
         
     def _process(self):
         try:
@@ -29,8 +30,8 @@ class RawAudio(Extractor):
 
 class FFT(SingleInput):
     
-    def __init__(self,needs=None):
-        SingleInput.__init__(self,needs=needs,nframes=1,step=1)
+    def __init__(self,needs=None,key=None):
+        SingleInput.__init__(self,needs=needs,nframes=1,step=1,key=key)
         
     def _process(self):
         return np.abs(np.fft.rfft(self.in_data[0]))[1:]
@@ -38,8 +39,8 @@ class FFT(SingleInput):
 
 class Loudness(SingleInput):
     
-    def __init__(self,needs=None,nframes=1,step=1):
-        SingleInput.__init__(self,needs=needs,nframes=nframes,step=step)
+    def __init__(self,needs=None,nframes=1,step=1,key=None):
+        SingleInput.__init__(self,needs=needs,nframes=nframes,step=step,key=key)
         
     def _process(self):
         return np.sum(self.in_data)

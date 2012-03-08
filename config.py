@@ -31,8 +31,10 @@ from data.pattern import InMemory
 from data.learn import LearningController
 from data.frame import FrameController
 data = {
+        
     Pattern    : InMemory,
     Pipeline   : LearningController,
+    
     # TODO: The other controllers can know explicitly about the the classes
     # they're expected to return. Not so with the user-defined FrameModel
     # class. What are the implications of this?

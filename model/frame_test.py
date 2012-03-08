@@ -1,68 +1,154 @@
 import unittest
 from frame import Frames,Feature
 from environment import Environment
-from analyze.feature import RawAudio,FFT,Loudness
+from analyze.feature import FFT,Loudness
+from data.frame import DictFrameController
 
 class FrameModelTests(unittest.TestCase):
     
     
     def setUp(self):
-        self.source = 'test'
+        Environment._test = True
         self.orig_env = Environment.instance
+        
     
     def tearDown(self):
+        Environment._test = False
         Environment.instance = self.orig_env
-    
-    # FramesModel
-    
-    def test_no_features(self):
-        self.fail()
-    
-    def test_extractor_chain(self):
-        self.fail()
         
-    def test_create_db(self):
-        self.fail()
+    def test_equality(self):
+        class FM1(Frames):
+            fft = Feature(FFT,store=True,needs=None)
+            loudness = Feature(Loudness,store=True,needs=fft)
+            
+        class FM2(Frames):
+            fft = Feature(FFT,store=True,needs=None)
+            loudness = Feature(Loudness,store=True,needs=fft)
+            
+        self.assertEqual(FM1.fft,FM2.fft)
     
-    def test_new_feature_db_in_sync(self):
-        self.fail()
+    def test_unchanged(self):
         
-    def test_unchanged_db_in_sync(self):
-        self.fail()
-    
-    def test_add_feature_stored(self):
-        self.fail()
-    
-    def test_add_feature_not_stored(self):
-        self.fail()
-    
-    def test_remove_feature_stored(self):
-        self.fail()
-    
-    def test_remove_feature_not_stored(self):
-        self.fail()
+        class FM1(Frames):
+            fft = Feature(FFT,store=True,needs=None)
+            loudness = Feature(Loudness,store=True,needs=fft)
+            
+        class FM2(Frames):
+            fft = Feature(FFT,store=True,needs=None)
+            loudness = Feature(Loudness,store=True,needs=fft)
         
-    def test_add_feature_depency_already_computed(self):
-        self.fail()
-    
-    def test_add_feature_dependency_not_stored(self):
-        self.fail()
-    
-    def test_same_num_features_dependency_changed(self):
-        self.fail()
-    
-    def test_force_update(self):
-        self.fail()
-    
-    def test_force_no_sync(self):
-        # e.g., an extractor class' name gets changed, but nothing else about
-        # it does
-        self.fail()
+        Environment('test',FM2,{FM2 : DictFrameController})
+        add,update,delete,chain = FM1.update_report(FM2)
+        self.assertFalse(add)
+        self.assertFalse(update)
+        self.assertFalse(delete)
         
-    def test_removed_feature_upon_which_other_feature_depends(self):
-        self.fail()
+    def test_unstore(self):
+        class FM1(Frames):
+            fft = Feature(FFT,store=True,needs=None)
+            loudness = Feature(Loudness,store=True,needs=fft)
+            
+        class FM2(Frames):
+            fft = Feature(FFT,store=True,needs=None)
+            loudness = Feature(Loudness,store=False,needs=fft)
         
-    def test_duplicate_feature(self):
-        self.fail()
+        Environment('test',FM2,{FM2 : DictFrameController})
+        add,update,delete,chain = FM1.update_report(FM2)
+        self.assertFalse(add)
+        self.assertFalse(update)
+        self.assertTrue(delete)
+        self.assertEqual(1,len(delete))
+        self.assertTrue(delete.has_key('loudness'))
+    
+    def test_unstored_to_stored(self):
+        class FM1(Frames):
+            fft = Feature(FFT,store=True,needs=None)
+            loudness = Feature(Loudness,store=False,needs=fft)
+            
+        class FM2(Frames):
+            fft = Feature(FFT,store=True,needs=None)
+            loudness = Feature(Loudness,store=True,needs=fft)
+        
+        Environment('test',FM2,{FM2 : DictFrameController})
+        add,update,delete,chain = FM1.update_report(FM2)
+        self.assertTrue(add)
+        self.assertFalse(update)
+        self.assertFalse(delete)
+        self.assertEqual(1,len(add))
+        self.assertEqual(FM2.loudness,add['loudness'])
+    
+    def test_add(self):
+        class FM1(Frames):
+            fft = Feature(FFT,store=True,needs=None)
+            
+        class FM2(Frames):
+            fft = Feature(FFT,store=True,needs=None)
+            loudness = Feature(Loudness,store=True,needs=fft)
+        
+        Environment('test',FM2,{FM2 : DictFrameController})
+        add,update,delete,chain = FM1.update_report(FM2)
+        self.assertTrue(add)
+        self.assertFalse(update)
+        self.assertFalse(delete)
+        self.assertEqual(1,len(add))
+        self.assertEqual(FM2.loudness,add['loudness'])
+    
+    def test_update(self):
+        class FM1(Frames):
+            fft = Feature(FFT,store=True,needs=None)
+            loudness = Feature(Loudness,store=True,needs=fft,nframes=1)
+            
+        class FM2(Frames):
+            fft = Feature(FFT,store=True,needs=None)
+            loudness = Feature(Loudness,store=True,needs=fft,nframes=2)
+        
+        Environment('test',FM2,{FM2 : DictFrameController})
+        add,update,delete,chain = FM1.update_report(FM2)
+        self.assertFalse(add)
+        self.assertTrue(update)
+        self.assertFalse(delete)
+        self.assertEqual(1,len(update))
+        self.assertEqual(FM2.loudness,update['loudness'])
+    
+    def test_delete(self):
+        class FM1(Frames):
+            fft = Feature(FFT,store=True,needs=None)
+            loudness = Feature(Loudness,store=True,needs=fft)
+            
+        class FM2(Frames):
+            fft = Feature(FFT,store=True,needs=None)
+            
+        
+        Environment('test',FM2,{FM2 : DictFrameController})
+        add,update,delete,chain = FM1.update_report(FM2)
+        self.assertFalse(add)
+        self.assertFalse(update)
+        self.assertTrue(delete)
+        self.assertEqual(1,len(delete))
+        self.assertTrue(delete.has_key('loudness'))
+        
+    def test_update_lineage(self):
+        
+        class FM1(Frames):
+            l1 = Feature(Loudness,store=True,nframes=1)
+            l2 = Feature(Loudness,store=True,nframes=4,needs=l1)
+            
+        class FM2(Frames):
+            l1 = Feature(Loudness,store=True,nframes=2)
+            l2 = Feature(Loudness,store=True,nframes=4,needs=l1)
+            
+        Environment('test',FM2,{FM2 : DictFrameController})
+        add,update,delete,chain = FM1.update_report(FM2)
+        
+        self.assertFalse(add)
+        self.assertTrue(update)
+        self.assertFalse(delete)
+        self.assertEqual(2,len(update))
+        self.assertEqual(FM2.l1,update['l1'])
+        self.assertEqual(FM2.l2,update['l2'])
         
         
+        
+        
+    
+    

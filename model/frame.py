@@ -1,5 +1,5 @@
 from model import Model
-from analyze.extractor import ExtractorChain
+from analyze.extractor import Extractor,ExtractorChain
 from analyze.feature import RawAudio
 from util import recurse,sort_by_lineage
 
@@ -16,16 +16,16 @@ class Feature(object):
         self.args = kwargs
         
         if not needs:
-            self.needs = None
+            self.needs = []
         elif isinstance(needs,list):
             self.needs = needs
         else:
             self.needs = [needs]
         
-    def extractor(self,needs = None):
+    def extractor(self,needs = None,key=None):
         '''
         '''
-        return self.extractor_cls(needs = needs,**self.args)
+        return self.extractor_cls(needs = needs,key=None,**self.args)
     
     @recurse
     def depends_on(self):
@@ -41,15 +41,36 @@ class Feature(object):
         and self.args == other.args \
         and set(self.needs) == set(other.needs)
     
+    def __ne__(self,other):
+        return not self.__eq__(other)
+    
     def __hash__(self):
         return hash((\
                 self.__class__.__name__,
                 self.store,
                 frozenset(self.args.keys()),
                 frozenset(self.args.values()),
-                frozenset(self.needs)))
+                frozenset(self.needs if self.needs else [])))
     
-
+class Precomputed(Extractor):
+    '''
+    Read pre-computed features from the database
+    '''
+    def __init__(self,feature_name,controller):
+        Extractor.__init__(self,key=feature_name)
+        self._c = controller
+        self._frame = 0
+        
+    def _process(self):
+        data = self._c.get(self._frame,self.key)
+        self._f += 1
+        return data
+    
+    def __hash__(self):
+        return hash(\
+                    (self.__class__.__name__,
+                    self.key))
+        
 # TODO: MultiFeature class (like for minhash features)
 
 class MetaFrame(type):
@@ -67,11 +88,14 @@ class MetaFrame(type):
         super(MetaFrame,self).__init__(name,bases,attrs)
         
     
-    
+
+
 class Frames(Model):
     '''
     '''
     __metaclass__ = MetaFrame
+    
+    recompute_flag = '_recompute'
     
     def __init__(self):
         Model.__init__(self)
@@ -79,46 +103,89 @@ class Frames(Model):
     @classmethod
     def update_report(cls,newframesmodel):
         '''
-        1) Produce about changed Features and their dependencies.
-        2) Produce an extractor chain that creates proxies for features that 
-           have not changed, and have no changed ancestors.  This extractor
-           chain should then be capable of re-computing only the necessary
-           features.
-           
-        Any keys in the current FrameModel not in newframes model should be 
-        excluded
-        
-        Any keys in newframes model not in FrameModel are new, and must be
-        computed from scratch
-        
-        Any keys in both FrameModel and newframesmodel that have differing
-        values must also be computed from scratch. Also, all features that
-        depend on the changed feature must be re-computed
-        
-        Any keys in both FrameModel and newframesmodel that have the same 
-        values can simply be read from the db
-        
-        CHANGING A NAME SHOULDN'T MATTER!!
         '''
-        pass
+        newfeatures = newframesmodel.features
+        
+        # figure out which features will be deleted
+        # BUG: If store switches from True to False, mark this as a deletion
+        delete = dict()
+        for k,v in cls.features.iteritems():
+            if k not in newfeatures:
+                # this feature isn't in the new FrameModel class.
+                # Record the fact that it'll need to be deleted.
+                delete[k] = v
+                continue
+            
+            if not newfeatures[k].store and v.store:
+                delete[k] = v
+        
+        
+        
+        # do a pass over the features, recording features that are new
+        # or have been changed
+        # BUG: If store switches from False to True, mark this as an add
+        add = dict()
+        update = dict()
+        for k,v in newfeatures.iteritems():
+            recompute = False
+            if (k not in cls.features) or (v.store and not cls.features[k].store):
+                # This is a new feature, or it 
+                # has switched from un-stored to stored
+                recompute = True
+                add[k] = v
+                
+            if (k not in delete) and (k not in add) and (v != cls.features[k]):
+                # The feature has changed
+                recompute = True
+                update[k] = v
+            setattr(v,cls.recompute_flag,recompute)
+        
+        # do a second pass over the features. Any feature with an ancestor
+        # that must be recomputed or is not stored must be re-computed
+        for v in newfeatures.values():
+            v._recompute = any([a._recompute or not a.store for a in v.depends_on()])     
+        
+        
+        return add,\
+            update,\
+            delete,\
+            newframesmodel.extractor_chain(transitional=True)
     
     @classmethod
-    def extractor_chain(cls,filename):
-        config = cls.env().audio
+    def raw_audio_extractor(cls,filename):
+        config = cls.env()
+        return RawAudio(
+                    filename,
+                    config.samplerate,
+                    config.windowsize,
+                    config.stepsize)
+    
+    @classmethod
+    def extractor_chain(cls,filename=None,transitional=False):
+        '''
+        '''
+        if (filename and transitional) or (not filename and not transitional):
+            # Neither or both parameters were supplied. One or the other 
+            # is required
+            raise ValueError('Either filename or transitional must be supplied')
         
-        # Our root element will always read audio samples from
-        # files on disk (for now).
-        ra = RawAudio(
-                filename,
-                config.samplerate,
-                config.windowsize,
-                config.stepsize)
+        if filename:
+            ra = cls.raw_audio_extractor(filename)
+        else:
+            if not all([hasattr(f,cls.recompute_flag) \
+                        for f in cls.features.values()]):
+                            raise ValueError('A call to update_report is necessary\
+                            prior to creating a transitional extractor')
+                    
+            ra = Precomputed('audio',cls.controller())
         
         # We now need to build the extractor chain, but we can't be sure
         # which order we'll iterate over the extractors in, so, we need
         # to sort based on dependencies
-        features = cls.features.values()
-        features.sort(sort_by_lineage(Feature.depends_on))
+        features = cls.features.items()
+        by_lineage = sort_by_lineage(Feature.depends_on)
+        srt = lambda lhs,rhs : by_lineage(lhs[1],rhs[1])
+        features.sort(srt)
         
         # Now that the extractors have been sorted by dependency, we can
         # confidently build them, assured that extractors will always have
@@ -130,16 +197,21 @@ class Frames(Model):
         # passed in to the constructors of dependent extractors as
         # necessary
         d = {}
-        for f in features:
+        for k,f in features:
             if not f.needs:
                 # this was a root extractor in the context of our data model,
                 # which means that it will depend directly on audio samples.
-                e = f.extractor(needs = ra)
+                e = f.extractor(needs = ra,key=k)
                 chain.append(e)
                 d[f] = e
             else:
                 # this extractor depended on another feature
-                e = f.extractor(needs = [d[q] for q in f.needs])
+                if f._recompute:
+                    e = f.extractor(needs = [d[q] for q in f.needs],key=k)
+                else:
+                    # Nothing in this feature's lineage has changed, so
+                    # we can safely just read values from the database
+                    e = Precomputed(k,cls.controller())
                 chain.append(e)
                 d[f] = e
         
