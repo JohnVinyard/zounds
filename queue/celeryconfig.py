@@ -13,6 +13,6 @@ BROKER_URL = "amqp://guest:guest@localhost:5672//"
 ## but if mostly spending CPU, try to keep it close to the
 ## number of CPUs on your machine. If not set, the number of CPUs/cores
 ## available will be used.
-CELERYD_CONCURRENCY = 10
+#CELERYD_CONCURRENCY = 10
 
-CELERY_ANNOTATIONS = {"tasks.add": {"rate_limit": "10/s"}}
+#CELERY_ANNOTATIONS = {"tasks.add": {"rate_limit": "10/s"}}
