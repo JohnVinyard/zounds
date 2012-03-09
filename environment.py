@@ -55,4 +55,7 @@ class Environment(object):
     def samplerate(self):
         return self.audio.samplerate
     
+    def extractor_chain(self,filename):
+        return self.framemodel.extractor_chain(filename=filename)
+    
     
