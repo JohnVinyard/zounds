@@ -99,6 +99,29 @@ class Frames(Model):
     
     def __init__(self):
         Model.__init__(self)
+    
+    @classmethod
+    def sync(cls):
+        
+        c = cls.controller()
+        features = c.get_features()
+        # create a class using features that are currently in the database
+        class OldModel(Frames):
+            pass
+        
+        for k,v in features.iteritems():
+            setattr(OldModel,k,v)
+            OldModel.features[k] = v
+            
+        # create an update plan
+        # TODO: Chain should be a function that can create an appropriate
+        # extractor chain that will process only a certain span of frames
+        add,update,delete,chain = OldModel.update_report(cls)
+        
+        if add or update or delete:
+            c.sync(add,update,delete,chain)
+        
+        c.set_features(cls.features)
          
     @classmethod
     def update_report(cls,newframesmodel):
@@ -143,9 +166,10 @@ class Frames(Model):
         # do a second pass over the features. Any feature with an ancestor
         # that must be recomputed or is not stored must be re-computed
         for v in newfeatures.values():
-            v._recompute = any([a._recompute or not a.store for a in v.depends_on()])     
-        
-        
+            if not v._recompute:
+                v._recompute = any([a._recompute or not a.store for a in v.depends_on()])     
+            
+            
         return add,\
             update,\
             delete,\
@@ -201,20 +225,20 @@ class Frames(Model):
             if not f.needs:
                 # this was a root extractor in the context of our data model,
                 # which means that it will depend directly on audio samples.
-                e = f.extractor(needs = ra,key=k)
-                chain.append(e)
-                d[f] = e
+                needs = ra
             else:
                 # this extractor depended on another feature
-                if f._recompute:
-                    e = f.extractor(needs = [d[q] for q in f.needs],key=k)
-                else:
-                    # Nothing in this feature's lineage has changed, so
-                    # we can safely just read values from the database
-                    e = Precomputed(k,cls.controller())
-                chain.append(e)
-                d[f] = e
-        
+                needs = [d[q] for q in f.needs]
+                
+            if f._recompute:
+                e = f.extractor(needs=needs,key=k)
+            else:
+                # Nothing in this feature's lineage has changed, so
+                # we can safely just read values from the database
+                e = Precomputed(k,cls.controller())
+            chain.append(e)
+            d[f] = e
+            
             
         return ExtractorChain(chain)
             
