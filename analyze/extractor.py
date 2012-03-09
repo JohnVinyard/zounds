@@ -41,7 +41,7 @@ class Extractor(object):
         # we've reached the end of available data
         self.done = False
         
-        self.key = None
+        self.key = key
     
     def set_sources(self,needs = None):
         # a list of other extractors needed by this one
@@ -145,8 +145,8 @@ class Extractor(object):
         return not self.__eq__(other)
     
     def __repr__(self):
-        return '%s(nframes = %i, step = %i)' % \
-            (self.__class__.__name__,self.nframes,self.step)
+        return '%s(key = %s, nframes = %i, step = %i)' % \
+            (self.__class__.__name__,self.key,self.nframes,self.step)
             
     def __str__(self):
         return self.__repr__()

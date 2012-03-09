@@ -19,12 +19,24 @@ class FrameController(Controller):
         pass
     
     @abstractmethod
-    def sync(self,framesmodel):
+    def sync(self,add,update,delete,chain):
         '''
-        Checks if the database and the FrameModel are in sync (see the in_sync
-        method). If they are not, adds any features represented by framesmodel
-        but not in the database, using pre-computed data whenever possible.
+        Follows an update plan in order to update the database in the most
+        efficient way possible.
+        
+        This might be a long running process, so we should be able to save state
+        and resume in case of an error
         '''
+        
+        # BUG: This will start to break as the size of the data grows, or
+        # if an exception occurs!  I can get around this by creating a task
+        # queue:
+        # 1) Create a new db
+        # 2) Process all sounds
+        # 3) Store new representation in new database
+        # 4) Delete old database
+        # 5) Rename new database
+        
         pass
     
     @abstractmethod
@@ -43,6 +55,19 @@ class FrameController(Controller):
         '''
         pass
   
+    @abstractmethod
+    def get_features(self):
+        '''
+        Return the current set of features represented in the database
+        '''
+        pass
+    
+    @abstractmethod
+    def set_features(self):
+        '''
+        Set the current set of features represented in the database
+        '''
+        pass
 
 class DictFrameController(FrameController):
     

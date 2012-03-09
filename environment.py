@@ -12,7 +12,7 @@ class Environment(object):
     _test = False 
     instance = None
     def __new__(cls, *args, **kwargs):
-        if cls.instance or cls._test:       
+        if not cls.instance or cls._test:       
             cls.instance = super(Environment, cls).__new__(
                                             cls, *args, **kwargs)
         
