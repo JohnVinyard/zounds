@@ -2,8 +2,9 @@
 class AudioConfig:
     samplerate = 44100
     windowsize = 2048
-    stepsize = 1048
-    
+    stepsize = 1024
+
+
 class Environment(object):
     '''
     A Zounds client application
@@ -57,5 +58,18 @@ class Environment(object):
     
     def extractor_chain(self,filename):
         return self.framemodel.extractor_chain(filename=filename)
+    
+    def __repr__(self):
+        return '''Environment(
+    source     : %s,
+    samplerate : %i,
+    windowsize : %i,
+    stepsize   : %i,
+    data       : %s 
+)
+''' % (self.source,self.samplerate,self.windowsize,self.stepsize,self.data)
+
+    def __str__(self):
+        return self.__repr__()
     
     

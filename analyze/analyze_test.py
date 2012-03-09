@@ -41,7 +41,7 @@ class AudioStreamTests(unittest.TestCase):
         
     def test_nonexistentfile(self):
         fn = self.filename()
-        self.assertRaises(IOError,AudioStream,fn)
+        self.assertRaises(IOError,lambda : AudioStream(fn).__iter__().next())
         
     def test_badsamplerate(self):
         fn = self.make_sndfile(44101,2048,22050)
@@ -125,8 +125,8 @@ class RootExtractor(Extractor):
         Extractor.__init__(self)
         self.framesleft = totalframes
     
-    @property
-    def dim(self):
+    
+    def dim(self,env):
         return self.shape
     
     @property
@@ -152,8 +152,8 @@ class SumExtractor(Extractor):
     def __init__(self,needs,nframes,step):
         Extractor.__init__(self,needs,nframes,step)
         
-    @property
-    def dim(self):
+    
+    def dim(self,env):
         return (1,)
     
     @property
@@ -169,8 +169,7 @@ class NoOpExtractor(Extractor):
     def __init__(self,needs):
         Extractor.__init__(self,needs)
     
-    @property
-    def dim(self):
+    def dim(self,env):
         raise NotImplemented()
     
     @property
@@ -185,8 +184,7 @@ class ShimExtractor(Extractor):
     def __init__(self,needs=None,nframes=1,step=1,key=None):
         Extractor.__init__(self,needs,nframes,step,key)
     
-    @property
-    def dim(self):
+    def dim(self,env):
         raise NotImplemented()
     
     @property
