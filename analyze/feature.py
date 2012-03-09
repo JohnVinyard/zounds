@@ -1,3 +1,4 @@
+from __future__ import division
 from audiostream import AudioStream
 from extractor import Extractor,SingleInput
 import numpy as np
@@ -12,6 +13,14 @@ class RawAudio(Extractor):
         self.stream = AudioStream(\
                             filename,samplerate,windowsize,stepsize).__iter__()
         self.key = 'audio'
+    
+    @property
+    def dim(self,env):
+        return (self.windowsize,)
+    
+    @property
+    def dtype(self):
+        return np.float64
         
     def _process(self):
         try:
@@ -32,6 +41,14 @@ class FFT(SingleInput):
     
     def __init__(self,needs=None,key=None):
         SingleInput.__init__(self,needs=needs,nframes=1,step=1,key=key)
+    
+    @property
+    def dim(self,env):
+        return int(env.windowsize / 2)
+    
+    @property
+    def dtype(self):
+        return np.float64
         
     def _process(self):
         return np.abs(np.fft.rfft(self.in_data[0]))[1:]
@@ -41,6 +58,14 @@ class Loudness(SingleInput):
     
     def __init__(self,needs=None,nframes=1,step=1,key=None):
         SingleInput.__init__(self,needs=needs,nframes=nframes,step=step,key=key)
+    
+    @property
+    def dim(self,env):
+        return (1,)
+    
+    @property
+    def dtype(self):
+        return np.float64
         
     def _process(self):
         return np.sum(self.in_data)

@@ -125,6 +125,14 @@ class RootExtractor(Extractor):
         Extractor.__init__(self)
         self.framesleft = totalframes
     
+    @property
+    def dim(self):
+        return self.shape
+    
+    @property
+    def dtype(self):
+        return np.int32
+    
     def _process(self):
         self.framesleft -= 1
         
@@ -144,56 +152,89 @@ class SumExtractor(Extractor):
     def __init__(self,needs,nframes,step):
         Extractor.__init__(self,needs,nframes,step)
         
+    @property
+    def dim(self):
+        return (1,)
+    
+    @property
+    def dtype(self):
+        return np.int32
+        
     def _process(self):
         return np.sum([v for v in self.input.values()]) 
+    
     
 class NoOpExtractor(Extractor):
     
     def __init__(self,needs):
         Extractor.__init__(self,needs)
+    
+    @property
+    def dim(self):
+        raise NotImplemented()
+    
+    @property
+    def dtype(self):
+        raise NotImplemented()
         
     def _process(self):
         return self.input[self.sources[0]]
 
+class ShimExtractor(Extractor):
+    
+    def __init__(self,needs=None,nframes=1,step=1,key=None):
+        Extractor.__init__(self,needs,nframes,step,key)
+    
+    @property
+    def dim(self):
+        raise NotImplemented()
+    
+    @property
+    def dtype(self):
+        raise NotImplemented()
+    
+    def _process(self):
+        raise NotImplemented()
+
 class ExtractorTests(unittest.TestCase):
     
     def test_bad_frames_count(self):
-        self.assertRaises(ValueError, lambda : Extractor(nframes=-1))
+        self.assertRaises(ValueError, lambda : ShimExtractor(nframes=-1))
         
     def test_bad_step_size(self):
-        self.assertRaises(ValueError,lambda : Extractor(step=0))
+        self.assertRaises(ValueError,lambda : ShimExtractor(step=0))
         
     def test_is_root(self):
-        self.assertTrue(Extractor().is_root)
+        self.assertTrue(ShimExtractor().is_root)
         
     def test_is_not_root(self):
-        re = Extractor()
-        se = Extractor(needs=re)
+        re = ShimExtractor()
+        se = ShimExtractor(needs=re)
         self.assertFalse(se.is_root)
         
     def test_directly_depends_on(self):
-        re = Extractor()
-        se = Extractor(needs = re)
+        re = ShimExtractor()
+        se = ShimExtractor(needs = re)
         self.assertTrue(se.depends_on(re))
         
     def test_indirectly_depends_on(self):
-        re = Extractor()
-        se1 = Extractor(needs = re)
-        se2 = Extractor(needs = se1)
+        re = ShimExtractor()
+        se1 = ShimExtractor(needs = re)
+        se2 = ShimExtractor(needs = se1)
         self.assertTrue(se2.depends_on(se1))
         self.assertTrue(se2.depends_on(re))
     
     def test_does_not_depend_on(self):
-        re = Extractor()
-        se1 = Extractor(needs = re)
-        se2 = Extractor(needs = re)
+        re = ShimExtractor()
+        se1 = ShimExtractor(needs = re)
+        se2 = ShimExtractor(needs = re)
         self.assertFalse(se1.depends_on(se2))
         self.assertFalse(se2.depends_on(se1))
         
     def test_depends_on_multi_dependency(self):
-        re = Extractor()
-        se1 = Extractor(needs = [re])
-        se2 = Extractor(needs = [re,se1])
+        re = ShimExtractor()
+        se1 = ShimExtractor(needs = [re])
+        se2 = ShimExtractor(needs = [re,se1])
         self.assertTrue(se2.depends_on(re))
         self.assertTrue(se2.depends_on(se1))
     

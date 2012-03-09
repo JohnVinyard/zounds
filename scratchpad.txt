@@ -9,14 +9,17 @@ There are 3 types of similarity
 
 TOOO:
 -------------
+How do I get from a custom FrameModel to a PyTables definition, e.g.?
+How can I guarantee a single writer w/ celery?
+Add celery to list of dependencies once I've settled on using it
 
+Smarc audio-rate conversion by acquirers
+mp3 -> wav conversion by acquirers
 
-
-Write tests for Feature and FrameModel
-?write tests for Frames db synch?
+write tests for Frames db synch?
 
 Write Pipeline
-Write Pipeline tests w/ 
+ 
 
 speed and storage size tests for
 	- mongodb
@@ -30,6 +33,6 @@ Doing the following
 	- binary feature similarity
 	- minhash similarity
 	
-setuptools / VM
+
 
 

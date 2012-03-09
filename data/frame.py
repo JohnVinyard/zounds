@@ -68,6 +68,20 @@ class FrameController(Controller):
         Set the current set of features represented in the database
         '''
         pass
+    
+    @abstractmethod
+    def get_dtype(self,key):
+        '''
+        Get the data type of the feature with key
+        '''
+        pass
+    
+    @abstractmethod
+    def get_dim(self,key):
+        '''
+        Get the dimension of the feature with key
+        '''
+        pass
 
 class DictFrameController(FrameController):
     
