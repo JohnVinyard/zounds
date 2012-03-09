@@ -88,9 +88,19 @@ class RecurseTests(unittest.TestCase):
 class SortByLineageTests(unittest.TestCase):
     
     def test_single_parent(self):
-        self.fail()
+        n1 = Node()
+        n2 = Node([n1])
+        l = [n2,n1]
+        l.sort(sort_by_lineage(Node.ancestors))
+        self.assertEqual(l[0],n1)
+        self.assertEqual(l[1],n2)
         
     def test_multi_ancestor(self):
-        self.fail()
+        n1 = Node()
+        n2 = Node()
+        n3 = Node([n1,n2])
+        l = [n3,n2,n1]
+        l.sort(sort_by_lineage(Node.ancestors))
+        self.assertEqual(l[-1],n3)
         
         

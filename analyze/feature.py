@@ -12,9 +12,11 @@ class RawAudio(Extractor):
         Extractor.__init__(self)
         self.stream = AudioStream(\
                             filename,samplerate,windowsize,stepsize).__iter__()
+        self.windowsize = windowsize
+        self.stepsize = stepsize
         self.key = 'audio'
     
-    @property
+    
     def dim(self,env):
         return (self.windowsize,)
     
@@ -32,17 +34,14 @@ class RawAudio(Extractor):
     def __hash__(self):
         return hash(\
                     (self.__class__.__name__,
-                     self.filename,
-                     self.samplerate,
                      self.windowsize,
-                     self.step))
+                     self.stepsize))
 
 class FFT(SingleInput):
     
     def __init__(self,needs=None,key=None):
         SingleInput.__init__(self,needs=needs,nframes=1,step=1,key=key)
     
-    @property
     def dim(self,env):
         return int(env.windowsize / 2)
     
@@ -51,6 +50,10 @@ class FFT(SingleInput):
         return np.float64
         
     def _process(self):
+        '''
+        Return the magnitudes only, discarding phase, and the zero
+        frequency component
+        '''
         return np.abs(np.fft.rfft(self.in_data[0]))[1:]
     
 
@@ -59,7 +62,6 @@ class Loudness(SingleInput):
     def __init__(self,needs=None,nframes=1,step=1,key=None):
         SingleInput.__init__(self,needs=needs,nframes=nframes,step=step,key=key)
     
-    @property
     def dim(self,env):
         return (1,)
     

@@ -45,7 +45,7 @@ class Extractor(object):
         
         self.key = key
     
-    @abstractproperty
+    @abstractmethod
     def dim(self,env):
         '''
         A tuple representing the dimensions of a single frame of output from 
@@ -190,8 +190,7 @@ class SingleInput(Extractor):
     def _process(self):
         raise NotImplemented()
     
-    @property
-    def dim(self):
+    def dim(self,env):
         raise NotImplemented()
     
     @property

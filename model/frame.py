@@ -25,7 +25,7 @@ class Feature(object):
     def extractor(self,needs = None,key = None):
         '''
         '''
-        return self.extractor_cls(needs = needs,key=None,**self.args)
+        return self.extractor_cls(needs = needs,key = key,**self.args)
     
     @recurse
     def depends_on(self):
@@ -103,14 +103,36 @@ class Frames(Model):
     '''
     __metaclass__ = MetaFrame
     
+    '''
+    When creating a plan to transition from one FrameModel to the next, this
+    flag is used to mark features that will need to be recomputed because
+    they're new, they've changed, or an extractor somewhere in their lineage
+    has changed.
+    '''
     recompute_flag = '_recompute'
     
     def __init__(self):
         Model.__init__(self)
     
+    # TODO: Write tests
     @classmethod
-    def dimensions(cls):
-        chain = cls.extractor_chain(filename)
+    def dimensions(cls,chain = None):
+        '''
+        Return a dictionary mapping feature keys to two-tuples of (shape,dtype)
+        '''
+        # KLUDGE: I have to pass a filename to build an extractor chain,
+        # but I'm building it here to learn about the properties of the
+        # extractors, and not to do any real processing.
+        if not chain:
+            chain = cls.extractor_chain(filename = 'dummy')
+        
+        d = {}
+        env = cls.env()
+        for k in cls.features.keys():
+            e = chain[k]
+            d[k] = (e.dim(env),e.dtype)
+        
+        return d
     
     @classmethod
     def sync(cls):
@@ -243,7 +265,7 @@ class Frames(Model):
                 # this extractor depended on another feature
                 needs = [d[q] for q in f.needs]
                 
-            if f._recompute:
+            if not hasattr(f,cls.recompute_flag) or f._recompute:
                 e = f.extractor(needs=needs,key=k)
             else:
                 # Nothing in this feature's lineage has changed, so

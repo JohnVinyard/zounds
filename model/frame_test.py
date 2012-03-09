@@ -4,6 +4,7 @@ from environment import Environment
 from analyze.feature import FFT,Loudness
 from data.frame import DictFrameController
 
+
 class FrameModelTests(unittest.TestCase):
     
     
@@ -15,6 +16,43 @@ class FrameModelTests(unittest.TestCase):
     def tearDown(self):
         Environment._test = False
         Environment.instance = self.orig_env
+    
+    def test_dimensions_correct_keys(self):
+        class FM1(Frames):
+            fft = Feature(FFT,store=True,needs=None)
+            loudness = Feature(Loudness,store=True,needs=fft)
+        
+            
+        Environment('test',FM1,{FM1 : DictFrameController})
+        
+        dims = FM1.dimensions()
+        self.assertEqual(2,len(dims))
+        self.assertTrue(dims.has_key('fft'))
+        self.assertTrue(dims.has_key('loudness'))
+    
+    def test_dimensions_correct_values(self):
+        class FM1(Frames):
+            fft = Feature(FFT,store=True,needs=None)
+            loudness = Feature(Loudness,store=True,needs=fft)
+        
+        class AudioConfig:
+            samplerate = 44100
+            windowsize = 4096
+            stepsize = 1024
+            
+        Environment('test',FM1,{FM1 : DictFrameController},AudioConfig)
+        
+        # KLUDGE: I should really write my own Extractor-derived class for this
+        # test, but the FFT is such a foundational feature that it's unlikely
+        # to go away or change its behavior. The real purpose of this test
+        # is to demonstrate that the FrameModel can construct features with
+        # the correct dimensions, given its context
+        dims = FM1.dimensions()
+        self.assertEqual(2,len(dims['fft']))
+        
+        t = dims['fft']
+        self.assertEqual(t[0],2048)
+        
         
     def test_equality(self):
         class FM1(Frames):
