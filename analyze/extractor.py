@@ -1,3 +1,4 @@
+from abc import ABCMeta,abstractproperty,abstractmethod
 from util import pad,recurse,sort_by_lineage
 
 class CircularDependencyException(BaseException):
@@ -9,7 +10,6 @@ class CircularDependencyException(BaseException):
         BaseException.__init__(\
             'Circular dependency detected between %s and %s' % (e1,e2))
 
-# TODO: This should be an abstract base class
 class Extractor(object):
     '''
     An extractor collects input from one or more sources until it
@@ -17,6 +17,8 @@ class Extractor(object):
     makes this calculation available to other extractors that may
     depend on it.
     '''
+    __metaclass__ = ABCMeta
+    
     
     def __init__(self,needs=None,nframes=1,step=1,key=None):
         
@@ -42,6 +44,21 @@ class Extractor(object):
         self.done = False
         
         self.key = key
+    
+    @abstractproperty
+    def dim(self,env):
+        '''
+        A tuple representing the dimensions of a single frame of output from 
+        this extractor
+        '''
+        pass
+    
+    @abstractproperty
+    def dtype(self):
+        '''
+        The numpy dtype that will be output by this extractor
+        '''
+        pass
     
     def set_sources(self,needs = None):
         # a list of other extractors needed by this one
@@ -102,7 +119,7 @@ class Extractor(object):
                     
             self.done = True
         
-
+    @abstractmethod
     def _process(self):
         '''
         A hook that derived classes must implement. This is where the feature
@@ -170,6 +187,17 @@ class SingleInput(Extractor):
         '''
         return self.input[self.sources[0]]
     
+    def _process(self):
+        raise NotImplemented()
+    
+    @property
+    def dim(self):
+        raise NotImplemented()
+    
+    @property
+    def dtype(self):
+        raise NotImplemented()
+    
 class RootlessExtractorChainException(BaseException):
     '''
     Raised when an extractor chain is made up entirely of consumers; there's
@@ -223,5 +251,19 @@ class ExtractorChain(object):
         for k,v in self.process():
             bucket[k].append(v)
         return bucket
+    
+    # TODO: Write tests
+    def  __getitem__(self,key):
+        
+        if isinstance(key,int):
+            return self.chain[key]
+        
+        if isinstance(key,str):
+            r = filter(lambda e : e.key == key, self.chain)
+            if not r:
+                raise KeyError(key)
+            return r[0]
+        
+        raise ValueError('key must be a string or int')
 
         

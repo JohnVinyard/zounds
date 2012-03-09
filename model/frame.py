@@ -22,7 +22,7 @@ class Feature(object):
         else:
             self.needs = [needs]
         
-    def extractor(self,needs = None,key=None):
+    def extractor(self,needs = None,key = None):
         '''
         '''
         return self.extractor_cls(needs = needs,key=None,**self.args)
@@ -60,6 +60,14 @@ class Precomputed(Extractor):
         Extractor.__init__(self,key=feature_name)
         self._c = controller
         self._frame = 0
+        
+    @property
+    def dim(self):
+        return self._c.get_dim(self.key)
+    
+    @property
+    def dtype(self):
+        return self._c.get_dtype(self.key)
         
     def _process(self):
         data = self._c.get(self._frame,self.key)
@@ -101,8 +109,13 @@ class Frames(Model):
         Model.__init__(self)
     
     @classmethod
+    def dimensions(cls):
+        chain = cls.extractor_chain(filename)
+    
+    @classmethod
     def sync(cls):
-        
+        '''
+        '''
         c = cls.controller()
         features = c.get_features()
         # create a class using features that are currently in the database
