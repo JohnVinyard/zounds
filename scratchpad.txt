@@ -9,7 +9,8 @@ There are 3 types of similarity
 
 TOOO:
 -------------
-How do I get from a custom FrameModel to a PyTables definition, e.g.?
+Finish writing PyTablesFrameController.__init__ tests
+Clear out all pending TODO items
 How can I guarantee a single writer w/ celery?
 Add celery to list of dependencies once I've settled on using it
 

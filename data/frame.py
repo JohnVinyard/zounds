@@ -129,24 +129,28 @@ class PyTablesFrameController(FrameController):
             self.dbfile_write = openFile(filepath,'w')
             
             # create the table's schema from the FrameModel
-            class Desc(IsDescription):
-                source = StringCol(itemsize=20,pos=0)
-                _id    = StringCol(itemsize=20,pos=1)
-                framen  = Int32Col(pos=2)
-            
-            pos = 3
+            desc = {
+                    'source' : StringCol(itemsize=20,pos = 0),
+                    '_id'    : StringCol(itemsize=20,pos = 1),
+                    'framen' : Int32Col(pos=2)
+                    
+                    }
+            pos = len(desc)
             dim = self.model.dimensions()    
-            for k,v in dim.iteritems():
-                col = Col.from_type(get_type(v[1]),shape=v[0],pos=pos)
-                setattr(Desc,k,col)
+            for k,v in dim.iteritems(): 
+                desc[k] = Col.from_type(get_type(v[1]),shape=v[0],pos=pos) 
                 pos += 1
             
             # create the table
-            self.dbfile_write.createTable(self.dbfile_write.root, 'frames', Desc)
+            self.dbfile_write.createTable(self.dbfile_write.root, 'frames', desc)
+            
+            self.db_write = self.dbfile_write.root.frames
             
             # create indices on any column that we can
-            for col in self.dbfile_write.root.frames.cols:
-                if isinstance(col,StringCol) or 1 == len(col.shape):
+            for k,v in desc.iteritems():
+                col = getattr(self.db_write.cols,k)
+                oned = 2 == len(col.shape) and col.shape[1] == 1
+                if isinstance(col,StringCol) or oned:
                     col.createIndex()
                     
             self.dbfile_write.close()
