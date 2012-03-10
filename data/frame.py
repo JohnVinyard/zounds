@@ -1,14 +1,17 @@
 from controller import Controller
 from abc import ABCMeta,abstractmethod
+from tables import openFile,IsDescription,StringCol,Int32Col,Col
+import os.path
+import re
 
 class FrameController(Controller):
     __metaclass__ = ABCMeta
     
     def __init__(self,framesmodel):
         Controller.__init__(self)
-        self.metadata = framesmodel.features
+        self.model = framesmodel
     
-    
+     
     @abstractmethod
     def check(self,framesmodel):
         '''
@@ -83,10 +86,153 @@ class FrameController(Controller):
         '''
         pass
 
+
+class PyTablesFrameController(FrameController):
+    
+    # TODO: How do I switch between read and write modes as necessary in a
+    # transparent manner?
+    
+    def __init__(self,framesmodel,filepath):
+        FrameController.__init__(self,framesmodel)
+        parts = os.path.split(filepath)
+        self.filename = parts[-1]
+        path = os.path.join(*parts[:-1])
+        
+        self.dbfile_write = None
+        self.db_write = None
+        
+        self.dbfile_read = None
+        self.db_read = None
+        
+        if len(parts) > 1:
+            try:
+                os.makedirs(path)
+            except OSError:
+                # This probably means that the path already exists
+                pass
+        
+        
+        if not os.path.exists(filepath):
+            
+            # KLUDGE: PyTables allows the creation of columns using a string
+            # representation of a datatype, e.g. "float32", but not the numpy
+            # type representing that type, e.g., np.float32.  This is a hackish
+            # way of extracting a string representation that PyTables can
+            # understand from a numpy type
+            rgx = re.compile('\'(numpy\.)?(?P<type>[a-z0-9]+)\'')
+            def get_type(np_dtype):
+                m = rgx.search(str(np_dtype))
+                if not m:
+                    raise ValueError('Unknown dtype %s' % str(np_dtype))
+                return m.groupdict()['type']
+            
+            self.dbfile_write = openFile(filepath,'w')
+            
+            # create the table's schema from the FrameModel
+            class Desc(IsDescription):
+                source = StringCol(itemsize=20,pos=0)
+                _id    = StringCol(itemsize=20,pos=1)
+                framen  = Int32Col(pos=2)
+            
+            pos = 3
+            dim = self.model.dimensions()    
+            for k,v in dim.iteritems():
+                col = Col.from_type(get_type(v[1]),shape=v[0],pos=pos)
+                setattr(Desc,k,col)
+                pos += 1
+            
+            # create the table
+            self.dbfile_write.createTable(self.dbfile_write.root, 'frames', Desc)
+            
+            # create indices on any column that we can
+            for col in self.dbfile_write.root.frames.cols:
+                if isinstance(col,StringCol) or 1 == len(col.shape):
+                    col.createIndex()
+                    
+            self.dbfile_write.close()
+            
+
+        self.dbfile_read = openFile(filepath,'r')
+        self.db_read = self.dbfile_read.root.frames
+    
+    def close(self):
+        if self.dbfile_write:
+            self.dbfile_write.close()
+        if self.dbfile_read:
+            self.dbfile_read.close()
+    
+    def __del__(self):
+        self.close()
+        
+    
+    def check(self,framesmodel):
+        raise NotImplemented()
+    
+    
+    def sync(self,add,update,delete,chain):
+        raise NotImplemented()
+    
+    
+    def append(self,frames):
+        raise NotImplemented()
+    
+    
+    def get(self,indices,features=None):
+        raise NotImplemented()
+  
+    
+    def get_features(self):
+        raise NotImplemented()
+    
+    
+    def set_features(self):
+        raise NotImplemented()
+    
+    
+    def get_dtype(self,key):
+        raise NotImplemented()
+    
+    
+    def get_dim(self,key):
+        raise NotImplemented()
+         
+        
+
 class DictFrameController(FrameController):
     
     def __init__(self,framesmodel):
         FrameController.__init__(self,framesmodel)
+        
+    def check(self,framesmodel):
+        raise NotImplemented()
+    
+    
+    def sync(self,add,update,delete,chain):
+        raise NotImplemented()
+    
+    
+    def append(self,frames):
+        raise NotImplemented()
+    
+    
+    def get(self,indices,features=None):
+        raise NotImplemented()
+  
+    
+    def get_features(self):
+        raise NotImplemented()
+    
+    
+    def set_features(self):
+        raise NotImplemented()
+    
+    
+    def get_dtype(self,key):
+        raise NotImplemented()
+    
+    
+    def get_dim(self,key):
+        raise NotImplemented()
     
     
         
