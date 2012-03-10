@@ -12,6 +12,9 @@
    - libsndfile
    - scikits.audiolab
    - nose
+   - numexpr
+   - cython
+   - pytables
 1. add 
 	export OLD_PYTHONPATH="$PYTHONPATH"
 	export PYTHONPATH="/home/john/workspace/zounds2"

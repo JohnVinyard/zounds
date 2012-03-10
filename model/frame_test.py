@@ -23,7 +23,11 @@ class FrameModelTests(unittest.TestCase):
             loudness = Feature(Loudness,store=True,needs=fft)
         
             
-        Environment('test',FM1,{FM1 : DictFrameController})
+        Environment('test',
+                    FM1,
+                    DictFrameController,
+                    (FM1,),
+                    {})
         
         dims = FM1.dimensions()
         self.assertEqual(2,len(dims))
@@ -40,7 +44,12 @@ class FrameModelTests(unittest.TestCase):
             windowsize = 4096
             stepsize = 1024
             
-        Environment('test',FM1,{FM1 : DictFrameController},AudioConfig)
+        Environment('test',
+                    FM1,
+                    DictFrameController,
+                    (FM1,),
+                    {},
+                    AudioConfig)
         
         # KLUDGE: I should really write my own Extractor-derived class for this
         # test, but the FFT is such a foundational feature that it's unlikely
@@ -75,7 +84,12 @@ class FrameModelTests(unittest.TestCase):
             fft = Feature(FFT,store=True,needs=None)
             loudness = Feature(Loudness,store=True,needs=fft)
         
-        Environment('test',FM2,{FM2 : DictFrameController})
+        Environment('test',
+                    FM2,
+                    DictFrameController,
+                    (FM2,),
+                    {})
+        
         add,update,delete,chain = FM1.update_report(FM2)
         self.assertFalse(add)
         self.assertFalse(update)
@@ -91,7 +105,12 @@ class FrameModelTests(unittest.TestCase):
             fft = Feature(FFT,store=True,needs=None)
             loudness = Feature(Loudness,store=False,needs=fft)
         
-        Environment('test',FM2,{FM2 : DictFrameController})
+        Environment('test',
+                    FM2,
+                    DictFrameController,
+                    (FM2,),
+                    {})
+        
         add,update,delete,chain = FM1.update_report(FM2)
         self.assertFalse(add)
         self.assertFalse(update)
@@ -109,7 +128,12 @@ class FrameModelTests(unittest.TestCase):
             fft = Feature(FFT,store=True,needs=None)
             loudness = Feature(Loudness,store=True,needs=fft)
         
-        Environment('test',FM2,{FM2 : DictFrameController})
+        Environment('test',
+                    FM2,
+                    DictFrameController,
+                    (FM2,),
+                    {})
+        
         add,update,delete,chain = FM1.update_report(FM2)
         self.assertTrue(add)
         self.assertFalse(update)
@@ -125,7 +149,12 @@ class FrameModelTests(unittest.TestCase):
             fft = Feature(FFT,store=True,needs=None)
             loudness = Feature(Loudness,store=True,needs=fft)
         
-        Environment('test',FM2,{FM2 : DictFrameController})
+        Environment('test',
+                    FM2,
+                    DictFrameController,
+                    (FM2,),
+                    {})
+        
         add,update,delete,chain = FM1.update_report(FM2)
         self.assertTrue(add)
         self.assertFalse(update)
@@ -142,7 +171,12 @@ class FrameModelTests(unittest.TestCase):
             fft = Feature(FFT,store=True,needs=None)
             loudness = Feature(Loudness,store=True,needs=fft,nframes=2)
         
-        Environment('test',FM2,{FM2 : DictFrameController})
+        Environment('test',
+                    FM2,
+                    DictFrameController,
+                    (FM2,),
+                    {})
+        
         add,update,delete,chain = FM1.update_report(FM2)
         self.assertFalse(add)
         self.assertTrue(update)
@@ -162,7 +196,12 @@ class FrameModelTests(unittest.TestCase):
             fft = Feature(FFT,store=True,needs=None)
             
         
-        Environment('test',FM2,{FM2 : DictFrameController})
+        Environment('test',
+                    FM2,
+                    DictFrameController,
+                    (FM2,),
+                    {})
+        
         add,update,delete,chain = FM1.update_report(FM2)
         self.assertFalse(add)
         self.assertFalse(update)
@@ -184,7 +223,12 @@ class FrameModelTests(unittest.TestCase):
             l1 = Feature(Loudness,store=True,nframes=2)
             l2 = Feature(Loudness,store=True,nframes=4,needs=l1)
             
-        Environment('test',FM2,{FM2 : DictFrameController})
+        Environment('test',
+                    FM2,
+                    DictFrameController,
+                    (FM2,),
+                    {})
+        
         add,update,delete,chain = FM1.update_report(FM2)
         
         self.assertFalse(add)

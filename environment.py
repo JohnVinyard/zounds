@@ -25,6 +25,8 @@ class Environment(object):
     def __init__(self,
                  source,
                  framemodel,
+                 framecontroller,
+                 framecontroller_args,
                  data,
                  audio = AudioConfig):
         
@@ -43,6 +45,9 @@ class Environment(object):
         
         # a dictionary-like object mapping classes to data backends
         self.data = data
+        
+        print framecontroller_args
+        self.data[framemodel] = framecontroller(*framecontroller_args)
             
     @property
     def windowsize(self):

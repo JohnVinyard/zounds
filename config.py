@@ -29,20 +29,21 @@ from model.pattern import Pattern
 from model.pipeline import Pipeline
 from data.pattern import InMemory
 from data.learn import LearningController
-from data.frame import FrameController
+from data.frame import PyTablesFrameController
 data = {
         
-    Pattern    : InMemory,
-    Pipeline   : LearningController,
-    
-    # TODO: The other controllers can know explicitly about the the classes
-    # they're expected to return. Not so with the user-defined FrameModel
-    # class. What are the implications of this?
-    FrameModel : FrameController
+    Pattern    : InMemory(),
+    Pipeline   : LearningController()
 }
 
 
 from environment import Environment
-Z = Environment(source,FrameModel,data,AudioConfig)
+Z = Environment(
+                source,                             # name of this application
+                FrameModel,                         # our frame model
+                PyTablesFrameController,            # FrameController class
+                (FrameModel,'datastore/frames.h5'), # FrameController args
+                data,                               # data-backend config
+                AudioConfig)                        # audio configuration
 
 

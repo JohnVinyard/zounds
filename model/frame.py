@@ -113,8 +113,14 @@ class Frames(Model):
     
     def __init__(self):
         Model.__init__(self)
+        
+        # KLUDGE: These shouldn't be special. They should be defined just like
+        # other features are
+        self.source = None
+        self._id = None
+        self.framen = None
     
-    # TODO: Write tests
+    
     @classmethod
     def dimensions(cls,chain = None):
         '''
