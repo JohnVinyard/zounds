@@ -14,8 +14,7 @@ class Environment(object):
     instance = None
     def __new__(cls, *args, **kwargs):
         if not cls.instance or cls._test:       
-            cls.instance = super(Environment, cls).__new__(
-                                            cls, *args, **kwargs)
+            cls.instance = super(Environment, cls).__new__(cls)
         
         return cls.instance
         
@@ -46,7 +45,6 @@ class Environment(object):
         # a dictionary-like object mapping classes to data backends
         self.data = data
         
-        print framecontroller_args
         self.data[framemodel] = framecontroller(*framecontroller_args)
             
     @property
