@@ -9,8 +9,11 @@ There are 3 types of similarity
 
 TOOO:
 -------------
-windowed audio
-Finish writing PyTablesFrameController.__init__ tests
+writing
+synching
+
+turn on PyTables compression?
+
 Clear out all pending TODO items
 How can I guarantee a single writer w/ celery?
 Add celery to list of dependencies once I've settled on using it

@@ -6,6 +6,7 @@ import numpy as np
 # TODO: Implement Pitch, BFCC, Centroid, Flatness, Bark, Tempo, Chroma, 
 # Onset, Autocorrelation, DCT
 
+
 class RawAudio(Extractor):
     
     def __init__(self,filename,samplerate,windowsize,stepsize):
@@ -85,7 +86,7 @@ class Loudness(SingleInput):
     def _process(self):
         return np.sum(self.in_data)
     
-    
+
     
 
 from extractor import ExtractorChain

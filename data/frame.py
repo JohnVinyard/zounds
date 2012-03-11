@@ -3,6 +3,7 @@ from abc import ABCMeta,abstractmethod
 from tables import openFile,IsDescription,StringCol,Int32Col,Col
 import os.path
 import re
+import numpy as np
 
 class FrameController(Controller):
     __metaclass__ = ABCMeta
@@ -94,6 +95,7 @@ class PyTablesFrameController(FrameController):
     
     def __init__(self,framesmodel,filepath):
         FrameController.__init__(self,framesmodel)
+        self.filepath = filepath
         parts = os.path.split(filepath)
         self.filename = parts[-1]
         path = os.path.join(*parts[:-1])
@@ -129,18 +131,23 @@ class PyTablesFrameController(FrameController):
             self.dbfile_write = openFile(filepath,'w')
             
             # create the table's schema from the FrameModel
+            # KLUDGE: This should be somehow determined by FrameModel also
+            
+            self.steps = {'source' : 1, '_id' : 1, 'framen' : 1}
             desc = {
                     'source' : StringCol(itemsize=20,pos = 0),
                     '_id'    : StringCol(itemsize=20,pos = 1),
                     'framen' : Int32Col(pos=2)
                     
                     }
+            
             pos = len(desc)
             dim = self.model.dimensions()    
             for k,v in dim.iteritems(): 
-                desc[k] = Col.from_type(get_type(v[1]),shape=v[0],pos=pos) 
+                desc[k] = Col.from_type(get_type(v[1]),shape=v[0],pos=pos)
+                self.steps[k] = v[2]
                 pos += 1
-            
+                
             # create the table
             self.dbfile_write.createTable(self.dbfile_write.root, 'frames', desc)
             
@@ -158,6 +165,45 @@ class PyTablesFrameController(FrameController):
 
         self.dbfile_read = openFile(filepath,'r')
         self.db_read = self.dbfile_read.root.frames
+        
+        # create our buffer
+        def lcd(numbers):
+            i = 1
+            while any([i % n for n in numbers]):
+                i += 1
+            return i
+        self._desired_buffer_size = 100
+        
+        # find the lowest common multiple of all step sizes
+        l = lcd(self.steps.values())
+        # find a whole number multiple of the lowest common
+        # multiple that puts us close to our desired buffer size
+        self._buffer_size = l * int(self._desired_buffer_size / l)
+        recarray_dtype = []
+        for k in self.db_read.colnames:
+            col = getattr(self.db_read.cols,k)
+            recarray_dtype.append((k,col.dtype,col.shape))
+        print recarray_dtype 
+        self.buffer = np.recarray(self._buffer_size,dtype=recarray_dtype)
+        self.buffer[:] = np.inf
+        
+    def append(self,frames):
+        
+        
+        
+        # switch to write mode
+        self.close()
+        self.dbfile_write = openFile(self.filepath,'a')
+        self.db_write = self.dbfile_write.root.frames
+        
+        # TODO: Set a flag that lets everyone know we're writing
+        # write the data
+        
+        # switch back to read mode
+        self.close()
+        self.dbfile_read = openFile(self.filepath,'r')
+        self.db_read = self.dbfile_read.root.frames
+        
     
     def close(self):
         if self.dbfile_write:
@@ -177,8 +223,7 @@ class PyTablesFrameController(FrameController):
         raise NotImplemented()
     
     
-    def append(self,frames):
-        raise NotImplemented()
+    
     
     
     def get(self,indices,features=None):

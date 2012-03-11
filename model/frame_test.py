@@ -57,7 +57,7 @@ class FrameModelTests(unittest.TestCase):
         # is to demonstrate that the FrameModel can construct features with
         # the correct dimensions, given its context
         dims = FM1.dimensions()
-        self.assertEqual(2,len(dims['fft']))
+        self.assertEqual(3,len(dims['fft']))
         
         t = dims['fft']
         self.assertEqual(t[0],2048)
