@@ -30,7 +30,7 @@ class FrameModelTests(unittest.TestCase):
                     {})
         
         dims = FM1.dimensions()
-        self.assertEqual(2,len(dims))
+        self.assertEqual(3,len(dims))
         self.assertTrue(dims.has_key('fft'))
         self.assertTrue(dims.has_key('loudness'))
     
