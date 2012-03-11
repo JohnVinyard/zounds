@@ -252,7 +252,7 @@ class ExtractorChain(object):
         '''
         Turn the crank until we run out of data
         '''
-        bucket = dict([(c,[]) for c in self.chain])
+        bucket = dict([(c.key if c.key else c,[]) for c in self.chain])
         for k,v in self.process():
             bucket[k].append(v)
         return bucket

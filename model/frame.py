@@ -71,7 +71,7 @@ class Precomputed(Extractor):
         
     def _process(self):
         data = self._c.get(self._frame,self.key)
-        self._f += 1
+        self._frame += 1
         return data
     
     def __hash__(self):
@@ -102,6 +102,7 @@ class Frames(Model):
     '''
     '''
     __metaclass__ = MetaFrame
+    
     
     '''
     When creating a plan to transition from one FrameModel to the next, this
@@ -135,7 +136,7 @@ class Frames(Model):
         env = cls.env()
         for e in chain:
             if isinstance(e,RawAudio) or cls.features[e.key].store:
-                d[e.key] = (e.dim(env),e.dtype)
+                d[e.key] = (e.dim(env),e.dtype,e.step)
         return d
     
     @classmethod
