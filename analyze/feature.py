@@ -15,7 +15,7 @@ class RawAudio(Extractor):
         self.windowsize = windowsize
         self.stepsize = stepsize
         self.key = 'audio'
-    
+        self.window = self.oggvorbis(self.windowsize)
     
     def dim(self,env):
         return (self.windowsize,)
@@ -26,7 +26,7 @@ class RawAudio(Extractor):
         
     def _process(self):
         try:
-            return self.stream.next()
+            return self.stream.next() * self.window
         except StopIteration:
             self.out = None
             self.done = True
@@ -36,6 +36,19 @@ class RawAudio(Extractor):
                     (self.__class__.__name__,
                      self.windowsize,
                      self.stepsize))
+    
+    def oggvorbis(self,s):
+        '''
+        This is taken from the ogg vorbis spec 
+        (http://xiph.org/vorbis/doc/Vorbis_I_spec.html)
+    
+        s is the total length of the window, in samples
+        '''
+        s = np.arange(s)    
+        i = np.sin((s + .5) / len(s) * np.pi) ** 2
+        f = np.sin(.5 * np.pi * i)
+        
+        return f * (1. / f.max())
 
 class FFT(SingleInput):
     
