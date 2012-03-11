@@ -230,6 +230,12 @@ class ExtractorChain(object):
         '''
         return self.chain.__len__()
     
+    def __iter__(self):
+        '''
+        Iterate over the extractors
+        '''
+        return self.chain.__iter__()
+    
     def process(self):
         '''
         A generator that will extract features until the source data runs out

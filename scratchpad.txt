@@ -9,6 +9,7 @@ There are 3 types of similarity
 
 TOOO:
 -------------
+windowed audio
 Finish writing PyTablesFrameController.__init__ tests
 Clear out all pending TODO items
 How can I guarantee a single writer w/ celery?

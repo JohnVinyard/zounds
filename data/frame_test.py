@@ -137,5 +137,12 @@ class PyTablesFrameControllerTests(unittest.TestCase):
         c = FM.controller()
         print c.db_read.colnames
         self.assertTrue('loudness' not in c.db_read.colnames)
+    
+    def test_audio_column(self):
+        fn,FM1 = self.FM()
+        c = FM1.controller()
+        self.assertTrue('audio' in c.db_read.colnames)
+    
+    
         
     

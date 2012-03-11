@@ -133,10 +133,17 @@ class Frames(Model):
             chain = cls.extractor_chain(filename = 'dummy')
         
         d = {}
+        
         env = cls.env()
-        for k in cls.features.keys():
-            e = chain[k]
-            d[k] = (e.dim(env),e.dtype)
+        
+        #for k in cls.features.keys():
+        #    e = chain[k]
+        #    d[k] = (e.dim(env),e.dtype)
+        
+        for e in chain:
+            if isinstance(e,RawAudio) or cls.features[e.key].store:
+                d[e.key] = (e.dim(env),e.dtype)
+        
         
         return d
     
