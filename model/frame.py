@@ -1,12 +1,13 @@
 from model import Model
 from analyze.extractor import Extractor,ExtractorChain
-from analyze.feature import RawAudio
+from analyze.feature import \
+    RawAudio,LiteralExtractor,CounterExtractor,MetaDataExtractor
 from util import recurse,sort_by_lineage
 
 # TODO: Write documentation
 # TODO: Write tests
 
-
+# TODO: MultiFeature class (like for minhash features)
 class Feature(object):
     '''
     '''
@@ -56,6 +57,9 @@ class Precomputed(Extractor):
     '''
     Read pre-computed features from the database
     '''
+    #BUG: This won't work. A span of frames should
+    # be supplied!!!  This will always start reading
+    # from the beginning of the db!
     def __init__(self,feature_name,controller):
         Extractor.__init__(self,key=feature_name)
         self._c = controller
@@ -78,8 +82,7 @@ class Precomputed(Extractor):
         return hash(\
                     (self.__class__.__name__,
                     self.key))
-        
-# TODO: MultiFeature class (like for minhash features)
+
 
 class MetaFrame(type):
 
@@ -89,6 +92,13 @@ class MetaFrame(type):
         # properties seems kind of redundant, but I'm trying to avoid
         # having to perform the search over and over.
         self.features = {}
+        
+        # TODO: Refactor this repeated code
+        for b in bases:
+            for k,v in b.__dict__.iteritems():
+                if isinstance(v,Feature):
+                    self.features[k] = v
+        
         for k,v in attrs.items():
             if isinstance(v,Feature):
                 self.features[k] = v
@@ -103,6 +113,12 @@ class Frames(Model):
     '''
     __metaclass__ = MetaFrame
     
+    # TODO: Factor out 36-length string dtype here
+    _id = Feature(LiteralExtractor,needs = None,dtype = 'a36')
+    source = Feature(LiteralExtractor, needs = None, dtype = 'a36')
+    external_id = Feature(LiteralExtractor, needs = None, dtype = 'a36')
+    filename = Feature(LiteralExtractor, needs = None, store = False, dtype = 'a36')
+    framen = Feature(CounterExtractor,needs = None)
     
     '''
     When creating a plan to transition from one FrameModel to the next, this
@@ -121,21 +137,28 @@ class Frames(Model):
         self._id = None
         self.framen = None
     
-    
+    class DummyPattern:
+        _id = None
+        source = None
+        external_id = None
+        filename = None
+        
     @classmethod
     def dimensions(cls,chain = None):
         '''
-        Return a dictionary mapping feature keys to two-tuples of (shape,dtype)
+        Return a dictionary mapping feature keys to three-tuples of 
+        (shape,dtype,stepsize)
         '''
-        # KLUDGE: I have to pass a filename to build an extractor chain,
+        # KLUDGE: I have to pass a pattern to build an extractor chain,
         # but I'm building it here to learn about the properties of the
         # extractors, and not to do any real processing.
         if not chain:
-            chain = cls.extractor_chain(filename = 'dummy')
+            chain = cls.extractor_chain(pattern = Frames.DummyPattern)
         d = {}
         env = cls.env()
         for e in chain:
-            if isinstance(e,RawAudio) or cls.features[e.key].store:
+            if not isinstance(e,MetaDataExtractor) and \
+                (isinstance(e,RawAudio) or cls.features[e.key].store):
                 d[e.key] = (e.dim(env),e.dtype,e.step)
         return d
     
@@ -216,26 +239,30 @@ class Frames(Model):
             newframesmodel.extractor_chain(transitional=True)
     
     @classmethod
-    def raw_audio_extractor(cls,filename):
+    def root_extractor(cls,pattern):
         config = cls.env()
-        return RawAudio(
-                    filename,
+        meta = MetaDataExtractor(pattern,key = 'meta')
+        ra = RawAudio(
                     config.samplerate,
                     config.windowsize,
-                    config.stepsize)
+                    config.stepsize,
+                    needs = meta)
+        return meta,ra
     
     @classmethod
-    def extractor_chain(cls,filename=None,transitional=False):
+    def extractor_chain(cls,pattern = None,transitional=False):
         '''
         '''
-        if (filename and transitional) or (not filename and not transitional):
+        if (pattern and transitional) or (not pattern and not transitional):
             # Neither or both parameters were supplied. One or the other 
             # is required
-            raise ValueError('Either filename or transitional must be supplied')
+            raise ValueError('Either pattern or transitional must be supplied')
         
-        if filename:
-            ra = cls.raw_audio_extractor(filename)
+        if pattern:
+            meta,ra = cls.root_extractor(pattern)
         else:
+            # BUG: This won't work anymore now that I've introduced the metadata
+            # extractor
             if not all([hasattr(f,cls.recompute_flag) \
                         for f in cls.features.values()]):
                             raise ValueError('A call to update_report is necessary\
@@ -256,7 +283,7 @@ class Frames(Model):
         # been built by the time they're needed by another extractor
         
         # start building the chain
-        chain = [ra]
+        chain = [meta,ra]
         # keep track of the extractors we've built, so they can be
         # passed in to the constructors of dependent extractors as
         # necessary
@@ -265,7 +292,15 @@ class Frames(Model):
             if not f.needs:
                 # this was a root extractor in the context of our data model,
                 # which means that it will depend directly on audio samples.
-                needs = ra
+                
+                # KLUDGE: I'm assuming that any Features defined on the base
+                # Frames class will be using the MetaDataExtractor as a source,
+                # while any features defined on the Frames-derived class will
+                # be using RawAudio. This might not always be the case!!
+                if hasattr(Frames,k):
+                    needs = meta
+                else:
+                    needs = ra
             else:
                 # this extractor depended on another feature
                 needs = [d[q] for q in f.needs]

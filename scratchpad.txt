@@ -9,12 +9,12 @@ There are 3 types of similarity
 
 TOOO:
 -------------
-writing
-synching
+Features inherited from Frames base class are not being created or written
+mismatched shapes when writing to np.recarray
+PyTables write lock is being mishandled
 
 turn on PyTables compression?
 
-Clear out all pending TODO items
 How can I guarantee a single writer w/ celery?
 Add celery to list of dependencies once I've settled on using it
 

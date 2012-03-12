@@ -6,17 +6,74 @@ import numpy as np
 # TODO: Implement Pitch, BFCC, Centroid, Flatness, Bark, Tempo, Chroma, 
 # Onset, Autocorrelation, DCT
 
+class MetaDataExtractor(Extractor):
+    
+    def __init__(self,pattern,key = None):
+        Extractor.__init__(self,needs = None,key=key)
+        self._id = pattern._id
+        self.source = pattern.source
+        self.external_id = pattern.external_id
+        self.filename = pattern.filename
+        self.store = False
+    
+    def dim(self,env):
+        raise NotImplementedError()
+    
+    @property
+    def dtype(self):
+        raise NotImplementedError()
+    
+    def _process(self):
+        return {'_id'                 : self._id,
+                'source'              : self.source,
+                'external_id'         : self.external_id,
+                'filename'            : self.filename}
+
+class LiteralExtractor(SingleInput):
+    
+    def __init__(self,dtype,needs = None, key = None):
+        SingleInput.__init__(self, needs = needs, key = key)
+        self._dtype = dtype
+    
+    def dim(self,env):
+        return 1
+    
+    @property
+    def dtype(self):
+        return self._dtype
+    
+    def _process(self):
+        return self.in_data[0][self.key]
+
+class CounterExtractor(Extractor):
+    
+    def __init__(self,needs = None, key = None):
+        Extractor.__init__(self,needs = needs, key = key)
+        self.n = 0
+    
+    def dim(self,env):
+        return 1
+
+    @property
+    def dtype(self):
+        return np.int32
+    
+    def _process(self):
+        n = self.n
+        self.n += 1
+        return n
 
 class RawAudio(Extractor):
     
-    def __init__(self,filename,samplerate,windowsize,stepsize):
-        Extractor.__init__(self)
-        self.stream = AudioStream(\
-                            filename,samplerate,windowsize,stepsize).__iter__()
+    def __init__(self,samplerate,windowsize,stepsize,needs = None):
+        Extractor.__init__(self,needs = needs)
+        self.samplerate = samplerate
         self.windowsize = windowsize
         self.stepsize = stepsize
         self.key = 'audio'
         self.window = self.oggvorbis(self.windowsize)
+        
+        self._init = False
     
     def dim(self,env):
         return (self.windowsize,)
@@ -26,6 +83,17 @@ class RawAudio(Extractor):
         return np.float64
         
     def _process(self):
+        
+        if not self._init:
+            data = self.input[self.sources[0]][0]
+            filename = data['filename']
+            self.stream = AudioStream(\
+                            filename,
+                            self.samplerate,
+                            self.windowsize,
+                            self.stepsize).__iter__()
+            self._int = True
+        
         try:
             return self.stream.next() * self.window
         except StopIteration:

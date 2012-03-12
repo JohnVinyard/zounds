@@ -4,6 +4,8 @@ from tables import openFile,IsDescription,StringCol,Int32Col,Col
 import os.path
 import re
 import numpy as np
+import time
+from util import pad
 
 class FrameController(Controller):
     __metaclass__ = ABCMeta
@@ -88,6 +90,7 @@ class FrameController(Controller):
         pass
 
 
+# TODO: Write documentation
 class PyTablesFrameController(FrameController):
     
     # TODO: How do I switch between read and write modes as necessary in a
@@ -112,42 +115,34 @@ class PyTablesFrameController(FrameController):
             except OSError:
                 # This probably means that the path already exists
                 pass
+            
+        # KLUDGE: PyTables allows the creation of columns using a string
+        # representation of a datatype, e.g. "float32", but not the numpy
+        # type representing that type, e.g., np.float32.  This is a hackish
+        # way of extracting a string representation that PyTables can
+        # understand from a numpy type
+        rgx = re.compile('\'(numpy\.)?(?P<type>[a-z0-9]+)\'')
+        def get_type(np_dtype):
+            m = rgx.search(str(np_dtype))
+            if not m:
+                raise ValueError('Unknown dtype %s' % str(np_dtype))
+            return m.groupdict()['type']
         
+        
+        # create the table's schema from the FrameModel
+        self.steps = {}
+        desc = {}
+        pos = 0
+        dim = self.model.dimensions()    
+        for k,v in dim.iteritems():  
+            desc[k] = Col.from_type(get_type(v[1]),shape=v[0],pos=pos)
+            self.steps[k] = v[2]
+            pos += 1
         
         if not os.path.exists(filepath):
             
-            # KLUDGE: PyTables allows the creation of columns using a string
-            # representation of a datatype, e.g. "float32", but not the numpy
-            # type representing that type, e.g., np.float32.  This is a hackish
-            # way of extracting a string representation that PyTables can
-            # understand from a numpy type
-            rgx = re.compile('\'(numpy\.)?(?P<type>[a-z0-9]+)\'')
-            def get_type(np_dtype):
-                m = rgx.search(str(np_dtype))
-                if not m:
-                    raise ValueError('Unknown dtype %s' % str(np_dtype))
-                return m.groupdict()['type']
-            
             self.dbfile_write = openFile(filepath,'w')
             
-            # create the table's schema from the FrameModel
-            # KLUDGE: This should be somehow determined by FrameModel also
-            
-            self.steps = {'source' : 1, '_id' : 1, 'framen' : 1}
-            desc = {
-                    'source' : StringCol(itemsize=20,pos = 0),
-                    '_id'    : StringCol(itemsize=20,pos = 1),
-                    'framen' : Int32Col(pos=2)
-                    
-                    }
-            
-            pos = len(desc)
-            dim = self.model.dimensions()    
-            for k,v in dim.iteritems(): 
-                desc[k] = Col.from_type(get_type(v[1]),shape=v[0],pos=pos)
-                self.steps[k] = v[2]
-                pos += 1
-                
             # create the table
             self.dbfile_write.createTable(self.dbfile_write.root, 'frames', desc)
             
@@ -166,29 +161,119 @@ class PyTablesFrameController(FrameController):
         self.dbfile_read = openFile(filepath,'r')
         self.db_read = self.dbfile_read.root.frames
         
+        # TODO: Consider moving this out of __init__
         # create our buffer
         def lcd(numbers):
             i = 1
             while any([i % n for n in numbers]):
                 i += 1
             return i
-        self._desired_buffer_size = 100
+        
+        self._desired_buffer_size = 1000
+        # once we've processed this much data, stop and wait to write it
+        self._max_buffer_size = self._desired_buffer_size * 5
         
         # find the lowest common multiple of all step sizes
         l = lcd(self.steps.values())
         # find a whole number multiple of the lowest common
         # multiple that puts us close to our desired buffer size
         self._buffer_size = l * int(self._desired_buffer_size / l)
-        recarray_dtype = []
+        self.recarray_dtype = []
         for k in self.db_read.colnames:
             col = getattr(self.db_read.cols,k)
-            recarray_dtype.append((k,col.dtype,col.shape))
-        print recarray_dtype 
-        self.buffer = np.recarray(self._buffer_size,dtype=recarray_dtype)
-        self.buffer[:] = np.inf
+            self.recarray_dtype.append((k,col.dtype,col.shape[1:]))
+         
+        self.has_lock = False
+        print self.recarray_dtype
+    
+    def to_recarray(self,d,rootkey):
+        '''
+        Convert a dictionary of extracted features into a recarray suitable
+        to be passed to PyTables.Table.append()
+        '''
+        # the rootkey must have a stepsize of one
+        l = len(d[rootkey])
+        buf = np.recarray(l,dtype=self.recarray_dtype)
+        for k,v in d.iteritems():
+            data = pad(np.array(v).repeat(self.steps[k], axis = 0),l)
+            try:
+                buf[k] = data
+            except ValueError:
+                data = data.reshape((data.shape[0],1))
+                buf[k] = data
+        return buf
         
-    def append(self,frames):
         
+    def append(self,chain,rootkey):
+  
+        bufsize = self._buffer_size
+        
+        bucket = dict([(c.key if c.key else c,[]) for c in chain])
+        nframes = 0
+        for k,v in chain.process():
+            if rootkey == k and \
+                (nframes == bufsize or nframes >= self._max_buffer_size):
+                
+                # we've reached our smallest buffer size. Let's attempt a write
+                try:
+                    self.acquire_lock(nframes)
+                    # we got the lock. Let's write the data we have
+                    record = self.to_recarray(bucket, rootkey)
+                    self._append(record)
+                    bucket = dict([(c.key if c.key else c,[]) for c in chain])
+                    nframes = 0
+                except PyTablesFrameController.WriteLockException:
+                    # someone else has the write lock. Let's just keep processing
+                    # for awhile (within reason)
+                    bufsize += self._buffer_size
+                    
+            if rootkey == k:
+                nframes += 1
+            
+            bucket[k].append(v)
+            
+        # We've processed the entire file. Wait until we can get the write lock    
+        self.acquire_lock(nframes,wait=True)
+        # build the record and append it
+        record = self.to_recarray(bucket, rootkey)
+        self._append(record)
+        
+        # release the lock for the next guy
+        self.release_lock()    
+        
+    
+    @property
+    def lock_filename(self):
+        return self.filepath + '.lock'
+    
+    class WriteLockException(BaseException):
+        
+        def __init__(self):
+            BaseException.__init__(self)
+        
+    def acquire_lock(self,nframes,wait=False):
+        
+        if self.has_lock:
+            return
+        
+        # BUG: This is wrong! We're throwing an exception until
+        # the buffer reaches max buffer size
+        if not wait and nframes < self._max_buffer_size:
+            raise PyTablesFrameController.WriteLockException()
+        
+        while os.path.exists(self.lock_filename):
+            time.sleep(1)
+        
+        f = open(self.lock_filename,'w')
+        f.close()
+        self.has_lock = True
+        
+    
+    def release_lock(self):
+        os.remove(self.lock_filename)
+        self.has_lock = False
+        
+    def _append(self,frames):
         
         
         # switch to write mode
@@ -196,13 +281,15 @@ class PyTablesFrameController(FrameController):
         self.dbfile_write = openFile(self.filepath,'a')
         self.db_write = self.dbfile_write.root.frames
         
-        # TODO: Set a flag that lets everyone know we're writing
-        # write the data
+        # append the rows
+        self.db_write.append(frames)
         
         # switch back to read mode
         self.close()
         self.dbfile_read = openFile(self.filepath,'r')
         self.db_read = self.dbfile_read.root.frames
+        
+        
         
     
     def close(self):
@@ -221,9 +308,6 @@ class PyTablesFrameController(FrameController):
     
     def sync(self,add,update,delete,chain):
         raise NotImplemented()
-    
-    
-    
     
     
     def get(self,indices,features=None):
