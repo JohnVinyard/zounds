@@ -46,6 +46,9 @@ class Environment(object):
         self.data = data
         
         self.data[framemodel] = framecontroller(*framecontroller_args)
+        
+    
+    
             
     @property
     def windowsize(self):
