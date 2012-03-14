@@ -140,7 +140,7 @@ class FFT(SingleInput):
         
     def _process(self):
         '''
-        Return the magnitudes only, discarding phase, and the zero
+        Return the magnitudes only, discarding phase and the zero
         frequency component
         '''
         return np.abs(np.fft.rfft(self.in_data[0]))[1:]
