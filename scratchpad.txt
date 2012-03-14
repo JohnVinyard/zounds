@@ -9,9 +9,15 @@ There are 3 types of similarity
 
 TOOO:
 -------------
-Features inherited from Frames base class are not being created or written
-mismatched shapes when writing to np.recarray
-PyTables write lock is being mishandled
+
+
+PyTables index bug?
+PyTables write lock is being mishandled (we always go to max_buffer_size)
+FrameController should return all metadata and start/stop row numbers when it's done
+	appending
+Lose the intermediate dict representation in PyTablesFrameController. Write 
+	everything directly to a numpy recarray
+	
 
 turn on PyTables compression?
 
