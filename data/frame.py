@@ -157,10 +157,11 @@ class PyTablesFrameController(FrameController):
             
             self.db_write = self.dbfile_write.root.frames
             
-            # create indices on any column that we can
+            # create indices for any string column or one-dimensional
+            # numeric column
             for k,v in desc.iteritems():
                 col = getattr(self.db_write.cols,k)
-                oned = 2 == len(col.shape) and col.shape[1] == 1
+                oned = 1 == len(col.shape)
                 if isinstance(col,StringCol) or oned:
                     col.createIndex()
                     

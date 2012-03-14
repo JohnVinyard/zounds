@@ -52,7 +52,7 @@ class CounterExtractor(Extractor):
         self.n = 0
     
     def dim(self,env):
-        return 1
+        return ()
 
     @property
     def dtype(self):
@@ -152,7 +152,7 @@ class Loudness(SingleInput):
         SingleInput.__init__(self,needs=needs,nframes=nframes,step=step,key=key)
     
     def dim(self,env):
-        return (1,)
+        return ()
     
     @property
     def dtype(self):
