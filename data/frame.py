@@ -179,7 +179,7 @@ class PyTablesFrameController(FrameController):
                 i += 1
             return i
         
-        self._desired_buffer_size = 1000
+        self._desired_buffer_size = 5000
         # once we've processed this much data, stop and wait to write it
         self._max_buffer_size = self._desired_buffer_size * 5
         
@@ -198,8 +198,8 @@ class PyTablesFrameController(FrameController):
     
     def to_recarray(self,d,rootkey):
         '''
-        Convert a dictionary of extracted features into a recarray suitable
-        to be passed to PyTables.Table.append()
+        Convert a dictionary of extracted features into a numpy.asrecarray 
+        suitable to be passed to PyTables.Table.append()
         '''
         # the rootkey must have a stepsize of one
         l = len(d[rootkey])
@@ -207,13 +207,7 @@ class PyTablesFrameController(FrameController):
         for k,v in d.iteritems():
             try:
                 data = pad(np.array(v).repeat(self.steps[k], axis = 0),l)
-                try:
-                    buf[k] = data
-                except ValueError:
-                    print 'ValueError for %s' % k
-                    data = data.reshape((data.shape[0],1))
-                    print data
-                    buf[k] = data
+                buf[k] = data
             except KeyError:
                 # This feature isn't stored, so it isn't in the steps
                 # dictionary
@@ -228,7 +222,6 @@ class PyTablesFrameController(FrameController):
         bucket = dict([(c.key if c.key else c,[]) for c in chain])
         nframes = 0
         for k,v in chain.process():
-            print k,v
             if rootkey == k and \
                 (nframes == bufsize or nframes >= self._max_buffer_size):
                 
@@ -274,13 +267,19 @@ class PyTablesFrameController(FrameController):
         if self.has_lock:
             return
         
-        # BUG: This is wrong! We're throwing an exception until
-        # the buffer reaches max buffer size
-        if not wait and nframes < self._max_buffer_size:
+        locked = os.path.exists(self.lock_filename) 
+        if locked and\
+             (not wait) and \
+             (nframes < self._max_buffer_size):
+            # Someone else has the lock, but the wait is False, 
+            # and we haven't yet reached our max buffer size.
             raise PyTablesFrameController.WriteLockException()
         
-        while os.path.exists(self.lock_filename):
+        # Either we've reached our maximum buffer size, or we've been
+        # explicitly instructed to wait for the lock
+        while locked:
             time.sleep(1)
+            locked = os.path.exists(self.lock_filename)
         
         f = open(self.lock_filename,'w')
         f.close()
@@ -293,16 +292,12 @@ class PyTablesFrameController(FrameController):
         
     def _append(self,frames):
         
-        
         # switch to write mode
         self.close()
         self.dbfile_write = openFile(self.filepath,'a')
         self.db_write = self.dbfile_write.root.frames
         
         # append the rows
-        print frames.dtype
-        print len(frames)
-        print frames
         self.db_write.append(frames)
         self.db_write.flush()
         
