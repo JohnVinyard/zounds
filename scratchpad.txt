@@ -11,7 +11,7 @@ TOOO:
 -------------
 
 
-PyTables index bug?
+
 PyTables write lock is being mishandled (we always go to max_buffer_size)
 FrameController should return all metadata and start/stop row numbers when it's done
 	appending
