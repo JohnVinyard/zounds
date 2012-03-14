@@ -92,13 +92,20 @@ class RawAudio(Extractor):
                             self.samplerate,
                             self.windowsize,
                             self.stepsize).__iter__()
-            self._int = True
+            self._init = True
         
         try:
             return self.stream.next() * self.window
         except StopIteration:
             self.out = None
             self.done = True
+            
+            # KLUDGE: This is a bit odd.   The RawAudio extractor is telling
+            # an extractor on which it depends that it is done.  This is 
+            # necessary because the MetaData extractor generates data with
+            # no source. It has no idea when to stop.
+            self.sources[0].out = None
+            self.sources[0].done = True
     
     def __hash__(self):
         return hash(\

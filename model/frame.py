@@ -117,7 +117,7 @@ class Frames(Model):
     _id = Feature(LiteralExtractor,needs = None,dtype = 'a36')
     source = Feature(LiteralExtractor, needs = None, dtype = 'a36')
     external_id = Feature(LiteralExtractor, needs = None, dtype = 'a36')
-    filename = Feature(LiteralExtractor, needs = None, store = False, dtype = 'a36')
+    #filename = Feature(LiteralExtractor, needs = None, store = False, dtype = 'a36')
     framen = Feature(CounterExtractor,needs = None)
     
     '''

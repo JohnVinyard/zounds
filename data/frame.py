@@ -121,7 +121,8 @@ class PyTablesFrameController(FrameController):
         # type representing that type, e.g., np.float32.  This is a hackish
         # way of extracting a string representation that PyTables can
         # understand from a numpy type
-        rgx = re.compile('\'(numpy\.)?(?P<type>[a-z0-9]+)\'')
+        rgx = re.compile('(\'|^)(numpy\.)?(?P<type>[a-z0-9]+)(\'|$)')
+        # TODO: Write tests for this method!
         def get_type(np_dtype):
             m = rgx.search(str(np_dtype))
             if not m:
@@ -134,8 +135,16 @@ class PyTablesFrameController(FrameController):
         desc = {}
         pos = 0
         dim = self.model.dimensions()    
-        for k,v in dim.iteritems():  
-            desc[k] = Col.from_type(get_type(v[1]),shape=v[0],pos=pos)
+        for k,v in dim.iteritems():
+            t = get_type(v[1])
+            if t.startswith('a') or t.startswith('|S'):
+                # This is a string feature
+                desc[k] = Col.from_kind('string',
+                                        itemsize=np.dtype(t).itemsize,
+                                        pos=pos)
+            else:
+                # This is a numeric feature
+                desc[k] = Col.from_type(t,shape=v[0],pos=pos)
             self.steps[k] = v[2]
             pos += 1
         
@@ -195,12 +204,19 @@ class PyTablesFrameController(FrameController):
         l = len(d[rootkey])
         buf = np.recarray(l,dtype=self.recarray_dtype)
         for k,v in d.iteritems():
-            data = pad(np.array(v).repeat(self.steps[k], axis = 0),l)
             try:
-                buf[k] = data
-            except ValueError:
-                data = data.reshape((data.shape[0],1))
-                buf[k] = data
+                data = pad(np.array(v).repeat(self.steps[k], axis = 0),l)
+                try:
+                    buf[k] = data
+                except ValueError:
+                    print 'ValueError for %s' % k
+                    data = data.reshape((data.shape[0],1))
+                    print data
+                    buf[k] = data
+            except KeyError:
+                # This feature isn't stored, so it isn't in the steps
+                # dictionary
+                pass
         return buf
         
         
@@ -211,6 +227,7 @@ class PyTablesFrameController(FrameController):
         bucket = dict([(c.key if c.key else c,[]) for c in chain])
         nframes = 0
         for k,v in chain.process():
+            print k,v
             if rootkey == k and \
                 (nframes == bufsize or nframes >= self._max_buffer_size):
                 
@@ -282,7 +299,11 @@ class PyTablesFrameController(FrameController):
         self.db_write = self.dbfile_write.root.frames
         
         # append the rows
+        print frames.dtype
+        print len(frames)
+        print frames
         self.db_write.append(frames)
+        self.db_write.flush()
         
         # switch back to read mode
         self.close()
