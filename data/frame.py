@@ -1,10 +1,15 @@
-from controller import Controller
-from abc import ABCMeta,abstractmethod
-from tables import openFile,IsDescription,StringCol,Int32Col,Col
 import os.path
 import re
-import numpy as np
 import time
+import cPickle
+from abc import ABCMeta,abstractmethod
+
+from tables import openFile,IsDescription,StringCol,Int32Col,Col,Int8Col
+
+import numpy as np
+
+from controller import Controller
+from model.pattern import Pattern
 from util import pad
 
 class FrameController(Controller):
@@ -13,7 +18,27 @@ class FrameController(Controller):
     def __init__(self,framesmodel):
         Controller.__init__(self)
         self.model = framesmodel
+        
+    @abstractmethod
+    def __len__(self):
+        '''
+        Return the total number of rows
+        '''
+        pass
     
+    @abstractmethod
+    def list_ids(self):
+        '''
+        List all pattern ids
+        '''
+        pass
+    
+    @abstractmethod
+    def external_id(self,_id):
+        '''
+        Return a two-tuple of source,external_id for this _id
+        '''
+        pass
      
     @abstractmethod
     def check(self,framesmodel):
@@ -53,11 +78,18 @@ class FrameController(Controller):
         pass
     
     @abstractmethod
-    def get(self,indices,features=None):
+    def get(self,_id,features=None):
         '''
         Gets rows, and optionally specific features from those rows.
         Indices may be a single index, a list of indices, or a slice.
         features may be a single feature or a list of them.
+        '''
+        pass
+    
+    @abstractmethod
+    def iter_feature(self,_id,feature):
+        '''
+        Return an iterator over a single feature from pattern _id
         '''
         pass
   
@@ -68,12 +100,6 @@ class FrameController(Controller):
         '''
         pass
     
-    @abstractmethod
-    def set_features(self):
-        '''
-        Set the current set of features represented in the database
-        '''
-        pass
     
     @abstractmethod
     def get_dtype(self,key):
@@ -90,6 +116,14 @@ class FrameController(Controller):
         pass
 
 
+class PyTablesUpdateNotCompleteError(BaseException):
+    '''
+    Raised when a PyTables update fails
+    '''
+    def __init__(self):
+        BaseException.__init__(self,Exception('The PyTables update failed'))
+
+
 # TODO: Write documentation
 class PyTablesFrameController(FrameController):
     
@@ -98,6 +132,9 @@ class PyTablesFrameController(FrameController):
     
     def __init__(self,framesmodel,filepath):
         FrameController.__init__(self,framesmodel)
+        self._load(filepath)
+    
+    def _load(self,filepath):
         self.filepath = filepath
         parts = os.path.split(filepath)
         self.filename = parts[-1]
@@ -150,12 +187,24 @@ class PyTablesFrameController(FrameController):
         
         if not os.path.exists(filepath):
             
-            self.dbfile_write = openFile(filepath,'w')
-            
             # create the table
+            self.dbfile_write = openFile(filepath,'w')
             self.dbfile_write.createTable(self.dbfile_write.root, 'frames', desc)
-            
             self.db_write = self.dbfile_write.root.frames
+            
+            # create a table to store our schema as a pickled byte array
+            class FrameSchema(IsDescription):
+                bytes = Int8Col(pos = 0)
+            
+            self.dbfile_write.createTable(\
+                                    self.dbfile_write.root,'schema',FrameSchema)
+            self.schema_write = self.dbfile_write.root.schema
+            s = cPickle.dumps(self.model.features,cPickle.HIGHEST_PROTOCOL)
+            binary = np.fromstring(s,dtype = np.int8)
+            record = np.recarray(len(binary),dtype=[('bytes',np.int8)])
+            record['bytes'] = binary
+            self.schema_write.append(record)
+            
             
             # create indices for any string column or one-dimensional
             # numeric column
@@ -170,6 +219,7 @@ class PyTablesFrameController(FrameController):
 
         self.dbfile_read = openFile(filepath,'r')
         self.db_read = self.dbfile_read.root.frames
+        self.schema_read = self.dbfile_read.root.schema
         
         # TODO: Consider moving this out of __init__
         # create our buffer
@@ -291,25 +341,99 @@ class PyTablesFrameController(FrameController):
     def release_lock(self):
         os.remove(self.lock_filename)
         self.has_lock = False
-        
-    def _append(self,frames):
-        
+    
+    def _write_mode(self):
         # switch to write mode
         self.close()
         self.dbfile_write = openFile(self.filepath,'a')
         self.db_write = self.dbfile_write.root.frames
-        
-        # append the rows
-        self.db_write.append(frames)
-        self.db_write.flush()
-        
+    
+    def _read_mode(self):
         # switch back to read mode
         self.close()
         self.dbfile_read = openFile(self.filepath,'r')
         self.db_read = self.dbfile_read.root.frames
+        self.schema_read = self.dbfile_read.root.schema
         
+    def _append(self,frames):
+        self._write_mode()
+        # append the rows
+        self.db_write.append(frames)
+        self.db_write.flush()
+        self._read_mode()
+    
+    # TODO: Write tests
+    def __len__(self):
+        return self.db_read.__len__()
+    
+    # TODO: Write tests
+    def list_ids(self):
+        l = self.db_read.readWhere('framen == 0')['_id']
+        s = set(l)
+        assert len(l) == len(s)
+        return s
+    
+    # TODO: Write tests
+    def external_id(self,_id):
+        row = self.db_read.readWhere('(_id == "%s") & (framen == 0)' % _id)
+        return row[0]['source'],row[0]['external_id']
+    
+    # TODO: Write tests
+    def get_dtype(self,key):
+        return getattr(self.db_read.cols,key).dtype
+    
+    # TODO: Write tests
+    def get_dim(self,key):
+        return getattr(self.db_read.cols,key).shape
+    
+       
+    def iter_feature(self,_id,feature):
+        for row in self.db_read.where('_id == "%s"' % _id):
+            yield row[feature]
+    
+    @property
+    def _temp_filepath(self):
+        '''
+        For use during a sync.  Return a modified version of the current
+        filename, like 'frames_sync.h5', or something.
+        '''
+        raise NotImplemented()
         
+    def sync(self,add,update,delete,recompute):
+        newc = PyTablesFrameController(self.model,self._temp_filepath)
+        new_ids = newc.list_ids()
+        _ids = self.list_ids()
+        for _id in _ids:
+            if _id not in new_ids:
+                # This _id hasn't been inserted into the new PyTables file yet
+                p = Pattern(_id,*self.external_id(_id))
+                # create a transitional extractor chain that is able to read
+                # features from the old database that don't need to be 
+                # recomputed
+                ec = self.model.extractor_chain(p,
+                                                transitional=True,
+                                                recmpute = recompute)
+                # process this pattern and insert it into the new database
+                newc.append(ec, ec[0].key)
         
+        if (len(self) != len(newc)) or _ids != newc.list_ids():
+            # Something went wrong. The number of rows or the set of _ids
+            # don't match
+            raise PyTablesUpdateNotCompleteError()
+        
+        # close both the new and old files
+        newc.close()
+        self.close()
+        # remove the old file
+        os.remove(self.filepath)
+        # rename the temp file to the name of the old file
+        os.rename(self._temp_filepath,self.filepath)
+        # reload
+        self._load(self.filepath)
+        
+    # TODO: This should return a Frames-derived instance
+    def get(self,_id,features=None):
+        raise NotImplemented()
     
     def close(self):
         if self.dbfile_write:
@@ -325,28 +449,15 @@ class PyTablesFrameController(FrameController):
         raise NotImplemented()
     
     
-    def sync(self,add,update,delete,chain):
-        raise NotImplemented()
-    
-    
-    def get(self,indices,features=None):
-        raise NotImplemented()
-  
-    
     def get_features(self):
-        raise NotImplemented()
+        s = self.schema_read[:]['bytes'].tostring()
+        return cPickle.loads(s)
     
     
-    def set_features(self):
-        raise NotImplemented()
+   
     
     
-    def get_dtype(self,key):
-        raise NotImplemented()
     
-    
-    def get_dim(self,key):
-        raise NotImplemented()
          
         
 

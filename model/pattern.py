@@ -12,16 +12,20 @@ class Pattern(Model):
     '''
     
     
-    def __init__(self,_id):
+    def __init__(self,_id,source,external_id):
         Model.__init__(self)
         
         self.source = None
-        
         self.external_id = None
-        
-        
-        # TODO: Move this into Model
-        # a unique identifier for this pattern
         self._id = _id
-        
+
+class FilePattern(Pattern):
+    '''
+    Represents a pattern that has not yet been imported in the form of an audio
+    file on disk
+    '''
+    
+    def __init__(self,_id,source,external_id,filename):
+        Pattern.__init__(self,_id,source,external_id)
+        self.filename = filename
 

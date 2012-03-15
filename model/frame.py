@@ -55,17 +55,17 @@ class Feature(object):
                 frozenset(self.args.values()),
                 frozenset(self.needs if self.needs else [])))
     
+
 class Precomputed(Extractor):
     '''
     Read pre-computed features from the database
     '''
     
-    def __init__(self,feature_name,start_frame,stop_frame,controller):
+    def __init__(self,_id,feature_name,controller):
         Extractor.__init__(self,key=feature_name)
         self._c = controller
-        self.start_frame = start_frame
-        self.stop_frame = stop_frame
-        self._frame = self.start_frame
+        self._id = _id
+        self.stream = None
         
     @property
     def dim(self):
@@ -86,14 +86,14 @@ class Precomputed(Extractor):
         Simply read this feature from the datastore until we've reached the
         stop_frame
         '''
-        if self._frame >= self.stop_frame:
+        if None is self.stream:
+            self.stream = self._c.iter_feature(self._id,self.key)
+         
+        try:
+            return self.stream.next()
+        except:
             self.out = None
             self.done = True
-            return
-        
-        data = self._c.get(self._frame,self.key)
-        self._frame += 1
-        return data
     
     def __hash__(self):
         return hash(\
@@ -141,11 +141,9 @@ class Frames(Model):
     external_id = Feature(LiteralExtractor, needs = None, dtype = _string_dtype)
     framen = Feature(CounterExtractor,needs = None)
     
-    
     def __init__(self):
         Model.__init__(self)
         
-    
     class DummyPattern:
         _id = None
         source = None
