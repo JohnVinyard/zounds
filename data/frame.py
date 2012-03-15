@@ -71,7 +71,7 @@ class FrameController(Controller):
         pass
     
     @abstractmethod
-    def append(self,frames):
+    def append(self,extractor_chain):
         '''
         Adds frames to the datastore
         '''
@@ -251,17 +251,21 @@ class PyTablesFrameController(FrameController):
          
         self.has_lock = False
     
-    def to_recarray(self,d,rootkey):
+    def to_recarray(self,d,chain):
         '''
         Convert a dictionary of extracted features into a numpy.recarray 
         suitable to be passed to PyTables.Table.append()
         '''
-        # the rootkey must have a stepsize of one
-        l = len(d[rootkey])
+        # the first extractor that isn't infinite
+        e = filter(lambda e : not e.infinite,chain)[0]
+        # the length of the first finite extractor. We're assuming that it
+        # has a stepsize of 1
+        l = len(d[e.key])
         buf = np.recarray(l,dtype=self.recarray_dtype)
         for k,v in d.iteritems():
             try:
-                data = pad(np.array(v).repeat(self.steps[k], axis = 0),l)
+                data = np.array(v).repeat(self.steps[k], axis = 0)
+                data = pad(data,l) if len(data) <= l else data[:l]
                 buf[k] = data
             except KeyError:
                 # This feature isn't stored, so it isn't in the steps
@@ -270,13 +274,14 @@ class PyTablesFrameController(FrameController):
         return buf
         
         
-    def append(self,chain,rootkey):
+    def append(self,chain):
         '''
         Turn the crank on an extractor chain until it runs out of data. Persist
         data to the hdf5 file in chunks as we go.
         '''
         bufsize = self._buffer_size
-        
+        # the root extractor's key
+        rootkey = chain[0].key
         bucket = dict([(c.key if c.key else c,[]) for c in chain])
         nframes = 0
         for k,v in chain.process():
@@ -287,7 +292,7 @@ class PyTablesFrameController(FrameController):
                 try:
                     self.acquire_lock(nframes)
                     # we got the lock. Let's write the data we have
-                    record = self.to_recarray(bucket, rootkey)
+                    record = self.to_recarray(bucket, chain)
                     self._append(record)
                     bucket = dict([(c.key if c.key else c,[]) for c in chain])
                     nframes = 0
@@ -304,7 +309,7 @@ class PyTablesFrameController(FrameController):
         # We've processed the entire file. Wait until we can get the write lock    
         self.acquire_lock(nframes,wait=True)
         # build the record and append it
-        record = self.to_recarray(bucket, rootkey)
+        record = self.to_recarray(bucket, chain)
         self._append(record)
         
         # release the lock for the next guy
@@ -329,8 +334,9 @@ class PyTablesFrameController(FrameController):
         if locked and\
              (not wait) and \
              (nframes < self._max_buffer_size):
-            # Someone else has the lock, but the wait is False, 
-            # and we haven't yet reached our max buffer size.
+            # Someone else has the lock, but we haven't been explicity
+            # instructed to wait, and we haven't yet reached our max buffer 
+            # size.
             raise PyTablesFrameController.WriteLockException()
         
         # Either we've reached our maximum buffer size, or we've been
@@ -380,7 +386,7 @@ class PyTablesFrameController(FrameController):
     def list_ids(self):
         l = self.db_read.readWhere('framen == 0')['_id']
         s = set(l)
-        assert len(l) == len(s)
+        #assert len(l) == len(s)
         return s
     
     # TODO: Write tests

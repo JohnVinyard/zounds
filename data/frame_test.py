@@ -7,8 +7,11 @@ import numpy as np
 from model.frame import Frames,Feature
 from analyze.extractor import Extractor
 from analyze.feature import FFT,Loudness
+from model.pattern import FilePattern
 from environment import Environment
 from frame import PyTablesFrameController
+
+from analyze.analyze_test import AudioStreamTests
 
 
 class MockExtractor(Extractor):
@@ -33,10 +36,25 @@ class PyTablesFrameControllerTests(unittest.TestCase):
         self.hdf5_file = None
         self.hdf5_dir = None
         self.cleanup = None
+        self.to_cleanup = []
     
     def tearDown(self):
         if self.cleanup:
             self.cleanup()
+        
+        for c in self.to_cleanup:
+            try:
+                os.remove(c)
+            except IOError:
+                # the file has already been removed
+                pass
+    
+    def make_sndfile(self,length_in_samples,env):
+        fn = AudioStreamTests.make_sndfile(length_in_samples,
+                                           env.windowsize,
+                                           env.samplerate)
+        self.to_cleanup.append(fn)
+        return fn
     
     def cwd(self):
         return os.getcwd()
@@ -145,6 +163,38 @@ class PyTablesFrameControllerTests(unittest.TestCase):
         c = FM1.controller()
         self.assertTrue('audio' in c.db_read.colnames)
     
+    def get_patterns(self,framemodel,lengths):
+        p = []
+        env = framemodel.env()
+        for i,l in enumerate(lengths):
+            fn = self.make_sndfile(l,env)
+            _id = str(i)
+            p.append(FilePattern(_id,'test',_id,fn))
+        return p
+    
+    def test_len(self):
+        fn,FM1 = self.FM()
+        c = FM1.controller()
+        l = FM1.env().windowsize
+        fn = self.make_sndfile(l,FM1.env())
+        p = FilePattern('0','test','0',fn)
+        ec = FM1.extractor_chain(p)
+        c.append(ec)
+        self.assertEqual(2,len(c))
+    
+    def test_list_ids(self):
+        fn,FM1 = self.FM()
+        c = FM1.controller()
+        lengths = [2048] * 2
+        patterns = self.get_patterns(FM1, lengths)
+        for p in patterns:
+            ec = FM1.extractor_chain(p)
+            c.append(ec)
+        _ids = c.list_ids()
+        self.assertEqual(2,len(_ids))
+        self.assertTrue('0' in _ids)
+        self.assertTrue('1' in _ids)
+        
     def test_append(self):
         self.fail()
     
