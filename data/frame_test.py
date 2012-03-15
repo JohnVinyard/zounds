@@ -37,6 +37,7 @@ class PyTablesFrameControllerTests(unittest.TestCase):
         self.hdf5_dir = None
         self.cleanup = None
         self.to_cleanup = []
+        Environment._test = True
     
     def tearDown(self):
         if self.cleanup:
@@ -48,6 +49,7 @@ class PyTablesFrameControllerTests(unittest.TestCase):
             except IOError:
                 # the file has already been removed
                 pass
+        Environment._test = False
     
     def make_sndfile(self,length_in_samples,env):
         fn = AudioStreamTests.make_sndfile(length_in_samples,
@@ -244,6 +246,28 @@ class PyTablesFrameControllerTests(unittest.TestCase):
         self.assertTrue('fft' in features)  
     
     
-    def test_sync(self):
-        self.fail() 
+    def test_sync_add_feature(self):
+        fn,FM1 = self.FM()
+        c = FM1.controller()
+        lengths = [10000,15000]
+        patterns = self.get_patterns(FM1,lengths)
+        for p in patterns:
+            ec = FM1.extractor_chain(p)
+            c.append(ec)
+        l1 = len(c)
+        c.close()
+        
+        class FM2(Frames):
+            fft = Feature(FFT,store=True,needs=None)
+            loudness = Feature(Loudness,store=True,needs=fft)
+            l2 = Feature(Loudness,store=True,needs=fft,nframes=2)
+        
+        fn,FM2 = self.FM(framemodel = FM2)
+        FM2.sync()
+        c = FM2.controller()
+        self.assertEqual(l1,len(c))
+        features = c.get_features()
+        self.assertTrue('l2' in features)
+        self.assertTrue(7,len(features))
+         
     

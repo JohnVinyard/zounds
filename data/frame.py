@@ -405,8 +405,8 @@ class PyTablesFrameController(FrameController):
         raise NotImplemented()
     
     # TODO: Write tests
-    # TODO: Deal with multiple concurrent processes
     def sync(self,add,update,delete,recompute):
+        # each process needs its own reader
         newc = PyTablesFrameController(self.model,self._temp_filepath)
         new_ids = newc.list_ids()
         _ids = self.list_ids()
