@@ -5,6 +5,14 @@ from analyze.feature import FFT,Loudness
 from data.frame import DictFrameController
 
 
+class MockPattern:
+    start_frame = 0
+    stop_frame = 10
+    _id = '0'
+    source = '0'
+    external_id = '0'
+    filename = None
+    
 class FrameModelTests(unittest.TestCase):
     
     
@@ -30,7 +38,7 @@ class FrameModelTests(unittest.TestCase):
                     {})
         
         dims = FM1.dimensions()
-        self.assertEqual(3,len(dims))
+        self.assertEqual(7,len(dims))
         self.assertTrue(dims.has_key('fft'))
         self.assertTrue(dims.has_key('loudness'))
     
@@ -90,11 +98,17 @@ class FrameModelTests(unittest.TestCase):
                     (FM2,),
                     {})
         
-        add,update,delete,chain = FM1.update_report(FM2)
+        add,update,delete,recompute = FM1.update_report(FM2)
         self.assertFalse(add)
         self.assertFalse(update)
         self.assertFalse(delete)
-        self.assertTrue(all([isinstance(e,Precomputed) for e in chain.chain]))
+        
+        chain = FM2.extractor_chain(MockPattern, 
+                                    transitional = True,
+                                    recompute = recompute)
+        # lop of the first item, because the MetaData extractor is never
+        # precomputed
+        self.assertTrue(all([isinstance(e,Precomputed) for e in chain.chain[1:]]))
         
     def test_unstore(self):
         class FM1(Frames):
@@ -111,7 +125,7 @@ class FrameModelTests(unittest.TestCase):
                     (FM2,),
                     {})
         
-        add,update,delete,chain = FM1.update_report(FM2)
+        add,update,delete,recompute = FM1.update_report(FM2)
         self.assertFalse(add)
         self.assertFalse(update)
         self.assertTrue(delete)
@@ -134,7 +148,7 @@ class FrameModelTests(unittest.TestCase):
                     (FM2,),
                     {})
         
-        add,update,delete,chain = FM1.update_report(FM2)
+        add,update,delete,recompute = FM1.update_report(FM2)
         self.assertTrue(add)
         self.assertFalse(update)
         self.assertFalse(delete)
@@ -155,7 +169,7 @@ class FrameModelTests(unittest.TestCase):
                     (FM2,),
                     {})
         
-        add,update,delete,chain = FM1.update_report(FM2)
+        add,update,delete,recompute = FM1.update_report(FM2)
         self.assertTrue(add)
         self.assertFalse(update)
         self.assertFalse(delete)
@@ -177,15 +191,19 @@ class FrameModelTests(unittest.TestCase):
                     (FM2,),
                     {})
         
-        add,update,delete,chain = FM1.update_report(FM2)
+        add,update,delete,recompute = FM1.update_report(FM2)
         self.assertFalse(add)
         self.assertTrue(update)
         self.assertFalse(delete)
         self.assertEqual(1,len(update))
         self.assertEqual(FM2.loudness,update['loudness'])
         
+        chain = FM2.extractor_chain(MockPattern, 
+                                    transitional = True, 
+                                    recompute = recompute)
+        
         precomputed = filter(lambda e : isinstance(e,Precomputed), chain.chain)
-        self.assertEqual(2,len(precomputed))    
+        self.assertEqual(6,len(precomputed))    
     
     def test_delete(self):
         class FM1(Frames):
@@ -202,15 +220,19 @@ class FrameModelTests(unittest.TestCase):
                     (FM2,),
                     {})
         
-        add,update,delete,chain = FM1.update_report(FM2)
+        add,update,delete,recompute = FM1.update_report(FM2)
         self.assertFalse(add)
         self.assertFalse(update)
         self.assertTrue(delete)
         self.assertEqual(1,len(delete))
         self.assertTrue(delete.has_key('loudness'))
         
+        chain = FM2.extractor_chain(MockPattern, 
+                                    transitional = True,
+                                    recompute = recompute)
+        
         precomputed = filter(lambda e : isinstance(e,Precomputed), chain.chain)
-        self.assertEqual(2,len(precomputed))
+        self.assertEqual(6,len(precomputed))
         
         
     def test_update_lineage(self):
@@ -229,7 +251,8 @@ class FrameModelTests(unittest.TestCase):
                     (FM2,),
                     {})
         
-        add,update,delete,chain = FM1.update_report(FM2)
+        add,update,delete,recompute = FM1.update_report(FM2)
+        chain = FM2.extractor_chain(MockPattern, transitional = True)
         
         self.assertFalse(add)
         self.assertTrue(update)
@@ -238,22 +261,13 @@ class FrameModelTests(unittest.TestCase):
         self.assertEqual(FM2.l1,update['l1'])
         self.assertEqual(FM2.l2,update['l2'])
         
+        chain = FM2.extractor_chain(MockPattern, 
+                                    transitional = True, 
+                                    recompute = recompute)
+        
         precomputed = filter(lambda e : isinstance(e,Precomputed), chain.chain)
-        self.assertEqual(1,len(precomputed))
+        self.assertEqual(5,len(precomputed))
         
-    def test_no_filename_or_transition(self):
-        class FM1(Frames):
-            fft = Feature(FFT,store=True,needs=None)
-            loudness = Feature(Loudness,store=True,needs=fft)
-        self.assertRaises(ValueError, 
-                          lambda : FM1.extractor_chain(filename=None, transitional=False))
-        
-    def test_transition_before_update_report(self):
-        class FM1(Frames):
-            fft = Feature(FFT,store=True,needs=None)
-        
-        self.assertRaises(ValueError,
-                          lambda : FM1.extractor_chain(transitional=False))
         
         
         

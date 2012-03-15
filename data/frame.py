@@ -194,11 +194,10 @@ class PyTablesFrameController(FrameController):
             self.recarray_dtype.append((k,col.dtype,col.shape[1:]))
          
         self.has_lock = False
-        print self.recarray_dtype
     
     def to_recarray(self,d,rootkey):
         '''
-        Convert a dictionary of extracted features into a numpy.asrecarray 
+        Convert a dictionary of extracted features into a numpy.recarray 
         suitable to be passed to PyTables.Table.append()
         '''
         # the rootkey must have a stepsize of one
@@ -216,7 +215,10 @@ class PyTablesFrameController(FrameController):
         
         
     def append(self,chain,rootkey):
-  
+        '''
+        Turn the crank on an extractor chain until it runs out of data. Persist
+        data to the hdf5 file in chunks as we go.
+        '''
         bufsize = self._buffer_size
         
         bucket = dict([(c.key if c.key else c,[]) for c in chain])

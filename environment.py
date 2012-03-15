@@ -45,8 +45,16 @@ class Environment(object):
         # a dictionary-like object mapping classes to data backends
         self.data = data
         
-        self.data[framemodel] = framecontroller(*framecontroller_args)
         
+        self.data[framemodel] = framecontroller(*framecontroller_args)
+        # TODO: Call the FrameController sync() method. This should:
+        # - grab the old features
+        # - produce an update report
+        # - If anything has changed, produce an extractor chain
+        # - Produce a new, temporary file. 
+        # - Read from the old file, copying/computing features as necessary
+        # - Remove the old file
+        # - Rename the new file
     
     
             
