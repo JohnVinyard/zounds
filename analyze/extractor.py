@@ -257,7 +257,7 @@ class ExtractorChain(object):
             bucket[k].append(v)
         return bucket
     
-    # TODO: Write tests
+    # TODO: Write tests and fix this method, because it's broken
     def  __getitem__(self,key):
         
         if isinstance(key,int):
