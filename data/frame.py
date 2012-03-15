@@ -127,8 +127,14 @@ class PyTablesUpdateNotCompleteError(BaseException):
 # TODO: Write documentation
 class PyTablesFrameController(FrameController):
     
-    # TODO: How do I switch between read and write modes as necessary in a
-    # transparent manner?
+    '''
+    A FrameController that stores feature data in the hdf5 file format, and 
+    uses the PyTables library to access it.
+    
+    PyTables has some special limitations, .e.g, columns cannot be added or
+    removed after table creation. This class attempts to hide some of the messy
+    details from clients
+    '''
     
     def __init__(self,framesmodel,filepath):
         FrameController.__init__(self,framesmodel)
@@ -343,13 +349,17 @@ class PyTablesFrameController(FrameController):
         self.has_lock = False
     
     def _write_mode(self):
-        # switch to write mode
+        '''
+        switch to write mode
+        '''
         self.close()
         self.dbfile_write = openFile(self.filepath,'a')
         self.db_write = self.dbfile_write.root.frames
     
     def _read_mode(self):
-        # switch back to read mode
+        '''
+        switch back to read mode
+        '''
         self.close()
         self.dbfile_read = openFile(self.filepath,'r')
         self.db_read = self.dbfile_read.root.frames
@@ -386,7 +396,7 @@ class PyTablesFrameController(FrameController):
     def get_dim(self,key):
         return getattr(self.db_read.cols,key).shape
     
-       
+    # TODO: Write tests
     def iter_feature(self,_id,feature):
         for row in self.db_read.where('_id == "%s"' % _id):
             yield row[feature]
@@ -398,7 +408,9 @@ class PyTablesFrameController(FrameController):
         filename, like 'frames_sync.h5', or something.
         '''
         raise NotImplemented()
-        
+    
+    # TODO: Write tests
+    # TODO: Deal with multiple concurrent processes
     def sync(self,add,update,delete,recompute):
         newc = PyTablesFrameController(self.model,self._temp_filepath)
         new_ids = newc.list_ids()
@@ -497,6 +509,16 @@ class DictFrameController(FrameController):
     def get_dim(self,key):
         raise NotImplemented()
     
+    def __len__(self):
+        raise NotImplemented()
     
+    def external_id(self,_id):
+        raise NotImplemented()
+    
+    def list_ids(self):
+        raise NotImplemented()
+    
+    def iter_feature(self,_id,feature_name):
+        raise NotImplemented()
         
         

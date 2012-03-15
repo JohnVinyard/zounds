@@ -98,8 +98,7 @@ class Precomputed(Extractor):
     def __hash__(self):
         return hash(\
                     (self.__class__.__name__,
-                     self.start_frame,
-                     self.stop_frame,
+                     self._id,
                      self.key))
         
 
@@ -186,11 +185,10 @@ class Frames(Model):
             OldModel.features[k] = v
             
         # create an update plan
-        # TODO: Chain should be a function that can create an appropriate
-        # extractor chain that will process only a certain span of frames
         add,update,delete,recompute = OldModel.update_report(cls)
         
-        
+        if recompute:
+            c.sync(add,update,delete,recompute)
         
          
     @classmethod
@@ -269,8 +267,7 @@ class Frames(Model):
         meta = MetaDataExtractor(pattern,key = 'meta') 
         if transitional:      
             ra = Precomputed('audio',
-                             pattern.start_frame,
-                             pattern.stop_frame,
+                             pattern._id,
                              cls.controller())
         else:
             ra = cls.raw_audio_extractor(pattern, needs = meta)
@@ -319,8 +316,7 @@ class Frames(Model):
                 # Nothing in this feature's lineage has changed, so
                 # we can safely just read values from the database
                 e = Precomputed(k,
-                                pattern.start_frame,
-                                pattern.stop_frame,
+                                pattern._id,
                                 cls.controller())
             chain.append(e)
             d[f] = e

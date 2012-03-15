@@ -13,19 +13,21 @@ from math import floor
  ## AudioStreamTests ##########################################################
 class AudioStreamTests(unittest.TestCase):
     
-        
-    def filename(self):
+    @classmethod
+    def filename(cls):
         return '%s.wav' % str(uuid4())
     
-    def make_signal(self,length,winsize):
+    @classmethod
+    def make_signal(cls,length,winsize):
         signal = np.ndarray(int(length))
         for i,w, in enumerate(xrange(0,int(length),winsize)):
             signal[w:w+winsize] = i
         return signal
     
-    def make_sndfile(self,length,winsize,samplerate,channels=1):
-        signal = self.make_signal(length, winsize)
-        filename = self.filename() 
+    @classmethod
+    def make_sndfile(cls,length,winsize,samplerate,channels=1):
+        signal = cls.make_signal(length, winsize)
+        filename = cls.filename() 
         sndfile = Sndfile(filename,'w',Format(),channels,samplerate)
         if channels == 2:
             signal = np.tile(signal,(2,1)).T
