@@ -108,9 +108,6 @@ class RawAudio(Extractor):
             # an extractor on which it depends that it is done.  This is 
             # necessary because the MetaData extractor generates data with
             # no source. It has no idea when to stop.
-            
-            # BUG: It's too late. The MetaData extractor has already output
-            # one more value than it should
             self.sources[0].out = None
             self.sources[0].done = True
     

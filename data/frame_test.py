@@ -194,10 +194,56 @@ class PyTablesFrameControllerTests(unittest.TestCase):
         self.assertEqual(2,len(_ids))
         self.assertTrue('0' in _ids)
         self.assertTrue('1' in _ids)
+    
+    def test_external_id(self):
+        fn,FM1 = self.FM()
+        c = FM1.controller()
+        lengths = [5000]
+        patterns = self.get_patterns(FM1,lengths)
+        ec = FM1.extractor_chain(patterns[0])
+        c.append(ec)
+        p = patterns[0]
+        src,extid = c.external_id(p._id)
+        self.assertEqual(src,p.source)
+        self.assertEqual(extid,p.external_id)
+    
+    def test_get_dtype(self):
+        fn,FM1 = self.FM()
+        c = FM1.controller()
+        self.assertEqual('float64',c.get_dtype('loudness'))
+    
+    def test_get_dim(self):
+        fn,FM1 = self.FM()
+        c = FM1.controller()
+        fftsize = FM1.env().windowsize / 2
+        self.assertEqual((fftsize,),c.get_dim('fft'))      
+    
+    def test_iter_feature(self):
+        fn,FM1 = self.FM()
+        c = FM1.controller()
+        lengths = [FM1.env().windowsize]
+        p = self.get_patterns(FM1,lengths)[0]
+        ec = FM1.extractor_chain(p)
+        c.append(ec)
         
-    def test_append(self):
-        self.fail()
+        framens = []
+        for fn in c.iter_feature(p._id,'framen'):
+            framens.append(fn)
+        
+        self.assertEqual(2,len(c))
+        self.assertEqual(2,len(framens))
+        self.assertTrue(0 in framens)
+        self.assertTrue(1 in framens)
+          
+    def test_get_features(self):
+        fn,FM1 = self.FM()
+        c = FM1.controller()
+        features = c.get_features()
+        self.assertEqual(6,len(features))
+        self.assertTrue('loudness' in features)
+        self.assertTrue('fft' in features)  
     
     
-        
+    def test_sync(self):
+        self.fail() 
     

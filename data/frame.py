@@ -40,14 +40,6 @@ class FrameController(Controller):
         '''
         pass
      
-    @abstractmethod
-    def check(self,framesmodel):
-        '''
-        Returns true if the the FrameModel is in sync with the data store,
-        i.e., all the features defined on the FrameModel with store = True
-        are represented in the db
-        '''
-        pass
     
     @abstractmethod
     def sync(self,add,update,delete,chain):
@@ -124,7 +116,7 @@ class PyTablesUpdateNotCompleteError(BaseException):
         BaseException.__init__(self,Exception('The PyTables update failed'))
 
 
-# TODO: Write documentation
+
 class PyTablesFrameController(FrameController):
     
     '''
@@ -141,6 +133,9 @@ class PyTablesFrameController(FrameController):
         self._load(filepath)
     
     def _load(self,filepath):
+        '''
+        
+        '''
         self.filepath = filepath
         parts = os.path.split(filepath)
         self.filename = parts[-1]
@@ -378,31 +373,25 @@ class PyTablesFrameController(FrameController):
         self.db_write.flush()
         self._read_mode()
     
-    # TODO: Write tests
     def __len__(self):
         return self.db_read.__len__()
     
-    # TODO: Write tests
     def list_ids(self):
         l = self.db_read.readWhere('framen == 0')['_id']
         s = set(l)
         #assert len(l) == len(s)
         return s
     
-    # TODO: Write tests
     def external_id(self,_id):
         row = self.db_read.readWhere('(_id == "%s") & (framen == 0)' % _id)
         return row[0]['source'],row[0]['external_id']
     
-    # TODO: Write tests
     def get_dtype(self,key):
         return getattr(self.db_read.cols,key).dtype
     
-    # TODO: Write tests
     def get_dim(self,key):
-        return getattr(self.db_read.cols,key).shape
+        return getattr(self.db_read.cols,key).shape[1:]
     
-    # TODO: Write tests
     def iter_feature(self,_id,feature):
         for row in self.db_read.where('_id == "%s"' % _id):
             yield row[feature]
@@ -422,17 +411,20 @@ class PyTablesFrameController(FrameController):
         new_ids = newc.list_ids()
         _ids = self.list_ids()
         for _id in _ids:
-            if _id not in new_ids:
-                # This _id hasn't been inserted into the new PyTables file yet
-                p = Pattern(_id,*self.external_id(_id))
-                # create a transitional extractor chain that is able to read
-                # features from the old database that don't need to be 
-                # recomputed
-                ec = self.model.extractor_chain(p,
-                                                transitional=True,
-                                                recmpute = recompute)
-                # process this pattern and insert it into the new database
-                newc.append(ec, ec[0].key)
+            if _id in new_ids:
+                # this id has already been processed
+                continue
+            
+            # This _id hasn't been inserted into the new PyTables file yet
+            p = Pattern(_id,*self.external_id(_id))
+            # create a transitional extractor chain that is able to read
+            # features from the old database that don't need to be 
+            # recomputed
+            ec = self.model.extractor_chain(p,
+                                            transitional=True,
+                                            recmpute = recompute)
+            # process this pattern and insert it into the new database
+            newc.append(ec)
         
         if (len(self) != len(newc)) or _ids != newc.list_ids():
             # Something went wrong. The number of rows or the set of _ids
@@ -463,10 +455,6 @@ class PyTablesFrameController(FrameController):
         self.close()
         
     
-    def check(self,framesmodel):
-        raise NotImplemented()
-    
-    
     def get_features(self):
         s = self.schema_read[:]['bytes'].tostring()
         return cPickle.loads(s)
@@ -484,8 +472,6 @@ class DictFrameController(FrameController):
     def __init__(self,framesmodel):
         FrameController.__init__(self,framesmodel)
         
-    def check(self,framesmodel):
-        raise NotImplemented()
     
     
     def sync(self,add,update,delete,chain):
