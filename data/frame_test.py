@@ -93,7 +93,7 @@ class PyTablesFrameControllerTests(unittest.TestCase):
         fn,FM1 = self.FM()
         c = FM1.controller()
         self.assertEqual((0,2048),c.db_read.cols.fft.shape)
-        self.assertEqual((0,1),c.db_read.cols.loudness.shape)
+        self.assertEqual((0,),c.db_read.cols.loudness.shape)
     
     def test_cols_index(self):
         fn,FM1 = self.FM()
@@ -142,6 +142,9 @@ class PyTablesFrameControllerTests(unittest.TestCase):
         fn,FM1 = self.FM()
         c = FM1.controller()
         self.assertTrue('audio' in c.db_read.colnames)
+    
+    def test_append(self):
+        self.fail()
     
     
         

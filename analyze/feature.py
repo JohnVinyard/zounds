@@ -29,6 +29,7 @@ class MetaDataExtractor(Extractor):
                 'external_id'         : self.external_id,
                 'filename'            : self.filename}
 
+
 class LiteralExtractor(SingleInput):
     
     def __init__(self,dtype,needs = None, key = None):

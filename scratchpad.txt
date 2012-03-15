@@ -9,14 +9,11 @@ There are 3 types of similarity
 
 TOOO:
 -------------
-
-PyTables write lock is being mishandled (we always go to max_buffer_size)
-Fix failing tests
-
+Write PyTablesFrameController.append test
 FrameController should return all metadata and start/stop row numbers when it's done
 	appending
 
-Profile first
+
 Lose the intermediate dict representation in PyTablesFrameController. Write 
 	everything directly to a numpy recarray
 	

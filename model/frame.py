@@ -4,12 +4,11 @@ from analyze.feature import \
     RawAudio,LiteralExtractor,CounterExtractor,MetaDataExtractor
 from util import recurse,sort_by_lineage
 
-# TODO: Write documentation
-# TODO: Write tests
 
 # TODO: MultiFeature class (like for minhash features)
 class Feature(object):
     '''
+    
     '''
     def __init__(self,extractor_cls,store=True,needs=None,**kwargs):
         self.extractor_cls = extractor_cls
@@ -25,12 +24,15 @@ class Feature(object):
         
     def extractor(self,needs = None,key = None):
         '''
+        Return an extractor that's able to compute this feature.
         '''
         return self.extractor_cls(needs = needs,key = key,**self.args)
     
     @recurse
     def depends_on(self):
         '''
+        Return all features that this feature directly or indirectly depends
+        on.
         '''
         return self.needs
     
@@ -57,23 +59,38 @@ class Precomputed(Extractor):
     '''
     Read pre-computed features from the database
     '''
-    #BUG: This won't work. A span of frames should
-    # be supplied!!!  This will always start reading
-    # from the beginning of the db!
-    def __init__(self,feature_name,controller):
+    
+    def __init__(self,feature_name,start_frame,stop_frame,controller):
         Extractor.__init__(self,key=feature_name)
         self._c = controller
-        self._frame = 0
+        self.start_frame = start_frame
+        self.stop_frame = stop_frame
+        self._frame = self.start_frame
         
     @property
     def dim(self):
+        '''
+        Ask the datastore about the dimension of this data
+        '''
         return self._c.get_dim(self.key)
     
     @property
     def dtype(self):
+        '''
+        Ask the datastore about the type of this data
+        '''
         return self._c.get_dtype(self.key)
         
     def _process(self):
+        '''
+        Simply read this feature from the datastore until we've reached the
+        stop_frame
+        '''
+        if self._frame >= self.stop_frame:
+            self.out = None
+            self.done = True
+            return
+        
         data = self._c.get(self._frame,self.key)
         self._frame += 1
         return data
@@ -81,7 +98,10 @@ class Precomputed(Extractor):
     def __hash__(self):
         return hash(\
                     (self.__class__.__name__,
-                    self.key))
+                     self.start_frame,
+                     self.stop_frame,
+                     self.key))
+        
 
 
 class MetaFrame(type):
@@ -110,38 +130,29 @@ class MetaFrame(type):
 
 class Frames(Model):
     '''
+    
     '''
     __metaclass__ = MetaFrame
     
-    # TODO: Factor out 36-length string dtype here
-    _id = Feature(LiteralExtractor,needs = None,dtype = 'a36')
-    source = Feature(LiteralExtractor, needs = None, dtype = 'a36')
-    external_id = Feature(LiteralExtractor, needs = None, dtype = 'a36')
-    #filename = Feature(LiteralExtractor, needs = None, store = False, dtype = 'a36')
+    _string_dtype = 'a36'
+    
+    _id = Feature(LiteralExtractor,needs = None,dtype = _string_dtype)
+    source = Feature(LiteralExtractor, needs = None, dtype = _string_dtype)
+    external_id = Feature(LiteralExtractor, needs = None, dtype = _string_dtype)
     framen = Feature(CounterExtractor,needs = None)
     
-    '''
-    When creating a plan to transition from one FrameModel to the next, this
-    flag is used to mark features that will need to be recomputed because
-    they're new, they've changed, or an extractor somewhere in their lineage
-    has changed.
-    '''
-    recompute_flag = '_recompute'
     
     def __init__(self):
         Model.__init__(self)
         
-        # KLUDGE: These shouldn't be special. They should be defined just like
-        # other features are
-        self.source = None
-        self._id = None
-        self.framen = None
     
     class DummyPattern:
         _id = None
         source = None
         external_id = None
         filename = None
+        start_frame = None
+        stop_frame = None
         
     @classmethod
     def dimensions(cls,chain = None):
@@ -153,7 +164,7 @@ class Frames(Model):
         # but I'm building it here to learn about the properties of the
         # extractors, and not to do any real processing.
         if not chain:
-            chain = cls.extractor_chain(pattern = Frames.DummyPattern)
+            chain = cls.extractor_chain(Frames.DummyPattern)
         d = {}
         env = cls.env()
         for e in chain:
@@ -179,18 +190,19 @@ class Frames(Model):
         # create an update plan
         # TODO: Chain should be a function that can create an appropriate
         # extractor chain that will process only a certain span of frames
-        add,update,delete,chain = OldModel.update_report(cls)
+        add,update,delete,recompute = OldModel.update_report(cls)
         
-        if add or update or delete:
-            c.sync(add,update,delete,chain)
         
-        c.set_features(cls.features)
+        
          
     @classmethod
     def update_report(cls,newframesmodel):
         '''
+        Compare new and old versions of a Frames-derived class and produce a 
+        "report" about which features have been added,updated or deleted. 
         '''
         newfeatures = newframesmodel.features
+        torecompute = []
         
         # figure out which features will be deleted
         # BUG: If store switches from True to False, mark this as a deletion
@@ -224,52 +236,48 @@ class Frames(Model):
                 # The feature has changed
                 recompute = True
                 update[k] = v
-            setattr(v,cls.recompute_flag,recompute)
+                
+            if recompute:
+                torecompute.append(v)
+            
         
         # do a second pass over the features. Any feature with an ancestor
         # that must be recomputed or is not stored must be re-computed
         for v in newfeatures.values():
-            if not v._recompute:
-                v._recompute = any([a._recompute or not a.store for a in v.depends_on()])     
+            if v not in torecompute and\
+                 any([a in torecompute or not a.store for a in v.depends_on()]):
+                torecompute.append(v)      
+                
             
-            
-        return add,\
-            update,\
-            delete,\
-            newframesmodel.extractor_chain(transitional=True)
+        return add,update,delete,torecompute
     
     @classmethod
-    def root_extractor(cls,pattern):
+    def raw_audio_extractor(cls,pattern, needs = None):
         config = cls.env()
-        meta = MetaDataExtractor(pattern,key = 'meta')
         ra = RawAudio(
                     config.samplerate,
                     config.windowsize,
                     config.stepsize,
-                    needs = meta)
-        return meta,ra
+                    needs = needs)
+        return ra
     
     @classmethod
-    def extractor_chain(cls,pattern = None,transitional=False):
+    def extractor_chain(cls,pattern,transitional=False,recompute = []):
         '''
+        From the features defined on this class, create a feature extractor
+        that can transform raw audio data into the desired set of features.
         '''
-        if (pattern and transitional) or (not pattern and not transitional):
-            # Neither or both parameters were supplied. One or the other 
-            # is required
-            raise ValueError('Either pattern or transitional must be supplied')
         
-        if pattern:
-            meta,ra = cls.root_extractor(pattern)
+        meta = MetaDataExtractor(pattern,key = 'meta') 
+        if transitional:      
+            ra = Precomputed('audio',
+                             pattern.start_frame,
+                             pattern.stop_frame,
+                             cls.controller())
         else:
-            # BUG: This won't work anymore now that I've introduced the metadata
-            # extractor
-            if not all([hasattr(f,cls.recompute_flag) \
-                        for f in cls.features.values()]):
-                            raise ValueError('A call to update_report is necessary\
-                            prior to creating a transitional extractor')
-                    
-            ra = Precomputed('audio',cls.controller())
+            ra = cls.raw_audio_extractor(pattern, needs = meta)
         
+            
         # We now need to build the extractor chain, but we can't be sure
         # which order we'll iterate over the extractors in, so, we need
         # to sort based on dependencies
@@ -304,13 +312,18 @@ class Frames(Model):
             else:
                 # this extractor depended on another feature
                 needs = [d[q] for q in f.needs]
-                
-            if not hasattr(f,cls.recompute_flag) or f._recompute:
+            
+            
+            
+            if not transitional or f in recompute:
                 e = f.extractor(needs=needs,key=k)
             else:
                 # Nothing in this feature's lineage has changed, so
                 # we can safely just read values from the database
-                e = Precomputed(k,cls.controller())
+                e = Precomputed(k,
+                                pattern.start_frame,
+                                pattern.stop_frame,
+                                cls.controller())
             chain.append(e)
             d[f] = e
             
