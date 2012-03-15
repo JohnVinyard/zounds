@@ -183,6 +183,9 @@ class Frames(Model):
         for k,v in features.iteritems():
             setattr(OldModel,k,v)
             OldModel.features[k] = v
+        
+        print features
+        print cls.features
             
         # create an update plan
         add,update,delete,recompute = OldModel.update_report(cls)
