@@ -43,7 +43,13 @@ class Extractor(object):
         # we've reached the end of available data
         self.done = False
         
+        # a unique identifier for this extractor
         self.key = key
+        
+        # True only if this extractor has no stopping condition. Users of an
+        # extractor chain containing infinite extractors must be aware of this
+        # fact to avoid creating artifically long lists of features
+        self.infinite = False
     
     @abstractmethod
     def dim(self,env):

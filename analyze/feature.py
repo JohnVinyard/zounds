@@ -15,6 +15,7 @@ class MetaDataExtractor(Extractor):
         self.external_id = pattern.external_id
         self.filename = pattern.filename
         self.store = False
+        self.infinite = True
     
     def dim(self,env):
         raise NotImplementedError()
@@ -35,6 +36,7 @@ class LiteralExtractor(SingleInput):
     def __init__(self,dtype,needs = None, key = None):
         SingleInput.__init__(self, needs = needs, key = key)
         self._dtype = dtype
+        self.infinite = True
     
     def dim(self,env):
         return 1
@@ -51,6 +53,7 @@ class CounterExtractor(Extractor):
     def __init__(self,needs = None, key = None):
         Extractor.__init__(self,needs = needs, key = key)
         self.n = 0
+        self.infinite = True
     
     def dim(self,env):
         return ()
@@ -105,6 +108,9 @@ class RawAudio(Extractor):
             # an extractor on which it depends that it is done.  This is 
             # necessary because the MetaData extractor generates data with
             # no source. It has no idea when to stop.
+            
+            # BUG: It's too late. The MetaData extractor has already output
+            # one more value than it should
             self.sources[0].out = None
             self.sources[0].done = True
     
