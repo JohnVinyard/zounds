@@ -15,8 +15,8 @@ class Pattern(Model):
     def __init__(self,_id,source,external_id):
         Model.__init__(self)
         
-        self.source = None
-        self.external_id = None
+        self.source = source
+        self.external_id = external_id
         self._id = _id
 
 class FilePattern(Pattern):
