@@ -10,6 +10,23 @@ from analyze.feature import FFT,Loudness
 from environment import Environment
 from frame import PyTablesFrameController
 
+
+class MockExtractor(Extractor):
+        
+    def __init__(self,needs=None,key=None):
+        Extractor.__init__(self,needs=needs,key=key)
+    
+    def dim(self,env):
+        return (100,)
+    
+    @property
+    def dtype(self):
+        return np.float32
+    
+    def _process(self):
+        raise NotImplemented()
+
+
 class PyTablesFrameControllerTests(unittest.TestCase):
     
     def setUp(self):
@@ -103,21 +120,6 @@ class PyTablesFrameControllerTests(unittest.TestCase):
     
     
     def test_cols_dtype(self):
-        
-        class MockExtractor(Extractor):
-        
-            def __init__(self,needs=None,key=None):
-                Extractor.__init__(self,needs=needs,key=key)
-            
-            def dim(self,env):
-                return (100,)
-            
-            @property
-            def dtype(self):
-                return np.float32
-            
-            def _process(self):
-                raise NotImplemented()
         
         class FrameModel(Frames):
             fft = Feature(FFT,store=True,needs=None)
