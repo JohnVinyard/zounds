@@ -1,3 +1,4 @@
+from uuid import uuid4
 
 class AudioConfig:
     samplerate = 44100
@@ -45,8 +46,8 @@ class Environment(object):
         # a dictionary-like object mapping classes to data backends
         self.data = data
         
-        
-        self.data[framemodel] = framecontroller(*framecontroller_args)
+        self.framecontroller = framecontroller(*framecontroller_args)
+        self.data[framemodel] = self.framecontroller
         if not Environment._test:
             self.framemodel.sync()
         
@@ -62,8 +63,15 @@ class Environment(object):
     def samplerate(self):
         return self.audio.samplerate
     
-    def extractor_chain(self,filename):
-        return self.framemodel.extractor_chain(filename=filename)
+    def newid(self):
+        return uuid4.__str__()
+    
+    def extractor_chain(self,pattern):
+        return self.framemodel.extractor_chain(pattern)
+    
+    def append(self,pattern):
+        ec = self.extractor_chain(pattern)
+        self.framecontroller.append(ec)
     
     def __repr__(self):
         return '''Environment(

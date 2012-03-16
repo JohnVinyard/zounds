@@ -359,7 +359,22 @@ class PyTablesFrameControllerTests(unittest.TestCase):
                          
     
     def test_sync_changed_feature(self):
-        self.fail()
+        class FM1(Frames):
+            fft = Feature(FFT,store=True,needs=None)
+            loudness = Feature(Loudness,store=True,needs=fft)
+        
+        
+        class FM2(Frames):
+            fft = Feature(FFT,store=True,needs=None)
+            loudness = Feature(Loudness,store=True,needs=fft,nframes=2)
+        
+        self.sync_helper(FM1,
+                         FM2,
+                         lambda old,new : len(old) == len(new),
+                         lambda old,new : old != new,
+                         lambda old,new : 'loudness' in old,
+                         lambda old,new : 'loudness' in new)
+                         
         
         
     

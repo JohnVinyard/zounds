@@ -198,9 +198,10 @@ class PyTablesFrameController(FrameController):
                 bytes = Int8Col(pos = 0)
             
             self.dbfile_write.createTable(\
-                                    self.dbfile_write.root,'schema',FrameSchema)
+                        self.dbfile_write.root,'schema',FrameSchema)
             self.schema_write = self.dbfile_write.root.schema
-            s = cPickle.dumps(self.model.stored_features(),cPickle.HIGHEST_PROTOCOL)
+            s = cPickle.dumps(\
+                        self.model.stored_features(),cPickle.HIGHEST_PROTOCOL)
             binary = np.fromstring(s,dtype = np.int8)
             record = np.recarray(len(binary),dtype=[('bytes',np.int8)])
             record['bytes'] = binary
