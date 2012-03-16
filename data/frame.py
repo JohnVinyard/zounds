@@ -200,7 +200,7 @@ class PyTablesFrameController(FrameController):
             self.dbfile_write.createTable(\
                                     self.dbfile_write.root,'schema',FrameSchema)
             self.schema_write = self.dbfile_write.root.schema
-            s = cPickle.dumps(self.model.features,cPickle.HIGHEST_PROTOCOL)
+            s = cPickle.dumps(self.model.stored_features(),cPickle.HIGHEST_PROTOCOL)
             binary = np.fromstring(s,dtype = np.int8)
             record = np.recarray(len(binary),dtype=[('bytes',np.int8)])
             record['bytes'] = binary
@@ -307,7 +307,7 @@ class PyTablesFrameController(FrameController):
         record = self.to_recarray(bucket, chain)
         self._append(record)
         
-        # release the lock for the next guy
+        # release the lock for the next writer
         self.release_lock()    
         
     
@@ -402,19 +402,21 @@ class PyTablesFrameController(FrameController):
         For use during a sync.  Return a modified version of the current
         filename, like 'frames_sync.h5', or something.
         '''
-        raise NotImplemented()
+        fn,extension = os.path.splitext(self.filepath)
+        return '%s_sync%s' % (fn,extension)
+        
     
-    # TODO: Write tests
+    
     def sync(self,add,update,delete,recompute):
         # each process needs its own reader
         newc = PyTablesFrameController(self.model,self._temp_filepath)
         new_ids = newc.list_ids()
         _ids = self.list_ids()
+        
         for _id in _ids:
             if _id in new_ids:
                 # this id has already been processed
                 continue
-            
             # This _id hasn't been inserted into the new PyTables file yet
             p = Pattern(_id,*self.external_id(_id))
             # create a transitional extractor chain that is able to read
@@ -422,9 +424,10 @@ class PyTablesFrameController(FrameController):
             # recomputed
             ec = self.model.extractor_chain(p,
                                             transitional=True,
-                                            recmpute = recompute)
+                                            recompute = recompute)
             # process this pattern and insert it into the new database
             newc.append(ec)
+        
         
         if (len(self) != len(newc)) or _ids != newc.list_ids():
             # Something went wrong. The number of rows or the set of _ids
@@ -440,6 +443,11 @@ class PyTablesFrameController(FrameController):
         os.rename(self._temp_filepath,self.filepath)
         # reload
         self._load(self.filepath)
+    
+    # TODO: Make sure there are tests
+    def get_features(self):
+        s = self.schema_read[:]['bytes'].tostring()
+        return cPickle.loads(s)
         
     # TODO: This should return a Frames-derived instance
     def get(self,_id,features=None):
@@ -455,9 +463,7 @@ class PyTablesFrameController(FrameController):
         self.close()
         
     
-    def get_features(self):
-        s = self.schema_read[:]['bytes'].tostring()
-        return cPickle.loads(s)
+    
     
     
    

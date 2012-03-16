@@ -10,10 +10,7 @@ class MetaDataExtractor(Extractor):
     
     def __init__(self,pattern,key = None):
         Extractor.__init__(self,needs = None,key=key)
-        self._id = pattern._id
-        self.source = pattern.source
-        self.external_id = pattern.external_id
-        self.filename = pattern.filename
+        self.pattern = pattern
         self.store = False
         self.infinite = True
     
@@ -25,10 +22,7 @@ class MetaDataExtractor(Extractor):
         raise NotImplementedError()
     
     def _process(self):
-        return {'_id'                 : self._id,
-                'source'              : self.source,
-                'external_id'         : self.external_id,
-                'filename'            : self.filename}
+        return self.pattern.data()
 
 
 class LiteralExtractor(SingleInput):

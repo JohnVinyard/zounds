@@ -18,6 +18,11 @@ class Pattern(Model):
         self.source = source
         self.external_id = external_id
         self._id = _id
+    
+    def data(self):
+        return {'source'      : self.source,
+                'external_id' : self.external_id,
+                '_id'         : self._id}
 
 class FilePattern(Pattern):
     '''
@@ -29,3 +34,7 @@ class FilePattern(Pattern):
         Pattern.__init__(self,_id,source,external_id)
         self.filename = filename
 
+    def data(self):
+        d = Pattern.data(self)
+        d['filename'] = self.filename
+        return d

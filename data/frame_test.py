@@ -90,12 +90,21 @@ class PyTablesFrameControllerTests(unittest.TestCase):
         windowsize = 4096
         stepsize = 2048
     
-    def FM(self,indir = False,audio_config = AudioConfig,framemodel = None):
+    def FM(self,
+           indir = False,
+           audio_config = AudioConfig,
+           framemodel = None,
+           filepath = None):
+        
         class FM1(Frames):
             fft = Feature(FFT,store=True,needs=None)
             loudness = Feature(Loudness,store=True,needs=fft)
         
-        fn = self.hdf5_filepath() if indir else self.hdf5_filename()
+        if filepath:
+            fn = filepath
+        else:
+            fn = self.hdf5_filepath() if indir else self.hdf5_filename()
+        
         FM = FM1 if not framemodel else framemodel
         Environment('test',
                     FM,
@@ -246,8 +255,8 @@ class PyTablesFrameControllerTests(unittest.TestCase):
         self.assertTrue('fft' in features)  
     
     
-    def test_sync_add_feature(self):
-        fn,FM1 = self.FM()
+    def sync_helper(self,old_framemodel,new_framemodel,*assertions):
+        fn,FM1 = self.FM(framemodel = old_framemodel)
         c = FM1.controller()
         lengths = [10000,15000]
         patterns = self.get_patterns(FM1,lengths)
@@ -255,19 +264,102 @@ class PyTablesFrameControllerTests(unittest.TestCase):
             ec = FM1.extractor_chain(p)
             c.append(ec)
         l1 = len(c)
+        old_features = c.get_features()
         c.close()
+        
+        FM2 = new_framemodel
+        # make sure to use the same file
+        fn,FM2 = self.FM(framemodel = FM2,filepath = fn)
+        FM2.sync()
+        c = FM2.controller()
+        self.assertEqual(l1,len(c))
+        features = c.get_features()
+        
+        for a in assertions:
+            self.assertTrue(a(old_features,features))
+    
+    def test_sync_add_feature(self):
+        
+        class FM1(Frames):
+            fft = Feature(FFT,store=True,needs=None)
+            loudness = Feature(Loudness,store=True,needs=fft)
         
         class FM2(Frames):
             fft = Feature(FFT,store=True,needs=None)
             loudness = Feature(Loudness,store=True,needs=fft)
             l2 = Feature(Loudness,store=True,needs=fft,nframes=2)
+            
+        a1 = lambda old,new : 'l2' in new
+        a2 = lambda old,new : len(old) + 1 == len(new)
+        self.sync_helper(FM1,FM2,a1,a2)
+    
+    def test_sync_delete_feature(self):
         
-        fn,FM2 = self.FM(framemodel = FM2)
-        FM2.sync()
-        c = FM2.controller()
-        self.assertEqual(l1,len(c))
-        features = c.get_features()
-        self.assertTrue('l2' in features)
-        self.assertTrue(7,len(features))
-         
+        class FM1(Frames):
+            fft = Feature(FFT,store=True,needs=None)
+            loudness = Feature(Loudness,store=True,needs=fft)
+            
+        class FM2(Frames):
+            fft = Feature(FFT,store=True,needs=None)
+        
+        a1 = lambda old,new : 'loudness' not in new
+        a2 = lambda old,new : len(old) - 1 == len(new)
+        self.sync_helper(FM1,FM2,a1,a2)
+    
+    def test_sync_unchanged(self):
+        
+        class FM1(Frames):
+            fft = Feature(FFT,store=True,needs=None)
+            loudness = Feature(Loudness,store=True,needs=fft)
+        
+        class FM2(Frames):
+            fft = Feature(FFT,store=True,needs=None)
+            loudness = Feature(Loudness,store=True,needs=fft)
+        
+        a1 = lambda old,new : old == new
+        self.sync_helper(FM1,FM2,a1)
+        
+    def test_sync_store(self):
+        
+        # loudness is NOT stored
+        class FM1(Frames):
+            fft = Feature(FFT,store=True,needs=None)
+            loudness = Feature(Loudness,store=False,needs=fft)
+        
+        # loudness is stored
+        class FM2(Frames):
+            fft = Feature(FFT,store=True,needs=None)
+            loudness = Feature(Loudness,store=True,needs=fft)
+        
+        self.sync_helper(FM1, 
+                         FM2,
+                         lambda old,new : len(old) + 1 == len(new),
+                         lambda old,new : 'loudness' not in old,
+                         lambda old,new : 'loudness' in new)
+        
+    def test_sync_unstore(self):
+        
+        # loudness is stored
+        class FM1(Frames):
+            fft = Feature(FFT,store=True,needs=None)
+            loudness = Feature(Loudness,store=True,needs=fft)
+        
+        # loudness is NOT stored
+        class FM2(Frames):
+            fft = Feature(FFT,store=True,needs=None)
+            loudness = Feature(Loudness,store=False,needs=fft)
+        
+        
+        self.sync_helper(FM1,
+                         FM2,
+                         lambda old,new : len(old) - 1 == len(new),
+                         lambda old,new : 'loudness' in old,
+                         lambda old,new : 'loudness' not in new)
+        
+                         
+    
+    def test_sync_changed_feature(self):
+        self.fail()
+        
+        
     
