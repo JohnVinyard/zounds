@@ -39,6 +39,14 @@ class FrameController(Controller):
         Return a two-tuple of source,external_id for this _id
         '''
         pass
+    
+    @abstractmethod
+    def exists(self,source,external_id):
+        '''
+        Return true if a pattern with source and external_id already exists in
+        the datastore
+        '''
+        pass
      
     
     @abstractmethod
@@ -380,8 +388,14 @@ class PyTablesFrameController(FrameController):
     def list_ids(self):
         l = self.db_read.readWhere('framen == 0')['_id']
         s = set(l)
-        #assert len(l) == len(s)
+        assert len(l) == len(s)
         return s
+    
+    def exists(self,source,external_id):
+        rows = self.db_read.readWhere(\
+                        '(source == "%s") & (external_id == "%s")' %\
+                         (source,external_id))
+        return len(rows) > 0
     
     def external_id(self,_id):
         row = self.db_read.readWhere('(_id == "%s") & (framen == 0)' % _id)
@@ -518,6 +532,9 @@ class DictFrameController(FrameController):
         raise NotImplemented()
     
     def iter_feature(self,_id,feature_name):
+        raise NotImplemented()
+    
+    def exists(self,source,external_id):
         raise NotImplemented()
         
         
