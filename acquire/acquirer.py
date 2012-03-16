@@ -60,11 +60,13 @@ class DiskAcquirer(Acquirer):
     def acquire(self):
         for fn in os.listdir(self.path):
             fp = os.path.join(self.path,fn)
+            extid = os.path.splitext(fn)[0]
             pattern = FilePattern(self.env.newid(),
                                   self.source,
-                                  os.path.splitext(fn)[0],
+                                  extid,
                                   fp)
-            self.framemodel.append(self.extractor_chain(pattern))
+            if not self.framecontroller.exists(self.source,extid):
+                self.framecontroller.append(self.extractor_chain(pattern))
             
             
     

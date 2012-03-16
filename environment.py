@@ -64,7 +64,7 @@ class Environment(object):
         return self.audio.samplerate
     
     def newid(self):
-        return uuid4.__str__()
+        return uuid4().__str__()
     
     def extractor_chain(self,pattern):
         return self.framemodel.extractor_chain(pattern)
