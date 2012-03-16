@@ -124,7 +124,7 @@ class PyTablesUpdateNotCompleteError(BaseException):
         BaseException.__init__(self,Exception('The PyTables update failed'))
 
 
-
+# TODO: Cleaner, general way to do PyTables in-kernel queries
 class PyTablesFrameController(FrameController):
     
     '''
@@ -301,8 +301,8 @@ class PyTablesFrameController(FrameController):
                     bucket = dict([(c.key if c.key else c,[]) for c in chain])
                     nframes = 0
                 except PyTablesFrameController.WriteLockException:
-                    # someone else has the write lock. Let's just keep processing
-                    # for awhile (within reason)
+                    # someone else has the write lock. Let's just keep 
+                    # processing for awhile (within reason)
                     bufsize += self._buffer_size
                     
             if rootkey == k:
@@ -314,6 +314,7 @@ class PyTablesFrameController(FrameController):
         self.acquire_lock(nframes,wait=True)
         # build the record and append it
         record = self.to_recarray(bucket, chain)
+        print 'appending %i rows' % len(record)
         self._append(record)
         
         # release the lock for the next writer
@@ -407,6 +408,8 @@ class PyTablesFrameController(FrameController):
     def get_dim(self,key):
         return getattr(self.db_read.cols,key).shape[1:]
     
+    
+    
     def iter_feature(self,_id,feature):
         for row in self.db_read.where('_id == "%s"' % _id):
             yield row[feature]
@@ -427,7 +430,8 @@ class PyTablesFrameController(FrameController):
         newc = PyTablesFrameController(self.model,self._temp_filepath)
         new_ids = newc.list_ids()
         _ids = self.list_ids()
-        
+        print _ids
+        print new_ids
         for _id in _ids:
             if _id in new_ids:
                 # this id has already been processed
@@ -440,8 +444,10 @@ class PyTablesFrameController(FrameController):
             ec = self.model.extractor_chain(p,
                                             transitional=True,
                                             recompute = recompute)
+            print ec.chain
             # process this pattern and insert it into the new database
             newc.append(ec)
+            print 'processed %s' % _id
         
         
         if (len(self) != len(newc)) or _ids != newc.list_ids():
@@ -466,7 +472,10 @@ class PyTablesFrameController(FrameController):
         
     # TODO: This should return a Frames-derived instance
     def get(self,_id,features=None):
-        raise NotImplemented()
+        return self.db_read.readWhere('_id == "%s"' % _id)
+    
+    def __getitem__(self,_id):
+        return self.get(_id)
     
     def close(self):
         if self.dbfile_write:

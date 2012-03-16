@@ -160,6 +160,15 @@ class Loudness(SingleInput):
         return np.sum(self.in_data)
     
 class SpectralCentroid(SingleInput):
+    '''
+    Indicates where the "center of mass" of the spectrum is. Perceptually, 
+    it has a robust connection with the impression of "brightness" of a 
+    sound.  It is calculated as the weighted mean of the frequencies 
+    present in the signal, determined using a Fourier transform, with 
+    their magnitudes as the weights,
+    
+    From http://en.wikipedia.org/wiki/Spectral_centroid
+    '''
     
     def __init__(self,needs = None,key = None):
         SingleInput.__init__(self,needs = needs,key = key)
@@ -172,18 +181,10 @@ class SpectralCentroid(SingleInput):
         return np.float64
     
     def _process(self):
-        '''
-        Indicates where the "center of mass" of the spectrum is. Perceptually, 
-        it has a robust connection with the impression of "brightness" of a 
-        sound.  It is calculated as the weighted mean of the frequencies 
-        present in the signal, determined using a Fourier transform, with 
-        their magnitudes as the weights,
-        
-        From http://en.wikipedia.org/wiki/Spectral_centroid
-        '''
         spectrum = self.in_data[0]
-        bins = np.arange(len(spectrum))
-        return (spectrum*bins) / bins
+        # TODO: This is wasteful. Get the shape of the source and cache it
+        bins = np.arange(1,len(spectrum) + 1)
+        return np.sum(spectrum*bins) / np.sum(bins)
     
 
 from extractor import ExtractorChain
