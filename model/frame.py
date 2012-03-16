@@ -61,8 +61,8 @@ class Precomputed(Extractor):
     Read pre-computed features from the database
     '''
     
-    def __init__(self,_id,feature_name,controller):
-        Extractor.__init__(self,key=feature_name)
+    def __init__(self,_id,feature_name,controller,needs = None):
+        Extractor.__init__(self,key=feature_name,needs=needs)
         self._c = controller
         self._id = _id
         self.stream = None
@@ -88,12 +88,15 @@ class Precomputed(Extractor):
         '''
         if None is self.stream:
             self.stream = self._c.iter_feature(self._id,self.key)
-         
+        
         try:
             return self.stream.next()
-        except:
+        except StopIteration:
             self.out = None
             self.done = True
+            if self.sources:
+                self.sources[0].done = True
+                self.sources[0].out = None
     
     def __hash__(self):
         return hash(\
@@ -150,6 +153,13 @@ class Frames(Model):
         filename = None
         start_frame = None
         stop_frame = None
+    
+    @classmethod
+    def stored_features(cls):
+        '''
+        Return a dictionary containing the subset of stored features
+        '''
+        return dict((k,v) for k,v in cls.features.iteritems() if v.store)
         
     @classmethod
     def dimensions(cls,chain = None):
@@ -184,13 +194,13 @@ class Frames(Model):
             setattr(OldModel,k,v)
             OldModel.features[k] = v
         
-        print features
-        print cls.features
             
         # create an update plan
         add,update,delete,recompute = OldModel.update_report(cls)
         
-        if recompute:
+        
+        if any([add,update,delete,recompute]):
+            # something has changed. Sync the database
             c.sync(add,update,delete,recompute)
         
          
@@ -269,9 +279,10 @@ class Frames(Model):
         
         meta = MetaDataExtractor(pattern,key = 'meta') 
         if transitional:      
-            ra = Precomputed('audio',
-                             pattern._id,
-                             cls.controller())
+            ra = Precomputed(pattern._id,
+                             'audio',
+                             cls.controller(),
+                             needs = meta)
         else:
             ra = cls.raw_audio_extractor(pattern, needs = meta)
         
@@ -291,8 +302,8 @@ class Frames(Model):
         # start building the chain
         chain = [meta,ra]
         # keep track of the extractors we've built, so they can be
-        # passed in to the constructors of dependent extractors as
-        # necessary
+        # passed in to the 'needs' parameter of the constructors of dependent 
+        # extractors as necessary
         d = {}
         for k,f in features:
             if not f.needs:
@@ -318,9 +329,10 @@ class Frames(Model):
             else:
                 # Nothing in this feature's lineage has changed, so
                 # we can safely just read values from the database
-                e = Precomputed(k,
-                                pattern._id,
-                                cls.controller())
+                e = Precomputed(pattern._id,
+                                k,
+                                cls.controller(),
+                                needs = needs)
             chain.append(e)
             d[f] = e
             
