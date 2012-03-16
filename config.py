@@ -15,8 +15,6 @@ source = 'John'
 from analyze.feature import FFT, Loudness
 
 # FrameModel
-# TODO: FrameModel needs to have a metaclass that knows how to map extractors
-# to properties, and map those properties to some database
 from model.frame import Frames, Feature
 
 class FrameModel(Frames):    
@@ -26,14 +24,11 @@ class FrameModel(Frames):
 
 # Data backends
 from model.pattern import Pattern
-from model.pipeline import Pipeline
 from data.pattern import InMemory
-from data.learn import LearningController
 from data.frame import PyTablesFrameController
 data = {
         
-    Pattern    : InMemory(),
-    Pipeline   : LearningController()
+    Pattern    : InMemory()
 }
 
 
