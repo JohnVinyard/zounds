@@ -1,4 +1,5 @@
 from model import Model
+from pattern import FilePattern
 from analyze.extractor import Extractor,ExtractorChain
 from analyze.feature import \
     RawAudio,LiteralExtractor,CounterExtractor,MetaDataExtractor
@@ -149,15 +150,8 @@ class Frames(Model):
     
     def __init__(self):
         Model.__init__(self)
-        
-    class DummyPattern:
-        _id = None
-        source = None
-        external_id = None
-        filename = None
-        start_frame = None
-        stop_frame = None
     
+        
     @classmethod
     def stored_features(cls):
         '''
@@ -175,7 +169,7 @@ class Frames(Model):
         # but I'm building it here to learn about the properties of the
         # extractors, and not to do any real processing.
         if not chain:
-            chain = cls.extractor_chain(Frames.DummyPattern)
+            chain = cls.extractor_chain(FilePattern(None,None,None,None))
         d = {}
         env = cls.env()
         for e in chain:
