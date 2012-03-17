@@ -10,18 +10,18 @@ There are 3 types of similarity
 TOOO:
 -------------
 
-	
-Write PyTablesFrameController.append test
 
 Replace all DummyPatterns scattered about with the real thing
+
+multi-process sync
 
 FrameController should return all metadata and start/stop row numbers when it's done
 	appending
 
-
 Lose the intermediate dict representation in PyTablesFrameController. Write 
 	everything directly to a numpy recarray
 	
+Sphinx documentation
 
 turn on PyTables compression?
 

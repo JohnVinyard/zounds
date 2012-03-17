@@ -258,7 +258,7 @@ class PyTablesFrameControllerTests(unittest.TestCase):
     def sync_helper(self,old_framemodel,new_framemodel,*assertions):
         fn,FM1 = self.FM(framemodel = old_framemodel)
         c = FM1.controller()
-        lengths = [10000,15000]
+        lengths = [44100,44100*2]
         patterns = self.get_patterns(FM1,lengths)
         for p in patterns:
             ec = FM1.extractor_chain(p)

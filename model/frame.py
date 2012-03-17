@@ -86,36 +86,20 @@ class Precomputed(Extractor):
         '''
         Read a single feature for self._id
         '''
+        
         if None is self.stream:
-            #self.stream = self._c.iter_feature(self._id,self.key)
-            self.stream = self._c[self._id][self.key]
-            self._count = 0
-        # BUG: Something's screwy about PyTables iteration here
-        '''
-        try:
-            #return self.stream.next()
+            self.stream = self._c.iter_feature(self._id,self.key)
             
-        except StopIteration:
-            if not Precomputed._first:
-                print '%s STOP ITERATION' % self.key
-                Precomputed._first = True
-                
-            self.out = None
-            self.done = True
-            if self.sources:
-                self.sources[0].done = True
-                self.sources[0].out = None
-        '''
         try:
-            v = self.stream[self._count]
-            self._count += 1
-            return v
-        except IndexError:
+            return self.stream.next()
+        except StopIteration:    
             self.out = None
             self.done = True
             if self.sources:
                 self.sources[0].done = True
                 self.sources[0].out = None
+        
+        
         
     
     def __hash__(self):
