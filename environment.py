@@ -1,4 +1,5 @@
 from uuid import uuid4
+from celery.task import subtask,chord
 
 class AudioConfig:
     samplerate = 44100
@@ -28,12 +29,16 @@ class Environment(object):
                  framecontroller,
                  framecontroller_args,
                  data,
-                 audio = AudioConfig):
+                 audio = AudioConfig,
+                 parallel = False):
         
         object.__init__(self)
         
         # audio settings, samplerate, windowsize and stepsize
         self.audio = audio
+        
+        # Should audio processing and database updates be performed
+        self.parallel = parallel
         
         # the name of the 'source' attribute of patterns. Usually the client
         # application's name
@@ -50,6 +55,7 @@ class Environment(object):
         self.data[framemodel] = self.framecontroller
         if not Environment._test:
             self.framemodel.sync()
+            
         
     @property
     def windowsize(self):

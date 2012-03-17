@@ -8,6 +8,8 @@ from tables import openFile,IsDescription,StringCol,Int32Col,Col,Int8Col
 
 import numpy as np
 
+from celery.task import task,chord
+
 from controller import Controller
 from model.pattern import Pattern
 from util import pad
@@ -434,7 +436,24 @@ class PyTablesFrameController(FrameController):
         
     
     
+            
     def sync(self,add,update,delete,recompute):
+        
+        if self.model.env().parallel:
+            callback = sync_complete.subtask()
+            _ids = self.list_ids()
+            header = [sync_one.subtask(\
+                        (self.model,self.filepath,_id,add,update,delete,recompute))\
+                       for _id in _ids]
+            # BUG: The callback is never called
+            result = chord(header)(callback)
+            result.get()
+            self._load(self.filepath)
+            return
+        
+        self._sync(add,update,delete,recompute)
+    
+    def _sync(self,add,update,delete,recompute):
         # each process needs its own reader
         newc = PyTablesFrameController(self.model,self._temp_filepath)
         new_ids = newc.list_ids()
@@ -470,6 +489,7 @@ class PyTablesFrameController(FrameController):
         # reload
         self._load(self.filepath)
     
+    
     # TODO: Make sure there are tests
     def get_features(self):
         s = self.schema_read[:]['bytes'].tostring()
@@ -494,7 +514,64 @@ class PyTablesFrameController(FrameController):
     
     
     
+# KLUDGE: this should be a PyTablesFrameController class method, if at all possible
+@task(name='data.frame.sync_one')
+def sync_one(newmodel,filepath,_id,add,update,delete,recompute):
+    '''
+    '''
+    oldc = PyTablesFrameController(newmodel,filepath)
+    newc = PyTablesFrameController(newmodel,oldc._temp_filepath)
+    _id_query = '_id == "%s"' % _id
+    oldrows = oldc.db_read.getWhereList(_id_query)
+    newrows = newc.db_read.getWhereList(_id_query)
+    oldlen = len(oldrows)
+    newlen = len(newrows)
     
+    if oldlen == newlen:
+        # this id has already been processed
+        return
+     
+    if newlen:
+        # There are some rows in the new database with id, but
+        # there aren't the same number as oldlen, meaning that 
+        # something probably went wrong during the sync. To keep
+        # things simple, let's delete what's there and start over
+        newc.acquire_lock(newc._max_buffer_size, wait = True)
+        newc._write_mode()
+        newc.db_write.removeRows(newrows)
+        newc._read_mode()
+        newc.release_lock()
+    
+    p = Pattern(_id,*oldc.external_id(_id))
+    ec = newmodel.extractor_chain(p,transitional = True,recompute = recompute)
+    newc.append(ec)
+    print 'processed %s' % _id
+    oldc.close()
+    newc.close()
+    return (newmodel,filepath)
+    
+
+# KLUDGE: this should be a PyTablesFrameController class method, if at all possible
+@task(name='data.frame.sync_complete')
+def sync_complete(results):
+    newmodel = results[0][0]
+    filepath = results[0][1]
+    oldc = PyTablesFrameController(newmodel,filepath)
+    tmpfilepath = oldc._temp_filepath
+    newc = PyTablesFrameController(newmodel,tmpfilepath)
+    oldids = oldc.list_ids()
+    newids = newc.list_ids()
+    
+    if (len(oldc) != len(newc) or oldids != newids):
+        raise PyTablesUpdateNotCompleteError()
+    
+    
+    oldc.close()
+    newc.close()
+    os.remove(filepath)
+    os.rename(tmpfilepath,filepath)
+    print 'sync complete'
+    return True
    
     
     
