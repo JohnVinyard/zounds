@@ -411,7 +411,16 @@ class PyTablesFrameController(FrameController):
     
     
     def iter_feature(self,_id,feature):
-        for row in self.db_read.where('_id == "%s"' % _id):
+        
+        # BUG: The following should work, but always raises a
+        # StopIteration exception around 30 - 40 rows. I have
+        # no clue why.
+        #
+        # for row in self.db_read.where('_id == "%s"' % _id):
+        #   yield row[feature]
+        
+        rowns = self.db_read.getWhereList('_id == "%s"' % _id)
+        for row in self.db_read.itersequence(rowns):
             yield row[feature]
     
     @property
@@ -430,8 +439,6 @@ class PyTablesFrameController(FrameController):
         newc = PyTablesFrameController(self.model,self._temp_filepath)
         new_ids = newc.list_ids()
         _ids = self.list_ids()
-        print _ids
-        print new_ids
         for _id in _ids:
             if _id in new_ids:
                 # this id has already been processed
@@ -444,10 +451,8 @@ class PyTablesFrameController(FrameController):
             ec = self.model.extractor_chain(p,
                                             transitional=True,
                                             recompute = recompute)
-            print ec.chain
             # process this pattern and insert it into the new database
             newc.append(ec)
-            print 'processed %s' % _id
         
         
         if (len(self) != len(newc)) or _ids != newc.list_ids():
