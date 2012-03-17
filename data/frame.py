@@ -295,9 +295,8 @@ class PyTablesFrameController(FrameController):
                     # we got the lock. Let's write the data we have
                     self._append(bucket[:nframes])
                     nframes = 0
-                    bucket = 0
-                    for k in current.keys():
-                        current[k] = 0
+                    bucket[:] = 0
+                    current = dict((k,0) for k in self.steps.keys())
                     self.release_lock()
                 except PyTablesFrameController.WriteLockException:
                     # someone else has the write lock. Let's just keep 
@@ -313,6 +312,7 @@ class PyTablesFrameController(FrameController):
                 bucket[k][cur:cur+steps] = data
                 current[k] += steps
             except KeyError:
+                # this feature isn't stored
                 pass
             
             
