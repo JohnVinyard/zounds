@@ -9,8 +9,6 @@ There are 3 types of similarity
 
 TOOO:
 -------------
-multi-process sync
-
 FrameController should return all metadata and start/stop row numbers when it's done
 	appending
 
@@ -18,6 +16,8 @@ Lose the intermediate dict representation in PyTablesFrameController. Write
 	everything directly to a numpy recarray
 	
 Sphinx documentation
+
+multi-process sync - Deferred until I can figure out celery chord bug
 
 turn on PyTables compression?
 
