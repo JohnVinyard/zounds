@@ -1,17 +1,12 @@
 import unittest
 from frame import Frames,Feature,Precomputed
+from pattern import Pattern
 from environment import Environment
 from analyze.feature import FFT,Loudness
 from data.frame import DictFrameController
 
 
-class MockPattern:
-    start_frame = 0
-    stop_frame = 10
-    _id = '0'
-    source = '0'
-    external_id = '0'
-    filename = None
+
     
 class FrameModelTests(unittest.TestCase):
     
@@ -24,6 +19,9 @@ class FrameModelTests(unittest.TestCase):
     def tearDown(self):
         Environment._test = False
         Environment.instance = self.orig_env
+    
+    def mock_pattern(self):
+        return Pattern('0','0','0')
     
     def test_dimensions_correct_keys(self):
         class FM1(Frames):
@@ -103,7 +101,7 @@ class FrameModelTests(unittest.TestCase):
         self.assertFalse(update)
         self.assertFalse(delete)
         
-        chain = FM2.extractor_chain(MockPattern, 
+        chain = FM2.extractor_chain(self.mock_pattern(), 
                                     transitional = True,
                                     recompute = recompute)
         # lop of the first item, because the MetaData extractor is never
@@ -198,7 +196,7 @@ class FrameModelTests(unittest.TestCase):
         self.assertEqual(1,len(update))
         self.assertEqual(FM2.loudness,update['loudness'])
         
-        chain = FM2.extractor_chain(MockPattern, 
+        chain = FM2.extractor_chain(self.mock_pattern(), 
                                     transitional = True, 
                                     recompute = recompute)
         
@@ -227,7 +225,7 @@ class FrameModelTests(unittest.TestCase):
         self.assertEqual(1,len(delete))
         self.assertTrue(delete.has_key('loudness'))
         
-        chain = FM2.extractor_chain(MockPattern, 
+        chain = FM2.extractor_chain(self.mock_pattern(), 
                                     transitional = True,
                                     recompute = recompute)
         
@@ -252,7 +250,6 @@ class FrameModelTests(unittest.TestCase):
                     {})
         
         add,update,delete,recompute = FM1.update_report(FM2)
-        chain = FM2.extractor_chain(MockPattern, transitional = True)
         
         self.assertFalse(add)
         self.assertTrue(update)
@@ -261,7 +258,7 @@ class FrameModelTests(unittest.TestCase):
         self.assertEqual(FM2.l1,update['l1'])
         self.assertEqual(FM2.l2,update['l2'])
         
-        chain = FM2.extractor_chain(MockPattern, 
+        chain = FM2.extractor_chain(self.mock_pattern(), 
                                     transitional = True, 
                                     recompute = recompute)
         
