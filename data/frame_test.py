@@ -6,7 +6,7 @@ import numpy as np
 
 from model.frame import Frames,Feature
 from analyze.extractor import Extractor
-from analyze.feature import FFT,Loudness
+from analyze.feature import FFT,Loudness,SpectralCentroid
 from model.pattern import FilePattern
 from environment import Environment
 from frame import PyTablesFrameController
@@ -255,8 +255,8 @@ class PyTablesFrameControllerTests(unittest.TestCase):
         self.assertTrue('fft' in features)  
     
     
-    def sync_helper(self,old_framemodel,new_framemodel,*assertions):
-        fn,FM1 = self.FM(framemodel = old_framemodel)
+    def build_with_model(self,framemodel):
+        fn,FM1 = self.FM(framemodel = framemodel)
         c = FM1.controller()
         lengths = [44100,44100*2]
         patterns = self.get_patterns(FM1,lengths)
@@ -266,6 +266,12 @@ class PyTablesFrameControllerTests(unittest.TestCase):
         l1 = len(c)
         old_features = c.get_features()
         c.close()
+        return fn,l1,old_features
+    
+    
+    def sync_helper(self,old_framemodel,new_framemodel,*assertions):
+        
+        fn,l1,old_features = self.build_with_model(old_framemodel)
         
         FM2 = new_framemodel
         # make sure to use the same file
@@ -333,9 +339,9 @@ class PyTablesFrameControllerTests(unittest.TestCase):
         
         self.sync_helper(FM1, 
                          FM2,
-                         lambda old,new : len(old) + 1 == len(new),
-                         lambda old,new : 'loudness' not in old,
-                         lambda old,new : 'loudness' in new)
+                         lambda old,new : len(old) == len(new),
+                         lambda old,new : not old['loudness'].store,
+                         lambda old,new : new['loudness'].store)
         
     def test_sync_unstore(self):
         
@@ -352,9 +358,9 @@ class PyTablesFrameControllerTests(unittest.TestCase):
         
         self.sync_helper(FM1,
                          FM2,
-                         lambda old,new : len(old) - 1 == len(new),
-                         lambda old,new : 'loudness' in old,
-                         lambda old,new : 'loudness' not in new)
+                         lambda old,new : len(old) == len(new),
+                         lambda old,new : old['loudness'].store,
+                         lambda old,new : not new['loudness'].store)
         
                          
     
@@ -374,7 +380,39 @@ class PyTablesFrameControllerTests(unittest.TestCase):
                          lambda old,new : old != new,
                          lambda old,new : 'loudness' in old,
                          lambda old,new : 'loudness' in new)
-                         
+    
+    def test_sync_non_stored_ancestor(self):
+        class FM1(Frames):
+            fft = Feature(FFT,store=False,needs=None)
+            loudness = Feature(Loudness,store=True,needs=fft)
+            centroid = Feature(SpectralCentroid,store=True,needs=fft)
+        
+        fn,l1,old_features = self.build_with_model(FM1)
+        
+        fn,FM2 = self.FM(framemodel = FM1, filepath = fn)
+        add,update,delete,recompute = FM2._sync()
+        self.assertFalse(add)
+        self.assertFalse(recompute)
+    
+    def test_sync_new_feature_depends_on_non_stored_ancestor(self):
+        
+        class FM1(Frames):
+            fft = Feature(FFT,store=False,needs=None)
+            loudness = Feature(Loudness,store=True,needs=fft)
+            
+        class FM2(Frames):
+            fft = Feature(FFT,store=False,needs=None)
+            loudness = Feature(Loudness,store=True,needs=fft)
+            centroid = Feature(SpectralCentroid,store=True,needs=fft)
+        
+        fn,l1,old_features = self.build_with_model(FM1)
+        
+        fn,FM2 = self.FM(framemodel = FM2, filepath = fn)
+        add,update,delete,recompute = FM2._sync()
+        self.assertTrue('centroid' in add)
+        print recompute
+        self.assertEqual(2,len(recompute))
+                       
         
         
     

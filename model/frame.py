@@ -56,6 +56,14 @@ class Feature(object):
                 frozenset(self.args.values()),
                 frozenset(self.needs if self.needs else [])))
     
+    def __repr__(self):
+        return '%s(%s, store = %s, needs = %s, args = %s)' %\
+         (self.__class__.__name__,
+          self.extractor_cls.__name__,
+          self.store,
+          self.needs,
+          self.args)
+    
 
 class Precomputed(Extractor):
     '''
@@ -179,9 +187,7 @@ class Frames(Model):
         return d
     
     @classmethod
-    def sync(cls):
-        '''
-        '''
+    def _sync(cls):
         c = cls.controller()
         features = c.get_features()
         # create a class using features that are currently in the database
@@ -192,11 +198,17 @@ class Frames(Model):
             setattr(OldModel,k,v)
             OldModel.features[k] = v
         
-            
         # create an update plan
         add,update,delete,recompute = OldModel.update_report(cls)
+        return add,update,delete,recompute
+    
+    @classmethod
+    def sync(cls):
+        '''
+        '''
         
-        
+        add,update,delete,recompute = cls._sync()
+        c = cls.controller()
         if any([add,update,delete,recompute]):
             # something has changed. Sync the database
             c.sync(add,update,delete,recompute)
@@ -252,10 +264,9 @@ class Frames(Model):
         # that must be recomputed or is not stored must be re-computed
         for v in newfeatures.values():
             if v not in torecompute and\
-                 any([a in torecompute or not a.store for a in v.depends_on()]):
+                 any([a in torecompute for a in v.depends_on()]):
                 torecompute.append(v)      
-                
-            
+        
         return add,update,delete,torecompute
     
     @classmethod
