@@ -221,7 +221,7 @@ class PyTablesFrameControllerTests(unittest.TestCase):
     def test_get_dtype(self):
         fn,FM1 = self.FM()
         c = FM1.controller()
-        self.assertEqual('float64',c.get_dtype('loudness'))
+        self.assertEqual('float32',c.get_dtype('loudness'))
     
     def test_get_dim(self):
         fn,FM1 = self.FM()
