@@ -78,7 +78,7 @@ class RawAudio(Extractor):
     
     @property
     def dtype(self):
-        return np.float64
+        return np.float32
         
     def _process(self):
         
@@ -134,7 +134,7 @@ class FFT(SingleInput):
     
     @property
     def dtype(self):
-        return np.float64
+        return np.float32
         
     def _process(self):
         '''
@@ -154,7 +154,7 @@ class Loudness(SingleInput):
     
     @property
     def dtype(self):
-        return np.float64
+        return np.float32
         
     def _process(self):
         return np.sum(self.in_data)
@@ -178,7 +178,7 @@ class SpectralCentroid(SingleInput):
     
     @property
     def dtype(self):
-        return np.float64
+        return np.float32
     
     def _process(self):
         spectrum = self.in_data[0]

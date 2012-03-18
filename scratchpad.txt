@@ -9,12 +9,11 @@ There are 3 types of similarity
 
 TOOO:
 -------------
-FrameController should return all metadata and start/stop row numbers when it's done
-	appending
 
-Lose the intermediate dict representation in PyTablesFrameController. Write 
-	everything directly to a numpy recarray
-	
+
+FrameControllers should return all metadata and an "address" for patterns when it's done
+	appending. For PyTablesFrameController, this'd be start and stop row numbers
+
 Sphinx documentation
 
 multi-process sync - Deferred until I can figure out celery chord bug

@@ -4,7 +4,8 @@ import time
 import cPickle
 from abc import ABCMeta,abstractmethod
 
-from tables import openFile,IsDescription,StringCol,Int32Col,Col,Int8Col
+from tables import \
+    openFile,IsDescription,StringCol,Int32Col,Col,Int8Col
 
 import numpy as np
 
@@ -136,6 +137,10 @@ class PyTablesFrameController(FrameController):
     PyTables has some special limitations, .e.g, columns cannot be added or
     removed after table creation. This class attempts to hide some of the messy
     details from clients
+    
+    Access by row numbers wins out speed-wise over access by indexed column 
+    (e.g. where _id == 1234), so a slice with literal row numbers is the best
+    address for this controller
     '''
     
     def __init__(self,framesmodel,filepath):
@@ -200,7 +205,9 @@ class PyTablesFrameController(FrameController):
             
             # create the table
             self.dbfile_write = openFile(filepath,'w')
-            self.dbfile_write.createTable(self.dbfile_write.root, 'frames', desc)
+            self.dbfile_write.createTable(self.dbfile_write.root, 
+                                          'frames',
+                                           desc)
             self.db_write = self.dbfile_write.root.frames
             
             # create a table to store our schema as a pickled byte array
@@ -439,7 +446,6 @@ class PyTablesFrameController(FrameController):
     
     def list_ids(self):
         l = self.db_read.readWhere('framen == 0')['_id']
-        print l
         s = set(l)
         assert len(l) == len(s)
         return s

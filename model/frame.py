@@ -141,7 +141,7 @@ class Frames(Model):
     '''
     __metaclass__ = MetaFrame
     
-    _string_dtype = 'a36'
+    _string_dtype = 'a32'
     
     _id = Feature(LiteralExtractor,needs = None,dtype = _string_dtype)
     source = Feature(LiteralExtractor, needs = None, dtype = _string_dtype)
