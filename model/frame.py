@@ -224,7 +224,6 @@ class Frames(Model):
         torecompute = []
         
         # figure out which features will be deleted
-        # BUG: If store switches from True to False, mark this as a deletion
         delete = dict()
         for k,v in cls.features.iteritems():
             if k not in newfeatures:
@@ -240,34 +239,47 @@ class Frames(Model):
         
         # do a pass over the features, recording features that are new
         # or have been changed
-        # BUG: If store switches from False to True, mark this as an add
         add = dict()
         update = dict()
         for k,v in newfeatures.iteritems():
-            recompute = False
             if (k not in cls.features) or (v.store and not cls.features[k].store):
                 # This is a new feature, or it 
                 # has switched from un-stored to stored
-                recompute = True
                 add[k] = v
+                torecompute.append(v)
+                continue
                 
             if (k not in delete) and (k not in add) and (v != cls.features[k]):
                 # The feature has changed
-                recompute = True
                 update[k] = v
+                torecompute.append(v)
+                continue
                 
-            if recompute:
+        
+        toregenerate = []
+        # do a second pass over the features. Any feature with an ancestor
+        # that must be re-computed must also be re-computed 
+        for v in newfeatures.itervalues():
+            depends_on = v.depends_on()
+            
+            if v not in torecompute and\
+                 any([a in torecompute for a in depends_on]):
+                # this feature has at least one ancestor that also 
+                # needs to be re-computed
                 torecompute.append(v)
             
+            # handle special cases where the ancestor of a recomputed feature
+            # is not stored. This means that we have to recompute the ancestor
+            # and the recomputed feature, but other features that rely on the
+            # ancestor needn't be recomputed.  Store these in a different list,
+            # for now, so they don't trigger recomputes on all descendants of
+            # the ancestor. Ugh. 
+            for d in depends_on:
+                if v in torecompute and not d.store and d not in torecompute:
+                    toregenerate.append(d)
         
-        # do a second pass over the features. Any feature with an ancestor
-        # that must be recomputed or is not stored must be re-computed
-        for v in newfeatures.values():
-            if v not in torecompute and\
-                 any([a in torecompute for a in v.depends_on()]):
-                torecompute.append(v)      
         
-        return add,update,delete,torecompute
+        return add,update,delete,torecompute + toregenerate
     
     @classmethod
     def raw_audio_extractor(cls,pattern, needs = None):
