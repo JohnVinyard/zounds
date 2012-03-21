@@ -55,8 +55,7 @@ class Pipeline(Model):
         
         # Wishlist : Multiple pipelines can be chained together
         
-    def save(self):
-        pass
+    
     
     def train(self):
         data = self.fetch()
