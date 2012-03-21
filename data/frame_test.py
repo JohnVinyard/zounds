@@ -4,10 +4,10 @@ import os
 
 import numpy as np
 
-from model.frame import Frames,Feature
+from model.frame import Frames,Feature,Precomputed
 from analyze.extractor import Extractor
 from analyze.feature import FFT,Loudness,SpectralCentroid
-from model.pattern import FilePattern
+from model.pattern import Pattern,FilePattern
 from environment import Environment
 from frame import PyTablesFrameController
 
@@ -410,8 +410,16 @@ class PyTablesFrameControllerTests(unittest.TestCase):
         fn,FM2 = self.FM(framemodel = FM2, filepath = fn)
         add,update,delete,recompute = FM2._sync()
         self.assertTrue('centroid' in add)
-        print recompute
         self.assertEqual(2,len(recompute))
+        
+        chain = FM2.extractor_chain(Pattern('0','0','0'),
+                                    transitional = True,
+                                    recompute = recompute)
+        self.assertTrue(isinstance(chain['loudness'],Precomputed))
+        self.assertTrue(isinstance(chain['centroid'],SpectralCentroid))
+        self.assertTrue(isinstance(chain['fft'],FFT))
+                        
+                        
                        
         
         
