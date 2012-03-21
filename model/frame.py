@@ -128,20 +128,18 @@ class MetaFrame(type):
         # having to perform the search over and over.
         self.features = {}
         
-        # TODO: Refactor this repeated code
         for b in bases:
-            for k,v in b.__dict__.iteritems():
-                if isinstance(v,Feature):
-                    self.features[k] = v
+            self._add_features(b.__dict__)
         
-        for k,v in attrs.items():
-            if isinstance(v,Feature):
-                self.features[k] = v
+        self._add_features(attrs)
         
         super(MetaFrame,self).__init__(name,bases,attrs)
         
     
-
+    def _add_features(self,d):
+        for k,v in d.iteritems():
+            if isinstance(v,Feature):
+                self.features[k] = v
 
 class Frames(Model):
     '''
@@ -156,6 +154,7 @@ class Frames(Model):
     external_id = Feature(LiteralExtractor, needs = None, dtype = _string_dtype)
     framen = Feature(CounterExtractor,needs = None)
     
+    # TODO: instantiate with an _id, a slice, or a list of row numbers
     def __init__(self):
         Model.__init__(self)
     

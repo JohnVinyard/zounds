@@ -552,6 +552,7 @@ class PyTablesFrameController(FrameController):
         return cPickle.loads(s)
         
     # TODO: This should return a Frames-derived instance
+    # TODO: Write tests
     def get(self,_id,features=None):
         return self.db_read.readWhere('_id == "%s"' % _id)
     
