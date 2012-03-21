@@ -13,20 +13,24 @@ TOOO:
 
 FrameControllers should return all metadata and an "address" for patterns when it's done
 	appending. For PyTablesFrameController, this'd be start and stop row numbers
+	
+Write Pipeline
 
 Sphinx documentation
 
 multi-process sync - Deferred until I can figure out celery chord bug
-
-turn on PyTables compression?
 
 Add celery to list of dependencies once I've settled on using it
 
 Smarc audio-rate conversion by acquirers
 mp3 -> wav conversion by acquirers
 
+Configurable encoder and decoder for the "audio" feature, making it possible
+	to store mp3, ogg vorbis, or some other audio-encoding, instead of just
+	raw audio.  It'd be great if I could store lots of useful features AND
+	compress the data
 
-Write Pipeline
+
  
 
 speed and storage size tests for

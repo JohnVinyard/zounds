@@ -1,9 +1,13 @@
+from abc import ABCMeta,abstractmethod
 
 class Preprocess(object):
     
+    __metaclass__ = ABCMeta
+    
     def __init__(self):
         object.__init__(self)
-    
+
+    @abstractmethod    
     def _preprocess(self,data):
         raise NotImplemented()
     
