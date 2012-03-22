@@ -1,7 +1,9 @@
 from abc import ABCMeta,abstractmethod
 
+import numpy as np
+
 from model import Model
-from pattern import FilePattern
+from pattern import FilePattern,DataPattern
 from analyze.extractor import Extractor,ExtractorChain
 from analyze.feature import \
     AudioSamples,AudioFromDisk,LiteralExtractor,CounterExtractor,MetaDataExtractor
@@ -209,14 +211,12 @@ class Frames(Model):
         if not len(self._data):
             raise KeyError(address)
         
-        self.audio = self._data['audio']    
+        self.audio = self._data['audio'] 
+        
         for k,v in self.__class__.iterfeatures():
             if v.store:
                 setattr(self,k,self._data[k])
-            else:
-                # TODO: Lazily compute unstored features when requested
-                setattr(self,k,None)
-    
+        
     
     def __len__(self):
         return len(self._data)
@@ -226,6 +226,29 @@ class Frames(Model):
         # another Frames instance?
         raise NotImplemented()
     
+    # TODO: Write tests
+    def __getattribute__(self,k):
+        '''
+        This method is implemented so that non-stored features can be computed
+        on the fly, if requested.
+        '''
+        f = Model.__getattribute__(self,k)
+        if isinstance(f,Feature):
+            # synthesize audio from this list of frames
+            audio = self.__class__.env().synth(self.audio)
+            p = DataPattern(None,None,None,audio)
+            # create an extractor chain that includes only the extractors we'll
+            # need to compute the requested feature
+            ec = self.__class__.extractor_chain(p).prune(k)
+            # run the chain
+            d = ec.collect()
+            # cache the results
+            setattr(self,k,np.array(d[k]))
+            return Model.__getattribute__(self,k)
+        else:
+            return f
+        
+         
     @classmethod
     def list_ids(cls):
         return cls.controller().list_ids()

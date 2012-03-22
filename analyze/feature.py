@@ -156,7 +156,7 @@ class AudioFromMemory(AudioSamples):
         A generator that returns a sliding window along samples
         '''
         for i in xrange(0,len(self.samples),self.stepsize):
-            yield pad(self.samples[i : i + self.window],self.windowsize)
+            yield pad(self.samples[i : i + self.windowsize],self.windowsize)
     
     @property
     def stream(self):

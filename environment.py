@@ -1,5 +1,6 @@
 from uuid import uuid4
 from celery.task import subtask,chord
+from analyze.synthesize import WindowedAudioSynthesizer
 
 class AudioConfig:
     samplerate = 44100
@@ -36,6 +37,12 @@ class Environment(object):
         # audio settings, samplerate, windowsize and stepsize
         self.audio = audio
         
+        # A synthesizer that can create raw audio samples from the encoding
+        # stored in the 'audio' feature of frames.  Note that for now, the
+        # "encoding" and "decoding" are really no-ops, except for the windowing
+        # function on the encoding side
+        self.synth = WindowedAudioSynthesizer(self.windowsize,self.stepsize)
+        
         # Should we do analysis and db syncing in multiple processes?
         self.parallel = False
         
@@ -47,7 +54,6 @@ class Environment(object):
         # the client app considers important
         self.framemodel = framemodel
         
-        
         self.framecontroller_class = framecontroller
         
         # a dictionary-like object mapping classes to data backends
@@ -57,6 +63,8 @@ class Environment(object):
         self.data[framemodel] = self.framecontroller
         if not Environment._test:
             self.framemodel.sync()
+        
+        
     @property
     def address_class(self):
         return self.framecontroller_class.Address
