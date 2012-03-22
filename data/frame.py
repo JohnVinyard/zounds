@@ -91,6 +91,10 @@ class FrameController(Controller):
         '''
         pass
     
+    
+    def __getitem__(self,key):
+        return self.get(key)
+    
     @abstractmethod
     def iter_feature(self,_id,feature):
         '''
@@ -153,6 +157,9 @@ class PyTablesFrameController(FrameController):
         '''
         def __init__(self,key):
             model.frame.Address.__init__(self,key)
+        
+        def __str__(self):
+            return '%s - %s' % (self.__class__,self.key)
         
         def serialize(self):
             raise NotImplemented()
@@ -337,6 +344,7 @@ class PyTablesFrameController(FrameController):
         # release the lock for the next writer
         self.release_lock()
         
+         
         return PyTablesFrameController.Address(slice(start_row,stop_row))
     
         
@@ -528,18 +536,28 @@ class PyTablesFrameController(FrameController):
     # TODO: Write tests
     def get(self,key):
         
+        # the key is a zounds id
         if isinstance(key,str):
             return self.db_read.readWhere(self._query(_id = key))
         
+        # the key is a (source, external id) pair
         if isinstance(key,tuple) \
             and 2 == len(key) \
             and all([isinstance(k,str) for k in key]):
-            
-            return 
+            source,extid = key
+            return self.db_read.readWhere(\
+                            self._query(source = source, external_id = extid))
         
+        # key is an address, which means that it's an int, a slice, or a list
+        # of ints, all of which can be used to address a tables.Table instance
+        # directly
+        if isinstance(key,PyTablesFrameController.Address):
+            return self.db_read[key.key]
+        
+        raise ValueError(\
+            'key must be a zounds id, a (source,external_id) pair,\
+             or a PyTablesFrameController.Address instance')
     
-    def __getitem__(self,key):
-        return self.get(key)
     
     def close(self):
         if self.dbfile_write:
