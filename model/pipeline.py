@@ -20,10 +20,9 @@ class Pipeline(Model):
         # a unique identifier
         self._id = _id
         
-        # Fetch should simply be a feature, like bark bands, or rbm activations.
-        # If we know what our current FrameModel is, we can get samples from
-        # disk or the db.  Additionally, if fetching from disk, we can only
-        # run the branches of the extractor that are necessary.
+        # For now, I'm only going to implement a fetcher that knows how to read
+        # features from a frames db.  Reading stuff from disk was always very
+        # slow, so, for now, it's be already computed. 
         self.fetch = fetch
         self.source = source
         
