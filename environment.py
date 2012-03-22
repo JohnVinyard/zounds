@@ -47,6 +47,9 @@ class Environment(object):
         # the client app considers important
         self.framemodel = framemodel
         
+        
+        self.framecontroller_class = framecontroller
+        
         # a dictionary-like object mapping classes to data backends
         self.data = data
         
@@ -54,7 +57,9 @@ class Environment(object):
         self.data[framemodel] = self.framecontroller
         if not Environment._test:
             self.framemodel.sync()
-            
+    
+    def address_class(self):
+        return self.framecontroller_class.Address
         
     @property
     def windowsize(self):

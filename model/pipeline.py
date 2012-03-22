@@ -7,7 +7,7 @@ class Pipeline(Model):
     '''
     '''
     
-    def __init__(self,_id,fetch,source,preprocess,learner):
+    def __init__(self,_id,fetch,preprocess,learner):
         Model.__init__(self)
         
         # e.g. Pipeline( RowModel.Bark, db, MeanStd, LinearRbm ) for a 
@@ -24,7 +24,7 @@ class Pipeline(Model):
         # features from a frames db.  Reading stuff from disk was always very
         # slow, so, for now, it's be already computed. 
         self.fetch = fetch
-        self.source = source
+        
         
         
         # something that knows how to preprocess data 
@@ -52,7 +52,10 @@ class Pipeline(Model):
         #   - no preprocessor
         #   - rbm
         
-        # Wishlist : Multiple pipelines can be chained together
+        # Wishlist : Multiple pipelines can be chained together.
+        # Answer: Easy! Train a stack of rbms and create an Extractor
+        # that takes an arbitrary number of pipelines. It calls activate()
+        # on its input data, and passes that down the line.
         
     
     

@@ -1,3 +1,4 @@
+import string
 import os.path
 import re
 import time
@@ -13,6 +14,7 @@ from celery.task import task,chord
 
 from controller import Controller
 from model.pattern import Pattern
+import model.frame
 from util import pad
 
 class FrameController(Controller):
@@ -81,7 +83,7 @@ class FrameController(Controller):
         pass
     
     @abstractmethod
-    def get(self,_id,features=None):
+    def get(self,key):
         '''
         Gets rows, and optionally specific features from those rows.
         Indices may be a single index, a list of indices, or a slice.
@@ -142,6 +144,24 @@ class PyTablesFrameController(FrameController):
     (e.g. where _id == 1234), so a slice with literal row numbers is the best
     address for this controller
     '''
+    
+    class Address(model.frame.Address):
+        '''
+        An address whose key can be anything acceptable
+        for the tables.Table.__getitem__ method, i.e., an int,
+        a slice, or a list of ints
+        '''
+        def __init__(self,key):
+            model.frame.Address.__init__(self,key)
+        
+        def serialize(self):
+            raise NotImplemented()
+        
+        @classmethod
+        def deserialize(cls):
+            raise NotImplemented()
+    
+    
     
     def __init__(self,framesmodel,filepath):
         FrameController.__init__(self,framesmodel)
@@ -272,6 +292,7 @@ class PyTablesFrameController(FrameController):
         bucket = np.recarray(self._max_buffer_size,self.recarray_dtype)
         nframes = 0
         current = dict((k,0) for k in self.steps.keys())
+        start_row = None
         for k,v in chain.process():
             if rootkey == k and \
                 (nframes == bufsize or nframes >= self._max_buffer_size):
@@ -279,12 +300,13 @@ class PyTablesFrameController(FrameController):
                 # we've reached our smallest buffer size. Let's attempt a write
                 try:
                     self.acquire_lock(nframes)
+                    if start_row is None:
+                        start_row = self.db_read.__len__()
                     # we got the lock. Let's write the data we have
                     self._append(bucket[:nframes])
                     nframes = 0
                     bucket[:] = 0
                     current = dict((k,0) for k in self.steps.keys())
-                    self.release_lock()
                 except PyTablesFrameController.WriteLockException:
                     # someone else has the write lock. Let's just keep 
                     # processing for awhile (within reason)
@@ -305,13 +327,19 @@ class PyTablesFrameController(FrameController):
             
         # We've processed the entire file. Wait until we can get the write lock    
         self.acquire_lock(nframes,wait=True)
+        if start_row is None:
+            start_row = self.db_read.__len__()
         
         print 'appending %i rows' % nframes
         self._append(bucket[:nframes])
         
+        stop_row = self.db_read.__len__()
         # release the lock for the next writer
         self.release_lock()
+        
+        return PyTablesFrameController.Address(slice(start_row,stop_row))
     
+        
     
     @property
     def lock_filename(self):
@@ -379,19 +407,20 @@ class PyTablesFrameController(FrameController):
         return self.db_read.__len__()
     
     def list_ids(self):
-        l = self.db_read.readWhere('framen == 0')['_id']
+        l = self.db_read.readWhere(self._query(framen = 0))['_id']
         s = set(l)
         assert len(l) == len(s)
         return s
     
     def exists(self,source,external_id):
+        
         rows = self.db_read.readWhere(\
-                        '(source == "%s") & (external_id == "%s")' %\
-                         (source,external_id))
+                    self._query(source = source,external_id = external_id))
         return len(rows) > 0
     
     def external_id(self,_id):
-        row = self.db_read.readWhere('(_id == "%s") & (framen == 0)' % _id)
+        
+        row = self.db_read.readWhere(self._query(_id = _id, framen = 0))
         return row[0]['source'],row[0]['external_id']
     
     def get_dtype(self,key):
@@ -411,7 +440,8 @@ class PyTablesFrameController(FrameController):
         # for row in self.db_read.where('_id == "%s"' % _id):
         #   yield row[feature]
         
-        rowns = self.db_read.getWhereList('_id == "%s"' % _id)
+        # Here's the less simple workaround
+        rowns = self.db_read.getWhereList(self._query(_id = _id))
         for row in self.db_read.itersequence(rowns):
             yield row[feature]
     
@@ -484,14 +514,32 @@ class PyTablesFrameController(FrameController):
     def get_features(self):
         s = self.schema_read[:]['bytes'].tostring()
         return cPickle.loads(s)
+    
+    # TODO: Write tests
+    def _query_condition(self,key,value):
+        v = '"%s"' % value if isinstance(value,str) else str(value)
+        return '(%s == %s)' % (key,v)
+    
+    def _query(self,op='&',**kwargs):
+        return '(%s)' % string.join(\
+            [self._query_condition(k,v) for k,v in kwargs.iteritems()],' %s ' % op)
         
     # TODO: This should return a Frames-derived instance
     # TODO: Write tests
-    def get(self,_id,features=None):
-        return self.db_read.readWhere('_id == "%s"' % _id)
+    def get(self,key):
+        
+        if isinstance(key,str):
+            return self.db_read.readWhere(self._query(_id = key))
+        
+        if isinstance(key,tuple) \
+            and 2 == len(key) \
+            and all([isinstance(k,str) for k in key]):
+            
+            return 
+        
     
-    def __getitem__(self,_id):
-        return self.get(_id)
+    def __getitem__(self,key):
+        return self.get(key)
     
     def close(self):
         if self.dbfile_write:
@@ -585,7 +633,7 @@ class DictFrameController(FrameController):
         raise NotImplemented()
     
     
-    def get(self,indices,features=None):
+    def get(self,key):
         raise NotImplemented()
   
     

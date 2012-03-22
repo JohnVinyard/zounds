@@ -1,3 +1,5 @@
+from abc import ABCMeta,abstractmethod
+
 from model import Model
 from pattern import FilePattern
 from analyze.extractor import Extractor,ExtractorChain
@@ -116,8 +118,31 @@ class Precomputed(Extractor):
                     (self.__class__.__name__,
                      self._id,
                      self.key))
-        
 
+# TODO: Write better documentation
+class Address(object):
+    '''
+    A container for the most efficient way to access frames, given the backing
+    store.
+    '''
+    __metaclass__ = ABCMeta
+    
+    def __init__(self,key):
+        object.__init__(self)
+        self._key = key
+    
+    @property
+    def key(self):
+        return self._key
+    
+    @abstractmethod
+    def serialize(self):
+        pass
+    
+    @classmethod
+    def deserialize(cls):
+        raise NotImplemented()
+    
 
 class MetaFrame(type):
 
@@ -140,6 +165,19 @@ class MetaFrame(type):
         for k,v in d.iteritems():
             if isinstance(v,Feature):
                 self.features[k] = v
+    
+    def __getitem__(self,key):
+        '''
+        key may be one of the following:
+        
+        - a zounds id
+        - a two-tuple of (source,external_id)
+        - a frame address
+        - a slice containing start and stop frame addresses
+        - a list of arbitrary frame addresses
+        '''
+        raise NotImplemented()
+
 
 class Frames(Model):
     '''
@@ -154,10 +192,10 @@ class Frames(Model):
     external_id = Feature(LiteralExtractor, needs = None, dtype = _string_dtype)
     framen = Feature(CounterExtractor,needs = None)
     
-    # TODO: instantiate with an _id, a slice, or a list of row numbers
-    def __init__(self):
-        Model.__init__(self)
     
+    def __init__(self,_id = None, source = None, external_id = None, address = None):
+        Model.__init__(self)
+        self._data = None
         
     @classmethod
     def stored_features(cls):
