@@ -4,7 +4,7 @@ from model import Model
 from pattern import FilePattern
 from analyze.extractor import Extractor,ExtractorChain
 from analyze.feature import \
-    RawAudio,LiteralExtractor,CounterExtractor,MetaDataExtractor
+    AudioSamples,AudioFromDisk,LiteralExtractor,CounterExtractor,MetaDataExtractor
 from util import recurse,sort_by_lineage
 
 
@@ -182,8 +182,6 @@ class MetaFrame(type):
         - a zounds id
         - a two-tuple of (source,external_id)
         - a frame address
-        - a slice containing start and stop frame addresses
-        - a list of arbitrary frame addresses
         '''
         return self(address)
 
@@ -255,7 +253,7 @@ class Frames(Model):
         env = cls.env()
         for e in chain:
             if not isinstance(e,MetaDataExtractor) and \
-                (isinstance(e,RawAudio) or cls.features[e.key].store):
+                (isinstance(e,AudioSamples) or cls.features[e.key].store):
                 d[e.key] = (e.dim(env),e.dtype,e.step)
         return d
     
@@ -354,18 +352,12 @@ class Frames(Model):
         
         return add,update,delete,torecompute + toregenerate
     
+
     @classmethod
-    def raw_audio_extractor(cls,pattern, needs = None):
-        config = cls.env()
-        ra = RawAudio(
-                    config.samplerate,
-                    config.windowsize,
-                    config.stepsize,
-                    needs = needs)
-        return ra
-    
-    @classmethod
-    def extractor_chain(cls,pattern,transitional=False,recompute = []):
+    def extractor_chain(cls,
+                        pattern,
+                        transitional=False,
+                        recompute = []):
         '''
         From the features defined on this class, create a feature extractor
         that can transform raw audio data into the desired set of features.
@@ -378,7 +370,7 @@ class Frames(Model):
                              cls.controller(),
                              needs = meta)
         else:
-            ra = cls.raw_audio_extractor(pattern, needs = meta)
+            ra = pattern.audio_extractor(needs = meta)
         
             
         # We now need to build the extractor chain, but we can't be sure
@@ -407,7 +399,7 @@ class Frames(Model):
                 # KLUDGE: I'm assuming that any Features defined on the base
                 # Frames class will be using the MetaDataExtractor as a source,
                 # while any features defined on the Frames-derived class will
-                # be using RawAudio. This might not always be the case!!
+                # be using AudioFromDisk. This might not always be the case!!
                 if hasattr(Frames,k):
                     needs = meta
                 else:

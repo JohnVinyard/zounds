@@ -1,7 +1,10 @@
 from __future__ import division
+
+import numpy as np
+
 from audiostream import AudioStream
 from extractor import Extractor,SingleInput
-import numpy as np
+from util import pad
 
 # TODO: Implement Pitch, BFCC, Centroid, Flatness, Bark, Tempo, Chroma, 
 # Onset, Autocorrelation, DCT
@@ -61,7 +64,7 @@ class CounterExtractor(Extractor):
         self.n += 1
         return n
 
-class RawAudio(Extractor):
+class AudioSamples(Extractor):
     
     def __init__(self,samplerate,windowsize,stepsize,needs = None):
         Extractor.__init__(self,needs = needs)
@@ -71,7 +74,7 @@ class RawAudio(Extractor):
         self.key = 'audio'
         self.window = self.oggvorbis(self.windowsize)
         
-        self._init = False
+        
     
     def dim(self,env):
         return (self.windowsize,)
@@ -79,31 +82,10 @@ class RawAudio(Extractor):
     @property
     def dtype(self):
         return np.float32
-        
-    def _process(self):
-        
-        if not self._init:
-            data = self.input[self.sources[0]][0]
-            filename = data['filename']
-            self.stream = AudioStream(\
-                            filename,
-                            self.samplerate,
-                            self.windowsize,
-                            self.stepsize).__iter__()
-            self._init = True
-        
-        try:
-            return self.stream.next() * self.window
-        except StopIteration:
-            self.out = None
-            self.done = True
-            
-            # KLUDGE: This is a bit odd.   The RawAudio extractor is telling
-            # an extractor on which it depends that it is done.  This is 
-            # necessary because the MetaData extractor generates data with
-            # no source. It has no idea when to stop.
-            self.sources[0].out = None
-            self.sources[0].done = True
+    
+    @property
+    def stream(self):
+        raise NotImplemented()
     
     def __hash__(self):
         return hash(\
@@ -123,6 +105,69 @@ class RawAudio(Extractor):
         f = np.sin(.5 * np.pi * i)
         
         return f * (1. / f.max())
+    
+    def _process(self):
+        
+        try:
+            return self.stream.next() * self.window
+        except StopIteration:
+            self.out = None
+            self.done = True
+            
+            # KLUDGE: This is a bit odd.   The RawAudio extractor is telling
+            # an extractor on which it depends that it is done.  This is 
+            # necessary because the MetaData extractor generates data with
+            # no source. It has no idea when to stop.
+            self.sources[0].out = None
+            self.sources[0].done = True
+    
+    
+class AudioFromDisk(AudioSamples):
+    
+    def __init__(self,samplerate,windowsize,stepsize, needs = None):
+        AudioSamples.__init__(self,samplerate,windowsize,stepsize,needs = needs)
+        self._init = False
+    
+    @property
+    def stream(self):
+        if not self._init:
+            data = self.input[self.sources[0]][0]
+            # KLUDGE: I shouldn't have to know a specific name here
+            filename = data['filename']
+            self._stream = AudioStream(\
+                            filename,
+                            self.samplerate,
+                            self.windowsize,
+                            self.stepsize).__iter__()
+            self._init = True
+        
+        return self._stream
+        
+    
+    
+class AudioFromMemory(AudioSamples):
+    
+    def __init__(self,samplerate,windowsize,stepsize,needs = None):
+        AudioSamples.__init__(self,samplerate,windowsize,stepsize,needs = needs)
+        self._init = False
+        
+    def get_stream(self):
+        '''
+        A generator that returns a sliding window along samples
+        '''
+        for i in xrange(0,len(self.samples),self.stepsize):
+            yield pad(self.samples[i : i + self.window],self.windowsize)
+    
+    @property
+    def stream(self):
+        if not self._init:
+            data = self.input[self.sources[0]][0]
+            # KLUDGE: I shouldn't have to know a specific name here
+            self.samples = data['samples']
+            self._stream = self.get_stream()
+            self._init = True
+        
+        return self._stream
 
 class FFT(SingleInput):
     

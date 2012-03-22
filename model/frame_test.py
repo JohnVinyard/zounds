@@ -1,6 +1,10 @@
 import unittest
+
+import numpy as np
+
+
 from frame import Frames,Feature,Precomputed
-from pattern import Pattern
+from pattern import FilePattern
 from environment import Environment
 from analyze.feature import FFT,Loudness
 from data.frame import DictFrameController
@@ -21,7 +25,7 @@ class FrameModelTests(unittest.TestCase):
         Environment.instance = self.orig_env
     
     def mock_pattern(self):
-        return Pattern('0','0','0')
+        return FilePattern('0','0','0','/some/file.wav')
     
     def test_dimensions_correct_keys(self):
         class FM1(Frames):
@@ -266,8 +270,8 @@ class FrameModelTests(unittest.TestCase):
         self.assertEqual(5,len(precomputed))
         
     
-    # TODO: factor out common code in the following two tests
-    def test_get_with_zounds_id(self):
+     
+    def test_get(self):
         
         class FM(Frames):
             fft = Feature(FFT,store = True, needs = None)
@@ -321,23 +325,50 @@ class FrameModelTests(unittest.TestCase):
         frames = FM['some_id']
         self.assertEqual(None,frames.fft)
     
-    def test_get_with_source_and_external_id(self):
-        self.fail()
-    
-    def test_get_with_address_int(self):
-        self.fail()
-    
-    def test_get_with_slice(self):
-        self.fail()
-    
-    def test_get_with_list(self):
-        self.fail()
     
     def test_get_no_results(self):
-        self.fail()
+        class FM(Frames):
+            fft = Feature(FFT,store = False, needs = None)
+            loudness = Feature(Loudness, store = True, need = fft)
+            
+        class Controller(DictFrameController):
+            
+            def get(self,address):
+                return []
+            
+        Environment('test',
+                    FM,
+                    Controller,
+                    (FM,),
+                    {})
+        
+        self.assertRaises(KeyError, lambda : FM['some_id'])
+        
     
     def test_instance_len(self):
-        self.fail()
+        class FM(Frames):
+            fft = Feature(FFT,store = False, needs = None)
+            loudness = Feature(Loudness, store = True, need = fft)
+            
+        class Controller(DictFrameController):
+            
+            def get(self,address):
+                r = np.recarray(10,dtype=[('_id','a10'),
+                                          ('audio',np.float32),
+                                          ('source','a10'),
+                                          ('external_id','a10'),
+                                          ('framen',np.int32),
+                                          ('fft',np.float32),
+                                          ('loudness',np.float32)])
+                return r
+            
+        Environment('test',
+                    FM,
+                    Controller,
+                    (FM,),
+                    {})
+        frames = FM['some_id']
+        self.assertEqual(10,len(frames))
         
         
         

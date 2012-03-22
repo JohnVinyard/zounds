@@ -73,9 +73,8 @@ m = {
     ] 
 }
 '''
-
 from model import Model
-
+from analyze.feature import AudioFromDisk,AudioFromMemory
 
 class Pattern(Model):
     '''
@@ -83,8 +82,6 @@ class Pattern(Model):
     a "leaf" pattern represents a list of ids which point to audio frames.
     A "branch" pattern points to other patterns.
     '''
-    
-    
     def __init__(self,_id,source,external_id):
         Model.__init__(self)
         
@@ -103,6 +100,10 @@ class Pattern(Model):
             self._fc = self.env().framecontroller
         return self._fc
     
+    
+    def audio_extractor(self,needs = None):
+        raise NotImplemented()
+    
     def data(self):
         return self._data
 
@@ -117,5 +118,28 @@ class FilePattern(Pattern):
         self.filename = filename
         self._data['filename'] = self.filename
 
+    
+    def audio_extractor(self, needs = None):
+        e = self.__class__.env()
+        return AudioFromDisk(e.samplerate,
+                             e.windowsize,
+                             e.stepsize,
+                             needs = needs)
 
-
+class DataPattern(Pattern):
+    '''
+    Represents a pattern in the form of an in-memory numpy array of audio 
+    samples that has not yet been stored
+    '''
+    def __init__(self,_id,source,external_id,samples):
+        Pattern.__init__(self,_id,source,external_id)
+        self.samples = samples
+        self._data['samples'] = samples
+        
+    
+    def audio_extractor(self,needs = None):
+        e = self.__class__.env()
+        return AudioFromMemory(e.samplerate,
+                               e.windowsize,
+                               e.stepsize,
+                               needs = needs)

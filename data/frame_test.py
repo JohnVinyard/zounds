@@ -7,7 +7,7 @@ import numpy as np
 from model.frame import Frames,Feature,Precomputed
 from analyze.extractor import Extractor
 from analyze.feature import FFT,Loudness,SpectralCentroid
-from model.pattern import Pattern,FilePattern
+from model.pattern import FilePattern
 from environment import Environment
 from frame import PyTablesFrameController
 
@@ -268,6 +268,50 @@ class PyTablesFrameControllerTests(unittest.TestCase):
         c.close()
         return fn,l1,old_features
     
+    def test_get_id(self):
+        fn,FM1 = self.FM()
+        c = FM1.controller()
+        lengths = [44100,44100*2]
+        patterns = self.get_patterns(FM1,lengths)
+        for p in patterns:
+            ec = FM1.extractor_chain(p)
+            c.append(ec)
+        
+        data = c.get('0')
+        self.assertTrue(len(data) > 0)
+        self.assertEqual(1,len(set(data['_id'])))
+    
+    def test_get_source_and_ext_id(self):
+        fn,FM1 = self.FM()
+        c = FM1.controller()
+        lengths = [44100,44100*2]
+        patterns = self.get_patterns(FM1,lengths)
+        for p in patterns:
+            ec = FM1.extractor_chain(p)
+            c.append(ec)
+        
+        data = c.get(('test','0'))
+        self.assertTrue(len(data) > 0)
+        self.assertEqual(1,len(set(data['_id'])))
+    
+    def test_get_address(self):
+        fn,FM1 = self.FM()
+        c = FM1.controller()
+        lengths = [44100,44100*2]
+        patterns = self.get_patterns(FM1,lengths)
+        addresses = []
+        for p in patterns:
+            ec = FM1.extractor_chain(p)
+            addresses.append(c.append(ec))
+            
+        data = c.get(addresses[0])
+        self.assertTrue(len(data) > 0)
+        self.assertEqual(1,len(set(data['_id'])))
+    
+    def test_get_invalid_key(self):
+        fn,FM1 = self.FM()
+        c = FM1.controller()
+        self.assertRaises(ValueError,lambda : c.get(dict()))
     
     def sync_helper(self,old_framemodel,new_framemodel,*assertions):
         
@@ -412,7 +456,7 @@ class PyTablesFrameControllerTests(unittest.TestCase):
         self.assertTrue('centroid' in add)
         self.assertEqual(2,len(recompute))
         
-        chain = FM2.extractor_chain(Pattern('0','0','0'),
+        chain = FM2.extractor_chain(FilePattern('0','0','0','/some/file.wav'),
                                     transitional = True,
                                     recompute = recompute)
         self.assertTrue(isinstance(chain['loudness'],Precomputed))
