@@ -11,6 +11,8 @@ TOOO:
 -------------
 Frames instance API
 
+Multidimensional Frames indexes
+
 The Pipeline class and the analysis of novel, user-created patterns both require
 	that it be possible to construct an extractor that takes arbitrary input. Currently
 	we rebuild the extractor chain for every file/pattern that needs to be analyzed.
