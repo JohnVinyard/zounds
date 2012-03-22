@@ -2,11 +2,13 @@ from __future__ import division
 
 import numpy as np
 
+from scipy.stats.mstats import gmean
+
 from audiostream import AudioStream
 from extractor import Extractor,SingleInput
 from util import pad
 
-# TODO: Implement Pitch, BFCC, Centroid, Flatness, Bark, Tempo, Chroma, 
+# TODO: Implement Pitch, BFCC, Bark, Tempo, Chroma, 
 # Onset, Autocorrelation, DCT
 
 class MetaDataExtractor(Extractor):
@@ -206,11 +208,11 @@ class Loudness(SingleInput):
     
 class SpectralCentroid(SingleInput):
     '''
-    Indicates where the "center of mass" of the spectrum is. Perceptually, 
+    "Indicates where the "center of mass" of the spectrum is. Perceptually, 
     it has a robust connection with the impression of "brightness" of a 
     sound.  It is calculated as the weighted mean of the frequencies 
     present in the signal, determined using a Fourier transform, with 
-    their magnitudes as the weights,
+    their magnitudes as the weights..."
     
     From http://en.wikipedia.org/wiki/Spectral_centroid
     '''
@@ -230,6 +232,39 @@ class SpectralCentroid(SingleInput):
         # TODO: This is wasteful. Get the shape of the source and cache it
         bins = np.arange(1,len(spectrum) + 1)
         return np.sum(spectrum*bins) / np.sum(bins)
+
+class SpectralFlatness(SingleInput):
+    '''
+    "Spectral flatness or tonality coefficient, also known as Wiener 
+    entropy, is a measure used in digital signal processing to characterize an
+    audio spectrum. Spectral flatness is typically measured in decibels, and 
+    provides a way to quantify how tone-like a sound is, as opposed to being 
+    noise-like. The meaning of tonal in this context is in the sense of the 
+    amount of peaks or resonant structure in a power spectrum, as opposed to 
+    flat spectrum of a white noise. A high spectral flatness indicates that 
+    the spectrum has a similar amount of power in all spectral bands - this 
+    would sound similar to white noise, and the graph of the spectrum would 
+    appear relatively flat and smooth. A low spectral flatness indicates that
+    the spectral power is concentrated in a relatively small number of 
+    bands - this would typically sound like a mixture of sine waves, and the
+    spectrum would appear "spiky"..."
+    
+    From http://en.wikipedia.org/wiki/Spectral_flatness
+    '''
+    
+    def __init__(self, needs = None, key = None):
+        SingleInput.__init__(self,needs = needs, key = key)
+    
+    def dim(self,env):
+        return ()
+    
+    @property
+    def dtype(self):
+        return np.float32
+    
+    def _process(self):
+        spectrum = self.in_data[0]
+        return gmean(spectrum) / np.average(spectrum)
     
 
 from extractor import ExtractorChain
