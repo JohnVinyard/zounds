@@ -9,11 +9,11 @@ def pad(a,desiredlength):
     desired length.  Return it unchanged if it is greater than or
     equal to the desired length
     '''
-    islist = isinstance(a,list)
     
     if len(a) >= desiredlength:
         return a
     
+    islist = isinstance(a,list)
     a = np.array(a)
     diff = desiredlength - len(a)
     shape = list(a.shape)

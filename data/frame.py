@@ -532,7 +532,7 @@ class PyTablesFrameController(FrameController):
         return '(%s)' % string.join(\
             [self._query_condition(k,v) for k,v in kwargs.iteritems()],' %s ' % op)
         
-    # TODO: This should return a Frames-derived instance
+    
     # TODO: Write tests
     def get(self,key):
         
