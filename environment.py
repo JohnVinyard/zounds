@@ -57,7 +57,7 @@ class Environment(object):
         self.data[framemodel] = self.framecontroller
         if not Environment._test:
             self.framemodel.sync()
-    
+    @property
     def address_class(self):
         return self.framecontroller_class.Address
         

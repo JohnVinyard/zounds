@@ -139,6 +139,10 @@ class Address(object):
     def serialize(self):
         pass
     
+    @abstractmethod
+    def __str__(self):
+        pass
+    
     @classmethod
     def deserialize(cls):
         raise NotImplemented()
@@ -160,13 +164,18 @@ class MetaFrame(type):
         
         super(MetaFrame,self).__init__(name,bases,attrs)
         
-    
+        
     def _add_features(self,d):
         for k,v in d.iteritems():
             if isinstance(v,Feature):
                 self.features[k] = v
     
-    def __getitem__(self,key):
+    def iterfeatures(self):
+        return self.features.iteritems()
+    
+        
+    
+    def __getitem__(self,address):
         '''
         key may be one of the following:
         
@@ -176,9 +185,11 @@ class MetaFrame(type):
         - a slice containing start and stop frame addresses
         - a list of arbitrary frame addresses
         '''
-        raise NotImplemented()
+        return self(address)
 
 
+
+# TODO: Frames classes should implement FramesController interface!
 class Frames(Model):
     '''
     
@@ -193,9 +204,34 @@ class Frames(Model):
     framen = Feature(CounterExtractor,needs = None)
     
     
-    def __init__(self,_id = None, source = None, external_id = None, address = None):
+    def __init__(self,address):
         Model.__init__(self)
-        self._data = None
+        self.address = address
+        self._data = self.controller()[address]
+        if not len(self._data):
+            raise KeyError(address)
+        
+        self.audio = self._data['audio']    
+        for k,v in self.__class__.iterfeatures():
+            if v.store:
+                setattr(self,k,self._data[k])
+            else:
+                # TODO: Lazily compute unstored features when requested
+                setattr(self,k,None)
+    
+    
+    def __len__(self):
+        return len(self._data)
+    
+    def __getitem__(self):
+        # TODO: Should this return a slice of the _data recarray, or
+        # another Frames instance?
+        raise NotImplemented()
+    
+    @classmethod
+    def list_ids(cls):
+        return cls.controller().list_ids()
+    
         
     @classmethod
     def stored_features(cls):

@@ -9,7 +9,7 @@ There are 3 types of similarity
 
 TOOO:
 -------------
-Frames instance API
+Frames instance API and tests
 
 Multidimensional Frames indexes
 
@@ -19,9 +19,7 @@ The Pipeline class and the analysis of novel, user-created patterns both require
 	This will be *very* costly if we're doing something like gathering patches 
 	from disk for a machine learning task. 
 
-FrameControllers should return all metadata and an "address" for patterns when it's done
-	appending. For PyTablesFrameController, this'd be start and stop row numbers
-	
+
 Write Pipeline
 
 Sphinx documentation

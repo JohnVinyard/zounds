@@ -265,7 +265,79 @@ class FrameModelTests(unittest.TestCase):
         precomputed = filter(lambda e : isinstance(e,Precomputed), chain.chain)
         self.assertEqual(5,len(precomputed))
         
+    
+    # TODO: factor out common code in the following two tests
+    def test_get_with_zounds_id(self):
         
+        class FM(Frames):
+            fft = Feature(FFT,store = True, needs = None)
+            loudness = Feature(Loudness, store = True, need = fft)
+            
+        class Controller(DictFrameController):
+            
+            def get(self,address):
+                return {'_id' : 1,
+                        'audio' : 1,
+                        'source' : 'test',
+                        'external_id' : '0',
+                        'framen' : 0,
+                        'fft' : 1, 
+                        'loudness' : 2}
+            
+        Environment('test',
+                    FM,
+                    Controller,
+                    (FM,),
+                    {})
+        frames = FM['some_id']
+        self.assertEqual(1,frames.fft)
+        self.assertEqual(2,frames.loudness)
+        
+    def test_get_unstored_feature(self):
+        '''
+        Features that aren't stored should be computed on the fly when
+        their attribute name is accessed
+        '''
+        class FM(Frames):
+            fft = Feature(FFT,store = False, needs = None)
+            loudness = Feature(Loudness, store = True, need = fft)
+            
+        class Controller(DictFrameController):
+            
+            def get(self,address):
+                return {'_id' : 1,
+                        'audio' : 1,
+                        'source' : 'test',
+                        'external_id' : '0',
+                        'framen' : 0,
+                        'fft' : 1, 
+                        'loudness' : 2}
+            
+        Environment('test',
+                    FM,
+                    Controller,
+                    (FM,),
+                    {})
+        frames = FM['some_id']
+        self.assertEqual(None,frames.fft)
+    
+    def test_get_with_source_and_external_id(self):
+        self.fail()
+    
+    def test_get_with_address_int(self):
+        self.fail()
+    
+    def test_get_with_slice(self):
+        self.fail()
+    
+    def test_get_with_list(self):
+        self.fail()
+    
+    def test_get_no_results(self):
+        self.fail()
+    
+    def test_instance_len(self):
+        self.fail()
         
         
         
