@@ -122,9 +122,9 @@ from analyze.extractor import \
     
 class RootExtractor(Extractor):
     
-    def __init__(self,shape=1,totalframes=10):
+    def __init__(self,shape=1,totalframes=10,key = None):
         self.shape = shape
-        Extractor.__init__(self)
+        Extractor.__init__(self,key = key)
         self.framesleft = totalframes
     
     
@@ -151,8 +151,8 @@ class RootExtractor(Extractor):
 
 class SumExtractor(Extractor):
     
-    def __init__(self,needs,nframes,step):
-        Extractor.__init__(self,needs,nframes,step)
+    def __init__(self,needs,nframes,step,key = None):
+        Extractor.__init__(self,needs,nframes,step, key = key)
         
     
     def dim(self,env):
@@ -168,8 +168,8 @@ class SumExtractor(Extractor):
     
 class NoOpExtractor(Extractor):
     
-    def __init__(self,needs):
-        Extractor.__init__(self,needs)
+    def __init__(self,needs, key = None):
+        Extractor.__init__(self,needs, key = key)
     
     def dim(self,env):
         raise NotImplemented()
@@ -421,6 +421,53 @@ class ExtractorChainTests(unittest.TestCase):
         self.assertEqual((10,10),inp.shape)
         output = np.array(d[se])
         self.assertEqual((10,1,10),output.shape)
-            
+    
+    def test_getitem_int(self):
+        re = ShimExtractor(key = 'oh')
+        se = ShimExtractor(key = 'hai', needs = re)
+        ec = ExtractorChain([se,re])
+        
+        e = ec[0]
+        self.assertTrue(e is re)
+    
+    def test_getitem_int_index_error(self):
+        re = ShimExtractor(key = 'oh')
+        se = ShimExtractor(key = 'hai', needs = re)
+        ec = ExtractorChain([se,re])
+        
+        self.assertRaises(IndexError,lambda : ec[3]) 
+        
+    def test_getitem_string_key_missing(self):
+        re = ShimExtractor(key = 'oh')
+        se = ShimExtractor(key = 'hai', needs = re)
+        ec = ExtractorChain([se,re])
+        
+        self.assertRaises(KeyError, lambda : ec['chzburger'])
+    
+    def test_getitem_string_key_present(self):
+        re = ShimExtractor(key = 'oh')
+        se = ShimExtractor(key = 'hai', needs = re)
+        ec = ExtractorChain([se,re])
+        
+        self.assertTrue(ec['hai'] is se)
+    
+    def test_getitem_invalid_key_type(self):
+        re = ShimExtractor(key = 'oh')
+        se = ShimExtractor(key = 'hai', needs = re)
+        ec = ExtractorChain([se,re])
+        
+        self.assertRaises(ValueError, lambda : ec[10:20])
+    
+    def test_prune(self):
+        re = ShimExtractor(key = 'oh')
+        e1 = ShimExtractor(key = 'hai', needs = re)
+        e2 = ShimExtractor(key = 'chzburger', needs = re)
+        
+        
+        ec = ExtractorChain([e1,e2,re]).prune('chzburger')
+        print ec.chain
+        self.assertEqual(2,len(ec))
+        self.assertTrue(e2 in ec)
+        self.assertFalse(e1 in ec)
         
     
