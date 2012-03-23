@@ -49,8 +49,7 @@ class Extractor(object):
         # True only if this extractor has no stopping condition. Users of an
         # extractor chain containing infinite extractors must be aware of this
         # fact to avoid creating artifically long lists of features
-        # TODO: Change this to finite = True
-        self.infinite = False
+        self.finite = True
     
     @abstractmethod
     def dim(self,env):

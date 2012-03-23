@@ -304,13 +304,13 @@ class FrameModelTests(unittest.TestCase):
         '''
         class FM(Frames):
             fft = Feature(FFT,store = False, needs = None)
-            loudness = Feature(Loudness, store = True, need = fft)
+            loudness = Feature(Loudness, store = True, needs = fft)
             
         class Controller(DictFrameController):
             
             def get(self,address):
                 return {'_id' : 1,
-                        'audio' : 1,
+                        'audio' : np.ones(1000),
                         'source' : 'test',
                         'external_id' : '0',
                         'framen' : 0,
@@ -323,13 +323,14 @@ class FrameModelTests(unittest.TestCase):
                     (FM,),
                     {})
         frames = FM['some_id']
-        self.assertEqual(None,frames.fft)
+        self.assertTrue(isinstance(frames.fft,np.ndarray))
+        self.assertTrue(len(frames.fft) > 0)
     
     
     def test_get_no_results(self):
         class FM(Frames):
             fft = Feature(FFT,store = False, needs = None)
-            loudness = Feature(Loudness, store = True, need = fft)
+            loudness = Feature(Loudness, store = True, needs = fft)
             
         class Controller(DictFrameController):
             

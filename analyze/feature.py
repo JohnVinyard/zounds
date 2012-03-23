@@ -17,7 +17,7 @@ class MetaDataExtractor(Extractor):
         Extractor.__init__(self,needs = None,key=key)
         self.pattern = pattern
         self.store = False
-        self.infinite = True
+        self.finite = False
     
     def dim(self,env):
         raise NotImplementedError()
@@ -35,7 +35,7 @@ class LiteralExtractor(SingleInput):
     def __init__(self,dtype,needs = None, key = None):
         SingleInput.__init__(self, needs = needs, key = key)
         self._dtype = dtype
-        self.infinite = True
+        self.finite = False
     
     def dim(self,env):
         return 1
@@ -52,7 +52,7 @@ class CounterExtractor(Extractor):
     def __init__(self,needs = None, key = None):
         Extractor.__init__(self,needs = needs, key = key)
         self.n = 0
-        self.infinite = True
+        self.finite = False
     
     def dim(self,env):
         return ()
@@ -205,7 +205,8 @@ class Loudness(SingleInput):
         
     def _process(self):
         return np.sum(self.in_data)
-    
+
+# TODO : Factor out spectral mean
 class SpectralCentroid(SingleInput):
     '''
     "Indicates where the "center of mass" of the spectrum is. Perceptually, 
@@ -233,6 +234,7 @@ class SpectralCentroid(SingleInput):
         bins = np.arange(1,len(spectrum) + 1)
         return np.sum(spectrum*bins) / np.sum(bins)
 
+# TODO : Factor out spectral mean
 class SpectralFlatness(SingleInput):
     '''
     "Spectral flatness or tonality coefficient, also known as Wiener 

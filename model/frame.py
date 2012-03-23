@@ -213,9 +213,8 @@ class Frames(Model):
         
         self.audio = self._data['audio'] 
         
-        for k,v in self.__class__.iterfeatures():
-            if v.store:
-                setattr(self,k,self._data[k])
+        for k,v in self.__class__.stored_features().iteritems():    
+            setattr(self,k,self._data[k])
         
     
     def __len__(self):
