@@ -295,7 +295,7 @@ class PyTablesFrameController(FrameController):
     
     def append(self,chain):
         bufsize = self._buffer_size
-        rootkey = filter(lambda e : not e.infinite,chain)[0].key
+        rootkey = filter(lambda e : e.finite,chain)[0].key
         bucket = np.recarray(self._max_buffer_size,self.recarray_dtype)
         nframes = 0
         current = dict((k,0) for k in self.steps.keys())
