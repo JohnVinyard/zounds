@@ -73,7 +73,7 @@ class Precomputed(Extractor):
     '''
     Read pre-computed features from the database
     '''
-    _first = None
+    
     
     def __init__(self,_id,feature_name,controller,needs = None):
         Extractor.__init__(self,key=feature_name,needs=needs)
