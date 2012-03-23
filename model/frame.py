@@ -16,6 +16,11 @@ class Feature(object):
     
     '''
     def __init__(self,extractor_cls,store=True,needs=None,**kwargs):
+        '''
+        A useful descriptor for audio
+        
+        :param extractor_cls: Extractor-derived class that will compute this feature
+        '''
         self.extractor_cls = extractor_cls
         self.store = store
         self.args = kwargs

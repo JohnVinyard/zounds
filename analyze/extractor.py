@@ -157,6 +157,7 @@ class Extractor(object):
         '''
         return hash(\
             (self.__class__.__name__,
+             self.key,
              frozenset(self.sources),
              self.nframes,
              self.step))
@@ -235,6 +236,9 @@ class ExtractorChain(object):
         The number of extractors in this chain
         '''
         return self.chain.__len__()
+
+    def __contains__(self,extractor):
+        return extractor in self.chain
     
     def __iter__(self):
         '''
@@ -263,7 +267,7 @@ class ExtractorChain(object):
             bucket[k].append(v)
         return bucket
     
-    # TODO: Write tests and fix this method, because it's broken
+    
     def  __getitem__(self,key):
         
         if isinstance(key,int):
@@ -277,7 +281,7 @@ class ExtractorChain(object):
         
         raise ValueError('key must be a string or int')
     
-    # TODO: Write tests
+    
     def prune(self,key_to_keep):
         '''
         Return a new extractor chain that includes only extractors necessary
