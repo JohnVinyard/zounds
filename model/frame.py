@@ -135,6 +135,10 @@ class Address(object):
     __metaclass__ = ABCMeta
     
     def __init__(self,key):
+        '''
+        key is the location to one or more frames, addresses in a manner 
+        suitable for the Frames backing-store
+        '''
         object.__init__(self)
         self._key = key
     
@@ -143,16 +147,23 @@ class Address(object):
         return self._key
     
     @abstractmethod
-    def serialize(self):
+    def __str__(self):
         pass
     
     @abstractmethod
-    def __str__(self):
+    def serialize(self):
         pass
     
     @classmethod
     def deserialize(cls):
         raise NotImplemented()
+    
+    @abstractmethod
+    def __len__(self):
+        '''
+        The number of frames represented by this address
+        '''
+        pass
     
 
 class MetaFrame(type):
@@ -221,7 +232,6 @@ class Frames(Model):
         for k,v in self.__class__.stored_features().iteritems():    
             setattr(self,k,self._data[k])
         
-    
     def __len__(self):
         return len(self._data)
     
@@ -230,7 +240,6 @@ class Frames(Model):
         # another Frames instance?
         raise NotImplemented()
     
-    # TODO: Write tests
     def __getattribute__(self,k):
         '''
         This method is implemented so that non-stored features can be computed
@@ -252,12 +261,10 @@ class Frames(Model):
         else:
             return f
         
-         
     @classmethod
     def list_ids(cls):
         return cls.controller().list_ids()
     
-        
     @classmethod
     def stored_features(cls):
         '''

@@ -73,8 +73,11 @@ m = {
     ] 
 }
 '''
+import numpy as np
+
 from model import Model
 from analyze.feature import AudioFromDisk,AudioFromMemory
+
 
 class Pattern(Model):
     '''
@@ -143,3 +146,60 @@ class DataPattern(Pattern):
                                e.windowsize,
                                e.stepsize,
                                needs = needs)
+
+class Zound(Pattern,list):
+    
+    class Event(object):
+        
+        def __init__(self,time_secs,data):
+            '''
+            time_secs can be a single time, or a list of them. A list implies
+            that data occurs multiple times
+            
+            data may be an address, or the id of another pattern. 
+            '''
+            self.time_secs = np.array(time_secs)
+            self._time_samples = self.time_secs * self.env().sample_rate
+            self.pattern = data
+    
+    def __init__(self,_id,source,external_id):
+        Pattern.__init__(self,_id,source,external_id)
+        list.__init__(self)
+        self._ancestors = []
+        
+    def add(self,time_secs,data):
+        try:
+            list.extend(self,Zound.Event(t,data) for t in time_secs)
+        except TypeError:
+            list.append(self,Zound.Event(time_secs,data))
+    
+    def _should_store_frames(self):
+        '''
+        True if this pattern should be persisted to the frames database because
+        it isn't contigous, or contains more than one event.
+        '''
+        return len(self) > 1
+    
+    # TODO: Move this into the base Pattern class
+    def length_samples(self):
+        '''
+        The length of this pattern in samples, when rendered as raw audio
+        '''
+        raise NotImplemented()
+    
+    # TODO: Move this into the base Pattern class
+    def length_seconds(self):
+        '''
+        The length of this pattern in seconds, when rendered as raw audio
+        '''
+        raise NotImplemented()
+    
+    # TODO: Move this into the base Pattern class
+    def render(self):
+        '''
+        Returns a numpy array of audio samples
+        '''
+        raise NotImplemented()
+    
+    
+        
