@@ -133,7 +133,7 @@ class PyTablesUpdateNotCompleteError(BaseException):
         BaseException.__init__(self,Exception('The PyTables update failed'))
 
 
-# TODO: Cleaner, general way to do PyTables in-kernel queries
+
 class PyTablesFrameController(FrameController):
     
     '''
@@ -156,6 +156,22 @@ class PyTablesFrameController(FrameController):
         a slice, or a list of ints
         '''
         def __init__(self,key):
+            
+            if isinstance(key,int):
+                # address of a single frame
+                self._len = 1
+            elif isinstance(key,slice):
+                if not (not key.step or 1 == key.step):
+                    # step sizes of greater than one aren't allowed
+                    raise ValueError(
+                        'when using a slice as an address key,\
+                         it must have a step of 1')
+                self._len = key.stop - key.start
+            elif isinstance(key,list) or isinstance(key,np.ndarray):
+                # the address is a list of frame numbers, which may or may
+                # not be contiguous
+                self._len = len(key)
+             
             model.frame.Address.__init__(self,key)
         
         def __str__(self):
@@ -167,6 +183,9 @@ class PyTablesFrameController(FrameController):
         @classmethod
         def deserialize(cls):
             raise NotImplemented()
+        
+        def __len__(self):
+            return self._len
     
     
     
