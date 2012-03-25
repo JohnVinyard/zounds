@@ -1,76 +1,58 @@
 '''
-A leaf pattern represents a block of contiguous, ascending (in time) frames in the frames
-database.
-
-A branch pattern contains "pointers" to leaf patterns (or contiguous subsets of them), 
-or other branch patterns.
-
-An audio_event, in the parlance of zounds 1, is a branch pattern that points at
-{_id : 1234, source : 'FreeSound', external_id : '9'}[100:200], e.g.. This means
- that there can be pattern ids in the patterns database that don't exist in the
- frames database.
-
-If a user creates a non-contiguous leaf pattern, this pattern should be appended
-to the frames database so that it becomes contiguous, e.g., the pattern 
-[10,30,1,16] would be appended to the end of the frames database with a new id,
-a source equal to the user's name, a new external id, and an address equal to
-[original_db_length : original_db_length + 4]
-
-There needs to be a level of indirection regarding the address space. Row numbers
-might not be appropriate to every conceivable backing store.
-
-BUG: Consider a branch pattern whose phenotype is one measure of the same hihat
-sound playing eighth-notes.  This pattern is two-deep. It consists of a single
-branch pattern, repeated, which points at a slice of an original, longer sound.
-If it is to be a candidate for similarity searches, it must be analyzed and saved
-to the frames database.
-
-BUG: What if I edit the aforementioned pattern so that its length changes, or
-I delete it?  That means that the addresses of all patterns following it in the
-frames database also change, which means all patterns following it must be updated.
-
-BUG: What if I make small changes to a pattern? Must it be re-stored?  What 
-about patterns that reference it?  The dumb solution seems to be to always
-re-store it, so that I don't have to worry about updating pattern references,
-but won't this lead to a very large frames database full of redundant info?
-
-BUG: Consider the last, musical pattern below. What if I simply repeated it
-four times (ie, four measures of four quarter notes each)?  Would it be 
-re-stored?
-
-// Leaf Pattern
-leaf = {
-    _id         : leaf_uuid,
-    source      : 'FreeSound',
-    external_id : '9',
-    ancestors   : (),
-    address     : (start,stop) OR (_id)
+Pattern from the outside world, i.e., just some sound file
+{
+    _id : 'wholesound'
+    source : 
+    external_id : 
+    address : (100,200) // A PyTables address
 }
 
-// Audio-Event-like pattern. This would not be re-stored, since it represents
-// a single occurrence of a block of contiguous, ascending frames
-ae = {
-    _id         : branch_uuid,
-    source      : 'John',
-    external_id : other_uuid,
-    ancestors   : (leaf_uuid)
-    address     : (start,stop) 
+A slice of a sound file
+{
+    _id : 'slice'
+    source : 
+    external_id : 
+    address : (150:160)
 }
-
-// Musical Patern. This would be re-stored, since it represents multiple 
-// occurrences of a contiguous block.
-m = {
-    _id         : music_uuid,
-    source      : 'John',
-    external_id : other_uuid,
-    ancestors   : (leaf_uuid,branch_uuid),
-    address     : (start,stop),
-    pattern     : [
-        {
-            time : [0,1,2,3],
-            _id  : branch_uuid
-        }
-    ] 
+A pattern using that slice
+{
+    _id : 'fourquarter'
+    source : 
+    external_id : 
+    address : None // this pattern isn't stored as frames, so it isn't searchable
+    all_ids : ['slice'],
+    data : [
+        // Compress this based on the second item in the tuple
+        
+        (0.0,['slice']), // The path back to a slice, starting with the nearest to us
+        (1.0,['slice']),
+        (2.0,['slice']),
+        (3.0,['slice'])
+    ]
+}
+A pattern using the previous pattern
+{
+    _id : 'fourmeasure',
+    source : 
+    external_id : 
+    address : (1000,2000) // This pattern is stored, so we can just play it outright
+    all_ids : ['fourquarter','slice']
+    data : [
+        (0.0, ['fourquarter']),
+        (0.0, ['fourquarter']),
+        (0.0, ['fourquarter']),
+        (0.0, ['fourquarter'])
+    ]
+}
+Once more, a pattern using the previous one
+{
+    _id : 'evenlonger'
+    source : 
+    external_id : 
+    address : 
+    all_ids : ['fourmeasure','fourquarter','slice'],
+    data : [
+    ]
 }
 '''
 import numpy as np
@@ -153,8 +135,7 @@ class Zound(Pattern,list):
         
         def __init__(self,time_secs,data):
             '''
-            time_secs can be a single time, or a list of them. A list implies
-            that data occurs multiple times
+            time_secs is the time at which this event occurs
             
             data may be an address, or the id of another pattern. 
             '''
@@ -162,10 +143,25 @@ class Zound(Pattern,list):
             self._time_samples = self.time_secs * self.env().sample_rate
             self.pattern = data
     
-    def __init__(self,_id,source,external_id):
+    def __init__(self,_id,source,external_id, address = None):
         Pattern.__init__(self,_id,source,external_id)
         list.__init__(self)
-        self._ancestors = []
+        # the frames backend-specific address of this pattern, if it has
+        # been stored as a contiguous block in the frames database
+        self.address = address
+        self.created_date = None
+        
+        self._changed = False
+    
+    # TODO: An audio from db extractor
+    def audio_extractor(self, needs = None):
+        e = self.__class__.env()
+        self._data['samples'] = self.render()
+        return AudioFromMemory(e.samplerate,
+                               e.windowsize,
+                               e.stepsize,
+                               needs = needs)
+    
         
     def add(self,time_secs,data):
         try:
@@ -176,7 +172,7 @@ class Zound(Pattern,list):
     def _should_store_frames(self):
         '''
         True if this pattern should be persisted to the frames database because
-        it isn't contigous, or contains more than one event.
+        it isn't contiguous, or contains more than one event.
         '''
         return len(self) > 1
     
@@ -199,6 +195,11 @@ class Zound(Pattern,list):
         '''
         Returns a numpy array of audio samples
         '''
+        # If address isn't None, then we can just read a contiguous block and
+        # play it.
+        
+        # If address is None, then we have to follow pattern "links" to 
+        # reconstruct everything
         raise NotImplemented()
     
     

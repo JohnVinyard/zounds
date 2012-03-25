@@ -171,6 +171,9 @@ class PyTablesFrameController(FrameController):
                 # the address is a list of frame numbers, which may or may
                 # not be contiguous
                 self._len = len(key)
+            else:
+                raise ValueError(
+                        'key must be an int, a list of ints, or a slice')
              
             model.frame.Address.__init__(self,key)
         
