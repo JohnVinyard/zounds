@@ -9,9 +9,15 @@ There are 3 types of similarity
 
 TOOO:
 -------------
-Multidimensional Frames indexes
+Fetch abstract base class and fetch-from-db implementation
+
+Learner abstract base class
+
+autoencoder and rbm classes implement Learner interface
 
 Write Pipeline and tests
+
+Multidimensional Frames indexes
 
 Sphinx documentation
 

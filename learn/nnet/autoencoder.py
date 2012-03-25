@@ -4,6 +4,8 @@ from scipy.optimize import fmin_l_bfgs_b as bfgs
 import cPickle
 from nnet import nnet,sigmoid
 
+# TODO: Rename the classes in this file in the correct way, i.e.
+# Params and AutoEncoder
 class params:
     
     '''

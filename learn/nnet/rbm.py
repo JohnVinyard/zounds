@@ -2,7 +2,8 @@ import numpy as np
 from matplotlib import pyplot as plt
 from nnet import nnet,sigmoid,stochastic_binary as sb
 
-
+# TODO: Rename the classes in this file in the correct way, 
+# i.e. Rbm and LinearRbm
 class rbm(nnet):
     '''
     classic, binary-binary rbm
