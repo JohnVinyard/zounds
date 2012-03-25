@@ -32,6 +32,8 @@ class Feature(object):
         else:
             self.needs = [needs]
         
+        self.key = None
+        
     def extractor(self,needs = None,key = None):
         '''
         Return an extractor that's able to compute this feature.
@@ -186,6 +188,7 @@ class MetaFrame(type):
     def _add_features(self,d):
         for k,v in d.iteritems():
             if isinstance(v,Feature):
+                v.key = k
                 self.features[k] = v
     
     def iterfeatures(self):
@@ -205,7 +208,10 @@ class MetaFrame(type):
 
 
 
-# TODO: Frames classes should implement FramesController interface!
+# TODO: Frames classes should implement FramesController interface
+
+# TODO: Make it possible to instantiate Frames with data that isn't stored
+# in the frames database, but conforms to the frames schema
 class Frames(Model):
     '''
     
@@ -235,10 +241,30 @@ class Frames(Model):
     def __len__(self):
         return len(self._data)
     
-    def __getitem__(self):
-        # TODO: Should this return a slice of the _data recarray, or
-        # another Frames instance?
-        raise NotImplemented()
+    def __getitem__(self,key):
+        if isinstance(key,str):
+            try:
+                return self._data[key]
+            except ValueError:
+                # for some reason, numpy recarrays raise a ValueError instead
+                # ok a key error when a field is not present
+                raise KeyError(key)
+        elif isinstance(key,Feature):
+            if key.key is None:
+                raise KeyError(None)
+            try:
+                return self._data[key.key]
+            except ValueError:
+                # This probably means that the feature hasn't been wired-up
+                # by the MetaFrame class and doesn't have its 'key' property
+                # set. Treat this as a KeyError
+                raise KeyError(key)
+        elif isinstance(key,int):
+            raise NotImplemented()
+        elif isinstance(key,slice):
+            raise NotImplemented()
+        else:
+            raise ValueError('key must be a string, Feature, int, or slice')
     
     def __getattribute__(self,k):
         '''

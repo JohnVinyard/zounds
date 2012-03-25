@@ -20,9 +20,12 @@ class Pipeline(Model):
         # a unique identifier
         self._id = _id
         
+        # the date this pipeline completed training
+        self.trained_date = None
+        
         # For now, I'm only going to implement a fetcher that knows how to read
         # features from a frames db.  Reading stuff from disk was always very
-        # slow, so, for now, it's be already computed. 
+        # slow, so, for now, it's goota be pre-computed. 
         self.fetch = fetch
         
         

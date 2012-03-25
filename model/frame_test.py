@@ -6,7 +6,7 @@ import numpy as np
 from frame import Frames,Feature,Precomputed
 from pattern import FilePattern
 from environment import Environment
-from analyze.feature import FFT,Loudness
+from analyze.feature import FFT,Loudness,SpectralCentroid
 from data.frame import DictFrameController
 
 
@@ -344,9 +344,8 @@ class FrameModelTests(unittest.TestCase):
                     {})
         
         self.assertRaises(KeyError, lambda : FM['some_id'])
-        
     
-    def test_instance_len(self):
+    def mock_frames_instance(self,l):
         class FM(Frames):
             fft = Feature(FFT,store = False, needs = None)
             loudness = Feature(Loudness, store = True, need = fft)
@@ -354,13 +353,14 @@ class FrameModelTests(unittest.TestCase):
         class Controller(DictFrameController):
             
             def get(self,address):
-                r = np.recarray(10,dtype=[('_id','a10'),
+                r = np.recarray(l,dtype=[('_id','a10'),
                                           ('audio',np.float32),
                                           ('source','a10'),
                                           ('external_id','a10'),
                                           ('framen',np.int32),
                                           ('fft',np.float32),
                                           ('loudness',np.float32)])
+                r[:] = l
                 return r
             
         Environment('test',
@@ -368,10 +368,50 @@ class FrameModelTests(unittest.TestCase):
                     Controller,
                     (FM,),
                     {})
-        frames = FM['some_id']
+        return FM,FM['some_id'] 
+        
+    
+    def test_instance_len(self):
+        cls,frames = self.mock_frames_instance(10)
         self.assertEqual(10,len(frames))
         
+    
+    def test_instance_getitem_str_exists(self):
+        cls,instance = self.mock_frames_instance(10)
+        f = instance['loudness']
+        self.assertTrue(isinstance(f,np.ndarray))
+        self.assertEqual(10,len(f))
+    
+    def test_instance_getitem_str_not_exists(self):
+        cls,instance = self.mock_frames_instance(10)
+        self.assertRaises(KeyError,lambda : instance['centroid'])
+    
+    def test_instance_getitem_str_unstored(self):
+        self.fail('__getitem__ does not work for non-stored features yet')
+    
+    def test_instance_getitem_feature_exists(self):
+        cls,instance = self.mock_frames_instance(10)
+        f = instance[cls.loudness]
+        self.assertTrue(isinstance(f,np.ndarray))
+        self.assertEqual(10,len(f))
+    
+    def test_instance_getitem_feature_not_exists(self):
+        feature = Feature(SpectralCentroid,store = True, needs = None)
+        cls,instance = self.mock_frames_instance(10)
+        self.assertRaises(KeyError, lambda : instance[feature] )
+    
+    def test_instance_getitem_feature_unstored(self):
+        self.fail('__getitem__ does not work for non-stored features yet')
         
+    
+    def test_instance_getitem_slice(self):
+        self.fail()
+    
+    def test_instance_getitem_int(self):
+        self.fail()
         
+    def test_instance_getitem_wrong_type(self):
+        cls,instance = self.mock_frames_instance(10)
+        self.assertRaises(ValueError,lambda : instance[object()])
     
     

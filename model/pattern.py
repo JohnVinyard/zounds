@@ -165,7 +165,7 @@ class Zound(Pattern,list):
         
     def add(self,time_secs,data):
         try:
-            list.extend(self,Zound.Event(t,data) for t in time_secs)
+            list.extend(self,[Zound.Event(t,data) for t in time_secs])
         except TypeError:
             list.append(self,Zound.Event(time_secs,data))
     

@@ -18,5 +18,19 @@ class LearningController(Controller):
         raise NotImplemented()
     
     @abstractmethod
-    def __setitem__(self,key,value):
+    def store(self,pipeline):
         raise NotImplemented()
+    
+
+
+class PickledLearningController(LearningController):
+    '''
+    A learning controller that pickles Pipelines
+    '''
+    
+    def __init__(self,directory):
+        Controller.__init__()
+        
+    
+    def __getitem__(self):
+        pass
