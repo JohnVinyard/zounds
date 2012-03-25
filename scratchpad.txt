@@ -19,6 +19,8 @@ Write Pipeline and tests
 
 Multidimensional Frames indexes
 
+arbitrary-length sound search implementation
+
 Sphinx documentation
 
 multi-process sync - Deferred until I can figure out celery chord bug
