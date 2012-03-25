@@ -113,14 +113,16 @@ class FrameController(Controller):
     @abstractmethod
     def get_dtype(self,key):
         '''
-        Get the data type of the feature with key
+        Get the data type of the feature with key. Key may be a Feature, or a 
+        string
         '''
         pass
     
     @abstractmethod
     def get_dim(self,key):
         '''
-        Get the dimension of the feature with key
+        Get the dimension of the feature with key. Key may be a feature, or a
+        string
         '''
         pass
 
@@ -454,9 +456,13 @@ class PyTablesFrameController(FrameController):
         return row[0]['source'],row[0]['external_id']
     
     def get_dtype(self,key):
+        if isinstance(key,model.frame.Feature):
+            key = key.key
         return getattr(self.db_read.cols,key).dtype
     
     def get_dim(self,key):
+        if isinstance(key,model.frame.Feature):
+            key = key.key
         return getattr(self.db_read.cols,key).shape[1:]
     
     

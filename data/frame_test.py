@@ -218,16 +218,27 @@ class PyTablesFrameControllerTests(unittest.TestCase):
         self.assertEqual(src,p.source)
         self.assertEqual(extid,p.external_id)
     
-    def test_get_dtype(self):
+    def test_get_dtype_str(self):
         fn,FM1 = self.FM()
         c = FM1.controller()
         self.assertEqual('float32',c.get_dtype('loudness'))
+        
+    def test_get_dtype_feature(self):
+        fn,FM1 = self.FM()
+        c = FM1.controller()
+        self.assertEqual('float32',c.get_dtype(FM1.loudness))
     
-    def test_get_dim(self):
+    def test_get_dim_str(self):
         fn,FM1 = self.FM()
         c = FM1.controller()
         fftsize = FM1.env().windowsize / 2
-        self.assertEqual((fftsize,),c.get_dim('fft'))      
+        self.assertEqual((fftsize,),c.get_dim('fft'))
+        
+    def test_get_dim_feature(self):
+        fn,FM1 = self.FM()
+        c = FM1.controller()
+        fftsize = FM1.env().windowsize / 2
+        self.assertEqual((fftsize,),c.get_dim(FM1.fft))
     
     def test_iter_feature(self):
         fn,FM1 = self.FM()
