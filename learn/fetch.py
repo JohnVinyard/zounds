@@ -4,6 +4,7 @@ from abc import ABCMeta,abstractmethod
 import numpy as np
 
 from environment import Environment
+from util import pad
 
 class Fetch(object):
     
@@ -15,18 +16,17 @@ class Fetch(object):
         pass
 
 class PrecomputedFeature(Fetch):
-    
+    '''
+    Fetches "patches" of precomputed features from the frames database.  Attempts
+    to sample evenly from the database, drawing more samples from longer 
+    patterns.
+    '''
     def __init__(self,nframes,feature):
         Fetch.__init__(self)
-        if self.feature.extractor().stepsize > 1:
-            raise ValueError(\
-                'Cannot fetch features with a step size greater than 1 at\
-                 present')
-        self.nframes = nframes
         self.feature = feature
+        self.nframes = nframes
+        
     
-        
-        
     def __call__(self,nexamples = None):
         
         env = Environment.instance
@@ -44,11 +44,8 @@ class PrecomputedFeature(Fetch):
         dtype = c.get_dtype(self.feature)
         # BUG: This assumes features will always be either one or two dimensions
         axis1 = self.nframes if not dim else self.nframes * dim[0]
-        data = np.ndarray((\
-                nexamples,
-                axis1),
-                dtype = dtype)
-         
+        shape = (nexamples,axis1) if axis1 > 1 else (nexamples,)
+        data = np.ndarray(shape,dtype = dtype)
         
         # a rough estimate of the the probability that any possible frame will
         # be sampled, ignoring pattern boundaries and the tail end of the frames
@@ -80,12 +77,16 @@ class PrecomputedFeature(Fetch):
                     n_to_draw = int(lf * prob)
                     # always draw at least one sample
                     n_to_draw = n_to_draw if n_to_draw else 1
+                    print 'drawing %i samples from %s' % (n_to_draw,_id)
                     # BUG: What if the pattern isn't as long as nframes?
-                    s = np.random.randint(0,lf - self.nframes,n_to_draw)
-                    feature = frames[self.feature]
-                    for i in xrange(n_to_draw):
-                        data[nsamples + i] = \
-                            feature[s : s + self.nframes]\
+                    try:
+                        s = np.random.randint(0,lf - self.nframes,n_to_draw)
+                    except ValueError:
+                        s = [0]
+                    feature = pad(frames[self.feature],self.nframes)
+                    for i in s:
+                        data[nsamples] = \
+                            feature[i : i + self.nframes]\
                             .reshape(axis1)
                         nsamples += 1
         except IndexError:
@@ -94,5 +95,5 @@ class PrecomputedFeature(Fetch):
             pass
                     
         
-        return data
+        return data[np.random.permutation(len(data))]
             
