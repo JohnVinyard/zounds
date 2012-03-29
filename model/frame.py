@@ -5,8 +5,9 @@ import numpy as np
 from model import Model
 from pattern import FilePattern,DataPattern
 from analyze.extractor import Extractor,ExtractorChain
-from analyze.feature import \
-    AudioSamples,AudioFromDisk,LiteralExtractor,CounterExtractor,MetaDataExtractor
+from analyze.feature.metadata import \
+    MetaDataExtractor, LiteralExtractor,CounterExtractor
+from analyze.feature.rawaudio import AudioSamples
 from util import recurse,sort_by_lineage
 
 

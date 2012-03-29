@@ -6,7 +6,7 @@ import numpy as np
 
 from model.frame import Frames,Feature,Precomputed
 from analyze.extractor import Extractor
-from analyze.feature import FFT,Loudness,SpectralCentroid
+from analyze.feature.spectral import FFT,Loudness,SpectralCentroid
 from model.pattern import FilePattern
 from environment import Environment
 from frame import PyTablesFrameController
