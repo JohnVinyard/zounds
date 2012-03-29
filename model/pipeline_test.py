@@ -3,7 +3,7 @@ import unittest
 import numpy as np
 
 from environment import Environment
-from frame import Frames,Feature
+from frame import Frames
 from data.frame import DictFrameController
 from data.pipeline import DictPipelineController
 from pipeline import Pipeline
@@ -53,10 +53,8 @@ class PipelineTests(unittest.TestCase):
     
     def setUp(self):
         Environment._test = True
-        
         class FM(Frames):
             pass
-        
         self.env = Environment('test',
                                FM,
                                DictFrameController,

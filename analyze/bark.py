@@ -1,0 +1,52 @@
+from __future__ import division
+import numpy as np
+from scipy.signal import triang
+
+
+def fft_index(freq_hz,ws,sr):
+    '''
+    Given a frequency in hz, a window size, and a sample rate,
+    return the fft bin into which the freq in hz falls
+    '''
+    if freq_hz < 0 or freq_hz > sr / 2.:
+        raise ValueError(\
+            'Freq must be greater than zero and less than the Nyquist frequency')
+    
+    fft_bandwidth = (sr * .5) / (ws * .5)
+    return int(round(freq_hz / fft_bandwidth))
+
+def hz_to_barks(hz):
+    return 6. * np.log((hz/600.) + np.sqrt((hz/600.)**2 + 1))
+
+def barks_to_hz(b):
+    return 300. * ((np.e ** (b/6.0)) - (np.e ** (-b/6.)))
+
+def erb(hz):
+    '''
+    equivalent rectangular bandwidth
+    '''
+    return (0.108 * hz) + 24.7
+
+def critical_bands(samplerate,
+                   window_size,
+                   fft_frame,
+                   n_bark_bands,
+                   start_freq = 50, 
+                   stop_freq = 20000):
+
+    # convert the start and stop freqs into the bark scale
+    sb = hz_to_barks(start_freq)
+    eb = hz_to_barks(stop_freq)
+    # get the bandwidth (in barks), of each
+    bark_bandwidth = (eb - sb) / n_bark_bands
+
+    cb = np.ndarray(n_bark_bands)
+    for i in xrange(1,n_bark_bands + 1):
+        b = i * bark_bandwidth
+        hz = barks_to_hz(b)
+        _erb = erb(hz)
+        s_index = fft_index(hz - (_erb/2.),window_size,samplerate)
+        e_index = fft_index(hz + (_erb/2.),window_size,samplerate) + 1
+        cb[i - 1] = (abs(fft_frame[s_index : e_index]) * triang(e_index - s_index)).sum()
+        
+    return cb
