@@ -665,35 +665,30 @@ def sync_complete(results):
         
 
 class DictFrameController(FrameController):
+    '''
+    Completely useless, except for testing
+    '''
     
     def __init__(self,framesmodel):
         FrameController.__init__(self,framesmodel)
         
-    
-    
     def sync(self,add,update,delete,chain):
         raise NotImplemented()
-    
     
     def append(self,frames):
         raise NotImplemented()
     
-    
     def get(self,key):
         raise NotImplemented()
   
-    
     def get_features(self):
         raise NotImplemented()
-    
-    
+      
     def set_features(self):
         raise NotImplemented()
     
-    
     def get_dtype(self,key):
         raise NotImplemented()
-    
     
     def get_dim(self,key):
         raise NotImplemented()
