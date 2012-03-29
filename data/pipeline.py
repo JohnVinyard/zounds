@@ -42,6 +42,9 @@ class PickledLearningController(LearningController):
         with open(filename,'rb') as f:
             return cPickle.load(f)
     
+    def __delitem__(self,key):
+        raise NotImplemented()
+    
     def store(self,pipeline):
         # TODO: Ensure path exists method in util. Factor out of 
         # PyTablesFrameController and this

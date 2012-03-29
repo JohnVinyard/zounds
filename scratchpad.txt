@@ -12,6 +12,8 @@ TOOO:
 
 Write Pipeline and tests
 
+Bark Feature
+
 Multidimensional Frames indexes
 
 arbitrary-length sound search implementation
