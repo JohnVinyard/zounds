@@ -13,7 +13,7 @@ class MetaPipeline(type):
     def __delitem__(self,key):
         del self.controller()[key]
 
-# TODO: Define __getitem__ on class
+
 class Pipeline(Model):
     '''
     A generic pipeline that can be used to chain together methods for:

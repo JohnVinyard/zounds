@@ -9,9 +9,6 @@ There are 3 types of similarity
 
 TOOO:
 -------------
-
-Write Pipeline and tests
-
 Bark Feature
 
 Multidimensional Frames indexes
