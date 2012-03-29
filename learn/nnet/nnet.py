@@ -8,7 +8,9 @@ def sigmoid(a):
 def stochastic_binary(a):
     return a > np.random.random_sample(a.shape)
 
-class nnet(object):
+
+
+class NeuralNetwork(object):
 
     def __init__(self):
         pass
@@ -29,7 +31,6 @@ class nnet(object):
         rc = np.sqrt(len(f))
         f -= f.min()
         f[f == 0] = .000001
-        #plt.imshow(np.log(f.reshape(shape)).T)
         plt.imshow(f.reshape(shape).T)
 
     def show_filters(self,nfilters,twod=False,filename=None):
@@ -54,7 +55,6 @@ class nnet(object):
     def do_recon(self,inp,twod=False,filename=None):
         out = self.activate(inp)
         n = out.shape[0]
-        #plt.gray()
         plt.figure()
         
         # If we're doing 1d plots, it's more helpful to

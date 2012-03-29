@@ -9,17 +9,14 @@ There are 3 types of similarity
 
 TOOO:
 -------------
-Fetch abstract base class and fetch-from-db implementation
-
-Learner abstract base class
-
-autoencoder and rbm classes implement Learner interface
 
 Write Pipeline and tests
 
 Multidimensional Frames indexes
 
 arbitrary-length sound search implementation
+
+Patterns
 
 Sphinx documentation
 

@@ -2,8 +2,6 @@ import unittest
 from uuid import uuid4
 import os
 
-import numpy as np
-
 from analyze.analyze_test import AudioStreamTests
 from analyze.feature import FFT,Loudness
 from data.frame import PyTablesFrameController
