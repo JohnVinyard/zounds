@@ -9,7 +9,11 @@ There are 3 types of similarity
 
 TOOO:
 -------------
-Bark Feature
+Faster BarkBands implementation
+
+Learn Rbm on BarkBands and store
+
+Learn Autoencoder on BarkBands and store
 
 Multidimensional Frames indexes
 
