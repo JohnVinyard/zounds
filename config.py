@@ -12,7 +12,7 @@ class AudioConfig:
 source = 'John'
 
 # Extractor Chain
-from analyze.feature import FFT, Loudness
+from analyze.feature.spectral import FFT, Loudness
 
 # FrameModel
 from model.frame import Frames, Feature

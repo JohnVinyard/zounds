@@ -6,7 +6,7 @@ import numpy as np
 from frame import Frames,Feature,Precomputed
 from pattern import FilePattern
 from environment import Environment
-from analyze.feature import FFT,Loudness,SpectralCentroid
+from analyze.feature.spectral import FFT,Loudness,SpectralCentroid
 from data.frame import DictFrameController
 
 

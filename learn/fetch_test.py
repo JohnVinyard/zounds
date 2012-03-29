@@ -3,7 +3,7 @@ from uuid import uuid4
 import os
 
 from analyze.analyze_test import AudioStreamTests
-from analyze.feature import FFT,Loudness
+from analyze.feature.spectral import FFT,Loudness
 from data.frame import PyTablesFrameController
 from model.frame import Feature,Frames
 from model.pattern import FilePattern
