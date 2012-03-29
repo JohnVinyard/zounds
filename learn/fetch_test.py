@@ -9,7 +9,7 @@ from model.frame import Feature,Frames
 from model.pattern import FilePattern
 from environment import Environment
 
-from learn.fetch import PrecomputedFeature
+from fetch import PrecomputedFeature
 
 class PrecomputedFeatureTests(unittest.TestCase):
     
@@ -116,6 +116,10 @@ class PrecomputedFeatureTests(unittest.TestCase):
             self.assertRaises(ValueError,lambda : pc(nexamples = 2000000))
             
             
+    def test_precomputed_batch_not_evenly_divisible(self):
+        self.fail()
         
+    def test_precomputed_batch(self):
+        self.fail()
             
     
