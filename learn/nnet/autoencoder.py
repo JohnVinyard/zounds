@@ -2,11 +2,12 @@ import numpy as np
 from matplotlib import pyplot as plt
 from scipy.optimize import fmin_l_bfgs_b as bfgs
 import cPickle
-from nnet import nnet,sigmoid
+from nnet import NeuralNetwork,sigmoid
 
-# TODO: Rename the classes in this file in the correct way, i.e.
-# Params and AutoEncoder
-class params:
+from learn.learn import Learn
+
+
+class Params:
     
     '''
     A wrapper around weights and biases
@@ -55,7 +56,7 @@ class params:
         w2 = w2.reshape((hdim,indim))
         b1 = theta[bb : bb + hdim] 
         b2 = theta[bb + hdim : bb + hdim + indim]
-        return params(indim,hdim,w1,b1,w2,b2)
+        return Params(indim,hdim,w1,b1,w2,b2)
 
     def __eq__(self,o):
         return (self.w1 == o.w1).all() and \
@@ -65,16 +66,16 @@ class params:
 
     @staticmethod
     def _test():
-        p = params(100,23)
+        p = Params(100,23)
         a = p.unroll()
-        b = params.roll(a,100,23)
+        b = Params.roll(a,100,23)
         print p == b
         print all(a == b.unroll())
 
         
 
 
-class autoencoder(nnet):
+class Autoencoder(NeuralNetwork,Learn):
     
     '''
     A horribly inefficient implementation
@@ -83,6 +84,9 @@ class autoencoder(nnet):
     '''
 
     def __init__(self, params, corruption = 0.0, linear_decoder=False):
+        
+        NeuralNetwork.__init__(self)
+        Learn.__init__(self)
         
         self._include_weight_decay = True
         self._include_sparsity = True
@@ -141,7 +145,6 @@ class autoencoder(nnet):
         compute the sigmoid function for an array
         of arbitrary shape and size
         '''
-        #return 1. / (1 + np.exp(-la))
         return sigmoid(la)
 
     def _corrupt(self,inp):
@@ -205,6 +208,13 @@ class autoencoder(nnet):
     def activate(self,inp):
         inp,a,z2,z3,o = self._activate(inp)
         return o
+    
+    def __call__(self,inp):
+        '''
+        Return the sigmoid activation of the hidden layer
+        '''
+        inp,a,z2,z3,o = self._activate(inp)
+        return a
 
     ## PARAMETER LEARNING ################################################
 
@@ -215,7 +225,7 @@ class autoencoder(nnet):
         '''
         if None == o:
             # activate the network with params
-            ae = autoencoder(params)
+            ae = Autoencoder(params)
             inp,a,z2,z3,o = ae._activate(inp,params=params)
         
 
@@ -274,7 +284,7 @@ class autoencoder(nnet):
         if check_grad:
 
             # unroll the gradients into a flat vector
-            rg = params(self.indim,self.hdim,wg1,bg1,wg2,bg2).unroll()
+            rg = Params(self.indim,self.hdim,wg1,bg1,wg2,bg2).unroll()
 
             # perform a (very costly) numerical 
             # check of the gradients
@@ -284,7 +294,7 @@ class autoencoder(nnet):
 
     def _sparse_ae_cost_unrolled(self,inp,parms):
         c, wg2, wg1, bg2, bg1 = self._sparse_ae_cost(inp,parms)
-        return params(self.indim,self.hdim,wg1,bg1,wg2,bg2).unroll()
+        return Params(self.indim,self.hdim,wg1,bg1,wg2,bg2).unroll()
 
     def _weight_decay_cost(self,params=None):
         if None is params:
@@ -502,30 +512,46 @@ class autoencoder(nnet):
                         if fn and progressive:
                             fn = '%s_batch_%i.dat' % (base_filename,i)                
                 
-                        theta = self.train(batch,1,with_bfgs=True,filename=fn)
-                        self._netp = params.roll(theta,self.indim,self.hdim)
+                        theta = self._train(batch,1,with_bfgs=True,filename=fn)
+                        self._netp = Params.roll(theta,self.indim,self.hdim)
 
         except KeyboardInterrupt:
             pass
 
-        self._netp = params.roll(theta,self.indim,self.hdim)
+        self._netp = Params.roll(theta,self.indim,self.hdim)
         with open('%s.dat' % base_filename,'wb') as f:
             cPickle.dump(self._netp,f)
 
         return self._netp.unroll()
 
 
+    def train(self,data,stopping_condition):
+        '''
+        Samples should be a 3d array, where
+        the dimensions represent:
+        (batch,sample,feature)
+        '''
+        epoch = 0
+        error = 99999
+        nbatches = len(data)
+        while not stopping_condition(epoch,error):
+            batch = 0
+            while batch < nbatches and not stopping_condition(epoch,error):
+                theta,error = self._train(data[batch], 1, with_bfgs = True)
+                self._netp = Params.roll(theta,self.indim,self.hdim)
+                batch += 1
+            epoch += 1 
 
-    def train(self,inp,iterations,with_bfgs = False,grad_check_freq = None,filename=None):
+    def _train(self,inp,iterations,with_bfgs = False,grad_check_freq = None,filename=None):
         
 
         def rcst(x):
-            v = self._rcost(inp,params.roll(x,self.indim,self.hdim))
+            v = self._rcost(inp,Params.roll(x,self.indim,self.hdim))
             print 'rcst says: %s' % str(v)
             return v
 
         def rcstprime(x):
-            return self._sparse_ae_cost_unrolled(inp,params.roll(x,self.indim,self.hdim))
+            return self._sparse_ae_cost_unrolled(inp,Params.roll(x,self.indim,self.hdim))
 
 
         if with_bfgs:
@@ -543,8 +569,8 @@ class autoencoder(nnet):
             print d['funcalls']
             if filename:
                 with open(filename,'wb') as f:
-                    cPickle.dump(params.roll(mn,self.indim,self.hdim),f)
-            return mn
+                    cPickle.dump(Params.roll(mn,self.indim,self.hdim),f)
+            return mn,val
         else:
             for i in range(iterations):
                 if grad_check_freq:
@@ -580,7 +606,7 @@ class autoencoder_tests(unittest.TestCase):
         '''
         indim = 100
         hdim = 33
-        ae = autoencoder(params(indim,hdim))
+        ae = Autoencoder(Params(indim,hdim))
         err = np.random.random_sample((637,indim))
         b = ae._backprop(err)
         blm = ae._backprop_lmem(err)
@@ -597,7 +623,7 @@ class autoencoder_tests(unittest.TestCase):
         nsamples = 25
         indim = 100
         hdim = 33
-        ae = autoencoder(params(indim,hdim))
+        ae = Autoencoder(Params(indim,hdim))
         cost = np.random.random_sample((nsamples,indim))
         activations = np.random.random_sample((nsamples,hdim))
         wg = ae._weight_grad(cost,activations,ae._netp.w2)
@@ -663,10 +689,10 @@ If not specified, start from a random guess.',
 
 
     if args.guess:
-        parms = params.from_file(args.guess)
+        parms = Params.from_file(args.guess)
     else:
-        parms = params(n_dim,h_dim)
-    ae = autoencoder(parms,args.corrupt,linear_decoder=args.linear)
+        parms = Params(n_dim,h_dim)
+    ae = Autoencoder(parms,args.corrupt,linear_decoder=args.linear)
     fetch = __import__(args.fetch)
     theta = ae.train_minibatch(fetch.fetch(args.nsamples),
                                args.batchsize,

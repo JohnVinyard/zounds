@@ -1,10 +1,11 @@
 import numpy as np
 from matplotlib import pyplot as plt
-from nnet import nnet,sigmoid,stochastic_binary as sb
 
-# TODO: Rename the classes in this file in the correct way, 
-# i.e. Rbm and LinearRbm
-class rbm(nnet):
+from nnet import NeuralNetwork,sigmoid,stochastic_binary as sb
+from learn.learn import Learn
+
+
+class Rbm(NeuralNetwork,Learn):
     '''
     classic, binary-binary rbm
     Ripped off from http://www.cs.toronto.edu/~hinton/code/rbm.m
@@ -22,7 +23,8 @@ class rbm(nnet):
                  sparsity_decay=.9,
                  sparsity_cost=.001):
 
-        nnet.__init__(self)
+        NeuralNetwork.__init__(self)
+        Learn.__init__(self)
         
         # IO
         self._indim = indim
@@ -174,15 +176,16 @@ class rbm(nnet):
         self._hbias += self._hbvelocity
         if None != self._sparsity_target:
             self._hbias += sparse_penalty
+        
+        return error
 
 
-    def train(self,samples,epochs=15):
+    def train(self,samples,stopping_condition):
         '''
         Samples should be a 3d array, where
         the dimensions represent:
         (batch,sample,feature)
         '''
-
 
         # initialize some variables we'll
         # use during training, but then throw away
@@ -190,14 +193,23 @@ class rbm(nnet):
         self._vbvelocity = np.zeros(self._indim)
         self._hbvelocity = np.zeros(self._hdim)
         self._sparsity = 0
-        for e in range(epochs):
-            if e < 5:
+        
+        epoch = 0
+        error = 99999
+        nbatches = len(samples)
+        while not stopping_condition(epoch,error):
+            if epoch < 5:
                 mom = self._initial_momentum
             else:
                 mom = self._final_momentum
-            for b,batch in enumerate(samples):
-                self._update(batch,mom,e,b)
-
+            batch = 0
+            while batch < nbatches and not stopping_condition(epoch,error):
+                error = self._update(samples[batch],mom,epoch,batch)
+                batch += 1
+            
+            epoch += 1
+        
+        
         # get rid of the "temp" training variables
         del self._wvelocity
         del self._vbvelocity
@@ -218,11 +230,18 @@ class rbm(nnet):
 
     def fromfeatures(self,features):
         raise NotImplemented()
+    
+    # TODO: Is this the correct implementation for both Rbm and LinearRbm?
+    def __call__(self,data):
+        ps,s,stoch = net._h_from_v(data)
+        s[s > .5] = 1
+        s[s <= .5] = 0
+        return s
 
-class linear_rbm(rbm):
+class linear_rbm(Rbm):
 
     def __init__(self,indim,hdim,sparsity_target=.01):
-        rbm.__init__(self,
+        Rbm.__init__(self,
                      indim,
                      hdim,
                      learning_rate = .001,
@@ -339,7 +358,7 @@ by --guess',
         net = cPickle.load(f)
 
     if args.twod:
-        nnet.show_filters(1,twod=(),filename='bark_rbm_filters.png')
+        net.show_filters(1,twod=(),filename='bark_rbm_filters.png')
     else:
         net.show_filters(25,filename='bark_rbm_filters.png')
         

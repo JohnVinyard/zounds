@@ -8,11 +8,16 @@ from util import pad
 
 class Fetch(object):
     
+    __metaclass__ = ABCMeta
+    
     def __init__(self):
         object.__init__(self)
     
     @abstractmethod
-    def __call__(self):
+    def __call__(self, nexamples = None):
+        '''
+        Acquire a number of training examples
+        '''
         pass
 
 class PrecomputedFeature(Fetch):
@@ -78,7 +83,6 @@ class PrecomputedFeature(Fetch):
                     # always draw at least one sample
                     n_to_draw = n_to_draw if n_to_draw else 1
                     print 'drawing %i samples from %s' % (n_to_draw,_id)
-                    # BUG: What if the pattern isn't as long as nframes?
                     try:
                         s = np.random.randint(0,lf - self.nframes,n_to_draw)
                     except ValueError:
@@ -94,6 +98,23 @@ class PrecomputedFeature(Fetch):
             # means we're done collecting data.
             pass
                     
-        
+        # finally, since the patches are grouped by pattern,
+        # shuffle them so they're completely randomized
         return data[np.random.permutation(len(data))]
+
+class PrecomputedFeatureBatch(PrecomputedFeature):
+    '''
+    Group samples into batches, which is handy for some 
+    unsupervised learning algorithms
+    '''
+    def __init__(self,nframes,feature,batchsize):
+        PrecomputedFeature.__init__(self,nframes,feature)
+        self.batchsize = batchsize
+    
+    def __call__(self, nexamples = None):
+        if nexamples % self.batchsize:
+            raise ValueError('nframes must be evenly divisible by batchsize')
+        nbatches = nexamples / self.batchsize
+        samples = PrecomputedFeature.__call__(self,nexamples)
+        return samples.reshape((nbatches,self.batchsize,samples.shape[1]))
             
