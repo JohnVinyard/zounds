@@ -4,7 +4,7 @@ import cPickle
  
 from controller import Controller
 
-class LearningController(Controller):
+class PipelineController(Controller):
     '''
     An abstract base class for controllers that will persist and fetch
     learning pipelines
@@ -14,6 +14,10 @@ class LearningController(Controller):
     def __init__(self):
         Controller.__init__(self)
     
+    @abstractmethod
+    def __delitem__(self):
+        pass
+    
     @abstractmethod    
     def __getitem__(self,key):
         pass
@@ -21,29 +25,51 @@ class LearningController(Controller):
     @abstractmethod
     def store(self,pipeline):
         pass
+
+class DictPipelineController(PipelineController):
+    '''
+    A learning controller that only persists Pipelines in memory
+    '''
     
+    def __init__(self):
+        PipelineController.__init__(self)
+        self._store = {}
+    
+    def __getitem__(self,key):
+        return cPickle.loads(self._store[key])
+
+    def __delitem__(self,key):
+        del self._store[key]
+    
+    def store(self,pipeline):
+        self._store[pipeline._id] = cPickle.dumps(pipeline,cPickle.HIGHEST_PROTOCOL)
 
 
-class PickledLearningController(LearningController):
+class PickledPipelineController(PipelineController):
     '''
     A learning controller that persists Pipelines by pickling them to disk
     '''
     
     extension = '.dat'
     
-    def __init__(self,directory):
-        Controller.__init__()
+    def __init__(self):
+        Controller.__init__(self)
     
     def _filename(self,_id):
-        return '%s%s' % (_id,PickledLearningController.extension)
+        return '%s%s' % (_id,PickledPipelineController.extension)
     
     def __getitem__(self,key):
         filename = self._filename(key)
-        with open(filename,'rb') as f:
-            return cPickle.load(f)
+        try:
+            with open(filename,'rb') as f:
+                return cPickle.load(f)
+        except IOError:
+            raise KeyError
     
     def __delitem__(self,key):
-        raise NotImplemented()
+        path = self._filename(key)
+        os.remove(path)
+            
     
     def store(self,pipeline):
         # TODO: Ensure path exists method in util. Factor out of 
@@ -59,7 +85,7 @@ class PickledLearningController(LearningController):
             pass
         
         with open(filename,'wb') as f:
-            cPickle.dump(pipeline,f)
+            cPickle.dump(pipeline,f,cPickle.HIGHEST_PROTOCOL)
             
         
         

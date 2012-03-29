@@ -125,6 +125,13 @@ class PrecomputedFeatureTests(unittest.TestCase):
             self.assertRaises(ValueError, lambda : pcb(nexamples = 100))
         
     def test_precomputed_batch(self):
-        self.fail()
+        for i in self.implementations:
+            env,framemodel,filenames = \
+                  self.append_files(i[0], i[1],file_lengths = [2048,44100])
+            pcb = PrecomputedFeatureBatch(\
+                                1,PrecomputedFeatureTests.FrameModel.fft,2)
+            batches = pcb(nexamples = 20)
+            expected_axis2 = PrecomputedFeatureTests.AudioConfig.windowsize / 2
+            self.assertEqual((10,2,expected_axis2),batches.shape)
             
     
