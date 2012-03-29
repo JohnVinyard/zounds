@@ -1,6 +1,6 @@
 import numpy as np
 import unittest
-from learn.preprocess import NoOp, MeanStd
+from preprocess import NoOp, MeanStd
 
 class NoOpTests(unittest.TestCase):
     
