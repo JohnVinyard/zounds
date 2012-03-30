@@ -141,7 +141,6 @@ class Rbm(NeuralNetwork,Learn):
 
         # calculate reconstruction error
         error = np.sum(np.abs(inp - v)**2)
-        print 'Error : %1.4f' % error
 
         # number of samples in this batch
         n = float(inp.shape[0])
@@ -182,11 +181,10 @@ class Rbm(NeuralNetwork,Learn):
 
     def train(self,samples,stopping_condition):
         '''
-        Samples should be a 3d array, where
-        the dimensions represent:
-        (batch,sample,feature)
         '''
-
+        batch_size = 100
+        nbatches = len(samples) / batch_size
+        samples = samples.reshape((nbatches,batch_size,samples.shape[1]))
         # initialize some variables we'll
         # use during training, but then throw away
         self._wvelocity = np.zeros(self._weights.shape)
@@ -206,7 +204,7 @@ class Rbm(NeuralNetwork,Learn):
             while batch < nbatches and not stopping_condition(epoch,error):
                 error = self._update(samples[batch],mom,epoch,batch)
                 batch += 1
-            
+                print 'Epoch %i, Batch %i, Error %1.4f' % (epoch,batch,error)
             epoch += 1
         
         
@@ -238,7 +236,7 @@ class Rbm(NeuralNetwork,Learn):
         s[s <= .5] = 0
         return s
 
-class linear_rbm(Rbm):
+class LinearRbm(Rbm):
 
     def __init__(self,indim,hdim,sparsity_target=.01):
         Rbm.__init__(self,

@@ -32,6 +32,12 @@ class FFT(SingleInput):
 
 class BarkBands(SingleInput):
     
+    _triang = {}
+    _fft_index = {}
+    _hz_to_barks = {}
+    _barks_to_hz = {}
+    _erb = {}
+    
     def __init__(self,nbands = None,needs=None, key=None):
         SingleInput.__init__(self,needs=needs, nframes=1, step=1, key=key)
         if None is nbands:
@@ -47,6 +53,10 @@ class BarkBands(SingleInput):
         self.start_bark = bark.hz_to_barks(self.start_freq_hz)
         self.stop_bark = bark.hz_to_barks(self.stop_freq_hz)
         self.bark_bandwidth = (self.stop_bark - self.start_bark) / self.nbands
+        
+        # cache triangular windows
+        self._triang = {}
+        # 
 
     def dim(self,env):
         return self.nbands
@@ -55,20 +65,49 @@ class BarkBands(SingleInput):
     def dtype(self):
         return np.float32
     
+    @classmethod
+    def from_cache(cls,cache,callable,key):
+        try:
+            return cache[key]
+        except KeyError:
+            v = callable(key)
+            cache[key] = v
+            return v
+        
+    @classmethod
+    def fft_index(cls,t):
+        return bark.fft_index(*t)
+    
     def _process(self):
-        cb = np.ndarray(self.nbands)
+        cb = np.ndarray(self.nbands,dtype=np.float32)
         for i in xrange(1,self.nbands + 1):
             b = i * self.bark_bandwidth
-            hz = bark.barks_to_hz(b)
-            _erb = bark.erb(hz)
+            #hz = bark.barks_to_hz(b)
+            #_erb = bark.erb(hz)
+            hz = BarkBands.from_cache(BarkBands._barks_to_hz, 
+                                      bark.barks_to_hz, 
+                                      b)
+            _erb = BarkBands.from_cache(BarkBands._erb, bark.erb, hz)
             _herb = _erb / 2.
-            s_index = \
-                bark.fft_index(hz - _herb,self.windowsize,self.samplerate)
-            e_index = \
-                bark.fft_index(hz + _herb,self.windowsize,self.samplerate) + 1
+            start_hz = hz - _herb
+            stop_hz = hz + _herb
+            ws = self.windowsize
+            sr = self.samplerate
+            s_index = BarkBands.from_cache(BarkBands._fft_index,
+                                           BarkBands.fft_index,
+                                           (start_hz,ws,sr))
+            e_index = BarkBands.from_cache(BarkBands._fft_index,
+                                           BarkBands.fft_index,
+                                           (stop_hz,ws,sr))
+            triang_size = e_index - s_index
+            #s_index = \
+            #    bark.fft_index(hz - _herb,self.windowsize,self.samplerate)
+            #e_index = \
+            #    bark.fft_index(hz + _herb,self.windowsize,self.samplerate) + 1
+            triwin = self.from_cache(BarkBands._triang,triang,triang_size)
             fft_frame = self.in_data[0]
             cb[i - 1] = \
-                (fft_frame[s_index : e_index] * triang(e_index - s_index)).sum()
+                (fft_frame[s_index : e_index] * triwin).sum()
         
         return cb
 
@@ -101,6 +140,8 @@ class SpectralCentroid(SingleInput):
     
     def __init__(self,needs = None,key = None):
         SingleInput.__init__(self,needs = needs,key = key)
+        self._bins = None
+        self._bins_sum = None
     
     def dim(self,env):
         return ()
@@ -111,9 +152,11 @@ class SpectralCentroid(SingleInput):
     
     def _process(self):
         spectrum = self.in_data[0]
-        # TODO: This is wasteful. Get the shape of the source and cache it
-        bins = np.arange(1,len(spectrum) + 1)
-        return np.sum(spectrum*bins) / np.sum(bins)
+        if self._bins is None:
+            self._bins = np.arange(1,len(spectrum) + 1)
+            self._bins_sum = np.sum(self._bins)
+            
+        return np.sum(spectrum*self._bins) / self._bins_sum
 
 # TODO : Factor out spectral mean
 class SpectralFlatness(SingleInput):

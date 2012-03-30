@@ -43,14 +43,16 @@ class Pipeline(Model):
         self.trained_date = None
         
 
-    def train(self,stopping_condition):
+    def train(self,nexamples,stopping_condition):
         '''
         param stopping_condition: A callable that is specific to the 
         Learn-derived class. It is evaluated periodically by Learn.train to 
         decide when learning is complete.
         '''
-        data = self.fetch()
+        data = self.fetch(nexamples = nexamples)
+        print data.shape
         data = self.preprocess(data)
+        print data.shape
         # TODO checkpoints, incremental save
         self.learn.train(data,stopping_condition)
         self.trained_date = datetime.utcnow()

@@ -527,10 +527,8 @@ class Autoencoder(NeuralNetwork,Learn):
 
     def train(self,data,stopping_condition):
         '''
-        Samples should be a 3d array, where
-        the dimensions represent:
-        (batch,sample,feature)
         '''
+        # TODO: Group into batches!
         epoch = 0
         error = 99999
         nbatches = len(data)

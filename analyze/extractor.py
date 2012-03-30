@@ -185,6 +185,7 @@ class SingleInput(Extractor):
         if needs is None:
             raise ValueError('SingleInput extractor cannot be root')
         Extractor.__init__(self,needs=needs,nframes=nframes,step=step,key=key)
+        self._input = None
         
     @property
     def in_data(self):
