@@ -1,5 +1,7 @@
 from abc import ABCMeta,abstractmethod
 
+import numpy as np
+
 class Preprocess(object):
     
     __metaclass__ = ABCMeta
@@ -44,6 +46,17 @@ class MeanStd(Preprocess):
         
         return newdata
         
+
+class PreprocessBarkBands(MeanStd):
+    
+    def __init__(self, mean = None, std = None, axis = 0):
+        MeanStd.__init__(self,mean = mean, std = std, axis = axis)
+        
+    def _preprocess(self,data):
+        data += 1
+        data = np.log(data)
+        return MeanStd._preprocess(self, data)
+    
         
 
     
