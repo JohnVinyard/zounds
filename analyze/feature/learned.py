@@ -1,20 +1,24 @@
+import numpy as np
+
+
+from environment import Environment
 from analyze.extractor import SingleInput
 from model.pipeline import Pipeline
 
-
+# TODO: Write tests!
 class Learned(SingleInput):
     '''
     A thin wrapper around a learned feature
     '''
     
-    def __input__(self,
+    def __init__(self,
+                  pipeline_id = None,
+                  dim = None,
+                  dtype = None,
                   needs = None, 
                   nframes = 1, 
                   step = 1, 
-                  key = None, 
-                  pipeline_id = None,
-                  dim = None,
-                  dtype = None):
+                  key = None):
         
         
         SingleInput.__init__(\
@@ -22,7 +26,7 @@ class Learned(SingleInput):
         self.pipeline = Pipeline[pipeline_id]
         self._dim = dim
         self._dtype = dtype
-    
+        self.env = Environment.instance
     
     
     def dim(self,env):
@@ -33,7 +37,8 @@ class Learned(SingleInput):
         return self._dtype
     
     def _process(self):
-        data = self.in_data[0]
+        data = np.array(self.in_data[:self.nframes])
+        data = data.reshape(np.product(data.shape))
         return self.pipeline(data)
     
     

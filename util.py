@@ -79,11 +79,27 @@ def sort_by_lineage(class_method):
             raise ValueError('lhs and rhs are ancestors of each other')
         
         if rhs in lhs_l:
+            # lhs depends on rhs, directly or indirectly
             return 1
         
         if lhs in rhs_l:
+            # rhs depends on lhs, directly or indirectly
             return -1
         
+        
+        rhs_l_len = len(rhs_l)
+        lhs_l_len = len(lhs_l)
+        
+        if rhs_l_len < lhs_l_len:
+            # rhs has fewer dependencies than lhs
+            return 1
+        
+        if lhs_l_len < rhs_l_len:
+            # lhs has fewer dependencies than rhs
+            return -1
+        
+        # lhs and rhs have no direct relationship, and have the same number
+        # of dependencies
         return 0
     
     return _sort

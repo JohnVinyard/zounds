@@ -43,7 +43,7 @@ class PickledLearningControllerTests(unittest.TestCase):
                      MockFetch((100,2),1),
                      AddPreprocess(),
                      MockLearn())
-        p.train(lambda : True)
+        p.train(100,lambda : True)
         self.to_cleanup.append(fn)
         self.assertTrue(os.path.exists(fn))
         
@@ -58,7 +58,7 @@ class PickledLearningControllerTests(unittest.TestCase):
                      MockFetch((100,2),1),
                      AddPreprocess(),
                      MockLearn())
-        p.train(lambda : True)
+        p.train(100,lambda : True)
         self.to_cleanup.append(realpath)
         self.assertTrue(os.path.exists(realpath))
         
@@ -70,7 +70,7 @@ class PickledLearningControllerTests(unittest.TestCase):
                      MockFetch((100,2),1),
                      AddPreprocess(),
                      MockLearn())
-        p.train(lambda : True)
+        p.train(100,lambda : True)
         self.to_cleanup.append(fn)
         p2 = Pipeline[key]
         self.assertFalse(None is p2)
@@ -87,7 +87,7 @@ class PickledLearningControllerTests(unittest.TestCase):
                      MockFetch((100,2),1),
                      AddPreprocess(),
                      MockLearn())
-        p.train(lambda : True)
+        p.train(100,lambda : True)
         self.to_cleanup.append(fn)
         self.assertTrue(os.path.exists(fn))
         del Pipeline[key]
@@ -108,9 +108,9 @@ class PickledLearningControllerTests(unittest.TestCase):
                       MockFetch((100,2),2),
                       AddPreprocess(),
                       MockLearn())
-        p1.train(lambda : True)
+        p1.train(100,lambda : True)
         self.to_cleanup.append(fn1)
-        p2.train(lambda : True)
+        p2.train(100,lambda : True)
         self.to_cleanup.append(fn2)
         
         p1r = Pipeline[k1]

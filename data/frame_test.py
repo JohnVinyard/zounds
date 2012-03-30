@@ -475,7 +475,34 @@ class PyTablesFrameControllerTests(unittest.TestCase):
         self.assertTrue(isinstance(chain['fft'],FFT))
                         
                         
-                       
+    def test_sync_ancestor_feature_recomputed(self):
+        '''
+        This failing test results in an extractor chain with a Precomputed
+        FFT feature in the extractor chain. In this case, we'd like to simply
+        delete loudness, copy centroid, and do nothing with FFT.
+        '''
+        class FM1(Frames):
+            fft = Feature(FFT,store = False, needs = None)
+            loudness = Feature(Loudness,store = True, needs = fft)
+            centroid = Feature(SpectralCentroid,store = True, needs = fft)
         
+        class FM2(Frames):
+            fft = Feature(FFT,store = False, needs = None)
+            centroid = Feature(SpectralCentroid,store = True, needs = fft)
+            
+        fn,l1,old_features = self.build_with_model(FM1)
+        fn,FM2 = self.FM(framemodel = FM2, filepath = fn)
+        add,update,delete,recompute = FM2._sync()
+        self.assertTrue('loudness' in delete)
+        self.assertTrue('centroid' not in recompute)
         
+        chain = FM2.extractor_chain(FilePattern('0','0','0','/some/file.wav'),
+                                    transitional = True,
+                                    recompute = recompute)
+        self.assertTrue(isinstance(chain['centroid'],Precomputed))
+        self.sync_helper(FM1,
+                         FM2,
+                         lambda old,new : len(old) != len(new),
+                         lambda old,new : 'loudness' in old,
+                         lambda old,new : 'loudness' not in new)
     

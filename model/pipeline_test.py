@@ -71,7 +71,7 @@ class PipelineTests(unittest.TestCase):
                      MockFetch((100,2),1),
                      AddPreprocess(),
                      MockLearn())
-        p.train(lambda : True)
+        p.train(100,lambda : True)
         newdata = np.ndarray((11,2))
         newdata[:] = 3
         
@@ -86,7 +86,7 @@ class PipelineTests(unittest.TestCase):
                      MockFetch((100,2),1),
                      AddPreprocess(),
                      MockLearn())
-        p.train(lambda : True)
+        p.train(100,lambda : True)
         newdata = np.ndarray((11,2))
         newdata[:] = 3
         
@@ -102,7 +102,7 @@ class PipelineTests(unittest.TestCase):
                      MockFetch((100,2),1),
                      AddPreprocess(),
                      MockLearn())
-        p.train(lambda : True)
+        p.train(100,lambda : True)
         newdata = np.ndarray((11,2))
         newdata[:] = 3
         

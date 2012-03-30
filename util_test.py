@@ -1,7 +1,7 @@
 import numpy as np
 import unittest
 from util import pad
-
+from random import shuffle
 
 class PadTests(unittest.TestCase):
     
@@ -102,5 +102,21 @@ class SortByLineageTests(unittest.TestCase):
         l = [n3,n2,n1]
         l.sort(sort_by_lineage(Node.ancestors))
         self.assertEqual(l[-1],n3)
+    
+    def test_complex(self):
+        _id = Node()
+        source = Node()
+        framen = Node()
+        external_id = Node()
+        fft = Node()
+        loudness = Node([fft])
+        centroid = Node([fft])
+        flatness = Node([fft])
+        bark = Node([fft])
+        rbm = Node([bark])
+        l = [_id,source,framen,external_id,fft,loudness,centroid,flatness,bark,rbm]
+        shuffle(l)
+        l.sort(sort_by_lineage(Node.ancestors))
+        self.assertTrue(l.index(rbm) > l.index(bark))
         
         
