@@ -231,7 +231,7 @@ class Rbm(NeuralNetwork,Learn):
     
     # TODO: Is this the correct implementation for both Rbm and LinearRbm?
     def __call__(self,data):
-        ps,s,stoch = net._h_from_v(data)
+        ps,s,stoch = self._h_from_v(data)
         s[s > .5] = 1
         s[s <= .5] = 0
         return s

@@ -89,8 +89,8 @@ class Precomputed(Extractor):
         self._id = _id
         self.stream = None
         
-    @property
-    def dim(self):
+    
+    def dim(self,env):
         '''
         Ask the datastore about the dimension of this data
         '''
@@ -442,6 +442,7 @@ class Frames(Model):
         srt = lambda lhs,rhs : by_lineage(lhs[1],rhs[1])
         features.sort(srt)
         
+        
         # Now that the extractors have been sorted by dependency, we can
         # confidently build them, assured that extractors will always have
         # been built by the time they're needed by another extractor
@@ -468,6 +469,7 @@ class Frames(Model):
             else:
                 # this extractor depended on another feature
                 needs = [d[q] for q in f.needs]
+                
             
             
             
@@ -483,6 +485,15 @@ class Frames(Model):
             chain.append(e)
             d[f] = e
             
-            
+#        if transitional:
+#            newchain = []
+#            f = cls.features
+#            for c in chain:
+#                # omit any precomputed, non-stored features from the chain. These
+#                # will attempt to read features from the database that aren't 
+#                # there.
+#                if not f.has_key(c.key) or \
+#                    (not(isinstance(c,Precomputed) and not f[c.key].store)):
+#                    newchain.append(c)
+#            chain = newchain
         return ExtractorChain(chain)
-            
