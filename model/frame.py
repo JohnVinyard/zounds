@@ -485,15 +485,5 @@ class Frames(Model):
             chain.append(e)
             d[f] = e
             
-#        if transitional:
-#            newchain = []
-#            f = cls.features
-#            for c in chain:
-#                # omit any precomputed, non-stored features from the chain. These
-#                # will attempt to read features from the database that aren't 
-#                # there.
-#                if not f.has_key(c.key) or \
-#                    (not(isinstance(c,Precomputed) and not f[c.key].store)):
-#                    newchain.append(c)
-#            chain = newchain
+
         return ExtractorChain(chain)
