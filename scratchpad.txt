@@ -9,7 +9,7 @@ There are 3 types of similarity
 
 TOOO:
 -------------
-Faster BarkBands implementation
+Get rid of batch fetcher and tests
 
 Learn Rbm on BarkBands and store
 
