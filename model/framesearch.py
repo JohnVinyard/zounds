@@ -31,6 +31,8 @@ class FrameSearch(Model):
         d = ec.collect()
         # TODO: This isn't possible yet. Frames-derived classes must be
         # instantiatable? from data that isn't stored
+        # TODO: the dictionary must be turned into a recarray. This already
+        # happens in PyTablesFramesController. Maybe it can be factored out.
         frames = fm(d)
         return self._search(frames)
     

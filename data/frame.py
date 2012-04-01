@@ -315,7 +315,12 @@ class PyTablesFrameController(FrameController):
          
         self.has_lock = False
     
-
+    def _append(self,frames):
+        self._write_mode()
+        # append the rows
+        self.db_write.append(frames)
+        self.db_write.flush()
+        self._read_mode()
     
     def append(self,chain):
         bufsize = self._buffer_size
@@ -428,12 +433,7 @@ class PyTablesFrameController(FrameController):
         self.db_read = self.dbfile_read.root.frames
         self.schema_read = self.dbfile_read.root.schema
         
-    def _append(self,frames):
-        self._write_mode()
-        # append the rows
-        self.db_write.append(frames)
-        self.db_write.flush()
-        self._read_mode()
+    
     
     def __len__(self):
         return self.db_read.__len__()

@@ -9,13 +9,6 @@ There are 3 types of similarity
 
 TOOO:
 -------------
-
-Look at Rbm reconstructions
-
-Fix Pipeline.train tests
-
-Get rid of batch fetcher and tests
-
 Write LearnedFeature tests
 
 Learn Autoencoder on BarkBands and store
