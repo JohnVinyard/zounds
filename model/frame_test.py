@@ -387,7 +387,32 @@ class FrameModelTests(unittest.TestCase):
         self.assertRaises(KeyError,lambda : instance['centroid'])
     
     def test_instance_getitem_str_unstored(self):
-        self.fail('__getitem__ does not work for non-stored features yet')
+        class FM(Frames):
+            fft = Feature(FFT,store = False, needs = None)
+            loudness = Feature(Loudness, store = True, needs = fft)
+            
+        class Controller(DictFrameController):
+            
+            def get(self,address):
+                r = np.recarray(10,dtype=[('_id','a10'),
+                                          ('audio',np.float32,(2048,)),
+                                          ('source','a10'),
+                                          ('external_id','a10'),
+                                          ('framen',np.int32),
+                                          ('loudness',np.float32)])
+                r[:] = 1
+                return r
+            
+        Environment('test',
+                    FM,
+                    Controller,
+                    (FM,),
+                    {})
+        frames = FM['some_id']
+        fft = frames['fft']
+        # fft, though un-stored, should have been computed on the fly
+        self.assertTrue(None is not fft)
+        self.assertEqual((11,1024),fft.shape)
     
     def test_instance_getitem_feature_exists(self):
         cls,instance = self.mock_frames_instance(10)
@@ -401,7 +426,32 @@ class FrameModelTests(unittest.TestCase):
         self.assertRaises(KeyError, lambda : instance[feature] )
     
     def test_instance_getitem_feature_unstored(self):
-        self.fail('__getitem__ does not work for non-stored features yet')
+        class FM(Frames):
+            fft = Feature(FFT,store = False, needs = None)
+            loudness = Feature(Loudness, store = True, needs = fft)
+            
+        class Controller(DictFrameController):
+            
+            def get(self,address):
+                r = np.recarray(10,dtype=[('_id','a10'),
+                                          ('audio',np.float32,(2048,)),
+                                          ('source','a10'),
+                                          ('external_id','a10'),
+                                          ('framen',np.int32),
+                                          ('loudness',np.float32)])
+                r[:] = 1
+                return r
+            
+        Environment('test',
+                    FM,
+                    Controller,
+                    (FM,),
+                    {})
+        frames = FM['some_id']
+        fft = frames[FM.fft]
+        # fft, though un-stored, should have been computed on the fly
+        self.assertTrue(None is not fft)
+        self.assertEqual((11,1024),fft.shape)
         
     
     def test_instance_getitem_slice(self):

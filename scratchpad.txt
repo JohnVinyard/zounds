@@ -9,10 +9,7 @@ There are 3 types of similarity
 
 TOOO:
 -------------
-BUG: Compute FFT, loudness and centroid. Remove loudness and run display.py.
-	The sync fails because there's a Precomputed FFT extractor in the chain,
-	but FFT data isn't stored.
-	
+
 Look at Rbm reconstructions
 
 Fix Pipeline.train tests
