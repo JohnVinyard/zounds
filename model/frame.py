@@ -225,12 +225,18 @@ class Frames(Model):
     framen = Feature(CounterExtractor,needs = None)
     
     
-    def __init__(self,address):
+    def __init__(self,address = None, data = None):
         Model.__init__(self)
-        self.address = address
-        self._data = self.controller()[address]
-        if not len(self._data):
-            raise KeyError(address)
+        if None is not address:
+            self.address = address
+            self._data = self.controller()[address]
+            if not len(self._data):
+                raise KeyError(address)
+        elif None is not data:
+            self._data = data
+        else:
+            raise ValueError('address or data must be supplied')
+        
         
         self.audio = self._data['audio'] 
         
