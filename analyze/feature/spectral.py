@@ -53,10 +53,6 @@ class BarkBands(SingleInput):
         self.start_bark = bark.hz_to_barks(self.start_freq_hz)
         self.stop_bark = bark.hz_to_barks(self.stop_freq_hz)
         self.bark_bandwidth = (self.stop_bark - self.start_bark) / self.nbands
-        
-        # cache triangular windows
-        self._triang = {}
-        # 
 
     def dim(self,env):
         return self.nbands
@@ -82,8 +78,6 @@ class BarkBands(SingleInput):
         cb = np.ndarray(self.nbands,dtype=np.float32)
         for i in xrange(1,self.nbands + 1):
             b = i * self.bark_bandwidth
-            #hz = bark.barks_to_hz(b)
-            #_erb = bark.erb(hz)
             hz = BarkBands.from_cache(BarkBands._barks_to_hz, 
                                       bark.barks_to_hz, 
                                       b)
@@ -100,10 +94,6 @@ class BarkBands(SingleInput):
                                            BarkBands.fft_index,
                                            (stop_hz,ws,sr))
             triang_size = e_index - s_index
-            #s_index = \
-            #    bark.fft_index(hz - _herb,self.windowsize,self.samplerate)
-            #e_index = \
-            #    bark.fft_index(hz + _herb,self.windowsize,self.samplerate) + 1
             triwin = self.from_cache(BarkBands._triang,triang,triang_size)
             fft_frame = self.in_data[0]
             cb[i - 1] = \

@@ -90,7 +90,7 @@ class Precomputed(Extractor):
         self.stream = None
         
     
-    def dim(self,env):
+    def dim(self):
         '''
         Ask the datastore about the dimension of this data
         '''
@@ -102,15 +102,16 @@ class Precomputed(Extractor):
         Ask the datastore about the type of this data
         '''
         return self._c.get_dtype(self.key)
+    
         
     def _process(self):
         '''
         Read a single feature for self._id
         '''
-        
-        if None is self.stream:
+        if None is self.stream: 
             self.stream = self._c.iter_feature(self._id,self.key)
-            
+    
+        
         try:
             return self.stream.next()
         except StopIteration:    
@@ -173,9 +174,6 @@ class MetaFrame(type):
 
     def __init__(self,name,bases,attrs):
         
-        # Possible KLUDGE: Creating a dictionary with a subset of class
-        # properties seems kind of redundant, but I'm trying to avoid
-        # having to perform the search over and over.
         self.features = {}
         
         for b in bases:
@@ -475,6 +473,17 @@ class Frames(Model):
             
             if not transitional or f in recompute:
                 e = f.extractor(needs=needs,key=k)
+            elif not f.store and k not in recompute:
+                # KLUDGE: We're in a situation where the old feature doesn't 
+                # need to be recomputed, but also isn't stored. This means that
+                # the precomputed extractor would try to read values that aren't
+                # in the database.  Insert a dummy precomputed extractor for
+                # a value we know will be there.  This is a bad, and likely
+                # inefficient solution.
+                e = Precomputed(pattern._id,
+                                '_id',
+                                cls.controller(),
+                                needs = needs)
             else:
                 # Nothing in this feature's lineage has changed, so
                 # we can safely just read values from the database
