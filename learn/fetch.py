@@ -102,19 +102,5 @@ class PrecomputedFeature(Fetch):
         # shuffle them so they're completely randomized
         return data[np.random.permutation(len(data))]
 
-class PrecomputedFeatureBatch(PrecomputedFeature):
-    '''
-    Group samples into batches, which is handy for some 
-    unsupervised learning algorithms
-    '''
-    def __init__(self,nframes,feature,batchsize):
-        PrecomputedFeature.__init__(self,nframes,feature)
-        self.batchsize = batchsize
-    
-    def __call__(self, nexamples = None):
-        if nexamples % self.batchsize:
-            raise ValueError('nframes must be evenly divisible by batchsize')
-        nbatches = nexamples / self.batchsize
-        samples = PrecomputedFeature.__call__(self,nexamples)
-        return samples.reshape((nbatches,self.batchsize,samples.shape[1]))
+
             

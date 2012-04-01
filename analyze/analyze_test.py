@@ -465,9 +465,19 @@ class ExtractorChainTests(unittest.TestCase):
         
         
         ec = ExtractorChain([e1,e2,re]).prune('chzburger')
-        print ec.chain
         self.assertEqual(2,len(ec))
         self.assertTrue(e2 in ec)
         self.assertFalse(e1 in ec)
+    
+    def test_prune_multiple_keys(self):
+        re = ShimExtractor(key = 'oh')
+        e1 = ShimExtractor(key = 'hai', needs = re)
+        e2 = ShimExtractor(key = 'chzburger', needs = e1)
+        e3 = ShimExtractor(key = 'canhas', needs = re)
+        e4 = ShimExtractor(key = 'in yur computer', needs = re)
+        
+        ec = ExtractorChain([re,e1,e2,e3,e4]).prune('chzburger','canhas')
+        self.assertEqual(4,len(ec))
+        self.assertFalse(e4 in ec)
         
     

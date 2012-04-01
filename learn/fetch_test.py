@@ -9,7 +9,7 @@ from model.frame import Feature,Frames
 from model.pattern import FilePattern
 from environment import Environment
 
-from fetch import PrecomputedFeature,PrecomputedFeatureBatch
+from fetch import PrecomputedFeature
 
 class PrecomputedFeatureTests(unittest.TestCase):
     

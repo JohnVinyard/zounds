@@ -283,12 +283,15 @@ class ExtractorChain(object):
         raise ValueError('key must be a string or int')
     
     
-    def prune(self,key_to_keep):
+    def prune(self,*keys_to_keep):
         '''
         Return a new extractor chain that includes only extractors necessary
-        to compute the supplied key
+        to compute the supplied keys
         '''
-        k = key_to_keep
-        e = self[k]
-        return ExtractorChain([e] + e._deep_sources())
+        l = set()
+        for k in keys_to_keep:
+            e = self[k]
+            l.add(e)
+            l.update(e._deep_sources())
+        return ExtractorChain(list(l))
         
