@@ -464,4 +464,7 @@ class FrameModelTests(unittest.TestCase):
         cls,instance = self.mock_frames_instance(10)
         self.assertRaises(ValueError,lambda : instance[object()])
     
+    def test_instance_not_enough_info_to_instantiate(self):
+        self.assertRaises(ValueError, lambda : Frames())
+    
     
