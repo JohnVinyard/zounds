@@ -243,8 +243,8 @@ class Frames(Model):
     def __getitem__(self,key):
         if isinstance(key,str):
             try:
-                return self._data[key]
-            except ValueError:
+                return getattr(self,key)
+            except (AttributeError,ValueError):
                 # for some reason, numpy recarrays raise a ValueError instead
                 # ok a key error when a field is not present
                 raise KeyError(key)
@@ -252,15 +252,19 @@ class Frames(Model):
             if key.key is None:
                 raise KeyError(None)
             try:
-                return self._data[key.key]
-            except ValueError:
+                return getattr(self,key.key)
+            except (AttributeError,ValueError):
                 # This probably means that the feature hasn't been wired-up
                 # by the MetaFrame class and doesn't have its 'key' property
                 # set. Treat this as a KeyError
                 raise KeyError(key)
         elif isinstance(key,int):
+            # TODO: Should this return a numpy.recarray or another 
+            # Frames instance?
             raise NotImplemented()
         elif isinstance(key,slice):
+            # TODO: Should this return a numpy.recarray or another 
+            # Frames instance?
             raise NotImplemented()
         else:
             raise ValueError('key must be a string, Feature, int, or slice')
