@@ -505,4 +505,76 @@ class PyTablesFrameControllerTests(unittest.TestCase):
                          lambda old,new : len(old) != len(new),
                          lambda old,new : 'loudness' in old,
                          lambda old,new : 'loudness' not in new)
+        
+    def test_iter_all_step_size_1(self):
+        
+        class AudioConfig:
+            samplerate = 44100
+            windowsize = 2048
+            stepsize = 1024
+        
+        class FM(Frames):
+            fft = Feature(FFT,store = False, needs = None)
+            loudness = Feature(Loudness,store = True, needs = fft)
+            centroid = Feature(SpectralCentroid,store = True, needs = fft)
+        
+        fn,FM1 = self.FM(framemodel = FM, audio_config = AudioConfig)
+        c = FM.controller()
+        lengths = [44100,44100*2]
+        patterns = self.get_patterns(FM,lengths)
+        for p in patterns:
+            ec = FM1.extractor_chain(p)
+            c.append(ec)
+        total_length = len(c)
+        
+        f = []
+        _ids = []
+        for address,frames in c.iter_all(step = 1):
+            _ids.append(frames._id)
+            f.append((address,frames))
+        
+        self.assertTrue(all([isinstance(frm,FM) for a,frm in f]))
+        self.assertEqual(total_length,len(f))
+        self.assertEqual(2,len(set([_id for _id in _ids])))
+    
+    def test_iter_all_step_size_2(self):
+        
+        class AudioConfig:
+            samplerate = 44100
+            windowsize = 2048
+            stepsize = 1024
+        
+        class FM(Frames):
+            fft = Feature(FFT,store = False, needs = None)
+            loudness = Feature(Loudness,store = True, needs = fft)
+            centroid = Feature(SpectralCentroid,store = True, needs = fft)
+        
+        fn,FM1 = self.FM(framemodel = FM, audio_config = AudioConfig)
+        c = FM.controller()
+        lengths = [44100,44100*2]
+        patterns = self.get_patterns(FM,lengths)
+        for p in patterns:
+            ec = FM1.extractor_chain(p)
+            c.append(ec)
+        total_length = len(c)
+        
+        f = []
+        _ids = []
+        for address,frames in c.iter_all(step = 2):
+            f.append((address,frames))
+            # we must call extend, since the frames instances will
+            # have a length greater than 1
+            _ids.extend(frames._id)
+        
+        self.assertTrue(all([isinstance(frm,FM) for a,frm in f]))
+        self.assertEqual(2,len(set([_id for _id in _ids])))
+        self.assertNotEqual(total_length,len(f))
+        # Not all of the slices will have length two, because of odd frame
+        # counts.  Just make sure one of them does.
+        self.assertEqual(2,len(f[0][1]))
+        
+        
+        
+        
+        
     

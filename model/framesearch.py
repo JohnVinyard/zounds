@@ -35,15 +35,25 @@ class FrameSearch(Model):
         '''
         pass
     
-    # TODO: This should also take an address, and take advantage of precomputed
-    # features when the query comes from the database we're searching in. This
-    # will be a very common use-case.
+   
     # KLUDGE: This is a total mess!  Doing on the fly audio extraction should
     # be much easier and nicer than this
-    def search(self,audio, nresults = 10):
-        
+    def search(self,query, nresults = 10):
         env = self.env()
-        p = DataPattern(env.newid(),'search','search',audio)
+        
+        if isinstance(query,env.framemodel):
+            # The query is a frames instance, so it can be passed to _search
+            # directly; the features are already computed
+            return self._search(query, nresults = nresults)
+        
+        if isinstance(query,env.address_class):
+            # The query is an address. Use it to get a frames instance which
+            # can be passed to _search
+            return self._search(env.framemodel[query], nresults = nresults)
+        
+        # The query wasn't a frames instance, or an address, so we'll assume
+        # that it's a numpy array representing raw audio samples
+        p = DataPattern(env.newid(),'search','search',query)
         
         fm = env.framemodel
         # build an extractor chain which will compute only the features
@@ -55,14 +65,16 @@ class FrameSearch(Model):
         # turn the dictionary into a numpy recarray
         dtype = []
         for e in ec:
-            if 'audio' == e.key or (fm.features.has_key(e.key) and fm.features[e.key].store):
+            if 'audio' == e.key or\
+             (fm.features.has_key(e.key) and fm.features[e.key].store):
                 dtype.append((e.key,e.dtype,e.dim(env)))
         
         l = len(d['audio'])
         r = np.recarray(l,dtype=dtype)
         
         for k,v in d.iteritems():
-            if 'audio' == k or (fm.features.has_key(k) and fm.features[k].store):
+            if 'audio' == k or\
+             (fm.features.has_key(k) and fm.features[k].store):
                 r[k] = pad(np.array(v).repeat(ec[k].step, axis = 0),l)
             
         

@@ -6,7 +6,7 @@ import cPickle
 from abc import ABCMeta,abstractmethod
 
 from tables import \
-    openFile,IsDescription,StringCol,Int32Col,Col,Int8Col
+    openFile,IsDescription,StringCol,Col,Int8Col
 
 import numpy as np
 
@@ -125,7 +125,15 @@ class FrameController(Controller):
         string
         '''
         pass
-
+    
+    @abstractmethod
+    def iter_all(self,step = 1):
+        '''
+        Iterate over all frames, returning two-tuples of address,frames.  If 
+        the step is greater than one, care should be taken to never return
+        frames that span two patterns!
+        '''
+        pass
 
 class PyTablesUpdateNotCompleteError(BaseException):
     '''
@@ -158,8 +166,7 @@ class PyTablesFrameController(FrameController):
         a slice, or a list of ints
         '''
         def __init__(self,key):
-            
-            if isinstance(key,int):
+            if isinstance(key,int) or isinstance(key,np.integer):
                 # address of a single frame
                 self._len = 1
             elif isinstance(key,slice):
@@ -481,6 +488,23 @@ class PyTablesFrameController(FrameController):
         for row in self.db_read.itersequence(rowns):
             yield row[feature]
     
+    def iter_all(self, step = 1):
+        _ids = list(self.list_ids())
+        for _id in _ids:
+            rowns = self.db_read.getWhereList(self._query(_id = _id))
+            last = rowns[-1]
+            for rn in rowns[::step]:
+                if 1 == step:
+                    key = rn
+                elif last - rn >= step:
+                    key = slice(rn,rn + step,1)
+                elif last == rn:
+                    key = last
+                else:
+                    key = slice(rn,last,1)
+                address = PyTablesFrameController.Address(key)
+                yield  address,self.model[address]
+    
     @property
     def _temp_filepath(self):
         '''
@@ -706,6 +730,9 @@ class DictFrameController(FrameController):
         raise NotImplemented()
     
     def exists(self,source,external_id):
+        raise NotImplemented()
+    
+    def iter_all(self):
         raise NotImplemented()
         
         

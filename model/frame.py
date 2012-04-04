@@ -231,6 +231,7 @@ class Frames(Model):
             self.address = address
             self._data = self.controller()[address]
             if not len(self._data):
+                print address
                 raise KeyError(address)
         elif None is not data:
             self._data = data
