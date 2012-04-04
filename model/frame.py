@@ -39,6 +39,12 @@ class Feature(object):
         '''
         Return an extractor that's able to compute this feature.
         '''
+        # KLUDGE: I'm doing this because SingleInput-derived extractors
+        # cannot think they're root.  The purpose of calling this method
+        # is almost certainly to investigate the data type and output dimension
+        # of the extractor, so feed a dummy extractor in here.
+        if not needs:
+            needs = CounterExtractor()
         return self.extractor_cls(needs = needs,key = key,**self.args)
     
     @recurse
@@ -166,6 +172,14 @@ class Address(object):
     def __len__(self):
         '''
         The number of frames represented by this address
+        '''
+        pass
+    
+    @classmethod
+    def congeal(cls,addresses):
+        '''
+        Given many addresses, return on single contiguous address that contains
+        them all.
         '''
         pass
     

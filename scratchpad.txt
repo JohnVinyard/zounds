@@ -13,6 +13,8 @@ Multidimensional Frames indexes
 
 arbitrary-length sound search implementation
 
+Automatic rebuilding of search indices after data is added
+
 Write LearnedFeature tests
 
 Learn Autoencoder on BarkBands and store
