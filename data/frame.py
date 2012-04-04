@@ -199,7 +199,33 @@ class PyTablesFrameController(FrameController):
         def __len__(self):
             return self._len
     
-    
+        @classmethod
+        def congeal(cls,addresses):
+            # BUG: It's possible for this to return an address that spans
+            # patterns
+            mn = 9999
+            mx = 0
+            for a in addresses:
+                key = a.key
+                if isinstance(key,int) or isinstance(key,np.integer):
+                    if key < mn:
+                        mn = key
+                    if key > mx:
+                        mx = key
+                elif isinstance(key,slice):
+                    if key.start < mn:
+                        mn = key.start
+                    if key.stop > mx:
+                        mx = key.start
+                elif isinstance(key,list) or isinstance(key,np.ndarray):
+                    localmin = np.min(key)
+                    localmax = np.max(key)
+                    if localmin < mn:
+                        mn = localmin
+                    if localmax > mx:
+                        mx = localmax
+            return cls(slice(mn,mx))
+                    
     
     def __init__(self,framesmodel,filepath):
         FrameController.__init__(self,framesmodel)
@@ -673,10 +699,12 @@ def sync_complete(results):
     return True
    
     
-    
-    
-         
-        
+# Crazy Bad KLUDGE: I rely on FrameController-derived classes to define a back-end
+# specific Address class as a nested class. This makes those classes impossible
+# to pickle, however.  This is a baaad solution, but I'd like to keep moving
+# for right now.    
+import sys         
+setattr(sys.modules[__name__], 'Address', PyTablesFrameController.Address)
 
 class DictFrameController(FrameController):
     '''

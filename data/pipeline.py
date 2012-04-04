@@ -1,8 +1,6 @@
 from abc import ABCMeta,abstractmethod
-import os.path
+
 import cPickle
- 
-from util import ensure_path_exists
 from controller import Controller,PickledController
 
 class PipelineController(Controller):
