@@ -9,13 +9,13 @@ There are 3 types of similarity
 
 TOOO:
 -------------
-Write LearnedFeature tests
-
-Learn Autoencoder on BarkBands and store
-
 Multidimensional Frames indexes
 
 arbitrary-length sound search implementation
+
+Write LearnedFeature tests
+
+Learn Autoencoder on BarkBands and store
 
 Patterns
 
