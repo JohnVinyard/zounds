@@ -15,7 +15,7 @@ from celery.task import task,chord
 from controller import Controller
 from model.pattern import Pattern
 import model.frame
-from util import pad
+from util import pad,ensure_path_exists
 
 class FrameController(Controller):
     __metaclass__ = ABCMeta
@@ -210,22 +210,12 @@ class PyTablesFrameController(FrameController):
         
         '''
         self.filepath = filepath
-        parts = os.path.split(filepath)
-        self.filename = parts[-1]
-        path = os.path.join(*parts[:-1])
-        
+        self.filename = os.path.split(filepath)[-1]
         self.dbfile_write = None
         self.db_write = None
-        
         self.dbfile_read = None
         self.db_read = None
-        
-        if len(parts) > 1:
-            try:
-                os.makedirs(path)
-            except OSError:
-                # This probably means that the path already exists
-                pass
+        ensure_path_exists(self.filepath)
             
         # KLUDGE: PyTables allows the creation of columns using a string
         # representation of a datatype, e.g. "float32", but not the numpy
