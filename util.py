@@ -1,5 +1,6 @@
 from __future__ import division
 import numpy as np
+import os.path
 
 # TODO: Get rid of this file! Move pad into a more appropriate location
 
@@ -23,6 +24,19 @@ def pad(a,desiredlength):
     return padded.tolist() if islist else padded
 
 
+def ensure_path_exists(filename):
+    '''
+    Given a filename, ensure that the path to it exists
+    '''
+    parts = os.path.split(filename)
+    path = os.path.join(*parts[:-1])
+    
+    if path:
+        try: 
+            os.makedirs(path)
+        except OSError:
+            # This probably means that the path already exists
+            pass
 
 def testsignal(hz,seconds=5.,sr=44100.):
     # cycles per sample
