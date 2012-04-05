@@ -50,9 +50,7 @@ class Pipeline(Model):
         decide when learning is complete.
         '''
         data = self.fetch(nexamples = nexamples)
-        print data.shape
         data = self.preprocess(data)
-        print data.shape
         # TODO checkpoints, incremental save
         self.learn.train(data,stopping_condition)
         self.trained_date = datetime.utcnow()
