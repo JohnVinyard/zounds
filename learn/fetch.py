@@ -20,6 +20,14 @@ class Fetch(object):
         '''
         pass
 
+class NoOp(Fetch):
+    
+    def __init__(self):
+        Fetch.__init__(self)
+    
+    def __call__(self, nexamples = None):
+        return None
+
 class PrecomputedFeature(Fetch):
     '''
     Fetches "patches" of precomputed features from the frames database.  Attempts

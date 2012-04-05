@@ -9,6 +9,8 @@ from model import Model
 from pattern import DataPattern
 from util import pad
 
+from matplotlib import pyplot as plt
+
 class MetaFrameSearch(ABCMeta):
     
     def __init__(self,name,bases,attrs):
@@ -104,160 +106,93 @@ class FrameSearch(Model):
         frames = fm(data = r)
         return self._search(frames, nresults = nresults)
 
+'''
+Minhash search algorithm:
 
-class BinaryFeatureSearch(FrameSearch):
+For a minhash algorithm with N hash functions
+
+For a single block, compute the minhash to get N values, V[]
+
+Foreach minhash value, visit the bucket that corresponds to the minhash
+function and value, which we'll denote as (N,V) and increment a block's
+score by one each time it is encountered.  Once this is complete, the 
+M blocks with the highest values are returned. The data structure looks like
+[
+    // hash function 0
+    {
+        value : [blocks.....]
+    }
+    // has function 1
+    {
+        value : [blocks.....]
+    }
+    ...
+]
+'''
+class MinHashSearch(FrameSearch):
     
-    def __init__(self,_id,feature,step):
+    def __init__(self,_id,feature,step,size):
         FrameSearch.__init__(self,_id,feature)
         self._index = None
         self.step = step
+        self.size = size
     
     @property
     def feature(self):
         return self.features[0]
-    
+
     @property
-    def addresses(self):
+    def address(self):
         return self._index[0]
-    
+
     @property
-    def words(self):
+    def index(self):
         return self._index[1]
-    
-    def _extract_data(self,f):
-        '''
-        Extract the "words" present (non-zero items), as well as the density
-        of words
-        '''
-        return np.nonzero(f)[0]
     
     def _build_index(self):
         env = self.env()
         fc = env.framecontroller
-        extractor = self.feature.extractor()
-        # the dimension of the binary feature vector
-        dim = extractor.dim(env)
-        # the number of entries in the index
-        # KLUDGE: How do I know *exactly* how long to make the sparse matrix
-        # rows *before* iterating over the addresses?
-        nentries = int((math.ceil(len(fc) / self.step) * 1.1))
         addresses = []
-        index = lil_matrix((dim,nentries), dtype = np.int8)
+        index = [{} for s in xrange(self.size)]
         for i,f in enumerate(fc.iter_all(step = self.step)):
             address,frames = f
             addresses.append(address)
-            # extract the words, i.e., the features that are "on"
-            words = self._extract_data(frames[self.feature])
-            print i,len(words)
-            # set the corresponding features in the index to "on"
-            index[[words],i] = 1
-        
-        index = index.tocsr()
+            hsh = frames[self.feature]
+            hsh = hsh if 1 == len(hsh.shape) else hsh[0]
+            print hsh
+            for q,h in enumerate(hsh):
+                try:
+                    index[q][h].append(i)
+                except KeyError:
+                    index[q][h] = [i]
+                    
         self._index = [np.array(addresses),index]
-            
     
-    
-    def _top_candidates(self,words,topn = 40):
-        index = self.words
-        # Given the words, get a score for every block
-        # in the db, i.e., Determine how many words
-        # each block has in common with the example
-        s = index[words,:].sum(0)
-        a = np.asarray(s)[0]
-    
-        # Sort blocks according to score, keeping
-        # the top n scores
-        best = np.argsort(a)[-topn*10:]
-        
-        # For the n best blocks, find out how many
-        # total words each has
-        c = index[:,best].sum(0)
-        c = np.asarray(c)[0]
-    
-        # Get the difference in word count between
-        # the example and the n best blocks
-        diff = np.abs(c - len(words))
-        bestcount = np.argsort(diff)[:topn]
-        
-        return best[bestcount]
-    
-    def _pad(self,query,candidate):
-        '''
-        Ensure that the candidate is at least
-        as long as the query. If it isn't, pad
-        it with the inverse of the query, so it
-        gets the worst possible score for those
-        frames
-        '''
-        if len(candidate) >= len(query):
-            return candidate
-
-        diff = len(query) - len(candidate)
-        opposite = np.logical_not(query[-diff:])
-        return np.concatenate([candidate,opposite])
-    
-    def _score(self,query,candidate):
-        '''
-        slide query along candidate, reporting a similarity
-        score for each position
-        '''
-        qlen = len(query)
-        scores = np.zeros(1 + (len(candidate) - qlen))
-        return [ ((query - candidate[i:i+qlen]) == 0).sum() 
-                 for i in xrange(len(scores)) ]
-    
-    
-    def _search(self,frames, nresults):
-        # KLUDGE: This algorithm assumes that addresses that are contiguous
-        # in the addresses array are contiguous in time.  This is *probably*
-        # always a safe assumption, but something about it feels wrong.
-        addresses = self.addresses
-        index = self.words
-        feature = frames[self.feature]
-        nblocks = int(len(feature) / self.step)
-        ncandidates = nresults
-        # keep track of scores in an array where columns represent
-        # blocks, and columns represent the n best matches for that block
-        scores = np.zeros((nblocks,ncandidates),dtype=np.int32)
+    def _search_block(self,hashvalue,nresults):
         d = {}
-        for i,block in enumerate(feature[::self.step]):
-            # extract words from this block
-            w = np.nonzero(block)[0]
-            # get the indices of the top candidates in the addresses array,
-            # and set the column corresponding to this block with the top
-            # candidates
-            if len(w):
-                scores[i,:] = self._top_candidates(w, topn = ncandidates)
+        index = self.index
+        for i,h in enumerate(hashvalue):
+            addrs = index[i][h]
+            for a in addrs:
+                try:
+                    d[a] += 1
+                except KeyError:
+                    d[a] = 1
+        items = d.items()
+        items.sort(key = lambda i : i[1], reverse = True)
+        a = [i[0] for i in items[:nresults]]
+        print a
+        return self.address[a]
         
-        # sort column-wise, so that we might end up with contiguous addresses
-        # together in single rows
-        scores = np.sort(scores, axis = 1)
-        mx = scores.max(1)
-        mn = scores.min(1)
-        # measure the "spaciousness" of each row. We want very dense, very
-        # non-spacious rows.  this means that the blocks are, or are close
-        # to being contigous
-        spaciousness = (mx - mn) / scores.shape[1]
-        # get sorted row indices, from least to most spacious
-        top = np.argsort(spaciousness)
+    def _search(self,frames, nresults):
+        feature = frames[self.feature]
+        print '========================================'
+        for block in feature[::self.step]:
+            addrs = self._search_block(block, 5)
+            yield addrs[0]
         
         
-        env = self.env()
-        ac = env.address_class
-        fm = env.framemodel
         
-        for t in top:
-            # "congeal" all the addresses in the most dense row into a single
-            # address
-            #address = ac.congeal(scores[t])
-            # candidates frames
-            #cframes = fm[address]
-            # get the feature from the candidate frames instance
-            #cfeature = cframes[self.feature]
-            #cfeature = self._pad(feature,cfeature)
-            #sliding_score = self._score(feature,cfeature)
-            print addresses[scores[t]]
-            print '=================================='
         
             
             
