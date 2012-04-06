@@ -574,7 +574,7 @@ class PyTablesFrameControllerTests(unittest.TestCase):
         self.assertEqual(2,len(f[0][1]))
         
         
-        
+# KLUDGE: I've excluded int -> int comparisons    
 class AddressTests(unittest.TestCase):
     
     def setUp(self):
