@@ -190,7 +190,7 @@ class Rbm(NeuralNetwork,Learn):
         self._wvelocity = np.zeros(self._weights.shape)
         self._vbvelocity = np.zeros(self._indim)
         self._hbvelocity = np.zeros(self._hdim)
-        self._sparsity = 0
+        self._sparsity = np.zeros(self._hdim)
         
         epoch = 0
         error = 99999
