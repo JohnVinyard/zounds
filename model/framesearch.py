@@ -1,15 +1,13 @@
 from __future__ import division
 from abc import ABCMeta,abstractmethod
-import math
 
 import numpy as np
-from scipy.sparse import lil_matrix
 
 from model import Model
 from pattern import DataPattern
 from util import pad
 
-from matplotlib import pyplot as plt
+
 
 class MetaFrameSearch(ABCMeta):
     
@@ -106,31 +104,53 @@ class FrameSearch(Model):
         frames = fm(data = r)
         return self._search(frames, nresults = nresults)
 
-'''
-Minhash search algorithm:
-
-For a minhash algorithm with N hash functions
-
-For a single block, compute the minhash to get N values, V[]
-
-Foreach minhash value, visit the bucket that corresponds to the minhash
-function and value, which we'll denote as (N,V) and increment a block's
-score by one each time it is encountered.  Once this is complete, the 
-M blocks with the highest values are returned. The data structure looks like
-[
-    // hash function 0
-    {
-        value : [blocks.....]
-    }
-    // has function 1
-    {
-        value : [blocks.....]
-    }
-    ...
-]
-'''
-class MinHashSearch(FrameSearch):
+class Score(dict):
     
+    def __init__(self,seq):
+        dict.__init__(self)
+        self.seq = seq
+        self._score()
+    
+    def _score(self):
+        for s in self.seq:
+            try:
+                self[s] += 1
+            except KeyError:
+                self[s] = 1
+        
+    def nbest(self,n):
+        items = self.items()
+        # sort from highest to lowest value
+        items.sort(key = lambda i : i[1], reverse = True)
+        # return the best ranked keys
+        return [i[0] for i in items[:n]]
+        
+                
+class MinHashSearch(FrameSearch):
+    '''
+    Minhash search algorithm:
+    
+    For a minhash algorithm with N hash functions
+    
+    For a single block, compute the minhash to get N values, V[]
+    
+    Foreach minhash value, visit the bucket that corresponds to the minhash
+    function and value, which we'll denote as (N,V) and increment a block's
+    score by one each time it is encountered.  Once this is complete, the 
+    M blocks with the highest values are returned. The data structure looks like
+    [
+        // hash function 0
+        {
+            value1 : [blocks.....],
+            value2 : [blocks.....]
+        }
+        // has function 1
+        {
+            value : [blocks.....]
+        }
+        ...
+    ]
+    '''
     def __init__(self,_id,feature,step,size):
         FrameSearch.__init__(self,_id,feature)
         self._index = None
@@ -140,23 +160,29 @@ class MinHashSearch(FrameSearch):
     @property
     def feature(self):
         return self.features[0]
-
+    
     @property
-    def address(self):
+    def ids(self):
         return self._index[0]
 
     @property
-    def index(self):
+    def address(self):
         return self._index[1]
+
+    @property
+    def index(self):
+        return self._index[2]
     
     def _build_index(self):
         env = self.env()
         fc = env.framecontroller
         addresses = []
+        ids = []
         index = [{} for s in xrange(self.size)]
         for i,f in enumerate(fc.iter_all(step = self.step)):
             address,frames = f
             addresses.append(address)
+            ids.append(frames._id[0])
             hsh = frames[self.feature]
             hsh = hsh if 1 == len(hsh.shape) else hsh[0]
             print hsh
@@ -166,30 +192,35 @@ class MinHashSearch(FrameSearch):
                 except KeyError:
                     index[q][h] = [i]
                     
-        self._index = [np.array(addresses),index]
+        self._index = [np.array(ids),np.array(addresses),index]
     
     def _search_block(self,hashvalue,nresults):
-        d = {}
         index = self.index
+        addresses = []
         for i,h in enumerate(hashvalue):
-            addrs = index[i][h]
-            for a in addrs:
-                try:
-                    d[a] += 1
-                except KeyError:
-                    d[a] = 1
-        items = d.items()
-        items.sort(key = lambda i : i[1], reverse = True)
-        a = [i[0] for i in items[:nresults]]
-        print a
-        return self.address[a]
+            try:
+                addresses.extend(index[i][h])
+            except KeyError:
+                '''
+                There are no instances of the (hash function,has value) pair
+                in the database
+                '''
+                pass
+        return Score(addresses).nbest(nresults)
+        
         
     def _search(self,frames, nresults):
         feature = frames[self.feature]
-        print '========================================'
+        addresses = self.address
+        allids = self.ids
+        ids = []
         for block in feature[::self.step]:
-            addrs = self._search_block(block, 5)
-            yield addrs[0]
+            ids.extend([allids[ai] for ai in self._search_block(block, 100)])
+        
+        best_ids = Score(ids).nbest(20)
+            
+            
+            
         
         
         
