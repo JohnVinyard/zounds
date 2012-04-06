@@ -105,26 +105,18 @@ class FrameSearch(Model):
         frames = fm(data = r)
         return self._search(frames, nresults = nresults)
 
-class Score(dict):
+
+class Score(object):
     
     def __init__(self,seq):
-        dict.__init__(self)
+        object.__init__(self)
         self.seq = seq
-        self._score()
     
-    def _score(self):
-        for s in self.seq:
-            try:
-                self[s] += 1
-            except KeyError:
-                self[s] = 1
-        
     def nbest(self,n):
-        items = self.items()
-        # sort from highest to lowest value
-        items.sort(key = lambda i : i[1], reverse = True)
-        # return the best ranked keys
-        return [i[0] for i in items[:n]]
+        b = np.bincount(self.seq)
+        nz = np.nonzero(b)[0]
+        asrt = np.argsort(b[nz])
+        return nz[asrt][::-1][:n]
         
                 
 class MinHashSearch(FrameSearch):
@@ -211,6 +203,7 @@ class MinHashSearch(FrameSearch):
                 in the database
                 '''
                 pass
+        
         return Score(addresses).nbest(nresults)
         
     
@@ -249,7 +242,9 @@ class MinHashSearch(FrameSearch):
         d = {}
         addresses = self.address
         allids = self.ids
-        for block in feature[::self.step]:
+        
+        f = feature[::self.step]
+        for block in f:
             # get the n best address indexes that match the query block
             ais = self._search_block(block, candidates_per_block)
             # get the addresses themselves
@@ -264,9 +259,6 @@ class MinHashSearch(FrameSearch):
                 elif addr not in d[_id]:
                     d[_id].append(addr)
         
-        #items = d.items()
-        # KLUDGE: This will prefer longer sounds to better matches
-        #items.sort(key = lambda item : len(item[1]), reverse = True)
         env = self.env()
         AC = env.address_class
         candidates = [(_id,AC.congeal(addrs)) for _id,addrs in d.iteritems()]
@@ -318,10 +310,8 @@ class MinHashSearch(FrameSearch):
         return finalresults
     
     def _search(self,frames, nresults):
-        
         # TODO:
         # some results are spanning multiple patterns
-        # Break this method up into smaller pieces
         # Lots of near duplicate clips from the same sound
         # Remove any knowledge of frames back-end
         # Search is slooow
@@ -331,15 +321,6 @@ class MinHashSearch(FrameSearch):
         querylen = len(feature)
         return self._avoid_overlap(nresults,finalscores, querylen)
         
-            
-        
-        
-            
-            
-        
-        
-        
-        
-            
+
             
         
