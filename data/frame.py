@@ -175,6 +175,7 @@ class PyTablesFrameController(FrameController):
         a slice, or a list of ints
         '''
         def __init__(self,key):
+            model.frame.Address.__init__(self,key)
             if isinstance(key,int) or isinstance(key,np.integer):
                 # address of a single frame
                 self._len = 1
@@ -209,8 +210,9 @@ class PyTablesFrameController(FrameController):
             else:
                 raise ValueError(
                         'key must be an int, a list of ints, or a slice')
-             
-            model.frame.Address.__init__(self,key)
+            
+            self._span = self.max - self.min
+            
         
         def __str__(self):
             return '%s - %s' % (self.__class__,self.key)
@@ -230,7 +232,7 @@ class PyTablesFrameController(FrameController):
         
         @property
         def span(self):
-            return self.max - self.min
+            return self._span
         
         
         def __eq__(self,other):
