@@ -208,20 +208,110 @@ class MinHashSearch(FrameSearch):
                 pass
         return Score(addresses).nbest(nresults)
         
-        
+    
+    def _pad(self,query,candidate):
+        '''
+        Ensure that the candidate is at least
+        as long as the query. If it isn't, pad
+        it with the inverse of the query, so it
+        gets the worst possible score for those
+        frames
+        '''
+        if len(candidate) >= len(query):
+            return candidate
+
+        diff = len(query) - len(candidate)
+        opposite = np.ndarray((diff,query.shape[1]))
+        opposite[:] = -1
+        return np.concatenate([candidate,opposite])
+
+    def _score(self,query,candidate):
+        '''
+        slide query along candidate, reporting a similarity
+        score for each position
+        '''
+        qlen = len(query)
+        scores = np.zeros(1 + (len(candidate) - qlen))
+        return [ ((query - candidate[i:i+qlen]) == 0).sum() 
+                 for i in xrange(len(scores)) ]
+    
     def _search(self,frames, nresults):
+        # TODO:
+        # finalresults aren't being sorted by score
+        # Break this method up into smaller pieces
+        # MemoryErrors.  Where are these huge slices coming from
+        # Lots of near duplicate clips from the same sound
+        # Search is slooow
         feature = frames[self.feature]
         addresses = self.address
         allids = self.ids
-        idscore = []
+        
+        d = {}
         for block in feature[::self.step]:
             # get the n best address indexes that match the query block
             ais = self._search_block(block, 100)
+            # get the addresses themselves
+            addrs = [addresses[ai] for ai in ais]
             # get the pattern ids that correspond to those blocks
             ids = [allids[ai] for ai in ais]
-            idscore.extend(ids)
+            for i in xrange(len(ids)):
+                _id = ids[i]
+                addr = addrs[i]
+                if not d.has_key(_id):
+                    d[_id] = [addr]
+                elif addr not in d[_id]:
+                    d[_id].append(addr)
         
-        best_ids = Score(ids).nbest(nresults)
+        items = d.items()
+        # KLUDGE: This will prefer longer sounds to better matches
+        items.sort(key = lambda item : len(item[1]), reverse = True)
+        env = self.env()
+        AC = env.address_class
+        candidates = [(_id,AC.congeal(addrs)) for _id,addrs in items[:nresults * 2]]
+        
+        # a list that will hold four-tuples of (_id,address,score,pos)
+        finalscores = []
+        query = feature
+        querylen = len(query)
+        tolerance = querylen * .85
+        for _id,addr in candidates:
+            print 'reading feature'
+            cfeature = env.framemodel[addr][self.feature]
+            print 'read feature'
+            print 'padding' 
+            cfeature = self._pad(query,cfeature)
+            print 'padded'
+            print 'scoring'
+            scores = self._score(query,cfeature)
+            print 'scored'
+            
+            for i,s in enumerate(scores):
+                finalscores.append((_id,addr,s,i))
+        
+        finalscores = sorted(finalscores, key = lambda fs : fs[2], reverse = True)
+        
+        finalresults = []
+        allstarts = []
+        count = i
+        while len(finalresults) < nresults and count < len(finalscores):
+            _id,addr,score,pos = finalscores[i]
+            # KLUDGE: This is cheating. I'm using knowledge about the frames back-end
+            # implementation here, which is a no-no!/
+            start = addr.key.start + pos
+            stop = start + querylen
+            # avoid results that overlap with previous results too much
+            print score / (query.size)
+            if not np.any(np.array([abs(start - z) for z in allstarts]) <= tolerance):
+                finalresults.append((_id,AC(slice(start,stop))))
+                allstarts.append(start)
+            i += 1
+            
+        
+        
+        return finalresults
+            
+        
+        
             
             
         

@@ -156,7 +156,10 @@ class PyTablesFrameController(FrameController):
     
     Access by row numbers wins out speed-wise over access by indexed column 
     (e.g. where _id == 1234), so a slice with literal row numbers is the best
-    address for this controller
+    address for this controller.
+    
+    This clas takes for granted that only addresses from the same pattern
+    will be compared.  
     '''
     
     class Address(model.frame.Address):
@@ -212,6 +215,9 @@ class PyTablesFrameController(FrameController):
         def __str__(self):
             return '%s - %s' % (self.__class__,self.key)
         
+        def __repr__(self):
+            return self.__str__()
+        
         def serialize(self):
             raise NotImplemented()
         
@@ -226,10 +232,8 @@ class PyTablesFrameController(FrameController):
         def span(self):
             return self.max - self.min
         
+        
         def __eq__(self,other):
-            # BUG: slice and contiguous array with same range should be equal
-            # BUG: integer and array containing only that integer should not be equal
-            
             if len(self) != len(other):
                 return False
             
@@ -256,30 +260,14 @@ class PyTablesFrameController(FrameController):
         # TODO: Write tests
         @classmethod
         def congeal(cls,addresses):
-            # BUG: It's possible for this to return an address that spans
-            # patterns
-            mn = 9999
-            mx = 0
-            for a in addresses:
-                key = a.key
-                if isinstance(key,int) or isinstance(key,np.integer):
-                    if key < mn:
-                        mn = key
-                    if key > mx:
-                        mx = key
-                elif isinstance(key,slice):
-                    if key.start < mn:
-                        mn = key.start
-                    if key.stop > mx:
-                        mx = key.start
-                elif isinstance(key,np.ndarray):
-                    localmin = np.min(key)
-                    localmax = np.max(key)
-                    if localmin < mn:
-                        mn = localmin
-                    if localmax > mx:
-                        mx = localmax
-            return cls(slice(mn,mx))
+            if None is addresses or not len(addresses):
+                raise ValueError(\
+                    'addresses must be an sequence with length greater than 0')
+            if 1 == len(addresses):
+                return addresses[0]
+            
+            srt = sorted(addresses)
+            return cls(slice(srt[0].min,srt[-1].max))
                     
     
     def __init__(self,framesmodel,filepath):
