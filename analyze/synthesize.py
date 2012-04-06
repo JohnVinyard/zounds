@@ -16,7 +16,7 @@ class WindowedAudioSynthesizer(object):
             start = i * self.stepsize
             stop = start + self.windowsize
             output[start : stop] += f
-        return output
+        return output * .8
             
     
     

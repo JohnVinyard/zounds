@@ -1,5 +1,6 @@
 from __future__ import division
 from abc import ABCMeta,abstractmethod
+import time
 
 import numpy as np
 
@@ -182,7 +183,11 @@ class MinHashSearch(FrameSearch):
         for i,f in enumerate(fc.iter_all(step = self.step)):
             address,frames = f
             addresses.append(address)
-            ids.append(frames._id[0])
+            _id = frames._id
+            if isinstance(_id,str):
+                ids.append(_id)
+            else:
+                ids.append(_id[0])
             hsh = frames[self.feature]
             hsh = hsh if 1 == len(hsh.shape) else hsh[0]
             print hsh
@@ -217,6 +222,9 @@ class MinHashSearch(FrameSearch):
         gets the worst possible score for those
         frames
         '''
+        if 1 == len(candidate.shape):
+            candidate = candidate.reshape((1,candidate.shape[0]))
+        
         if len(candidate) >= len(query):
             return candidate
 
@@ -224,6 +232,7 @@ class MinHashSearch(FrameSearch):
         opposite = np.ndarray((diff,query.shape[1]))
         opposite[:] = -1
         return np.concatenate([candidate,opposite])
+        
 
     def _score(self,query,candidate):
         '''
@@ -235,25 +244,18 @@ class MinHashSearch(FrameSearch):
         return [ ((query - candidate[i:i+qlen]) == 0).sum() 
                  for i in xrange(len(scores)) ]
     
-    def _search(self,frames, nresults):
-        # TODO:
-        # finalresults aren't being sorted by score
-        # Break this method up into smaller pieces
-        # MemoryErrors.  Where are these huge slices coming from
-        # Lots of near duplicate clips from the same sound
-        # Search is slooow
-        feature = frames[self.feature]
+    def _candidate_sequences(self,feature, candidates_per_block = 50):
+        starttime = time.time()
+        d = {}
         addresses = self.address
         allids = self.ids
-        
-        d = {}
         for block in feature[::self.step]:
             # get the n best address indexes that match the query block
-            ais = self._search_block(block, 100)
+            ais = self._search_block(block, candidates_per_block)
             # get the addresses themselves
-            addrs = [addresses[ai] for ai in ais]
+            addrs = addresses[ais]
             # get the pattern ids that correspond to those blocks
-            ids = [allids[ai] for ai in ais]
+            ids = allids[ais]
             for i in xrange(len(ids)):
                 _id = ids[i]
                 addr = addrs[i]
@@ -262,53 +264,73 @@ class MinHashSearch(FrameSearch):
                 elif addr not in d[_id]:
                     d[_id].append(addr)
         
-        items = d.items()
+        #items = d.items()
         # KLUDGE: This will prefer longer sounds to better matches
-        items.sort(key = lambda item : len(item[1]), reverse = True)
+        #items.sort(key = lambda item : len(item[1]), reverse = True)
         env = self.env()
         AC = env.address_class
-        candidates = [(_id,AC.congeal(addrs)) for _id,addrs in items[:nresults * 2]]
-        
+        candidates = [(_id,AC.congeal(addrs)) for _id,addrs in d.iteritems()]
+        print '_candidate_sequences took %1.4f' % (time.time() - starttime)
+        return candidates
+    
+    def _score_sequences(self,feature,candidates):
+        starttime = time.time()
         # a list that will hold four-tuples of (_id,address,score,pos)
         finalscores = []
         query = feature
-        querylen = len(query)
-        tolerance = querylen * .85
+        
+        env = self.env()
         for _id,addr in candidates:
-            print 'reading feature'
             cfeature = env.framemodel[addr][self.feature]
-            print 'read feature'
-            print 'padding' 
             cfeature = self._pad(query,cfeature)
-            print 'padded'
-            print 'scoring'
             scores = self._score(query,cfeature)
-            print 'scored'
             
             for i,s in enumerate(scores):
                 finalscores.append((_id,addr,s,i))
         
         finalscores = sorted(finalscores, key = lambda fs : fs[2], reverse = True)
-        
+        print '_score_sequences took %1.4f' % (time.time() - starttime)
+        return finalscores
+    
+    def _avoid_overlap(self,nresults,finalscores,querylen):
+        starttime = time.time()
+        tolerance = querylen * .85
+        AC = self.env().address_class
         finalresults = []
         allstarts = []
-        count = i
+        count = 0
+        # avoid results that overlap with previous results too much
         while len(finalresults) < nresults and count < len(finalscores):
-            _id,addr,score,pos = finalscores[i]
+            _id,addr,score,pos = finalscores[count]
             # KLUDGE: This is cheating. I'm using knowledge about the frames back-end
             # implementation here, which is a no-no!/
+            
+            # BUG: This approach makes it possible for results to span multiple\
+            # patterns
             start = addr.key.start + pos
             stop = start + querylen
-            # avoid results that overlap with previous results too much
-            print score / (query.size)
             if not np.any(np.array([abs(start - z) for z in allstarts]) <= tolerance):
                 finalresults.append((_id,AC(slice(start,stop))))
                 allstarts.append(start)
-            i += 1
-            
+            count += 1
         
-        
+        print '_avoid_overlap took %1.4f' % (time.time() - starttime)
         return finalresults
+    
+    def _search(self,frames, nresults):
+        
+        # TODO:
+        # some results are spanning multiple patterns
+        # Break this method up into smaller pieces
+        # Lots of near duplicate clips from the same sound
+        # Remove any knowledge of frames back-end
+        # Search is slooow
+        feature = frames[self.feature]
+        candidates = self._candidate_sequences(feature)
+        finalscores = self._score_sequences(feature, candidates)
+        querylen = len(feature)
+        return self._avoid_overlap(nresults,finalscores, querylen)
+        
             
         
         
