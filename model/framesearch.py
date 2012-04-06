@@ -213,12 +213,15 @@ class MinHashSearch(FrameSearch):
         feature = frames[self.feature]
         addresses = self.address
         allids = self.ids
-        ids = []
+        idscore = []
         for block in feature[::self.step]:
-            ids.extend([allids[ai] for ai in self._search_block(block, 100)])
+            # get the n best address indexes that match the query block
+            ais = self._search_block(block, 100)
+            # get the pattern ids that correspond to those blocks
+            ids = [allids[ai] for ai in ais]
+            idscore.extend(ids)
         
-        best_ids = Score(ids).nbest(20)
-            
+        best_ids = Score(ids).nbest(nresults)
             
             
         

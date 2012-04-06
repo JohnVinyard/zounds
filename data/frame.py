@@ -160,6 +160,12 @@ class PyTablesFrameController(FrameController):
     '''
     
     class Address(model.frame.Address):
+        
+        # key types
+        INTEGER = object()
+        SLICE = object()
+        NPARR = object()
+        
         '''
         An address whose key can be anything acceptable
         for the tables.Table.__getitem__ method, i.e., an int,
@@ -169,6 +175,9 @@ class PyTablesFrameController(FrameController):
             if isinstance(key,int) or isinstance(key,np.integer):
                 # address of a single frame
                 self._len = 1
+                self._key_type = PyTablesFrameController.Address.INTEGER
+                self.min = key
+                self.max = key
             elif isinstance(key,slice):
                 if not (not key.step or 1 == key.step):
                     # step sizes of greater than one aren't allowed
@@ -176,10 +185,24 @@ class PyTablesFrameController(FrameController):
                         'when using a slice as an address key,\
                          it must have a step of 1')
                 self._len = key.stop - key.start
-            elif isinstance(key,list) or isinstance(key,np.ndarray):
+                self._key_type = PyTablesFrameController.Address.SLICE
+                self.min = key.start
+                self.max = key.stop - 1
+            elif isinstance(key,list):
                 # the address is a list of frame numbers, which may or may
                 # not be contiguous
                 self._len = len(key)
+                self._key_type = PyTablesFrameController.Address.NPARR
+                key = np.array(key,dtype=np.int32)
+                self.min = key.min()
+                self.max = key.max()
+            elif isinstance(key,np.ndarray):
+                # the address is a list of frame numbers, which may or may
+                # not be contiguous
+                self._len = len(key)
+                self._key_type = PyTablesFrameController.Address.NPARR
+                self.min = key.min()
+                self.max = key.max()
             else:
                 raise ValueError(
                         'key must be an int, a list of ints, or a slice')
@@ -198,7 +221,39 @@ class PyTablesFrameController(FrameController):
         
         def __len__(self):
             return self._len
+        
+        @property
+        def span(self):
+            return self.max - self.min
+        
+        def __eq__(self,other):
+            # BUG: slice and contiguous array with same range should be equal
+            # BUG: integer and array containing only that integer should not be equal
+            
+            if len(self) != len(other):
+                return False
+            
+            if self.span != other.span:
+                return False
+            
+            return self.min == other.min and self.max == other.max
+            
+        def __ne__(self,other):
+            return not self.__eq__(other)
+        
+        def __lt__(self,other):
+            return self.min < other.min
+        
+        def __le__(self,other):
+            return self.__lt__(other) or self.__eq__(other)
+        
+        def __gt__(self,other):
+            return self.min > other.min
+        
+        def __ge__(self,other):
+            return self.__gt__(other) or self.__eq__(other)
     
+        # TODO: Write tests
         @classmethod
         def congeal(cls,addresses):
             # BUG: It's possible for this to return an address that spans
@@ -217,7 +272,7 @@ class PyTablesFrameController(FrameController):
                         mn = key.start
                     if key.stop > mx:
                         mx = key.start
-                elif isinstance(key,list) or isinstance(key,np.ndarray):
+                elif isinstance(key,np.ndarray):
                     localmin = np.min(key)
                     localmax = np.max(key)
                     if localmin < mn:

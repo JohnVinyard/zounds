@@ -146,7 +146,7 @@ class Address(object):
     
     def __init__(self,key):
         '''
-        key is the location to one or more frames, addresses in a manner 
+        key is the location to one or more frames, addressed in a manner 
         suitable for the Frames backing-store
         '''
         object.__init__(self)
@@ -178,9 +178,33 @@ class Address(object):
     @classmethod
     def congeal(cls,addresses):
         '''
-        Given many addresses, return on single contiguous address that contains
+        Given many addresses, return one contiguous address that contains
         them all.
         '''
+        pass
+    
+    @abstractmethod
+    def __eq__(self,other):
+        pass
+    
+    @abstractmethod
+    def __ne__(self,other):
+        pass
+    
+    @abstractmethod
+    def __lt__(self,other):
+        pass
+    
+    @abstractmethod
+    def __le__(self,other):
+        pass
+    
+    @abstractmethod
+    def __gt__(self,other):
+        pass
+    
+    @abstractmethod
+    def __ge__(self,other):
         pass
     
 

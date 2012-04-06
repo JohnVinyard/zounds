@@ -575,6 +575,183 @@ class PyTablesFrameControllerTests(unittest.TestCase):
         
         
         
-        
-        
+class AddressTests(unittest.TestCase):
     
+    def setUp(self):
+        self.Address = PyTablesFrameController.Address
+    
+    def a(self,key):
+        return self.Address(key)
+    
+    def test_eq_list_list(self):
+        a1 = self.a([1,2,3])
+        a2 = self.a(np.array([1,2,3]))
+        self.assertEqual(a1,a2)
+    
+    def test_ne_list_list(self):
+        a1 = self.a([1,2,3,4])
+        a2 = self.a(np.array([1,2,3]))
+        self.assertNotEqual(a1,a2)
+    
+    def test_lt_list_list(self):
+        a1 = self.a([1,2,3])
+        a2 = self.a([2,3,4])
+        self.assertTrue(a1 < a2)
+    
+    def test_le_list_list(self):
+        a1 = self.a([1,2,3])
+        a2 = self.a([1,2,3])
+        a3 = self.a([2,3,4])
+        self.assertTrue(a1 <= a2)
+        self.assertTrue(a1 <= a3)
+    
+    def test_gt_list_list(self):
+        a1 = self.a([1,2,3])
+        a2 = self.a([2,3,4])
+        self.assertTrue(a2 > a1)
+    
+    def test_ge_list_list(self):
+        a1 = self.a([1,2,3])
+        a2 = self.a([1,2,3])
+        a3 = self.a([2,3,4])
+        self.assertTrue(a1 >= a2)
+        self.assertTrue(a3 >= a1)
+    
+    def test_eq_list_slice(self):
+        a1 = self.a([1,2,3])
+        a2 = self.a(slice(1,4))
+        self.assertEqual(a1,a2)
+    
+    def test_ne_list_slice(self):
+        a1 = self.a([1,2,3])
+        a2 = self.a(slice(2,5))
+        self.assertNotEqual(a1,a2)
+        
+    def test_gt_list_slice(self):
+        a1 = self.a([1,2,3])
+        a2 = self.a(slice(2,5))
+        self.assertTrue(a2 > a1)
+    
+    def test_ge_list_slice(self):
+        a1 = self.a([1,2,3])
+        a2 = self.a(slice(1,4))
+        a3 = self.a(slice(2,5))
+        self.assertTrue(a2 >= a1)
+        self.assertTrue(a3 >= a1)
+    
+    def test_lt_list_slice(self):
+        a1 = self.a([1,2,3])
+        a2 = self.a(slice(2,10))
+        self.assertTrue(a1 < a2)
+    
+    def test_le_list_slice(self):
+        a1 = self.a([1,2,3])
+        a2 = self.a(slice(1,4))
+        a3 = self.a(slice(20,30))
+        self.assertTrue(a2 >= a1)
+        self.assertTrue(a3 >= a1)
+    
+    def test_eq_list_int(self):
+        a1 = self.a([1])
+        a2 = self.a(1)
+        self.assertEqual(a1,a2)
+    
+    def test_ne_list_int(self):
+        a1 = self.a([1,2,3])
+        a2 = self.a(1)
+        self.assertNotEqual(a1,a2)
+    
+    def test_lt_list_int(self):
+        a1 = self.a([1,2,3])
+        a2 = self.a(4)
+        self.assertTrue(a1 < a2)
+    
+    def test_le_list_int(self):
+        a1 = self.a([2])
+        a2 = self.a([1,2,3])
+        a3 = self.a(2)
+        self.assertTrue(a1 <= a3)
+        self.assertTrue(a2 <= a3)
+    
+    def test_gt_list_int(self):
+        a1 = self.a(4)
+        a2 = self.a([1,2,3])
+        self.assertTrue(a1 > a2)
+    
+    def test_ge_list_int(self):
+        a1 = self.a(4)
+        a2 = self.a([4])
+        a3 = self.a([3,4,5])
+        self.assertTrue(a1 >= a2)
+        self.assertTrue(a1 >= a3)
+    
+    def test_slice_bad_step(self):
+        self.assertRaises(ValueError,lambda : self.a(slice(1,10,2)))
+    
+    def test_eq_slice_slice(self):
+        a1 = self.a(slice(1,10))
+        a2 = self.a(slice(1,10))
+        self.assertEqual(a1,a2)
+        
+    def test_ne_slice_slice(self):
+        a1 = self.a(slice(1,10))
+        a2 = self.a(slice(1,11))
+        self.assertNotEqual(a1,a2)
+    
+    def test_gt_slice_slice(self):
+        a1 = self.a(slice(10,20))
+        a2 = self.a(slice(21,31))
+        self.assertTrue(a2 > a1)
+    
+    def test_ge_slice_slice(self):
+        a1 = self.a(slice(10,20))
+        a2 = self.a(slice(10,20))
+        a3 = self.a(slice(11,21))
+        self.assertTrue(a2 >= a1)
+        self.assertTrue(a3 >= a1)
+    
+    def test_lt_slice_slice(self):
+        a1 = self.a(slice(10,20))
+        a2 = self.a(slice(11,20))
+        self.assertTrue(a1 < a2)
+    
+    def test_le_slice_slice(self):
+        a1 = self.a(slice(10,20))
+        a2 = self.a(slice(10,20))
+        a3 = self.a(slice(11,21))
+        self.assertTrue(a2 <= a1)
+        self.assertTrue(a1 <= a3)
+    
+    def test_eq_slice_int(self):
+        a1 = self.a(slice(1,2))
+        a2 = self.a(1)
+        self.assertEqual(a1,a2)
+    
+    def test_ne_slice_int(self):
+        a1 = self.a(slice(1,3))
+        a2 = self.a(1)
+        self.assertNotEqual(a1,a2)
+    
+    def test_lt_slice_int(self):
+        a1 = self.a(slice(1,3))
+        a2 = self.a(3)
+        self.assertTrue(a1 < a2)
+    
+    def test_le_slice_int(self):
+        a1 = self.a(slice(2,3))
+        a2 = self.a(slice(1,3))
+        a3 = self.a(2)
+        self.assertTrue(a1 <= a3)
+        self.assertTrue(a2 <= a3)
+    
+    def test_gt_slice_int(self):
+        a1 = self.a(slice(2,3))
+        a2 = self.a(4)
+        self.assertTrue(a2 > a1)
+    
+    def test_ge_slice_int(self):
+        a1 = self.a(slice(3,4))
+        a2 = self.a(slice(2,4))
+        a3 = self.a(3)
+        self.assertTrue(a3 >= a1)
+        self.assertTrue(a3 >= a2)
