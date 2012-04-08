@@ -1,6 +1,6 @@
 Observation - Sequences are sometimes considered similar because of background
 noise, as opposed to the events in the sequence that a human would consider
-salient.
+salient.  How can noise be removed?
 
 There are 3 types of similarity
 - substitution
@@ -9,15 +9,27 @@ There are 3 types of similarity
 
 TOOO:
 -------------
-Multidimensional Frames indexes
 
-arbitrary-length sound search implementation
+Search questions
+	- Do search results improve with the size of the datastore?
+	- What is the distribution of pattern *lengths* that get chosen as results?
+		i.e., are longer sounds preferred?
+	- Do results improve when excluding sequences that are less than half the
+		query length from _score_sequences() ? 
+	
+Parallel RBM implementation
 
 Automatic rebuilding of search indices after data is added
 
 Write LearnedFeature tests
 
 Learn Autoencoder on BarkBands and store
+
+BFCC feature
+
+RBM trained on BFCCs
+
+BFCC minhash search
 
 Patterns
 
