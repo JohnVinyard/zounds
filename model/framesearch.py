@@ -220,8 +220,9 @@ class MinHashSearch(FrameSearch):
         
         if len(candidate) >= len(query):
             return candidate
-
-        diff = len(query) - len(candidate)
+        
+        querylen = len(query)
+        diff = querylen - len(candidate)
         opposite = np.ndarray((diff,query.shape[1]))
         opposite[:] = -1
         return np.concatenate([candidate,opposite])
@@ -250,18 +251,19 @@ class MinHashSearch(FrameSearch):
             # get the addresses themselves
             addrs = addresses[ais]
             # get the pattern ids that correspond to those blocks
-            ids = allids[ais]
+            ids = allids[ais] 
             for i in xrange(len(ids)):
                 _id = ids[i]
                 addr = addrs[i]
-                if not d.has_key(_id):
-                    d[_id] = [addr]
-                elif addr not in d[_id]:
-                    d[_id].append(addr)
+                try:
+                    d[_id].add(addr)
+                except KeyError:
+                    d[_id] = set([addr])
+        
         
         env = self.env()
         AC = env.address_class
-        candidates = [(_id,AC.congeal(addrs)) for _id,addrs in d.iteritems()]
+        candidates = [(_id,AC.congeal(list(addrs))) for _id,addrs in d.iteritems()]
         print '_candidate_sequences took %1.4f' % (time.time() - starttime)
         return candidates
     
@@ -270,17 +272,17 @@ class MinHashSearch(FrameSearch):
         # a list that will hold four-tuples of (_id,address,score,pos)
         finalscores = []
         query = feature
-        
+        querylen = len(query)
         env = self.env()
         for _id,addr in candidates:
+            if len(addr) < querylen * .5:
+                continue
             cfeature = env.framemodel[addr][self.feature]
             cfeature = self._pad(query,cfeature)
             scores = self._score(query,cfeature)
-            
-            for i,s in enumerate(scores):
-                finalscores.append((_id,addr,s,i))
+            [finalscores.append((_id,addr,s,i)) for i,s in enumerate(scores)]
         
-        finalscores = sorted(finalscores, key = lambda fs : fs[2], reverse = True)
+        finalscores.sort(key = lambda fs : fs[2], reverse = True)
         print '_score_sequences took %1.4f' % (time.time() - starttime)
         return finalscores
     

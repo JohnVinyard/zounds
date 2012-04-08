@@ -243,6 +243,9 @@ class PyTablesFrameController(FrameController):
                 return False
             
             return self.min == other.min and self.max == other.max
+        
+        def __hash__(self):
+            return hash((self._len,self.min,self.max))
             
         def __ne__(self,other):
             return not self.__eq__(other)

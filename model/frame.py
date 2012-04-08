@@ -207,6 +207,10 @@ class Address(object):
     def __ge__(self,other):
         pass
     
+    @abstractmethod
+    def __hash__(self):
+        pass
+    
 
 class MetaFrame(type):
 
@@ -246,9 +250,6 @@ class MetaFrame(type):
 
 
 # TODO: Frames classes should implement FramesController interface
-
-# TODO: Make it possible to instantiate Frames with data that isn't stored
-# in the frames database, but conforms to the frames schema
 class Frames(Model):
     '''
     
