@@ -194,6 +194,7 @@ class MinHashSearch(FrameSearch):
     def _search_block(self,hashvalue,nresults):
         index = self.index
         addresses = []
+        
         for i,h in enumerate(hashvalue):
             try:
                 addresses.extend(index[i][h])
@@ -203,7 +204,6 @@ class MinHashSearch(FrameSearch):
                 in the database
                 '''
                 pass
-        
         return Score(addresses).nbest(nresults)
         
     
@@ -235,19 +235,33 @@ class MinHashSearch(FrameSearch):
         '''
         qlen = len(query)
         scores = np.zeros(1 + (len(candidate) - qlen))
-        return [ ((query - candidate[i:i+qlen]) == 0).sum() 
-                 for i in xrange(len(scores)) ]
+        return [(query == candidate[i:i+qlen]).sum() 
+                    for i in xrange(len(scores))]
+    
+    
+    CACHE = {}
+    def _search_block_cached(self,block,candidates):
+        tb = tuple(block)
+        try:
+            return MinHashSearch.CACHE[(tb,candidates)]
+        except KeyError:
+            val = self._search_block(tb,candidates)
+            MinHashSearch.CACHE[(tb,candidates)] = val
+            return val
+    
     
     def _candidate_sequences(self,feature, candidates_per_block = 50):
         starttime = time.time()
         d = {}
+        
         addresses = self.address
         allids = self.ids
+        
         
         f = feature[::self.step]
         for block in f:
             # get the n best address indexes that match the query block
-            ais = self._search_block(block, candidates_per_block)
+            ais = self._search_block_cached(block, candidates_per_block)
             # get the addresses themselves
             addrs = addresses[ais]
             # get the pattern ids that correspond to those blocks

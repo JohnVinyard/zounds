@@ -1,4 +1,4 @@
-from rbm import Rbm
+from rbm import Rbm,LinearRbm
 from multiprocessing.sharedctypes import RawArray
 from multiprocessing import Pool
 import ctypes
@@ -42,6 +42,8 @@ _type_codes = ['c',
                'L',
                'f',
                'd']
+_np_type_strs = dict([(dt,np.zeros(0,dtype=dt).dtype.str) for dt in _np_types])
+_np_type_descrs = dict([(dt,np.zeros(0,dtype=dt).dtype.descr) for dt in _np_types])
 
 def _np_to_ctype(np_type):
     '''
@@ -69,23 +71,20 @@ def _typecode_from_ctype(c_type):
 
 
 def ndarray_as_shmem(ndarray):
-    size = ndarray.size
     typecode = _typecode_from_np_type(ndarray.dtype)
-    ra = RawArray(typecode,size)
-    ra[:] = ndarray.tostring()
+    ra = RawArray(typecode,ndarray.reshape(ndarray.size))
     return ra
 
 def shmem_as_ndarray( raw_array ):
-    address = raw_array._wrapper.get_address()     
-    size = raw_array._wrapper.get_size() 
+    address = raw_array._wrapper.get_address()      
     dtype = _ctype_to_np(raw_array._type_)
     class Dummy(object): pass 
     d = Dummy() 
     d.__array_interface__ = { 
          'data' : (address, False), 
-         'typestr' : np.uint8.str, 
-         'descr' : np.uint8.descr, 
-         'shape' : (size,), 
+         'typestr' : _np_type_strs[dtype], 
+         'descr' : _np_type_descrs[dtype], 
+         'shape' : (len(raw_array),), 
          'strides' : None, 
          'version' : 3 
     }     
@@ -96,6 +95,7 @@ def update(
            sh_weights,
            sh_vbias,
            sh_hbias,
+           sh_sparsity,
            # shared memory representing velocities for use
            # during training
            sh_wvelocity,
@@ -144,7 +144,7 @@ def update(
     sparsity_update = None
     if None != rbm._sparsity_target:
         current_sparsity = stoch.sum(0) / float(n)
-        sparsity_update = (rbm._sparsity_decay * rbm._sparsity) + \
+        sparsity_update = (rbm._sparsity_decay * sh_sparsity) + \
             ((1 - rbm._sparsity_decay) * current_sparsity)
         sparse_penalty = rbm._sparsity_cost * \
             (rbm._sparsity_target - sparsity_update)
@@ -154,7 +154,7 @@ def update(
          sparsity_update.tostring()
     
     # weight updates
-    wvelocity_update = (m * rbm._wvelocity) + \
+    wvelocity_update = (m * sh_wvelocity) + \
             lr * (((posprod-negprod)/n) - (wd*weights))
     if None is not rbm.sparsity_target:
         wvelocity_update += sparse_penalty
@@ -164,14 +164,14 @@ def update(
     sh_wvelocity_updates[w_start : w_stop] = wvelocity_update.tostring()
     
     # visual bias updates
-    vbvelocity_update =  (m * rbm._vbvelocity) + \
+    vbvelocity_update =  (m * sh_vbvelocity) + \
             ((lr/n) * (pos_v_act - neg_v_act))
     vb_start = indim * worker_index
     vb_stop = vb_start + indim
     sh_vbvelocity_updates[vb_start : vb_stop] = vbvelocity_update.tostring()
     
     # hidden bias updates
-    hbvelocity_update = (m * rbm._hbvelocity) + \
+    hbvelocity_update = (m * sh_hbvelocity) + \
             ((lr/n) * (pos_h_act - neg_h_act))
     if None is not rbm._sparsity_target:
         hbvelocity_update += sparse_penalty
@@ -208,10 +208,12 @@ class ParallelRbm(Rbm):
         self.nworkers = nworkers
     
     def train(self,samples,stopping_condition):
+        print 'Parallel training'
         batch_size = 100
         nbatches = len(samples) / batch_size
-        samples = samples.reshape((nbatches,batch_size,samples.shape[1]))
-        shim = RbmShim(self.indim,self.hdim)
+        sample_size = samples.shape[1]
+        samples = samples.reshape((nbatches,batch_size,sample_size))
+        shim = RbmShim(self._indim,self._hdim)
         
         self._wvelocity = np.zeros(self._weights.shape)
         self._vbvelocity = np.zeros(self._indim)
@@ -219,20 +221,40 @@ class ParallelRbm(Rbm):
         self._sparsity = np.zeros(self._hdim)
         
         weights = ndarray_as_shmem(self._weights)
+        self._weights = shmem_as_ndarray(weights).reshape(self._weights.shape)
+         
         wvelocity = ndarray_as_shmem(self._wvelocity)
+        self._wvelocity = shmem_as_ndarray(wvelocity).reshape(self._wvelocity.shape)
+        
         wvelocity_updates = RawArray('d',self._weights.size * self.nworkers)
+        self._wvelocity_updates = shmem_as_ndarray(wvelocity_updates)
         
         vbias = ndarray_as_shmem(self._vbias)
+        self._vbias = shmem_as_ndarray(vbias).reshape(self._vbias.shape)
+        
         vbvelocity = ndarray_as_shmem(self._vbvelocity)
+        self._vbvelocity = shmem_as_ndarray(vbvelocity).reshape(self._vbvelocity.shape)
+        
         vbvelocity_updates = RawArray('d',self._vbias.size * self.nworkers)
+        self._vbvelocity_updates = shmem_as_ndarray(vbvelocity_updates)
         
         hbias = ndarray_as_shmem(self._hbias)
-        hbvelocity = ndarray_as_shmem(self._hbvelocity)
-        hbvelocity_updates = RawArray('d',self._hbias.size * self.nworkers)
+        self._hbias = shmem_as_ndarray(hbias).reshape(self._hbias.shape)
         
-        sparsity_updates = RawArray('d',self.hdim * self.nworkers)
+        hbvelocity = ndarray_as_shmem(self._hbvelocity)
+        self._hbvelocity = shmem_as_ndarray(hbvelocity).reshape(self._hbvelocity.shape)
+        
+        hbvelocity_updates = RawArray('d',self._hbias.size * self.nworkers)
+        self._hbvelocity_updates = shmem_as_ndarray(hbvelocity_updates)
+        
+        sh_sparsity = RawArray('d',self._hdim)
+        self._sparsity = shmem_as_ndarray(sh_sparsity).reshape(self._sparsity.shape)
+        
+        sparsity_updates = RawArray('d',self._hdim * self.nworkers)
+        self._sparsity_updates = shmem_as_ndarray(sparsity_updates)
         
         sh_samples = ndarray_as_shmem(samples)
+        sh_batch_size = batch_size * sample_size
         
         epoch = 0
         error = [9999999] * self.nworkers
@@ -247,43 +269,60 @@ class ParallelRbm(Rbm):
             while batch < nbatches and\
              not any([stopping_condition(epoch,e) for e in error]):
                 pool = Pool(self.nworkers)
-                '''
-                    # shared memory representing weights and biases
-                   sh_weights,
-                   sh_vbias,
-                   sh_hbias,
-                   # shared memory representing velocities for use
-                   # during training
-                   sh_wvelocity,
-                   sh_vbvelocity,
-                   sh_hbvelocity,
-                   # shared memory representing updates, e.g., for four
-                   # processes, there should be four weight update matrices
-                   sh_sparsity_updates,
-                   sh_wvelocity_updates,
-                   sh_vbvelocity_updates,
-                   sh_hbvelocity_updates,
-                   # this worker's index. This is how we know where to write in
-                   # the update matrices
-                   worker_index,
-                   rbm,
-                   # input data and info
-                   sh_inp,
-                   batch_size,
-                   # training stuff
-                   momentum,
-                   epoch,
-                   batch):
-               '''
                 data = []
-                for i in self.nworkers:
-                    data.append((weights,vbias,hbias,wvelocity,vbvelocity,
-                                 hbvelocity,sparsity_updates,wvelocity_updates,
-                                 vbvelocity_updates,hbvelocity_updates,i,
-                                 shim,????,batch_size,mom,epoch,batch))
-                    errs = pool.apply(update,data)
-                    # TODO: print errors
-                    # TODO: do updates
+                for i in range(self.nworkers):
+                    offset = sh_batch_size * batch
+                    data.append((weights,
+                                #vbias,
+                                #hbias,
+                                #sh_sparsity,
+                                #wvelocity,
+                                #vbvelocity,
+                                #hbvelocity,
+                                #sparsity_updates,
+                                #wvelocity_updates,
+                                #vbvelocity_updates,
+                                #hbvelocity_updates,
+                                #i,
+                                #shim,sh_samples[offset:offset + sh_batch_size],
+                                #batch_size,
+                                #mom,
+                                #epoch,
+                                #batch))
+                                ))
+                    
+                errs = pool.apply(update,data)
+                batch += self.nworkers
+                # Print errors
+                for i in range(len(self.nworkers)):
+                    print 'Epoch %i, Batch %i, Error %1.4f' %\
+                             (epoch,batch + i, errs[i])
+                # Do updates
+                # average the sparsity updates to get the new sparsity
+                self._sparsity = np.average(\
+                        self._sparsity_updates.reshape((self.nworkers,self._hdim)),0)
+                self._wvelocity = np.average(\
+                        self._wvelocity_updates.reshape(self.nworkers,self._hdim),0)
+                self._vbvelocity = np.average(\
+                        self._vbvelocity_updates.reshape(self.nworkers,self._indim),0)
+                self._hbvelocity = np.average(\
+                        self._hbvelocity_updates.reshape(self.nworkers,self._hdim),0)
+                for i in range(len(self.nworkers)):
+                    self._weights += \
+                        self.wvelocity_updates\
+                        [i * self._hdim : i * self._hdim + self._hdim]
+                    self._vbias += \
+                        self._vbvelocity_updates\
+                        [i * self._indim : i * self._indim + self._indim]
+                    self._hbias += \
+                        self._hbvelocity_updates\
+                        [i * self._hdim : i * self._hdim + self._hdim]
+                    
+                    
+                    
+                    
+                
+                
                     
                 
                 
@@ -293,4 +332,36 @@ class ParallelRbm(Rbm):
         del self._vbvelocity
         del self._hbvelocity
         del self._sparsity
+
+class ParallelLinearRbm(ParallelRbm,LinearRbm):
+    def __init__(self,indim,hdim,nworkers = 4):
+        LinearRbm.__init__(self,indim,hdim)
+        ParallelRbm.__init__(self,indim,hdim,nworkers = nworkers)
         
+
+if __name__ == '__main__':
+    print 'np.ndarray -> shared memory doesn\'t work'
+    a = np.zeros(10)
+    ra = ndarray_as_shmem(a)
+    
+    a[:] = 100
+    print a
+    print ra[:]
+    ra[0] = 999
+    print a
+    print ra[:]
+    
+    del a
+    del ra
+    
+    print 'shared memory -> np.ndarray does'
+    ra = RawArray('d',10)
+    a = shmem_as_ndarray(ra)
+    ra[0] = 100
+    print a
+    print ra[:]
+    a[1] = 999
+    print a
+    print ra[:]
+    
+    
