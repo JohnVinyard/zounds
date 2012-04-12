@@ -37,11 +37,10 @@ class Rbm(NeuralNetwork,Learn):
 
         # initialize biases
         self._vbias = np.zeros(self._indim)
+        self._hbias = np.zeros(self._hdim)
         if self._sparsity_target:
-            self._hbias = \
+            self._hbias[:] = \
                 np.log(self._sparsity_target / (1 - self._sparsity_target))
-        else:
-            self._hbias = np.zeros(self._hdim)
 
         # initialize the weights to a normal
         # distribution with 0 mean and 0.01 std
@@ -238,11 +237,13 @@ class Rbm(NeuralNetwork,Learn):
 
 class LinearRbm(Rbm):
 
-    def __init__(self,indim,hdim,sparsity_target=.01):
+    def __init__(self,indim,hdim,
+                 sparsity_target=.01,
+                 learning_rate = .001):
         Rbm.__init__(self,
                      indim,
                      hdim,
-                     learning_rate = .001,
+                     learning_rate = learning_rate,
                      sparsity_target=sparsity_target)
 
 
