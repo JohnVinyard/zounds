@@ -1,6 +1,6 @@
 from rbm import Rbm,LinearRbm
-from multiprocessing.sharedctypes import RawArray
-from multiprocessing import Pool
+from multiprocessing.sharedctypes import Array,RawArray
+from multiprocessing import Process,Pool
 import ctypes
 import numpy as np
 
@@ -114,13 +114,14 @@ def update(
            # input data and info
            sh_inp,
            batch_size,
+           nbatches,
            # training stuff
            momentum,
            epoch,
            batch):
     
-    indim = rbm.indim
-    hdim = rbm.hdim
+    indim = rbm._indim
+    hdim = rbm._hdim
     
     # view shared memory as numpy arrays
     weights = shmem_as_ndarray(sh_weights).reshape((indim,hdim))
@@ -129,7 +130,8 @@ def update(
     wvelocity = shmem_as_ndarray(sh_wvelocity).reshape((indim,hdim))
     vbvelocity = shmem_as_ndarray(sh_vbvelocity)
     hbvelocity = shmem_as_ndarray(sh_hbvelocity)
-    inp = shmem_as_ndarray(sh_inp).reshape((batch_size,indim))
+    sparsity = shmem_as_ndarray(sh_sparsity)
+    inp = shmem_as_ndarray(sh_inp).reshape((nbatches,batch_size,indim))[batch]
     
     rbm.set_data(weights,hbias,vbias)
     stoch, posprod, pos_h_act, pos_v_act = rbm._positive_phase(inp)
@@ -144,41 +146,44 @@ def update(
     sparsity_update = None
     if None != rbm._sparsity_target:
         current_sparsity = stoch.sum(0) / float(n)
-        sparsity_update = (rbm._sparsity_decay * sh_sparsity) + \
+        sparsity_update = (rbm._sparsity_decay * sparsity) + \
             ((1 - rbm._sparsity_decay) * current_sparsity)
         sparse_penalty = rbm._sparsity_cost * \
             (rbm._sparsity_target - sparsity_update)
     sparsity_start = hdim*worker_index
     sparsity_stop = sparsity_start + hdim
-    sh_sparsity_updates[sparsity_start : sparsity_stop] =\
-         sparsity_update.tostring()
+    sh_sparsity_updates[sparsity_start : sparsity_stop] =sparsity_update
     
     # weight updates
-    wvelocity_update = (m * sh_wvelocity) + \
+    wvelocity_update = (m * wvelocity) + \
             lr * (((posprod-negprod)/n) - (wd*weights))
-    if None is not rbm.sparsity_target:
+    if None is not rbm._sparsity_target:
         wvelocity_update += sparse_penalty
     w_size = weights.size
     w_start = w_size * worker_index
-    w_stop = w_start + w_size
-    sh_wvelocity_updates[w_start : w_stop] = wvelocity_update.tostring()
+    w_stop = w_start + w_size 
+    sh_wvelocity_updates[w_start : w_stop] = wvelocity_update.reshape(w_size)
     
     # visual bias updates
-    vbvelocity_update =  (m * sh_vbvelocity) + \
+    vbvelocity_update =  (m * vbvelocity) + \
             ((lr/n) * (pos_v_act - neg_v_act))
     vb_start = indim * worker_index
     vb_stop = vb_start + indim
-    sh_vbvelocity_updates[vb_start : vb_stop] = vbvelocity_update.tostring()
+    sh_vbvelocity_updates[vb_start : vb_stop] = vbvelocity_update
     
     # hidden bias updates
-    hbvelocity_update = (m * sh_hbvelocity) + \
+    hbvelocity_update = (m * hbvelocity) + \
             ((lr/n) * (pos_h_act - neg_h_act))
     if None is not rbm._sparsity_target:
         hbvelocity_update += sparse_penalty
     hb_start = hdim * worker_index
     hb_stop = hb_start + hdim
-    sh_hbvelocity_updates[hb_start : hb_stop] = hbvelocity.tostring()
+    print hbvelocity_update.shape
+    print len(sh_hbvelocity_updates)
+    print hb_start - hb_stop
+    sh_hbvelocity_updates[hb_start : hb_stop] = hbvelocity_update
     
+    print 'Epoch %i, Batch %i, Error %1.4f' % (epoch,batch,error)
     return error
     
 class RbmShim(Rbm):
@@ -238,13 +243,16 @@ class ParallelRbm(Rbm):
         vbvelocity_updates = RawArray('d',self._vbias.size * self.nworkers)
         self._vbvelocity_updates = shmem_as_ndarray(vbvelocity_updates)
         
+        print self._hbias.shape
         hbias = ndarray_as_shmem(self._hbias)
+        print len(hbias)
         self._hbias = shmem_as_ndarray(hbias).reshape(self._hbias.shape)
         
         hbvelocity = ndarray_as_shmem(self._hbvelocity)
         self._hbvelocity = shmem_as_ndarray(hbvelocity).reshape(self._hbvelocity.shape)
         
         hbvelocity_updates = RawArray('d',self._hbias.size * self.nworkers)
+        print len(hbvelocity_updates)
         self._hbvelocity_updates = shmem_as_ndarray(hbvelocity_updates)
         
         sh_sparsity = RawArray('d',self._hdim)
@@ -260,6 +268,9 @@ class ParallelRbm(Rbm):
         error = [9999999] * self.nworkers
         nbatches = len(samples)
         
+        def create_process(args):
+            return Process(target = update,args = args)
+        
         while not any([stopping_condition(epoch,e) for e in error]):
             if epoch < 5:
                 mom = self._initial_momentum
@@ -268,35 +279,64 @@ class ParallelRbm(Rbm):
             batch = 0
             while batch < nbatches and\
              not any([stopping_condition(epoch,e) for e in error]):
-                pool = Pool(self.nworkers)
                 data = []
                 for i in range(self.nworkers):
                     offset = sh_batch_size * batch
-                    data.append((weights,
-                                #vbias,
-                                #hbias,
-                                #sh_sparsity,
-                                #wvelocity,
-                                #vbvelocity,
-                                #hbvelocity,
-                                #sparsity_updates,
-                                #wvelocity_updates,
-                                #vbvelocity_updates,
-                                #hbvelocity_updates,
-                                #i,
-                                #shim,sh_samples[offset:offset + sh_batch_size],
-                                #batch_size,
-                                #mom,
-                                #epoch,
-                                #batch))
-                                ))
+                    '''
+                   # shared memory representing weights and biases
+           sh_weights,
+           sh_vbias,
+           sh_hbias,
+           sh_sparsity,
+           # shared memory representing velocities for use
+           # during training
+           sh_wvelocity,
+           sh_vbvelocity,
+           sh_hbvelocity,
+           # shared memory representing updates, e.g., for four
+           # processes, there should be four weight update matrices
+           sh_sparsity_updates,
+           sh_wvelocity_updates,
+           sh_vbvelocity_updates,
+           sh_hbvelocity_updates,
+           # this worker's index. This is how we know where to write in
+           # the update matrices
+           worker_index,
+           rbm,
+           # input data and info
+           sh_inp,
+           batch_size,
+           nbatches,
+           # training stuff
+           momentum,
+           epoch,
+           batch):'''
                     
-                errs = pool.apply(update,data)
+                    data.append((weights,
+                                vbias,
+                                hbias,
+                                sh_sparsity,
+                                wvelocity,
+                                vbvelocity,
+                                hbvelocity,
+                                sparsity_updates,
+                                wvelocity_updates,
+                                vbvelocity_updates,
+                                hbvelocity_updates,
+                                i,
+                                shim,
+                                sh_samples,
+                                batch_size,
+                                nbatches,
+                                mom,
+                                epoch,
+                                batch + i))
+                    
+                procs = map(create_process, data)
+                map(lambda p : p.start(), procs)
+                map(lambda p: p.join(), procs)
                 batch += self.nworkers
-                # Print errors
-                for i in range(len(self.nworkers)):
-                    print 'Epoch %i, Batch %i, Error %1.4f' %\
-                             (epoch,batch + i, errs[i])
+                
                 # Do updates
                 # average the sparsity updates to get the new sparsity
                 self._sparsity = np.average(\
@@ -340,6 +380,7 @@ class ParallelLinearRbm(ParallelRbm,LinearRbm):
         
 
 if __name__ == '__main__':
+    '''
     print 'np.ndarray -> shared memory doesn\'t work'
     a = np.zeros(10)
     ra = ndarray_as_shmem(a)
@@ -363,5 +404,22 @@ if __name__ == '__main__':
     a[1] = 999
     print a
     print ra[:]
+    '''
+    
+    def s(arr,workern):
+        arr[workern] = workern
+        return True
+    
+    def create_process(args):
+        #arr,workern = args
+        return Process(target = s, args = args)
+    
+    ra = RawArray('d',4)
+    procs = map(create_process, [(ra,i) for i in range(4)])
+    map(lambda p : p.start(), procs)
+    map(lambda p: p.join(), procs)
+    print ra[:]
+    print [proc.result for proc in procs]
+    
     
     
