@@ -1,4 +1,5 @@
 from rbm import Rbm,LinearRbm
+from nnet import stochastic_binary as sb,sigmoid
 from multiprocessing.sharedctypes import RawArray
 from multiprocessing import Process
 import ctypes
@@ -90,313 +91,143 @@ def shmem_as_ndarray( raw_array ):
     }     
     return np.asarray(d).view( dtype=dtype )
 
-def update(
-           # shared memory representing weights and biases
-           sh_weights,
-           sh_vbias,
-           sh_hbias,
-           sh_sparsity,
-           # shared memory representing velocities for use
-           # during training
-           sh_wvelocity,
-           sh_vbvelocity,
-           sh_hbvelocity,
-           # shared memory representing updates, e.g., for four
-           # processes, there should be four weight update matrices
-           sh_sparsity_updates,
-           sh_wvelocity_updates,
-           sh_vbvelocity_updates,
-           sh_hbvelocity_updates,
-           # this worker's index. This is how we know where to write in
-           # the update matrices
-           worker_index,
-           rbm,
-           # input data and info
-           sh_inp,
-           batch_size,
-           nbatches,
-           # training stuff
-           momentum,
-           epoch,
-           batch):
-    
-    indim = rbm._indim
-    hdim = rbm._hdim
-    
-    # view shared memory as numpy arrays
-    weights = shmem_as_ndarray(sh_weights).reshape((indim,hdim))
-    vbias = shmem_as_ndarray(sh_vbias)
-    hbias = shmem_as_ndarray(sh_hbias)
-    wvelocity = shmem_as_ndarray(sh_wvelocity).reshape((indim,hdim))
-    vbvelocity = shmem_as_ndarray(sh_vbvelocity)
-    hbvelocity = shmem_as_ndarray(sh_hbvelocity)    
-    sparsity = shmem_as_ndarray(sh_sparsity)
-    inp = shmem_as_ndarray(sh_inp).reshape((nbatches,batch_size,indim))[batch]
-    rbm.set_data(weights,hbias,vbias)
-    stoch, posprod, pos_h_act, pos_v_act = rbm._positive_phase(inp)
-    v,negprod,neg_h_act,neg_v_act = rbm._negative_phase(stoch)
-    error = np.sum(np.abs(inp - v) ** 2)
-    n = batch_size
-    m = momentum
-    lr = rbm._learning_rate
-    wd = rbm._weight_decay
-    
-    # sparsity updates
-    sparsity_update = None
-    if None != rbm._sparsity_target:
-        current_sparsity = stoch.sum(0) / float(n)
-        sparsity_update = (rbm._sparsity_decay * sparsity) + \
-            ((1 - rbm._sparsity_decay) * current_sparsity)
-        sparse_penalty = rbm._sparsity_cost * \
-            (rbm._sparsity_target - sparsity_update)
-        sparsity_start = hdim*worker_index
-        sparsity_stop = sparsity_start + hdim
-        sh_sparsity_updates[sparsity_start : sparsity_stop] =sparsity_update
-    
-    # weight updates
-    wvelocity_update = (m * wvelocity) + \
-            lr * (((posprod-negprod)/n) - (wd*weights))
-    if None is not rbm._sparsity_target:
-        wvelocity_update += sparse_penalty
-    w_size = weights.size
-    w_start = w_size * worker_index
-    w_stop = w_start + w_size 
-    sh_wvelocity_updates[w_start : w_stop] = wvelocity_update.reshape(w_size)
-    
-    # visual bias updates
-    vbvelocity_update =  (m * vbvelocity) + \
-            ((lr/n) * (pos_v_act - neg_v_act))
-    vb_start = indim * worker_index
-    vb_stop = vb_start + indim
-    sh_vbvelocity_updates[vb_start : vb_stop] = vbvelocity_update
-    
-    # hidden bias updates
-    hbvelocity_update = (m * hbvelocity) + \
-            ((lr/n) * (pos_h_act - neg_h_act))
-    if None is not rbm._sparsity_target:
-        hbvelocity_update += sparse_penalty
-    hb_start = hdim * worker_index
-    hb_stop = hb_start + hdim
-    sh_hbvelocity_updates[hb_start : hb_stop] = hbvelocity_update
-    
-    print 'Epoch %i, Batch %i, Error %1.4f' % (epoch,batch,error)
-    return error
-    
-class RbmShim(Rbm):
-    '''
-    A class that knows how to do the work of an rbm, but doesn't have all the 
-    memory-intensive objects attached, like weights and biases
-    '''
-    def __init__(self,indim,hdim,sparsity_target,learning_rate):
-        Rbm.__init__(self,indim,hdim,
-                     sparsity_target = sparsity_target,
-                     learning_rate = learning_rate)
-        self._weights = None
-        self._hbias = None
-        self._vbias = None
-    
-    
-    def set_data(self,weights,hbias,vbias):
-        self._weights = weights
-        self._hbias = hbias
-        self._vbias = vbias
 
-class LinearRbmShim(LinearRbm):
+def cheatdot(sh_buf,samples,weights,i,chunksize):
+    start = i * chunksize
+    stop = start + chunksize 
+    r = np.dot(samples[start : stop],weights)
+    dim = weights.shape[1]
+    sh_buf[start * dim: stop * dim] = r.reshape(r.size)
     
-    def __init__(self,indim,hdim,sparsity_target,learning_rate):
-        LinearRbm.__init__(self,indim,hdim,
-                           sparsity_target = sparsity_target,
-                           learning_rate = learning_rate)
-        self._weights = None
-        self._hbias = None
-        self._vbias = None
-    
-    def set_data(self,weights,hbias,vbias):
-        self._weights = weights
-        self._hbias = hbias
-        self._vbias = vbias
+def create_process(args):
+    return Process(target = cheatdot, args = args)
+        
+def pdot(out,samples,weights,nprocesses,chunksize): 
+    procs = map(create_process,
+                [(out,samples,weights,i,chunksize) for i in xrange(nprocesses)])
+    map(lambda p : p.start(), procs)
+    map(lambda p: p.join(), procs)
 
-class ParallelRbm(Rbm):
-    '''
-    A binary-binary rbm that trains in parallel, processing multiple mini-batches
-    at once
-    '''
-    def __init__(self,indim,hdim,
-                 nworkers = 4,
+class ParallelRbm2(Rbm):
+    
+    def __init__(self,
+                 indim,
+                 hdim,
+                 learning_rate = 0.1,
+                 weight_decay = .002,
+                 initial_momentum = .5,
+                 final_momentum = .9,
                  sparsity_target = .01,
-                 learning_rate = 0.1):
-        Rbm.__init__(self,indim,hdim, 
+                 sparsity_decay = .9,
+                 sparsity_cost = .001):
+        Rbm.__init__(self,
+                     indim,
+                     hdim,
+                     learning_rate = learning_rate,
+                     weight_decay = weight_decay,
+                     initial_momentum = initial_momentum,
+                     final_momentum = final_momentum,
                      sparsity_target = sparsity_target,
-                     learning_rate = learning_rate)
-        self.nworkers = nworkers
+                     sparsity_decay = sparsity_decay,
+                     sparsity_cost = sparsity_cost)
+        
+        self.batch_size = 100
+        self.nprocesses = 10
+        self.chunksize = self.batch_size / self.nprocesses
+        # BUG: What if indim isn't evenly divisible by nprocesses?
+        self.phase_chunksize = self._indim / self.nprocesses
+        
+        
+        
+        
     
-    def get_shim(self):
-        return RbmShim(self._indim,self._hdim,
-                       sparsity_target = self._sparsity_target, 
-                       learning_rate = self._learning_rate)
+    def _up(self,v):
+        pdot(self._sh_up_pre_sigmoid,v,self._weights,self.nprocesses,self.chunksize)
+        self._up_pre_sigmoid += self._hbias
+        return self._up_pre_sigmoid,sigmoid(self._up_pre_sigmoid)
+    
+    def _down(self,h):
+        pdot(self._sh_down_pre_sigmoid,h,self._weights.T,self.nprocesses,self.chunksize)
+        self._down_pre_sigmoid += self._vbias
+        sig = sigmoid(self._down_pre_sigmoid)
+        return self._down_pre_sigmoid,sig,sb(sig)
+    
+    def _positive_phase(self,inp):
+        ps,s,stoch = self._h_from_v(inp)
+        pdot(self._sh_posprod,inp.T,s,self.nprocesses,self.phase_chunksize)
+        pos_h_act = s.sum(axis = 0)
+        pos_v_act = inp.sum(axis = 0)
+        return stoch, self._posprod, pos_h_act, pos_v_act
+    
+    def _negative_phase(self,stoch):
+        vs,gps,gs,gstoch = self._gibbs_hvh(stoch)
+        pdot(self._sh_negprod,vs.T,gs,self.nprocesses,self.phase_chunksize)
+        neg_h_act = gs.sum(axis = 0)
+        neg_v_act = vs.sum(axis = 0)
+        return vs, self._negprod, neg_h_act, neg_v_act
+    
     
     def train(self,samples,stopping_condition):
+        self._up_pre_sigmoid =  np.zeros((self.batch_size,self._hdim))
+        self._sh_up_pre_sigmoid = ndarray_as_shmem(self._up_pre_sigmoid)
+        self._up_pre_sigmoid =\
+            shmem_as_ndarray(self._sh_up_pre_sigmoid)\
+            .reshape(self._up_pre_sigmoid.shape)
         
-        np.seterr(all = 'raise')
+        self._down_pre_sigmoid = np.zeros((self.batch_size,self._indim))
+        self._sh_down_pre_sigmoid = ndarray_as_shmem(self._down_pre_sigmoid)
+        self._down_pre_sigmoid =\
+            shmem_as_ndarray(self._sh_down_pre_sigmoid)\
+            .reshape(self._down_pre_sigmoid.shape)
+            
+        self._posprod = np.zeros((self._indim,self._hdim))
+        self._sh_posprod = ndarray_as_shmem(self._posprod)
+        self._posprod =\
+             shmem_as_ndarray(self._sh_posprod).reshape(self._posprod.shape)
         
-        print self._learning_rate
+        self._negprod = np.zeros((self._indim,self._hdim))
+        self._sh_negprod = ndarray_as_shmem(self._negprod)
+        self._negprod =\
+            shmem_as_ndarray(self._sh_negprod).reshape(self._negprod.shape)
+            
+        Rbm.train(self,samples,stopping_condition)
         
-        batch_size = 100
-        nbatches = len(samples) / batch_size
-        sample_size = samples.shape[1]
-        samples = samples.reshape((nbatches,batch_size,sample_size))
-        shim = self.get_shim()
+        del self._up_pre_sigmoid
+        del self._sh_up_pre_sigmoid
+        del self._down_pre_sigmoid
+        del self._sh_down_pre_sigmoid
+        del self._posprod
+        del self._sh_posprod
+        del self._negprod
+        del self._sh_negprod
         
-        self._wvelocity = np.zeros(self._weights.shape)
-        self._vbvelocity = np.zeros(self._indim)
-        self._hbvelocity = np.zeros(self._hdim)
-        self._sparsity = np.zeros(self._hdim)
-        
-        weights = ndarray_as_shmem(self._weights)
-        self._weights = shmem_as_ndarray(weights).reshape(self._weights.shape)
-         
-        wvelocity = ndarray_as_shmem(self._wvelocity)
-        self._wvelocity = shmem_as_ndarray(wvelocity).reshape(self._wvelocity.shape)
-        
-        wvelocity_updates = RawArray('d',self._weights.size * self.nworkers)
-        self._wvelocity_updates = shmem_as_ndarray(wvelocity_updates)
-        
-        vbias = ndarray_as_shmem(self._vbias)
-        self._vbias = shmem_as_ndarray(vbias).reshape(self._vbias.shape)
-        
-        vbvelocity = ndarray_as_shmem(self._vbvelocity)
-        self._vbvelocity = shmem_as_ndarray(vbvelocity).reshape(self._vbvelocity.shape)
-        
-        vbvelocity_updates = RawArray('d',self._vbias.size * self.nworkers)
-        self._vbvelocity_updates = shmem_as_ndarray(vbvelocity_updates)
-        
-        hbias = ndarray_as_shmem(self._hbias)
-        self._hbias = shmem_as_ndarray(hbias).reshape(self._hbias.shape)
-        
-        hbvelocity = ndarray_as_shmem(self._hbvelocity)
-        self._hbvelocity = shmem_as_ndarray(hbvelocity).reshape(self._hbvelocity.shape)
-        
-        hbvelocity_updates = RawArray('d',self._hbias.size * self.nworkers)
-        self._hbvelocity_updates = shmem_as_ndarray(hbvelocity_updates)
-        
-        sh_sparsity = RawArray('d',self._hdim)
-        self._sparsity = shmem_as_ndarray(sh_sparsity).reshape(self._sparsity.shape)
-        
-        sparsity_updates = RawArray('d',self._hdim * self.nworkers)
-        self._sparsity_updates = shmem_as_ndarray(sparsity_updates)
-        
-        sh_samples = ndarray_as_shmem(samples)
-        
-        epoch = 0
-        error = [9999999] * self.nworkers
-        nbatches = len(samples)
-        
-        def create_process(args):
-            return Process(target = update,args = args)
-        
-        # BUG: error values are never being set
-        while not any([stopping_condition(epoch,e) for e in error]):
-            if epoch < 5:
-                mom = self._initial_momentum
-            else:
-                mom = self._final_momentum
-            batch = 0
-            while batch < nbatches and\
-             not any([stopping_condition(epoch,e) for e in error]):
-                data = []
-                for i in range(self.nworkers):
-                    data.append((weights,
-                                vbias,
-                                hbias,
-                                sh_sparsity,
-                                wvelocity,
-                                vbvelocity,
-                                hbvelocity,
-                                sparsity_updates,
-                                wvelocity_updates,
-                                vbvelocity_updates,
-                                hbvelocity_updates,
-                                i,
-                                shim,
-                                sh_samples,
-                                batch_size,
-                                nbatches,
-                                mom,
-                                epoch,
-                                batch + i))
-                    
-                procs = map(create_process, data)
-                map(lambda p : p.start(), procs)
-                map(lambda p: p.join(), procs)
-                batch += self.nworkers
-                
-                # Do updates
-                
-                
-                # Update velocities by averaging the updates
-                #self._sparsity = np.average(\
-                #        self._sparsity_updates.reshape((self.nworkers,self._hdim)),0)
-                
-                
-                #self._wvelocity = np.average(\
-                #        self._wvelocity_updates.reshape(wshape),0)
-                #self._vbvelocity = np.average(\
-                #        self._vbvelocity_updates.reshape(self.nworkers,self._indim),0)
-                #self._hbvelocity = np.average(\
-                #        self._hbvelocity_updates.reshape(self.nworkers,self._hdim),0)
-                
-                # Update velocities by choosing the last update
-                lastworker = self.nworkers - 1
-                self._sparsity =\
-                     self._sparsity_updates[lastworker * self._hdim:]
-                self._wvelocity[:] = self._wvelocity_updates\
-                    [lastworker * self._weights.size:].reshape(self._weights.shape)
-                self._vbvelocity[:] =\
-                     self._vbvelocity_updates[lastworker * self._indim:]
-                self._hbvelocity[:] =\
-                     self._hbvelocity_updates[lastworker * self._hdim:]
-                     
-                for i in range(self.nworkers):
-                    woffset = i * self._weights.size
-                    
-                    self._weights += \
-                        self._wvelocity_updates\
-                        [woffset : woffset + self._weights.size]\
-                        .reshape(self._weights.shape)
-                    
-                    self._vbias += \
-                        self._vbvelocity_updates\
-                        [i * self._indim : i * self._indim + self._indim]
-                    self._hbias += \
-                        self._hbvelocity_updates\
-                        [i * self._hdim : i * self._hdim + self._hdim]
-                    
-            epoch += 1        
-                    
-        
-        # get rid of the "temp" training variables
-        del self._wvelocity
-        del self._vbvelocity
-        del self._hbvelocity
-        del self._sparsity
 
-class ParallelLinearRbm(ParallelRbm,LinearRbm):
-    def __init__(self,indim,hdim,
-                 nworkers = 4, 
-                 sparsity_target = .01,
-                 learning_rate = .001):
-        LinearRbm.__init__(self,indim,hdim, 
-                           sparsity_target = sparsity_target,
-                           learning_rate = learning_rate)
-        ParallelRbm.__init__(self,indim,hdim,
-                             nworkers = nworkers, 
-                             sparsity_target = sparsity_target,
-                             learning_rate = learning_rate)
-        
-    def get_shim(self):
-        return LinearRbmShim(self._indim,self._hdim,
-                             sparsity_target = self._sparsity_target, 
-                             learning_rate = self._learning_rate)
+class ParallelLinearRbm2(ParallelRbm2):
+    
+    def __init__(self,indim,hdim,sparsity_target = .01, learning_rate = .001):
+        ParallelRbm2.__init__(self,
+                              indim,
+                              hdim,
+                              sparsity_target = sparsity_target,
+                              learning_rate = learning_rate)
+    
+    def _gibbs_hvh(self,h):
+        '''
+        One step of gibbs sampling, starting from the
+        hidden layer
+        '''
+        vps,vs,vstoch = self._v_from_h(h)
+        # use the actual value of the visible units,
+        # instead of the value passed through a sigmoid function
+        ps,s,stoch = self._h_from_v(vps)
+        return vps,ps,s,stoch
+
+    def activate(self,inp):
+        hps,hs,hstoch = self._h_from_v(inp)
+        vps,vs,vstoch = self._v_from_h(hs)
+        return vps
+
+from time import time
 
 if __name__ == '__main__':
     '''
@@ -425,15 +256,60 @@ if __name__ == '__main__':
     print ra[:]
     '''
     
-    a = np.random.random_sample(100)
-    ra = ndarray_as_shmem(a)
+    #def create_process(args):
+    #        return Process(target = update,args = args)
     
-    b = shmem_as_ndarray(ra)
-    print b.dtype
-    print np.all(a == b)
-    print np.allclose(a,b)
+    #procs = map(create_process, data)
+    #map(lambda p : p.start(), procs)
+    #map(lambda p: p.join(), procs)
+    
+    indim = 500
+    hdim = 2000
+    itr = 50
+    nsamples = 100
+    weights = np.random.random_sample((indim,hdim))
+    samples = np.random.random_sample((nsamples,indim))
+    
+    start = time()
+    for i in range(itr):
+        np.dot(samples,weights)
+    print 'np.dot took %1.4f' % (time() - start)
+    
+    #sh_weights = ndarray_as_shmem(weights)
+    #sh_samples = ndarray_as_shmem(samples)
+    #weights = shmem_as_ndarray(sh_weights).reshape(weights.shape)
+    #samples = shmem_as_ndarray(sh_samples).reshape(samples.shape)
+    buf = np.zeros((nsamples,hdim))
+    sh_buf = ndarray_as_shmem(buf)
+    buf = shmem_as_ndarray(sh_buf).reshape(buf.shape)
+    
+    nprocesses = 2
+    chunksize = nsamples / nprocesses
     
     
+    def cheatdot(sh_buf,samples,weights,i):
+        start = i * chunksize
+        stop = start + chunksize 
+        r = np.dot(samples[start : stop],weights)
+        sh_buf[start * hdim: stop * hdim] = r.reshape(r.size)
+    
+    
+    
+    
+    
+    def pdot(): 
+        procs = map(create_process,[(sh_buf,samples,weights,i) for i in range(nprocesses)])
+        map(lambda p : p.start(), procs)
+        map(lambda p: p.join(), procs)
+    
+    start = time()
+    for i in range(itr):
+        pdot()
+    print 'pdot took %1.4f' % (time() - start)
+    
+    r = np.dot(samples,weights)
+    print np.allclose(buf,r)
+        
     
     
     
