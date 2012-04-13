@@ -199,7 +199,7 @@ class BFCC(SingleInput):
     def _process(self):
         barks = self.in_data[0]
         barks[barks == 0] = .00000001
-        return dct(barks[:self.ncoeffs])
+        return dct(np.log(barks))[:self.ncoeffs]
         
     
     
