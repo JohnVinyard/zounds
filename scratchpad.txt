@@ -9,6 +9,8 @@ There are 3 types of similarity
 
 TOOO:
 -------------
+Profile ingest.py. How can this be faster?
+
 
 Search questions
 	- Do search results improve with the size of the datastore?
@@ -17,8 +19,6 @@ Search questions
 	- Do results improve when excluding sequences that are less than half the
 		query length from _score_sequences() ? 
 	
-Parallel RBM implementation
-
 Automatic rebuilding of search indices after data is added
 
 Write LearnedFeature tests
