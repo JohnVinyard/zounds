@@ -4,6 +4,7 @@ import numpy as np
 
 from scipy.stats.mstats import gmean
 from scipy.signal import triang
+from scipy.fftpack import dct
 
 from environment import Environment
 from analyze.extractor import SingleInput
@@ -181,3 +182,24 @@ class SpectralFlatness(SingleInput):
     def _process(self):
         spectrum = self.in_data[0]
         return gmean(spectrum) / np.average(spectrum)
+
+class BFCC(SingleInput):
+    
+    def __init__(self, needs = None, key = None, ncoeffs = 13):
+        SingleInput.__init__(self, needs = needs, key = key)
+        self.ncoeffs = ncoeffs
+    
+    @property
+    def dtype(self):
+        return np.float32
+    
+    def dim(self,env):
+        return self.ncoeffs
+    
+    def _process(self):
+        barks = self.in_data[0]
+        barks[barks == 0] = .00000001
+        return dct(barks[:self.ncoeffs])
+        
+    
+    
