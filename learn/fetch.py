@@ -110,5 +110,23 @@ class PrecomputedFeature(Fetch):
         # shuffle them so they're completely randomized
         return data[np.random.permutation(len(data))]
 
+class StaticPrecomputedFeature(Fetch):
+    '''
+    Fetch samples at random once, using the PrecomputedFeature class, and 
+    always return the same samples when fetch() is called. This class is
+    only useful for comparisons of different learning algorithms, or different
+    implementations of the same learning algorithm.
+    '''
+    
+    def __init__(self,nframes,feature,nsamples):
+        pcf = PrecomputedFeature(nframes,feature)
+        self.samples = pcf(nsamples)
+    
+    def __call__(self, nexamples = None):
+        '''
+        Note that nexamples is ignored
+        '''
+        return self.samples
+        
 
             
