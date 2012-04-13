@@ -1,6 +1,6 @@
-from rbm import Rbm,LinearRbm
+from rbm import Rbm
 from nnet import stochastic_binary as sb,sigmoid
-from multiprocessing.sharedctypes import RawArray
+from multiprocessing.sharedctypes import Array,RawArray
 from multiprocessing import Process
 import ctypes
 import numpy as np
@@ -132,7 +132,7 @@ class ParallelRbm2(Rbm):
                      sparsity_cost = sparsity_cost)
         
         self.batch_size = 100
-        self.nprocesses = 10
+        self.nprocesses = 2
         self.chunksize = self.batch_size / self.nprocesses
         # BUG: What if indim isn't evenly divisible by nprocesses?
         self.phase_chunksize = self._indim / self.nprocesses
@@ -154,31 +154,40 @@ class ParallelRbm2(Rbm):
     
     def _positive_phase(self,inp):
         ps,s,stoch = self._h_from_v(inp)
-        pdot(self._sh_posprod,inp.T,s,self.nprocesses,self.phase_chunksize)
+        #pdot(self._sh_posprod,inp.T,s,self.nprocesses,self.phase_chunksize)
+        self._posprod = np.dot(inp.T,s)
         pos_h_act = s.sum(axis = 0)
         pos_v_act = inp.sum(axis = 0)
         return stoch, self._posprod, pos_h_act, pos_v_act
     
     def _negative_phase(self,stoch):
         vs,gps,gs,gstoch = self._gibbs_hvh(stoch)
-        pdot(self._sh_negprod,vs.T,gs,self.nprocesses,self.phase_chunksize)
+        #pdot(self._sh_negprod,vs.T,gs,self.nprocesses,self.phase_chunksize)
+        self._negprod = np.dot(vs.T,gs)
         neg_h_act = gs.sum(axis = 0)
         neg_v_act = vs.sum(axis = 0)
         return vs, self._negprod, neg_h_act, neg_v_act
     
     
     def train(self,samples,stopping_condition):
+        
+        self._sh_samples = Array(ctypes.c_double,samples.size)
+        self._sh_samples[:] = samples.reshape(samples.size)
+        self._samples = np.ctypeslib.as_array(self._sh_samples.get_obj()).reshape(samples.shape)
+        
         self._up_pre_sigmoid =  np.zeros((self.batch_size,self._hdim))
         self._sh_up_pre_sigmoid = ndarray_as_shmem(self._up_pre_sigmoid)
         self._up_pre_sigmoid =\
             shmem_as_ndarray(self._sh_up_pre_sigmoid)\
             .reshape(self._up_pre_sigmoid.shape)
         
+        
         self._down_pre_sigmoid = np.zeros((self.batch_size,self._indim))
         self._sh_down_pre_sigmoid = ndarray_as_shmem(self._down_pre_sigmoid)
         self._down_pre_sigmoid =\
             shmem_as_ndarray(self._sh_down_pre_sigmoid)\
             .reshape(self._down_pre_sigmoid.shape)
+        
             
         self._posprod = np.zeros((self._indim,self._hdim))
         self._sh_posprod = ndarray_as_shmem(self._posprod)
@@ -190,7 +199,11 @@ class ParallelRbm2(Rbm):
         self._negprod =\
             shmem_as_ndarray(self._sh_negprod).reshape(self._negprod.shape)
             
-        Rbm.train(self,samples,stopping_condition)
+        self._sh_weights = Array(ctypes.c_double,self._indim * self._hdim)
+        self._sh_weights[:] = self._weights.reshape(self._weights.size)
+        self._weights = np.ctypeslib.as_array(self._sh_weights.get_obj()).reshape(self._weights.shape)
+        
+        Rbm.train(self,self._samples,stopping_condition)
         
         del self._up_pre_sigmoid
         del self._sh_up_pre_sigmoid
@@ -200,6 +213,9 @@ class ParallelRbm2(Rbm):
         del self._sh_posprod
         del self._negprod
         del self._sh_negprod
+        del self._sh_weights
+        del self._sh_samples
+        del self._samples
         
 
 class ParallelLinearRbm2(ParallelRbm2):
@@ -230,38 +246,7 @@ class ParallelLinearRbm2(ParallelRbm2):
 from time import time
 
 if __name__ == '__main__':
-    '''
-    print 'np.ndarray -> shared memory doesn\'t work'
-    a = np.zeros(10)
-    ra = ndarray_as_shmem(a)
     
-    a[:] = 100
-    print a
-    print ra[:]
-    ra[0] = 999
-    print a
-    print ra[:]
-    
-    del a
-    del ra
-    
-    print 'shared memory -> np.ndarray does'
-    ra = RawArray('d',10)
-    a = shmem_as_ndarray(ra)
-    ra[0] = 100
-    print a
-    print ra[:]
-    a[1] = 999
-    print a
-    print ra[:]
-    '''
-    
-    #def create_process(args):
-    #        return Process(target = update,args = args)
-    
-    #procs = map(create_process, data)
-    #map(lambda p : p.start(), procs)
-    #map(lambda p: p.join(), procs)
     
     indim = 500
     hdim = 2000
@@ -275,10 +260,7 @@ if __name__ == '__main__':
         np.dot(samples,weights)
     print 'np.dot took %1.4f' % (time() - start)
     
-    #sh_weights = ndarray_as_shmem(weights)
-    #sh_samples = ndarray_as_shmem(samples)
-    #weights = shmem_as_ndarray(sh_weights).reshape(weights.shape)
-    #samples = shmem_as_ndarray(sh_samples).reshape(samples.shape)
+    
     buf = np.zeros((nsamples,hdim))
     sh_buf = ndarray_as_shmem(buf)
     buf = shmem_as_ndarray(sh_buf).reshape(buf.shape)
@@ -287,15 +269,15 @@ if __name__ == '__main__':
     chunksize = nsamples / nprocesses
     
     
+    
     def cheatdot(sh_buf,samples,weights,i):
         start = i * chunksize
         stop = start + chunksize 
         r = np.dot(samples[start : stop],weights)
         sh_buf[start * hdim: stop * hdim] = r.reshape(r.size)
     
-    
-    
-    
+    def create_process(args):
+        return Process(target = cheatdot, args = args)
     
     def pdot(): 
         procs = map(create_process,[(sh_buf,samples,weights,i) for i in range(nprocesses)])
