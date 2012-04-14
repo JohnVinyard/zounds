@@ -1,8 +1,11 @@
 from __future__ import division
 from abc import ABCMeta,abstractmethod
 import time
+import struct
+import random
 
 import numpy as np
+from bitarray import bitarray
 
 from model import Model
 from pattern import DataPattern
@@ -118,7 +121,146 @@ class Score(object):
         asrt = np.argsort(b[nz])
         return nz[asrt][::-1][:n]
         
+class LshSearch(FrameSearch):
+    
+    _DTYPE_MAPPING = {
+                      8  : np.uint8,
+                      16 : np.uint16,
+                      32 : np.uint32,
+                      64 : np.uint64
+                      }
+    _STRUCT_MAPPING = {
+                       8  : 'B',
+                       16 : 'H',
+                       32 : 'L',
+                       64 : 'Q'
+                       }
+    def __init__(self,_id,feature,step,nbits):
+        k = LshSearch._DTYPE_MAPPING.keys()
+        if nbits not in k:
+            raise ValueError('nbits must be in %s') % (str(k))
+        
+        FrameSearch.__init__(self,_id,feature)
+        self._index = None
+        self._sorted = None
+        self.step = step
+        self.nbits = nbits
+        
+        self._addresskey = 'a'
+        self._hashkey = 'h'
+        self._hashdtype = LshSearch._DTYPE_MAPPING[nbits]
+        self._structtype = LshSearch._STRUCT_MAPPING[nbits]
+        
+     
+    
+    def _bit_permute(self,n):
+        '''
+        Every possible rotation of n bits
+        
+        A horribly inefficient way to permute bits. This should be written
+        as a wrapped c or cython method
+        '''
+        # Am I sure this is doing the right thing?
+        n = int(n)
+        p = np.ndarray(self.nbits,dtype=self._hashdtype)
+        for i in range(self.nbits):
+            ba = bitarray()
+            ba.frombytes(struct.pack(self._structtype,n))
+            ba2 = bitarray()
+            ba2.extend(np.roll(ba,i))
+            p[i] = struct.unpack(self._structtype,ba2.tobytes())[0]
+        return p
+    
+    def _build_index(self):
+        '''
+        '''
+        env = self.env()
+        fc = env.framecontroller
+        l = len(fc)
+        index = np.recarray(\
+                l,dtype = [(self._addresskey,np.object),
+                           (self._hashkey,self._hashdtype,(self.nbits))])
+        
+        for i,f in enumerate(fc.iter_all(step = self.step)):
+            address,frame = f
+            index[i][self._addresskey] = address
+            index[i][self._hashkey][:] = self._bit_permute(frame.lsh)
+            print index[i][self._hashkey]
+        argsort = np.argsort(index[self._hashkey],0)
+        self._index = [index,argsort]
+    
+    @property
+    def feature(self):
+        return self.features[0]
+        
+    @property
+    def index(self):
+        return self._index[0]
+    
+    @property
+    def argsort(self):
+        return self._index[1]
+    
+    @property
+    def sorted(self):
+        return self._sorted
+        
+    def _setup(self):
+        print 'setting up'
+        self._sorted = np.ndarray(\
+                    self.index[self._hashkey].shape,dtype = self._hashdtype)
+        for i in range(self.nbits):
+            self._sorted[:,i] = self.index[self._hashkey][:,i][self.argsort[:,i]]
+        print 'done setting up'
+        
+    
+    _CACHE = {}
+    def _search_block(self,hashvalue,nresults):
+        '''
+        Foreach permutation of bits:
+            find insertion point in sorted list
+            
+        '''
+        try:
+            return LshSearch._CACHE[(hashvalue,nresults)]
+        except KeyError:
+            rng = 10
+            l = []
+            perm = self._bit_permute(hashvalue)
+            # TODO: Try splitting the search among processes. The index should be
+            # in shared memory, and the workers only have to return lists of address
+            # indices
+            for i,p in enumerate(perm):
+                # This line is the bottleneck
+                insert = np.searchsorted(self.sorted[:,i],p)
+                start = max(0,insert - rng)
+                stop = insert + rng
+                addrs = self.argsort[:,i][start : stop]
+                l.extend(addrs)
+            
+            # TODO: Sort by hamming distance from query hash value, OR,
+            # sort by euclidean distance from original feature
+            
+            v = Score(l).nbest(nresults)
+            LshSearch._CACHE[(hashvalue,nresults)] = v
+            return v
                 
+            
+    def _search(self,frames,nresults):
+        if None is self._sorted:
+            self._setup()
+        
+        feature = frames[self.feature]
+        audio = []
+        env = self.env()
+        fm = env.framemodel
+        for f in feature:
+            s = self._search_block(f, 5)
+            ch = random.choice(list(s))
+            audio.append(fm[self.index[self._addresskey][ch]].audio)
+        return np.array(audio)
+    
+           
 class MinHashSearch(FrameSearch):
     '''
     Minhash search algorithm:

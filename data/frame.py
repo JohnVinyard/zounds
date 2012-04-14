@@ -647,9 +647,7 @@ class PyTablesFrameController(FrameController):
     def _query(self,op='&',**kwargs):
         return '(%s)' % string.join(\
             [self._query_condition(k,v) for k,v in kwargs.iteritems()],' %s ' % op)
-        
     
-    # TODO: Write tests
     def get(self,key):
         
         # the key is a zounds id
