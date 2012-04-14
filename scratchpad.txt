@@ -9,6 +9,8 @@ There are 3 types of similarity
 
 TOOO:
 -------------
+lsh has wrong dimension
+
 Profile ingest.py. How can this be faster?
 
 
