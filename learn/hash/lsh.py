@@ -23,4 +23,6 @@ class Lsh(Learn):
         b = bitarray()
         b.extend(arr)
         # KLUDGE: The datatype must correspond to nhashes
-        return struct.unpack('L',b.tobytes())[0]
+        r = struct.unpack('L',b.tobytes())[0]
+        print r
+        return r

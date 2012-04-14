@@ -117,7 +117,7 @@ class Loudness(SingleInput):
     def _process(self):
         return np.sum(self.in_data)
 
-# TODO : Factor out spectral mean
+
 class SpectralCentroid(SingleInput):
     '''
     "Indicates where the "center of mass" of the spectrum is. Perceptually, 
@@ -149,7 +149,7 @@ class SpectralCentroid(SingleInput):
             
         return np.sum(spectrum*self._bins) / self._bins_sum
 
-# TODO : Factor out spectral mean
+
 class SpectralFlatness(SingleInput):
     '''
     "Spectral flatness or tonality coefficient, also known as Wiener 

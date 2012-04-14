@@ -9,7 +9,18 @@ There are 3 types of similarity
 
 TOOO:
 -------------
-lsh has wrong dimension
+Bug: It's possible to load controllers of the wrong type with 
+	PickledController-derived classes
+
+FrameModel.concatenate method
+
+Try :  For minhash, Use only one hash function, but instead of selecting only the minimum 
+	   value as the simhash, select the least  values. The probability of a 
+	   match then becomes.....The advantage of this over independent hash 
+	   functions is that it sets a minimum on the number of members that the 
+	   two sets must share in order to match. This mitigates the effect of 
+	   extremely common set members on your clusters.
+	   http://moultano.wordpress.com/article/simple-simhashing-3kbzhsxyg4467-6/
 
 Profile ingest.py. How can this be faster?
 
@@ -26,8 +37,6 @@ Automatic rebuilding of search indices after data is added
 Write LearnedFeature tests
 
 Learn Autoencoder on BarkBands and store
-
-BFCC feature
 
 RBM trained on BFCCs
 
