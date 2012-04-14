@@ -1,3 +1,7 @@
+'''
+A parallel rbm training implementation that results in negligible, perhaps even
+non-existent speed gains.
+'''
 from rbm import Rbm
 from nnet import stochastic_binary as sb,sigmoid
 from multiprocessing.sharedctypes import Array,RawArray
@@ -247,7 +251,8 @@ from time import time
 
 if __name__ == '__main__':
     
-    
+    # The following test is what led me to believe this module was worth writing,
+    # but for some reason, I don't see the same speed gains in the rbm training.    
     indim = 500
     hdim = 2000
     itr = 50
