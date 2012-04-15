@@ -214,51 +214,39 @@ class LshSearch(FrameSearch):
         print 'done setting up'
         
     
-    _CACHE = {}
-    def _search_block(self,hashvalue,nresults):
-        '''
-        Foreach permutation of bits:
-            find insertion point in sorted list
-            
-        '''
-        try:
-            return LshSearch._CACHE[(hashvalue,nresults)]
-        except KeyError:
-            rng = 10
-            l = []
-            perm = self._bit_permute(hashvalue)
-            # TODO: Try splitting the search among processes. The index should be
-            # in shared memory, and the workers only have to return lists of address
-            # indices
-            for i,p in enumerate(perm):
-                # This line is the bottleneck
-                insert = np.searchsorted(self.sorted[:,i],p)
-                start = max(0,insert - rng)
-                stop = insert + rng
-                addrs = self.argsort[:,i][start : stop]
-                l.extend(addrs)
-            
-            # TODO: Sort by hamming distance from query hash value, OR,
-            # sort by euclidean distance from original feature
-            
-            v = Score(l).nbest(nresults)
-            LshSearch._CACHE[(hashvalue,nresults)] = v
-            return v
-                
-            
     def _search(self,frames,nresults):
         if None is self._sorted:
             self._setup()
         
         feature = frames[self.feature]
-        audio = []
+        lf = len(feature)
         env = self.env()
         fm = env.framemodel
-        for f in feature:
-            s = self._search_block(f, 5)
-            ch = random.choice(list(s))
-            audio.append(fm[self.index[self._addresskey][ch]].audio)
+        perms = np.zeros((len(feature),self.nbits))
+        
+        # Get the permutations of the hash code for every block
+        for i,f in enumerate(feature):
+            perms[i] = self._bit_permute(f)
+        rng = 10
+        
+        l = [[] for i in range(lf)]
+        for i in range(self.nbits):
+            # get the insertion positions for every block, for this permutation
+            inserts = np.searchsorted(self.sorted[:,i],perms[:,i])
+            starts = inserts - rng
+            starts[starts < 0] = 0
+            stops = inserts + rng 
+            [l[q].extend(self.argsort[:,i][starts[q] : stops[q]]) for q in range(lf)]
+        
+        audio = []
+        for candidates in l:
+            best = random.choice(Score(candidates).nbest(5))
+            audio.append(fm[self.index[self._addresskey][best]].audio)
         return np.array(audio)
+        
+         
+        
+            
     
            
 class MinHashSearch(FrameSearch):
