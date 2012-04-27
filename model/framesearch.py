@@ -206,6 +206,8 @@ class LshSearch(FrameSearch):
         return self._sorted
         
     def _setup(self):
+        # TODO: Just save the sorted version of the hash codes. The original
+        # version never gets used in the search.
         print 'setting up'
         self._sorted = np.ndarray(\
                     self.index[self._hashkey].shape,dtype = self._hashdtype)
@@ -239,9 +241,11 @@ class LshSearch(FrameSearch):
             [l[q].extend(self.argsort[:,i][starts[q] : stops[q]]) for q in range(lf)]
         
         audio = []
+        add = audio.append if self.step == 1 else audio.extend
         for candidates in l:
             best = random.choice(Score(candidates).nbest(5))
-            audio.append(fm[self.index[self._addresskey][best]].audio)
+            a = fm[self.index[self._addresskey][best]].audio
+            add(a)
         return np.array(audio)
         
          
@@ -321,20 +325,7 @@ class MinHashSearch(FrameSearch):
                     
         self._index = [np.array(ids),np.array(addresses),index]
     
-    def _search_block(self,hashvalue,nresults):
-        index = self.index
-        addresses = []
-        
-        for i,h in enumerate(hashvalue):
-            try:
-                addresses.extend(index[i][h])
-            except KeyError:
-                '''
-                There are no instances of the (hash function,has value) pair
-                in the database
-                '''
-                pass
-        return Score(addresses).nbest(nresults)
+    
         
     
     def _pad(self,query,candidate):
@@ -378,6 +369,21 @@ class MinHashSearch(FrameSearch):
             val = self._search_block(tb,candidates)
             MinHashSearch.CACHE[(tb,candidates)] = val
             return val
+        
+    def _search_block(self,hashvalue,nresults):
+        index = self.index
+        addresses = []
+        
+        for i,h in enumerate(hashvalue):
+            try:
+                addresses.extend(index[i][h])
+            except KeyError:
+                '''
+                There are no instances of the (hash function,hash value) pair
+                in the database
+                '''
+                pass
+        return Score(addresses).nbest(nresults)
     
     
     def _candidate_sequences(self,feature, candidates_per_block = 50):

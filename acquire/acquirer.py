@@ -58,7 +58,9 @@ class DiskAcquirer(Acquirer):
         return self._source
     
     def acquire(self):
-        for fn in os.listdir(self.path):
+        files = os.listdir(self.path)
+        lf = len(files)
+        for i,fn in enumerate(files):
             fp = os.path.join(self.path,fn)
             extid = os.path.splitext(fn)[0]
             pattern = FilePattern(self.env.newid(),
@@ -66,7 +68,9 @@ class DiskAcquirer(Acquirer):
                                   extid,
                                   fp)
             if not self.framecontroller.exists(self.source,extid):
+                print 'importing %s, file %i of %i' % (fn,i,lf)
                 self.framecontroller.append(self.extractor_chain(pattern))
+            
             
             
     

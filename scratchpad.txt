@@ -9,6 +9,8 @@ There are 3 types of similarity
 
 TOOO:
 -------------
+Understand the shape and size of matching pursuit
+
 Bug: It's possible to load controllers of the wrong type with 
 	PickledController-derived classes
 
@@ -35,12 +37,6 @@ Search questions
 Automatic rebuilding of search indices after data is added
 
 Write LearnedFeature tests
-
-Learn Autoencoder on BarkBands and store
-
-RBM trained on BFCCs
-
-BFCC minhash search
 
 Patterns
 

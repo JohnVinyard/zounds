@@ -24,6 +24,18 @@ class NoOp(Preprocess):
          
     def _preprocess(self,data):
         return data
+
+class Add(Preprocess):
+    '''
+    Add a number to every element in the input
+    '''
+    
+    def __init__(self,n):
+        Preprocess.__init__(self)
+        self.n = n
+    
+    def _preprocess(self,data):
+        return data + self.n
     
 class MeanStd(Preprocess):
     
@@ -45,7 +57,8 @@ class MeanStd(Preprocess):
         newdata /= self.std
         
         return newdata
-        
+
+
 
 class PreprocessBarkBands(MeanStd):
     
