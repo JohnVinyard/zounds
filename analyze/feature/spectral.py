@@ -200,6 +200,46 @@ class BFCC(SingleInput):
         barks = self.in_data[0]
         barks[barks == 0] = .00000001
         return dct(np.log(barks))[:self.ncoeffs]
+
+class AutoCorrelation(SingleInput):
+    def __init__(self, needs = None, key = None, size = None):
+        SingleInput.__init__(self, needs = needs, key = key)
+        if not size:
+            raise ValueError('please specifiy a size')
+        self.size = size
+        
+    @property
+    def dtype(self):
+        return np.float32
+    
+    def dim(self,env):
+        return self.size
+    
+    def _process(self):
+        data = self.in_data[0]
+        return np.correlate(data,data,mode = 'full')[self.size - 1:]
+
+class Difference(SingleInput):
+    def __init__(self, needs = None, key = None, size = None):
+        SingleInput.__init__(self, needs = needs, key = key)
+        if not size:
+            raise ValueError('please specifiy a size')
+        self.size = size
+        self._memory = np.zeros(self.size)
+        
+    @property
+    def dtype(self):
+        return np.float32
+    
+    def dim(self,env):
+        return self.size
+    
+    def _process(self):
+        indata = self.in_data[0]
+        output =  indata - self._memory
+        self._memory = indata
+        return output
+        
         
     
     
