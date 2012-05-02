@@ -3,6 +3,7 @@ from abc import ABCMeta,abstractmethod
 import time
 import struct
 import random
+from bisect import bisect_left
 
 import numpy as np
 from bitarray import bitarray
@@ -120,6 +121,97 @@ class Score(object):
         nz = np.nonzero(b)[0]
         asrt = np.argsort(b[nz])
         return nz[asrt][::-1][:n]
+
+# TODO:
+# literal euclidean distance
+# correlation (np.corr or np.dot)
+# DTW
+class ExhaustiveSearch(FrameSearch):
+    
+    def __init__(self,_id,feature):
+        FrameSearch.__init__(self,_id,feature)
+        self._std = None
+    
+    def _build_index(self):
+        '''
+        This is the dumbest possible brute-force search, so there's no index
+        to build
+        '''
+        env = self.env()
+        c = env.framecontroller
+        fm = env.framemodel
+        _ids = list(fm.list_ids())
+        l = len(c)
+        frames = fm[_ids[0]]
+        
+        samples = np.zeros((l,frames[self.feature].shape[1]))
+        samples[:len(frames)] = frames[self.feature]
+        count = len(frames)
+        
+        for i in range(1,len(_ids)):
+            print _ids[i]
+            frames = fm[_ids[i]]
+            samples[count : count + len(frames)] = frames[self.feature]
+        
+        
+        self._std = samples.std(0)
+        print self._std
+    
+    @property
+    def feature(self):
+        return self.features[0]
+    
+    def _search(self,frames,nresults):
+        seq = frames[self.feature]
+        seq /= self._std
+        ls = len(seq)
+        seq = seq.ravel()
+        # make sure the seq has unit norm
+        seq /= np.linalg.norm(seq)
+        
+        env = self.env()
+        c = env.framecontroller
+        fm = env.framemodel
+        
+        _ids = list(c.list_ids())
+        # best is a tuple of (score,frames)
+        # KLUDGE: This is cheating. Searches should always return back-end
+        # specific addresses
+        best = []
+        for _id in _ids:
+            frames = fm[_id]
+            feat = frames[self.feature]
+            feat /= self._std
+            i = 0
+            print 'comparing to _id %s' % _id
+            while i < len(feat) - ls:
+                
+                sl = feat[i:i+ls]
+                comp = pad(sl,ls)
+                #compproc = np.log(comp + 1)
+                #seqproc = np.log(seq + 1)
+                # TODO: Make evaluation method configurable
+                #dist = np.linalg.norm(comp.ravel() - seq)
+                dist = -np.dot(comp.ravel(),seq)
+                t = (dist,(_id,i))
+                try:
+                    insertion = bisect_left(best,t)
+                except ValueError:
+                    print dist
+                    print best
+                    raise Exception()
+                if insertion < nresults:
+                    best.insert(insertion,t)
+                    best = best[:nresults]
+                    i += int(ls / 2)
+                    print 'found good match at _id %s, frame %i' % (_id,i)
+                else:
+                    i += 1
+        
+        # return just the frames, and not the scores
+        return [fm[t[1][0]].audio[t[1][1] : t[1][1] + ls] for t in best]
+            
+            
         
 class LshSearch(FrameSearch):
     
