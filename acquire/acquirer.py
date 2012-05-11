@@ -58,7 +58,7 @@ class DiskAcquirer(Acquirer):
         return self._source
     
     def acquire(self):
-        files = os.listdir(self.path)
+        files = filter(lambda f : os.path.splitext(f)[1] in ('.wav','.aiff','.flac'),os.listdir(self.path))
         lf = len(files)
         for i,fn in enumerate(files):
             fp = os.path.join(self.path,fn)

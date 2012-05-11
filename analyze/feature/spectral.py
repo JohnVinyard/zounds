@@ -85,6 +85,7 @@ class BarkBands(SingleInput):
             _erb = BarkBands.from_cache(BarkBands._erb, bark.erb, hz)
             _herb = _erb / 2.
             start_hz = hz - _herb
+            start_hz = 0 if start_hz < 0 else start_hz
             stop_hz = hz + _herb
             ws = self.windowsize
             sr = self.samplerate
