@@ -4,6 +4,7 @@ import numpy as np
 from analyze.audiostream import AudioStream
 from analyze.extractor import Extractor
 from util import pad
+from environment import Environment
 
 class AudioSamples(Extractor):
     
@@ -13,8 +14,8 @@ class AudioSamples(Extractor):
         self.windowsize = windowsize
         self.stepsize = stepsize
         self.key = 'audio'
-        self.window = self.oggvorbis(self.windowsize)
-        
+        env = Environment.instance
+        self.window = env.window if env.window else self.oggvorbis(self.windowsize)
         
     
     def dim(self,env):

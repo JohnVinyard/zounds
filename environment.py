@@ -6,6 +6,7 @@ class AudioConfig:
     samplerate = 44100
     windowsize = 2048
     stepsize = 1024
+    window = None
 
 
 class Environment(object):
@@ -80,6 +81,10 @@ class Environment(object):
     @property
     def samplerate(self):
         return self.audio.samplerate
+    
+    @property
+    def window(self):
+        return self.audio.window
     
     def newid(self):
         return uuid4().hex

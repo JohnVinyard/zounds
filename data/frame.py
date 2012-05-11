@@ -370,9 +370,9 @@ class PyTablesFrameController(FrameController):
                 i += 1
             return i
         
-        self._desired_buffer_size = 5000
+        self._desired_buffer_size = 1000
         # once we've processed this much data, stop and wait to write it
-        self._max_buffer_size = self._desired_buffer_size * 5
+        self._max_buffer_size = self._desired_buffer_size * 2
         
         # find the lowest common multiple of all step sizes
         l = lcd(self.steps.values())
