@@ -47,7 +47,7 @@ def critical_bands(samplerate,
         hz = barks_to_hz(b)
         _erb = erb(hz)
         start_hz = hz - (_erb/2.)
-        start_hz = 0 if hz < 0 else hz
+        start_hz = 0 if start_hz < 0 else start_hz
         s_index = fft_index(start_hz,window_size,samplerate)
         e_index = fft_index(hz + (_erb/2.),window_size,samplerate) + 1
         cb[i - 1] = (abs(fft_frame[s_index : e_index]) * triang(e_index - s_index)).sum()
