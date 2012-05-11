@@ -8,7 +8,8 @@ def fft_index(freq_hz,ws,sr):
     Given a frequency in hz, a window size, and a sample rate,
     return the fft bin into which the freq in hz falls
     '''
-    if freq_hz < 0 or freq_hz > sr / 2.:
+    print freq_hz
+    if freq_hz < 0 or freq_hz > sr / 2.: 
         raise ValueError(\
             'Freq must be greater than zero and less than the Nyquist frequency')
     
@@ -45,7 +46,9 @@ def critical_bands(samplerate,
         b = i * bark_bandwidth
         hz = barks_to_hz(b)
         _erb = erb(hz)
-        s_index = fft_index(hz - (_erb/2.),window_size,samplerate)
+        start_hz = hz - (_erb/2.)
+        start_hz = 0 if hz < 0 else hz
+        s_index = fft_index(start_hz,window_size,samplerate)
         e_index = fft_index(hz + (_erb/2.),window_size,samplerate) + 1
         cb[i - 1] = (abs(fft_frame[s_index : e_index]) * triang(e_index - s_index)).sum()
         
