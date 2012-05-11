@@ -15,7 +15,7 @@ class AudioSamples(Extractor):
         self.stepsize = stepsize
         self.key = 'audio'
         env = Environment.instance
-        self.window = env.window if env.window else self.oggvorbis(self.windowsize)
+        self.window = env.window if None is not env.window else self.oggvorbis(self.windowsize)
         
     
     def dim(self,env):
