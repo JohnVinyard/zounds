@@ -53,6 +53,7 @@ class FrameModelTests(unittest.TestCase):
             samplerate = 44100
             windowsize = 4096
             stepsize = 1024
+            window = None
             
         Environment('test',
                     FM1,

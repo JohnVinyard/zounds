@@ -39,76 +39,122 @@ class PrecomputedFeature(Fetch):
         self.feature = feature
         self.nframes = nframes
         
-    
-    def __call__(self,nexamples = None):
+    # TODO: Write tests
+    def _prob_one_fetch(self,controller,framemodel,dim,axis1,nexamples,prob):
+        '''
+        Fetch method to use when fetching every possible sample from the database.
+        For nframes = 1, this just means every frame. For nframes > 1, it means
+        overlapping windows if size nframes and a step size of one.
+        '''
+        c = controller
+        bufferdim = 1 if not dim else dim[0]
         
+        i = 0
+        _ids = list(c.list_ids())
+        for _id in _ids:
+            buf = np.zeros((self.nframes,bufferdim))
+            bi = 0
+            for feature in c.iter_feature(_id,self.feature):
+                buf[bi] = feature
+                bi += 1
+                if bi == self.nframes:
+                    bi -=1
+                    yield i,buffer.reshape(axis1)
+                    buf = np.roll(buf,-1,0)
+                    buf[-1] = 0
+                    i += 1
+    
+    def _prob_lt_one_fetch(self,controller,framemodel,dim,axis1,nexamples,prob):
+        '''
+        Fetch method to use when fetching fewer examples than exist in the database.
+        This draws a number of samples from each sound/pattern based on the 
+        ratio of its length to the length of the entire database.
+        '''
+        FM = framemodel
+        nsamples = 0
+        # If our probability calculation is correct, we should only enter the
+        # outer while loop once. 
+        
+        while nsamples < nexamples:
+            ids = list(controller.list_ids())
+            while ids:
+                # choose an id at random and remove it from the list
+                index = np.random.randint(len(ids))
+                _id = ids.pop(index)
+                # KLUDGE: What if the pattern is too large to fit into memory?
+                frames = FM[_id]
+                # using our probability calculation, draw n samples from the
+                # pattern
+                lf = len(frames)
+                n_to_draw = int(lf * prob)
+                # always draw at least one sample
+                n_to_draw = n_to_draw if n_to_draw else 1
+                print 'drawing %i samples from %s' % (n_to_draw,_id)
+                try:
+                    s = np.random.randint(0,lf - self.nframes,n_to_draw)
+                except ValueError:
+                    s = [0]
+                feature = pad(frames[self.feature],self.nframes)
+                for i in s:
+                    #data[nsamples] = \
+                    #    feature[i : i + self.nframes]\
+                    #    .reshape(axis1)
+                    yield nsamples,\
+                            feature[i : i + self.nframes].reshape(axis1)
+                    nsamples += 1
+    
+    def _get_env(self):
+        '''
+        Get contextual information
+        '''
         env = Environment.instance
         FM = env.framemodel
         c = FM.controller()
         l = len(c)
-        
-        if not nexamples:
-            # sample every frame from the database
-            nexamples = l 
-            
-        # using the feature, figure out what the shape and size of the data
-        # will be
+        return FM,c,l
+    
+    def _get_shape(self,c,nexamples):
+        '''
+        using the feature, figure out what the shape and size of the data
+        will be
+        '''
         dim = c.get_dim(self.feature) 
         dtype = c.get_dtype(self.feature)
         # BUG: This assumes features will always be either one or two dimensions
         axis1 = self.nframes if not dim else self.nframes * dim[0]
         shape = (nexamples,axis1) if axis1 > 1 else (nexamples,)
-        data = np.ndarray(shape,dtype = dtype)
+        return dim,dtype,axis1,shape
+        
+    def __call__(self,nexamples = None):
+        
+        FM,c,l = self._get_env()
+        
+        if not nexamples:
+            # sample every frame from the database
+            nexamples = l 
+            
+        dim,dtype,axis1,shape = self._get_shape(c, nexamples)
+        data = np.zeros(shape,dtype = dtype)
         
         # a rough estimate of the the probability that any possible frame will
         # be sampled, ignoring pattern boundaries and the tail end of the frames
         # database
         prob = nexamples / l
         
-        if 1 == prob:
-            # TODO: return every frame of this feature shuffled
-            raise NotImplemented()
-        
         if prob > 1:
             raise ValueError('More examples than frames in the frames database')
         
-        nsamples = 0
-        # If our probability calculation is correct, we should only enter the
-        # outer while loop once. 
-        try:
-            while nsamples < nexamples:
-                ids = list(c.list_ids())
-                while ids:
-                    # choose an id at random and remove it from the list
-                    index = np.random.randint(len(ids))
-                    _id = ids.pop(index)
-                    # KLUDGE: What if the pattern is too large to fit into memory?
-                    frames = FM[_id]
-                    # using our probability calculation, draw n samples from the
-                    # pattern
-                    lf = len(frames)
-                    n_to_draw = int(lf * prob)
-                    # always draw at least one sample
-                    n_to_draw = n_to_draw if n_to_draw else 1
-                    print 'drawing %i samples from %s' % (n_to_draw,_id)
-                    try:
-                        s = np.random.randint(0,lf - self.nframes,n_to_draw)
-                    except ValueError:
-                        s = [0]
-                    feature = pad(frames[self.feature],self.nframes)
-                    for i in s:
-                        data[nsamples] = \
-                            feature[i : i + self.nframes]\
-                            .reshape(axis1)
-                        nsamples += 1
-        except IndexError:
-            # We tried to write to an index outside the bounds of data, which
-            # means we're done collecting data.
-            pass
-                    
-        # finally, since the patches are grouped by pattern,
-        # shuffle them so they're completely randomized
+        fetch = self._prob_one_fetch if 1 == prob else self._prob_lt_one_fetch
+        for i,d in fetch(c, FM, dim, axis1, nexamples, prob):
+            try:
+                data[i] = d
+            except IndexError:
+                # We tried to write to an index outside the bounds of data, which
+                # means we're done collecting data.
+                break
         return data[np.random.permutation(len(data))]
+        
+       
 
 class StaticPrecomputedFeature(Fetch):
     '''

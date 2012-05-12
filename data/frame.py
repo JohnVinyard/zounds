@@ -548,6 +548,7 @@ class PyTablesFrameController(FrameController):
         #   yield row[feature]
         
         # Here's the less simple workaround
+        feature = feature if isinstance(feature,str) else feature.key
         rowns = self.db_read.getWhereList(self._query(_id = _id))
         for row in self.db_read.itersequence(rowns):
             yield row[feature]

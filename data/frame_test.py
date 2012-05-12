@@ -89,6 +89,7 @@ class PyTablesFrameControllerTests(unittest.TestCase):
         samplerate = 44100
         windowsize = 4096
         stepsize = 2048
+        window = None
     
     def FM(self,
            indir = False,
@@ -512,6 +513,7 @@ class PyTablesFrameControllerTests(unittest.TestCase):
             samplerate = 44100
             windowsize = 2048
             stepsize = 1024
+            window = None
         
         class FM(Frames):
             fft = Feature(FFT,store = False, needs = None)
@@ -543,6 +545,7 @@ class PyTablesFrameControllerTests(unittest.TestCase):
             samplerate = 44100
             windowsize = 2048
             stepsize = 1024
+            window = None
         
         class FM(Frames):
             fft = Feature(FFT,store = False, needs = None)
