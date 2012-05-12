@@ -37,6 +37,7 @@ class PrecomputedFeatureTests(unittest.TestCase):
         samplerate = 44100
         windowsize = 2048
         stepsize = 1024
+        window = None
     
     def append_files(self,
                      framecontroller,

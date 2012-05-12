@@ -88,7 +88,7 @@ class Lsh(Learn):
         best_score = 0
         best = None
         l = len(data) - 1
-        for i in range(500):
+        for i in range(100):
             self.hashes = data[np.random.random_integers(0,l,self.nhashes)]
             samples = data[np.random.random_integers(0,l,nsamples)]
             results = np.zeros(nsamples)
