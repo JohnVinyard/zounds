@@ -96,9 +96,6 @@ class PrecomputedFeature(Fetch):
                     s = [0]
                 feature = pad(frames[self.feature],self.nframes)
                 for i in s:
-                    #data[nsamples] = \
-                    #    feature[i : i + self.nframes]\
-                    #    .reshape(axis1)
                     yield nsamples,\
                             feature[i : i + self.nframes].reshape(axis1)
                     nsamples += 1
@@ -154,7 +151,55 @@ class PrecomputedFeature(Fetch):
                 break
         return data[np.random.permutation(len(data))]
         
-       
+
+# TODO: Write tests
+class PrecomputedPatch(PrecomputedFeature):
+    
+    def __init__(self,nframes,feature,fullsize,patch):
+        PrecomputedFeature.__init__(self,nframes,feature)
+        
+        # TODO: Check that number of dimensions of fullsize and patch agree,
+        # and that all slices are valid for fullsize
+        
+        # a tuple representing the desired shape of the data before "cutting"
+        self.fullsize = fullsize
+        # a slice, or list of slices representing the "patch" to cut from the
+        # full size feature
+        if isinstance(patch,slice):
+            self.patch = [patch]
+        elif isinstance(patch,list):
+            self.patch = patch
+        else:
+            raise ValueError('patch must be a slice, or a list of slices')
+    
+    def __call__(self, nexamples = None):
+        FM,c,l = self._get_env()
+        
+        if not nexamples:
+            # sample every frame from the database
+            nexamples = l 
+            
+        dim,dtype,axis1,shape = self._get_shape(c, nexamples)
+        datashape = [nexamples] + [s.stop - s.start for s in self.patch]
+        data = np.zeros(datashape,dtype = dtype)
+        
+        # a rough estimate of the the probability that any possible frame will
+        # be sampled, ignoring pattern boundaries and the tail end of the frames
+        # database
+        prob = nexamples / l
+        
+        if prob > 1:
+            raise ValueError('More examples than frames in the frames database')
+        
+        fetch = self._prob_one_fetch if 1 == prob else self._prob_lt_one_fetch
+        for i,d in fetch(c, FM, dim, axis1, nexamples, prob):
+            try:
+                data[i] = d.reshape(self.fullsize)[self.patch]
+            except IndexError:
+                # We tried to write to an index outside the bounds of data, which
+                # means we're done collecting data.
+                break
+        return data[np.random.permutation(len(data))]
 
 class StaticPrecomputedFeature(Fetch):
     '''
