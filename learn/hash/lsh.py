@@ -15,74 +15,23 @@ class Lsh(Learn):
         self.nhashes = nhashes
         self.hashes = None
     
+    def _check_unique(self,nsamples,hashes,samples):
+        self.hashes = hashes.reshape((len(hashes),np.product(hashes.shape[1:])))
+        samples = samples.reshape((len(samples),np.product(samples.shape[1:])))
+        results = np.zeros((nsamples,self.nhashes))
+        for i in range(nsamples):
+            results[i] = self(samples[i])
+        
+        s = set()
+        [s.add(tuple(r)) for r in results]
+        return len(s)
+        
+    
     def train(self,data,stopping_condition):
         '''
         Assume centered data that is in a completely randomized order.
         Look for hash functions (example data) that approximately splits
         randomly selected data in half.
-        '''
-        
-        # This worked well for bark bands
-        #data = whiten(data)
-        #codebook,distortion = kmeans(data,self.nhashes)
-        #self.hashes = codebook
-        
-        
-        '''
-        hashes = []
-        l = len(data) - 1
-        for d in data:
-            nsamples = 100 if l < 100000 else 1000
-            ei = np.random.random_integers(0,l,nsamples)
-            h = np.sign(np.dot(data[ei],d))
-            avg = np.mean(h)
-            print avg
-            if avg > .4 and avg < .6:
-                print 'Found suitable exemplar'    
-                hashes.append(d)
-                
-            if self.nhashes == len(hashes):
-                self.hashes = np.array(hashes)
-                return
-            
-        raise ValueError('Not enough sufficient exemplars in the input')
-        '''
-        
-        '''
-        hashes = [data[0]]
-        for d in data[1:]:
-            dist = cdist(np.array([d]),np.array(hashes),'hamming')[0]
-            if np.all(dist > .05):
-                print 'Found exemplar %i' % len(hashes)
-                hashes.append(d)
-                
-            if self.nhashes == len(hashes):
-                self.hashes = np.array(hashes)
-                return
-        
-        raise ValueError('Not enough sufficient exemplars in the input')
-        '''
-        
-        '''
-        l = len(data)
-        i = 0
-        nsamples = 1000
-        while i < 1000:
-            hashes = np.random.random_integers(0,l,self.nhashes)
-            samples = np.random.random_integers(0,l,nsamples)
-            results = np.zeros((nsamples,self.nhashes))
-            for q in range(nsamples):
-                results[q] = np.dot(hashes,samples[q])
-            results = np.sign(results)
-            avg = results.mean()
-            print avg
-            if avg > .4 and avg < .6:
-                self.hashes = hashes
-                return 
-            i+=1
-        
-        
-        raise ValueError('Could not find suitable hash function')
         '''
         nsamples = 10000
         best_score = 0
@@ -90,30 +39,49 @@ class Lsh(Learn):
         l = len(data) - 1
         for i in range(100):
             self.hashes = data[np.random.random_integers(0,l,self.nhashes)]
+            print self.hashes.shape
             samples = data[np.random.random_integers(0,l,nsamples)]
-            results = np.zeros(nsamples)
-            
-            for q in range(nsamples):
-                results[q] = self(samples[q])
-            
-            unique = np.unique(results)
-            lu = len(unique)
+            print samples.shape
+            lu = self._check_unique(nsamples, self.hashes, samples)
             print '%i unique values out of %i' % (lu,nsamples) 
-            
             if lu > best_score:
                 best_score = lu
                 best = self.hashes
         
         self.hashes = best  
             
-        
-        
     
     def __call__(self,data):
         arr = np.sign(np.dot(self.hashes,data))
+        return arr > 0
+
+
+
+class BinaryLsh(Lsh):
+    
+    TYPE_CODES = {
+                  # 32-bit unisgned integer
+                  32 : 'L',
+                  # 64-bit unsigned integer
+                  64 : 'Q'
+                  }
+    
+    def __init__(self,size,nhashes = 32):
+        keys = BinaryLsh.TYPE_CODES.keys()
+        if nhashes not in keys:
+            raise ValueError('nhashes must be in %s' % str(keys))
+        Lsh.__init__(self,size,nhashes = nhashes)
+        self._type_code = BinaryLsh.TYPE_CODES[nhashes]
+    
+    def _check_unique(self,nsamples,hashes,samples):
+        results = np.zeros(nsamples)
+        for i in range(nsamples):
+            results[i] = self(samples[i])
+        return len(np.unique(results))
+    
+    def __call__(self,data):
+        arr = Lsh.__call__(self,data)
         b = bitarray()
-        b.extend(arr > 0)
-        # KLUDGE: The datatype must correspond to nhashes
-        r = struct.unpack('L',b.tobytes())[0]
-        print r
-        return r
+        b.extend(arr)
+        return struct.unpack(self._type_code,b.tobytes())[0]
+    
