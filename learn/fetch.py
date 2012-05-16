@@ -154,7 +154,9 @@ class PrecomputedFeature(Fetch):
 
 # TODO: Write tests
 class PrecomputedPatch(PrecomputedFeature):
-    
+    '''
+    Cut arbitrary patches from samples drawn from the database
+    '''
     def __init__(self,nframes,feature,fullsize,patch):
         PrecomputedFeature.__init__(self,nframes,feature)
         
@@ -165,12 +167,21 @@ class PrecomputedPatch(PrecomputedFeature):
         self.fullsize = fullsize
         # a slice, or list of slices representing the "patch" to cut from the
         # full size feature
-        if isinstance(patch,slice):
-            self.patch = [patch]
+        if callable(patch):
+            self._patch = patch
+        elif isinstance(patch,slice):
+            self._patch = [patch]
         elif isinstance(patch,list):
-            self.patch = patch
+            self._patch = patch
         else:
-            raise ValueError('patch must be a slice, or a list of slices')
+            raise ValueError('patch must be a callable, slice, or a list of slices')
+    
+    @property
+    def patch(self):
+        if callable(self._patch):
+            return self._patch()
+        
+        return self._patch
     
     def __call__(self, nexamples = None):
         FM,c,l = self._get_env()
@@ -178,7 +189,8 @@ class PrecomputedPatch(PrecomputedFeature):
         if not nexamples:
             # sample every frame from the database
             nexamples = l 
-            
+        
+        
         dim,dtype,axis1,shape = self._get_shape(c, nexamples)
         datashape = [nexamples] + [s.stop - s.start for s in self.patch]
         data = np.zeros(datashape,dtype = dtype)
