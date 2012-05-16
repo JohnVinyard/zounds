@@ -23,6 +23,32 @@ def pad(a,desiredlength):
     padded = np.concatenate([a,np.zeros(shape,dtype=a.dtype)])
     return padded.tolist() if islist else padded
 
+def flatten2d(arr):
+    ls = len(arr.shape)
+    if 1 == ls:
+        raise ValueError('Cannot turn 1d array into 2d array')
+    elif 2 == ls:
+        return arr
+    else:
+        return arr.reshape((arr.shape[0],np.product(arr.shape[1:])))
+
+def downsampled_shape(arr,factor):
+    if 2 != arr.shape:
+        raise ValueError('downsampling can only be performed on 2d arrays')
+    
+    return int(arr.shape[0] / factor),int(arr.shape[1] / factor)
+
+def downsample(myarr,factor):
+    """
+    Downsample a 2D array by averaging over *factor* pixels in each axis.
+    Crops upper edge if the shape is not a multiple of factor.
+    """
+    xs,ys = myarr.shape
+    crarr = myarr[:xs-(xs % int(factor)),:ys-(ys % int(factor))]
+    dsarr = np.concatenate([[crarr[i::factor,j::factor] 
+        for i in range(factor)] 
+        for j in range(factor)]).mean(axis=0)
+    return dsarr
 
 def ensure_path_exists(filename):
     '''
