@@ -11,12 +11,12 @@ class KMeans(Learn):
         self.codebook = None
     
     def train(self,data,stopping_condition):
-        codebook,distortion = kmeans(data)
+        codebook,distortion = kmeans(data,self.n_centroids)
         self.codebook = codebook
     
     def __call__(self,data):
         dist = cdist(np.array([data]),self.codebook)[0]
-        best = np.argmax(dist)
+        best = np.argmin(dist)
         feature = np.zeros(len(self.codebook),dtype = np.uint8)
         feature[best] = 1
         return feature
