@@ -25,7 +25,7 @@ class NeuralNetwork(object):
         raise NotImplemented('nnet is meant to be an abstract base class')
 
     def _show_1d(self,f):
-        plt.plot(f)
+        plt.plot(f) 
 
     def _show_2d(self,f,shape):
         rc = np.sqrt(len(f))

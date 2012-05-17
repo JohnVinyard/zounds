@@ -167,7 +167,7 @@ class ExhaustiveSearch(FrameSearch):
         ls = len(seq)
         seq = seq.ravel()
         # make sure the seq has unit norm
-        seq /= np.linalg.norm(seq)
+        #seq /= np.linalg.norm(seq)
         
         env = self.env()
         c = env.framecontroller
@@ -191,8 +191,8 @@ class ExhaustiveSearch(FrameSearch):
                 #compproc = np.log(comp + 1)
                 #seqproc = np.log(seq + 1)
                 # TODO: Make evaluation method configurable
-                #dist = np.linalg.norm(comp.ravel() - seq)
-                dist = -np.dot(comp.ravel(),seq)
+                dist = np.linalg.norm(comp.ravel() - seq)
+                #dist = -np.dot(comp.ravel(),seq)
                 t = (dist,(_id,i))
                 try:
                     insertion = bisect_left(best,t)
