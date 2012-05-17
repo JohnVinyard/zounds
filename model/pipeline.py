@@ -1,5 +1,5 @@
 from datetime import datetime
-
+from util import flatten2d
 from model import Model
 
 class MetaPipeline(type):
@@ -50,6 +50,8 @@ class Pipeline(Model):
         decide when learning is complete.
         '''
         data = self.fetch(nexamples = nexamples)
+        # KLUDGE: Is this always OK?
+        data = flatten2d(data)
         data = self.preprocess(data)
         # TODO checkpoints, incremental save
         self.learn.train(data,stopping_condition)
