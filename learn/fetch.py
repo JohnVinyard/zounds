@@ -211,6 +211,7 @@ class PrecomputedPatch(PrecomputedFeature):
                 # We tried to write to an index outside the bounds of data, which
                 # means we're done collecting data.
                 break
+        print '-----------------------------------------------------------'
         return data[np.random.permutation(len(data))]
 
 class StaticPrecomputedFeature(Fetch):

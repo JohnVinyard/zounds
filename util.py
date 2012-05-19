@@ -43,6 +43,9 @@ def downsample(myarr,factor):
     Downsample a 2D array by averaging over *factor* pixels in each axis.
     Crops upper edge if the shape is not a multiple of factor.
     '''
+    if 1 == factor:
+        return myarr
+    
     xs,ys = myarr.shape
     crarr = myarr[:xs-(xs % int(factor)),:ys-(ys % int(factor))]
     dsarr = np.concatenate([[crarr[i::factor,j::factor] 

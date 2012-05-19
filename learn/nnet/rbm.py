@@ -53,6 +53,14 @@ class Rbm(NeuralNetwork,Learn):
         self._weight_decay = weight_decay
         self._initial_momentum = initial_momentum
         self._final_momentum = final_momentum
+        
+    @property
+    def indim(self):
+        return self._indim
+    
+    @property
+    def hdim(self):
+        return self._hdim
 
 
     def _up(self,v):
