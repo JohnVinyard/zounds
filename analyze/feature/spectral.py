@@ -241,6 +241,33 @@ class Difference(SingleInput):
         self._memory = indata
         return output
         
+
+class Intervals(SingleInput):
+    
+    def __init__(self,needs = None, key = None, nintervals = None):
+        SingleInput.__init__(self,needs = needs, key = key)
+        self.nintervals = nintervals
+        # we're returning the top diagonals of the comparison matrix. The number
+        # of elements is an arithmetic series.
+        n = self.nintervals - 1
+        self._dim = (n/2) * (n + 1)
+    
+    @property
+    def dtype(self):
+        return np.float32
+    
+    def dim(self,env):
+        return int(self._dim)
+    
+    def _process(self):
+        indata = self.in_data[0]
+        # get the indices of the n most dominant coefficients
+        top = np.argsort(indata)[-self.nintervals:]
+        # get the intervals between each coefficient
+        mat = np.array(np.abs(top - np.matrix(top).T))
+        # return only the top diagonals of the matrix; everything else is
+        # redundant
+        return np.concatenate([np.diag(mat,i) for i in range(1,self.nintervals)])
         
     
     
