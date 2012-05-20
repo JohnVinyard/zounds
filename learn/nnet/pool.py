@@ -28,11 +28,18 @@ class Pooling(NeuralNetwork,Learn):
     def _pool(self,data):
         ld = len(data)
         # how many blocks are we pooling?
-        pool_size = data.shape[1] / self._layer0.indim
+        # KLUDGE: I shouldn't know about the "learn" property here.  Pipeline
+        # should probably have indim and outdim properties
+        pool_size = data.shape[1] / self._layer0.learn.indim
         # reshape the data so that it can be processed by the layer 0 network
-        data = data.reshape((pool_size * ld,self._layer0.indim))
+        data = data.reshape((pool_size * ld,self._layer0.learn.indim))
         # extract features with the layer 0 network
-        l0_features = self._layer0(data)
+        l0_features = np.zeros((len(data),self._layer0.learn.hdim))
+        
+        # KLUDGE: Do this in "mini-batches" to lessen time spent in the
+        # python for-loop
+        for i in xrange(len(l0_features)):
+            l0_features[i] = self._layer0(data[i])
         
         # initialize an array to hold the pooled features
         samples = np.zeros((ld,self.indim))
@@ -50,9 +57,9 @@ class Pooling(NeuralNetwork,Learn):
     
     def __call__(self,data):
         pooled = self._pool(data)
-        self._layer1(pooled)
+        return self._layer1(pooled)
     
     def activate(self,data):
         pooled = self._pool(data)
-        self._layer1.activate(pooled)
+        return self._layer1.activate(pooled)
         

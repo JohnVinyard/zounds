@@ -59,7 +59,17 @@ class MeanStd(Preprocess):
         
         return newdata
 
-
+class UnitNorm(Preprocess):
+    
+    def __init__(self):
+        Preprocess.__init__(self)
+        
+    def _preprocess(self,data):
+        for i in range(len(data)):
+            n = np.linalg.norm(data[i])
+            if n:
+                data[i] /= n
+        return data 
 
 class PreprocessBarkBands(MeanStd):
     
