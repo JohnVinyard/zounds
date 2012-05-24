@@ -8,7 +8,6 @@ def fft_index(freq_hz,ws,sr):
     Given a frequency in hz, a window size, and a sample rate,
     return the fft bin into which the freq in hz falls
     '''
-    print freq_hz
     if freq_hz < 0 or freq_hz > sr / 2.: 
         raise ValueError(\
             'Freq must be greater than zero and less than the Nyquist frequency')
