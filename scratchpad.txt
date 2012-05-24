@@ -9,7 +9,7 @@ There are 3 types of similarity
 
 TOOO:
 -------------
-Understand the shape and size of matching pursuit
+Bug: Unexpected 
 
 Bug: It's possible to load controllers of the wrong type with 
 	PickledController-derived classes
