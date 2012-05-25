@@ -247,6 +247,9 @@ class ExtractorChain(object):
         '''
         return self.chain.__iter__()
     
+    def bucket(self):
+        return dict([(c.key if c.key else c,[]) for c in self.chain])
+    
     def process(self):
         '''
         A generator that will extract features until the source data runs out
@@ -263,7 +266,7 @@ class ExtractorChain(object):
         '''
         Turn the crank until we run out of data
         '''
-        bucket = dict([(c.key if c.key else c,[]) for c in self.chain])
+        bucket = self.bucket()  
         for k,v in self.process():
             bucket[k].append(v)
         return bucket
