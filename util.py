@@ -53,6 +53,29 @@ def downsample(myarr,factor):
         for j in range(factor)]).mean(axis=0)
     return dsarr
 
+def downsample3d(arr,factor):
+    if 1 == factor:
+        return arr
+    
+    oldshape = np.array(arr.shape)
+    newshape = np.array(oldshape / factor).astype(np.int16)
+    newarr = np.zeros(newshape)
+    for x in range(0,newshape[0]):
+        for y in range(0,newshape[1]):
+            for z in range(0,newshape[2]):
+                xstart = x*factor
+                xstop = xstart + factor
+                ystart = y*factor
+                ystop = ystart + factor
+                zstart = z * factor
+                zstop = zstart + factor
+                newarr[x,y,z] = arr[xstart : xstop, ystart : ystop, zstart : zstop].mean()
+    return newarr
+                
+    
+    
+    
+
 def ensure_path_exists(filename):
     '''
     Given a filename, ensure that the path to it exists
