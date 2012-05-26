@@ -3,6 +3,7 @@ from __future__ import division
 import numpy as np
 
 from scipy.stats.mstats import gmean
+from scipy.stats import kurtosis
 from scipy.signal import triang
 from scipy.fftpack import dct
 
@@ -182,8 +183,26 @@ class SpectralFlatness(SingleInput):
     
     def _process(self):
         spectrum = self.in_data[0]
-        return gmean(spectrum) / np.average(spectrum)
+        avg = np.average(spectrum)
+        # avoid divide-by-zero errors
+        f = gmean(spectrum) / avg if avg else 0
+        return f
 
+class Kurtosis(SingleInput):
+    
+    def __init__(self, needs = None, key = None):
+        SingleInput.__init__(self, needs = needs, key = key)
+    
+    def dim(self,env):
+        return ()
+    
+    @property
+    def dtype(self):
+        return np.float32
+    
+    def _process(self):
+        return kurtosis(self.in_data[0])
+    
 class BFCC(SingleInput):
     
     def __init__(self, needs = None, key = None, ncoeffs = 13):

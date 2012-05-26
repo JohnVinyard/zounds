@@ -137,7 +137,7 @@ class ExhaustiveSearch(FrameSearch):
         This is the dumbest possible brute-force search, so there's no index
         to build
         '''
-        '''
+        
         env = self.env()
         c = env.framecontroller
         fm = env.framemodel
@@ -157,8 +157,8 @@ class ExhaustiveSearch(FrameSearch):
         
         self._std = samples.std(0)
         print self._std
-        '''
-        self._std = 1
+        
+        
         
     @property
     def feature(self):
@@ -169,8 +169,6 @@ class ExhaustiveSearch(FrameSearch):
         seq /= self._std
         ls = len(seq)
         seq = seq.ravel()
-        # make sure the seq has unit norm
-        #seq /= np.linalg.norm(seq)
         
         env = self.env()
         c = env.framecontroller
@@ -191,18 +189,16 @@ class ExhaustiveSearch(FrameSearch):
                 
                 sl = feat[i:i+ls]
                 comp = pad(sl,ls)
-                #compproc = np.log(comp + 1)
-                #seqproc = np.log(seq + 1)
-                # TODO: Make evaluation method configurable
                 dist = np.linalg.norm(comp.ravel() - seq)
-                #dist = -np.dot(comp.ravel(),seq)
                 t = (dist,(_id,i))
+                
                 try:
                     insertion = bisect_left(best,t)
                 except ValueError:
                     print dist
                     print best
                     raise Exception()
+                
                 if insertion < nresults:
                     best.insert(insertion,t)
                     best = best[:nresults]
