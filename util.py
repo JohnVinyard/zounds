@@ -49,8 +49,8 @@ def downsample(myarr,factor):
     xs,ys = myarr.shape
     crarr = myarr[:xs-(xs % int(factor)),:ys-(ys % int(factor))]
     dsarr = np.concatenate([[crarr[i::factor,j::factor] 
-        for i in range(factor)] 
-        for j in range(factor)]).mean(axis=0)
+        for i in xrange(factor)] 
+        for j in xrange(factor)]).mean(axis=0)
     return dsarr
 
 def downsample3d(arr,factor):
@@ -60,9 +60,9 @@ def downsample3d(arr,factor):
     oldshape = np.array(arr.shape)
     newshape = np.array(oldshape / factor).astype(np.int16)
     newarr = np.zeros(newshape)
-    for x in range(0,newshape[0]):
-        for y in range(0,newshape[1]):
-            for z in range(0,newshape[2]):
+    for x in xrange(0,newshape[0]):
+        for y in xrange(0,newshape[1]):
+            for z in xrange(0,newshape[2]):
                 xstart = x*factor
                 xstop = xstart + factor
                 ystart = y*factor
