@@ -93,6 +93,8 @@ class AIM(SingleInput):
         return output.ravel()
 
 
+
+# BUG: This class is totally broken!!!
 class GoogleBoxCut(SingleInput):
     '''
     Box-Cutting algorithm, as discussed here 
@@ -101,25 +103,29 @@ class GoogleBoxCut(SingleInput):
     TODO: The calculation of _total_boxes and _total_size is wrong!
     TODO: Generalize this, so it can be used for any feature of any dimensionality
     '''
-    def __init__(self,needs = None, key = None, nframes = 1,step = 1,\
+    def __init__(self,needs = None, key = None,\
                  aim_size = None,overlap = .5,\
                  smallest_box_size = None, scales = None):
-        SingleInput.__init__(self, step = step, nframes = nframes, \
+        SingleInput.__init__(self, step = 1, nframes = 1, \
                              needs = needs, key = key)
         self._as = np.array(aim_size)
         self._sbs = np.array(smallest_box_size)
         self._dims = len(self._sbs)
-        self._vec_size = np.product(self._sbs)
+        self._vec_size = np.sum(self._sbs)
         self._scales = np.array(scales)
         self._overlap = overlap
         
         # calculate the total number of boxes that will fit into 
         # the whole aim frame
         self._total_boxes = 0
+        # keep track of the number of boxes at each scale
+        self._bas = {}
         for s in self._scales:
             cs = s * self._sbs
             frames = np.floor((self._as - cs) / (cs * overlap))
-            self._total_boxes += np.product(frames)
+            bas = np.product(frames)
+            self._bas[s] = bas
+            self._total_boxes += bas
         
         # calculate the size of a single box vector after doing the following:
         # 1) downsample to smallest box size
@@ -155,23 +161,32 @@ class GoogleBoxCut(SingleInput):
     def _downsample3d(self,arr,factor):
         return downsample3d(arr,factor)
     
+    _PRODUCT_CACHE = {}
+    def _product(self,scale,data):
+        try:
+            return GoogleBoxCut._PRODUCT_CACHE[scale]
+        except KeyError:
+            shape = self._sbs * scale
+            slices = [[slice(i,i + shape[j]) 
+                   for i in xrange(0,data.shape[j] - shape[j],shape[j] * self._overlap)] 
+                  for j in xrange(len(shape))]
+            prod = list(product(*slices))
+            GoogleBoxCut._PRODUCT_CACHE[scale] = prod
+            return prod
+            
+    
     def _boxes_at_scale(self,scale,data):
-        shape = self._sbs * scale
-        slices = [[slice(i,i + shape[j]) 
-                   for i in range(0,data.shape[j] - shape[j],shape[j] * self._overlap)] 
-                  for j in range(len(shape))]
-        boxes = []
-        for coords in product(*slices):
+        boxes = np.zeros((self._bas[scale],self._vec_size))
+        prod = self._product(scale, data)
+        for i,coords in enumerate(prod):
             box = self._downsample(data[coords],scale)
-            vec = np.concatenate([box.mean(i).ravel() for i in range(self._dims)])
-            boxes.append(vec)
-        print len(boxes)
-        return np.array(boxes).ravel()
+            vec = np.concatenate([box.mean(i).ravel() for i in xrange(self._dims)])
+            boxes[i] = vec
+        return boxes.ravel()
     
     def _process(self):
-        data = np.array(self.in_data)
-        data = data.reshape(self._as)
+        # KLUDGE: This will only work for nframes = 1
+        data = self.in_data[0].reshape(self._as)
         data = np.concatenate([self._boxes_at_scale(s, data) for s in self._scales])
-        print data.shape
         return data
         

@@ -137,6 +137,7 @@ class ExhaustiveSearch(FrameSearch):
         This is the dumbest possible brute-force search, so there's no index
         to build
         '''
+        '''
         env = self.env()
         c = env.framecontroller
         fm = env.framemodel
@@ -156,7 +157,9 @@ class ExhaustiveSearch(FrameSearch):
         
         self._std = samples.std(0)
         print self._std
-    
+        '''
+        self._std = 1
+        
     @property
     def feature(self):
         return self.features[0]
