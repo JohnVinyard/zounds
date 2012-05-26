@@ -6,7 +6,7 @@ class Composite(Extractor):
     '''
     Combine the output of multiple extractors into a single feature
     '''
-    def __init__(self,dim, step = 1, nframes = 1,needs = None, key = None):
+    def __init__(self,dim = None, step = 1, nframes = 1,needs = None, key = None):
         Extractor.__init__(\
                 self,step = step, nframes = nframes, needs = needs, key = key)
         self._dim = dim
