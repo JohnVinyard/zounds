@@ -335,6 +335,11 @@ class Frames(Model):
             return Model.__getattribute__(self,k)
         else:
             return f
+    
+    @classmethod
+    def random(cls):
+        _ids = list(cls.list_ids())
+        return cls[_ids[np.random.randint(0,len(_ids) - 1)]]
         
     @classmethod
     def list_ids(cls):
