@@ -259,6 +259,24 @@ class Difference(SingleInput):
         output =  indata - self._memory
         self._memory = indata
         return output
+
+class Flux(SingleInput):
+    
+    def __init__(self, needs = None, key = None):
+        SingleInput.__init__(self, needs = needs, key = key)
+    
+    @property
+    def dtype(self):
+        return np.float32
+    
+    def dim(self,env):
+        return ()
+    
+    def _process(self):
+        diff = self.in_data[0]
+        return np.linalg.norm(diff)
+    
+    
         
 
 class Intervals(SingleInput):

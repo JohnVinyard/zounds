@@ -35,7 +35,7 @@ class NAP(SingleInput):
         return np.float32
     
     def _process(self):
-        signal = self.in_data[0]
+        signal = self.in_data[0].astype(np.float64)
         self.sig.set_signal(0,signal)
         self.pzfc.Process(self.sig)
         output_bank = self.hcl.GetOutputBank()
@@ -82,7 +82,7 @@ class AIM(SingleInput):
         return np.float32
     
     def _process(self):
-        signal = self.in_data[0]
+        signal = self.in_data[0].astype(np.float64)
         self.sig.set_signal(0,signal)
         self.pzfc.Process(self.sig)
         output_bank = self.sai.GetOutputBank()
