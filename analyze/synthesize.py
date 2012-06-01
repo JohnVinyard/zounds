@@ -1,4 +1,5 @@
 import numpy as np
+from scikits.audiolab import play
 
 class WindowedAudioSynthesizer(object):
     '''
@@ -18,6 +19,10 @@ class WindowedAudioSynthesizer(object):
             output[start : stop] += f
         return output * .8
             
-    
-    
+    def play(self,audio):
+        output = self(audio)
+        try:
+            play(np.tile(output,(2,1)))
+        except KeyboardInterrupt:
+            pass
         

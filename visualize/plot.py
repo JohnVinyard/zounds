@@ -1,12 +1,14 @@
 from matplotlib import pyplot as plt
 import subprocess
+import numpy as np
 
 def plot(arr,filename,figsize = (5,5)):
+    arr = np.array(arr)
     plt.figure(figsize = figsize)
     if 1 == len(arr.shape):
         plt.plot(arr)
     elif 2 == len(arr.shape):
-        plt.matshow(arr)
+        plt.matshow(np.rot90(arr))
     else:
         raise ValueError('arr must have 1 or 2 dimensions')
     
