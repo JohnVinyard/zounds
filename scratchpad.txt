@@ -1,40 +1,13 @@
-Observation - Sequences are sometimes considered similar because of background
-noise, as opposed to the events in the sequence that a human would consider
-salient.  How can noise be removed?
-
-There are 3 types of similarity
-- substitution
-- timbre
-- association or co-occurence
-
 TOOO:
 -------------
-Bug: Unexpected 
-
-Bug: It's possible to load controllers of the wrong type with 
+- Profile ingest.py. How can this be faster?
+- django-esque starter app that includes config.py, display.py, ingest.py and search.py
+- when nframes > 1, trailing edges aren't processed. Why not?
+- Bug: It's possible to load controllers of the wrong type with 
 	PickledController-derived classes
-
-FrameModel.concatenate method
-
-Try :  For minhash, Use only one hash function, but instead of selecting only the minimum 
-	   value as the simhash, select the least  values. The probability of a 
-	   match then becomes.....The advantage of this over independent hash 
-	   functions is that it sets a minimum on the number of members that the 
-	   two sets must share in order to match. This mitigates the effect of 
-	   extremely common set members on your clusters.
-	   http://moultano.wordpress.com/article/simple-simhashing-3kbzhsxyg4467-6/
-
-Profile ingest.py. How can this be faster?
-
-
-Search questions
-	- Do search results improve with the size of the datastore?
-	- What is the distribution of pattern *lengths* that get chosen as results?
-		i.e., are longer sounds preferred?
-	- Do results improve when excluding sequences that are less than half the
-		query length from _score_sequences() ? 
-	
-Automatic rebuilding of search indices after data is added
+- Automatic rebuilding of search indices after data is added
+- Non-square Gabor filters
+- "Dead" frequencies in Bark Bands
 
 Write LearnedFeature tests
 
@@ -53,21 +26,6 @@ Configurable encoder and decoder for the "audio" feature, making it possible
 	to store mp3, ogg vorbis, or some other audio-encoding, instead of just
 	raw audio.  It'd be great if I could store lots of useful features AND
 	compress the data
-
-
- 
-
-speed and storage size tests for
-	- mongodb
-	- PyTables
-	- Cassandra
-	- SqlLite
-Doing the following
-	- writes
-	- random reads
-	- range reads
-	- binary feature similarity
-	- minhash similarity
 	
 
 
