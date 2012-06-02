@@ -10,7 +10,7 @@ from bitarray import bitarray
 
 from model import Model
 from pattern import DataPattern
-from util import pad
+from util import pad,flatten2d
 
 
 
@@ -102,7 +102,12 @@ class FrameSearch(Model):
         for k,v in d.iteritems():
             if 'audio' == k or\
              (fm.features.has_key(k) and fm.features[k].store):
-                r[k] = pad(np.array(v).repeat(ec[k].step, axis = 0),l)
+                rp = np.array(v).repeat(ec[k].step, axis = 0)
+                padded = pad(rp,l)
+                try:
+                    r[k] = padded
+                except ValueError:
+                    r[k] = flatten2d(padded)
             
         
         # get a frames instance
@@ -125,7 +130,8 @@ class Score(object):
 # TODO:
 # literal euclidean distance
 # correlation (np.corr or np.dot)
-# DTW
+# Dynamic Time Warping
+# Configurable step size (instead of always 1)
 class ExhaustiveSearch(FrameSearch):
     
     def __init__(self,_id,feature):
@@ -157,6 +163,7 @@ class ExhaustiveSearch(FrameSearch):
         
         self._std = samples.std(0)
         print self._std
+        
         
         
         
