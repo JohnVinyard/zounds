@@ -50,13 +50,8 @@ if __name__ == '__main__':
     if os.path.exists(path):
         shutil.rmtree(path)
     
-    
     c = FrameModel.controller()
     _ids = list(c.list_ids())
-    
-    # BUSTED: I'm cheating. I don't have a good automatic way to display text features,
-    # So I'm explicitly listing the feature names I'm willing to show here.
-    #features_to_show = ('centroid','loudness','fft','flatness','bark','rbm','minhash','bfcc','lsh','corr','barkdiff','bfccdiff','intervals','coch','gabor')
     features = FrameModel.stored_features()
 
     pattern_html = []
@@ -68,8 +63,6 @@ if __name__ == '__main__':
         feature_html = []
         data = c[_id]
         for k,v in features.iteritems():
-            #if k not in features_to_show:
-            #    continue
             if not np.all(np.isreal(data[k])):
                 continue
             print '\t%s' % k
