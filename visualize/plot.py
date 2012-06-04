@@ -2,12 +2,12 @@ from matplotlib import pyplot as plt
 import subprocess
 import numpy as np
 
-def plot(arr,filename,figsize = (5,5)):
+def plot(arr,filename,figsize = (5,5), oned = False, twod = False):
     arr = np.array(arr)
     plt.figure(figsize = figsize)
-    if 1 == len(arr.shape):
+    if oned or 1 == len(arr.shape):
         plt.plot(arr)
-    elif 2 == len(arr.shape):
+    elif twod or 2 == len(arr.shape):
         plt.matshow(np.rot90(arr))
     else:
         raise ValueError('arr must have 1 or 2 dimensions')
