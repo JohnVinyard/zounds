@@ -1,6 +1,9 @@
 TOOO:
 -------------
 - Profile ingest.py. How can this be faster?
+- Reread (and understand) 'Encoding Sound Timbre in the Auditory System'
+- Reread (and understand) 'Multiscale scattering for audio classification'
+- Normalize searches so they all return addresses, like they're supposed to
 - django-esque starter app that includes config.py, display.py, ingest.py and search.py
 - when nframes > 1, trailing edges aren't processed. Why not?
 - Bug: It's possible to load controllers of the wrong type with 
@@ -8,6 +11,9 @@ TOOO:
 - Automatic rebuilding of search indices after data is added
 - Non-square Gabor filters
 - "Dead" frequencies in Bark Bands
+- Something about the PyTables lock gets screwed up when writing large amounts
+  of data 
+
 
 Write LearnedFeature tests
 
