@@ -146,7 +146,7 @@ class Address(object):
     
     def __init__(self,key):
         '''
-        key is the location to one or more frames, addressed in a manner 
+        key is the location of one or more frames, addressed in a manner 
         suitable for the Frames backing-store
         '''
         object.__init__(self)
@@ -307,11 +307,11 @@ class Frames(Model):
         elif isinstance(key,int):
             # TODO: Should this return a numpy.recarray or another 
             # Frames instance?
-            raise NotImplemented()
+            return self.__class__(data = self._data[key:key+1])
         elif isinstance(key,slice):
             # TODO: Should this return a numpy.recarray or another 
             # Frames instance?
-            raise NotImplemented()
+            return self.__class__(data = self._data[key])
         else:
             raise ValueError('key must be a string, Feature, int, or slice')
     

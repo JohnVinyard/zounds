@@ -33,7 +33,7 @@ class PickledController(Controller):
             with open(filename,'rb') as f:
                 return cPickle.load(f)
         except IOError:
-            raise KeyError
+            raise KeyError(key)
     
     def __delitem__(self,key):
         path = self._filename(key)
