@@ -312,6 +312,8 @@ class Frames(Model):
             # TODO: Should this return a numpy.recarray or another 
             # Frames instance?
             return self.__class__(data = self._data[key])
+        elif isinstance(key,list) or isinstance(key,np.ndarray):
+            return self.__class__(data = self._data[key])
         else:
             raise ValueError('key must be a string, Feature, int, or slice')
     

@@ -168,8 +168,6 @@ class ExhaustiveSearch(FrameSearch):
         
         self._std = samples.std(0)
         print self._std
-        
-        
     
     @property
     def feature(self):
