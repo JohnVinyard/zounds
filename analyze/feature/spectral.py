@@ -239,6 +239,9 @@ class AutoCorrelation(SingleInput):
     
     def _process(self):
         data = self.in_data[0]
+        n = np.linalg.norm(data)
+        if n:
+            data /= n
         return np.correlate(data,data,mode = 'full')[self.size - 1:]
 
 class Difference(SingleInput):

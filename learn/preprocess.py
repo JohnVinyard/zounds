@@ -82,6 +82,17 @@ class PreprocessBarkBands(MeanStd):
         return MeanStd._preprocess(self, data)
     
         
-
+class SequentialPreprocessor(Preprocess):
+    '''
+    Apply a chain of preprocessors, in order.
+    '''
+    def __init__(self,preprocessors):
+        Preprocess.__init__(self)
+        self._p = preprocessors
+        
+    def _preprocess(self,data):
+        for p in self._p:
+            data = p(data)
+        return data
     
     

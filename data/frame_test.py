@@ -586,6 +586,11 @@ class AddressTests(unittest.TestCase):
     def a(self,key):
         return self.Address(key)
     
+    def test_eq_non_contiguous(self):
+        a1 = self.a([1,4,10])
+        a2 = self.a([1,6,10])
+        self.assertNotEqual(a1,a2)
+    
     def test_eq_list_list(self):
         a1 = self.a([1,2,3])
         a2 = self.a(np.array([1,2,3]))

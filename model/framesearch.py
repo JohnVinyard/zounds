@@ -11,6 +11,12 @@ from bitarray import bitarray
 from model import Model
 from pattern import DataPattern
 from util import pad,flatten2d
+from scipy.spatial.distance import cdist
+
+
+def nbest(query,index,nresults = 10,metric = 'euclidean'):
+    dist = cdist(np.array([query]),index,metric)[0]
+    return np.argsort(dist)[:nresults]
 
 
 
@@ -164,9 +170,7 @@ class ExhaustiveSearch(FrameSearch):
         self._std = samples.std(0)
         print self._std
         
-        
-        
-        
+    
     @property
     def feature(self):
         return self.features[0]
@@ -209,8 +213,8 @@ class ExhaustiveSearch(FrameSearch):
                 if insertion < nresults:
                     best.insert(insertion,t)
                     best = best[:nresults]
-                    i += int(ls / 2)
                     print 'found good match at _id %s, frame %i' % (_id,i)
+                    i += int(ls / 2)
                 else:
                     i += 1
         

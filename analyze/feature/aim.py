@@ -5,6 +5,38 @@ from environment import Environment
 from util import downsample,downsample3d
 from itertools import permutations,product
 
+class PZFC(SingleInput):
+    
+    def __init__(self,needs = None, key = None):
+        SingleInput.__init__(self,needs = needs, nframes = 1, step = 1, key = key)
+        self.env = Environment.instance
+        self.sig = aimc.SignalBank()
+        self.sig.Initialize(1,self.env.windowsize,self.env.samplerate)
+        
+        self.pzfc = aimc.ModulePZFC(aimc.Parameters())
+        self.global_params = aimc.Parameters()
+        self.pzfc.Initialize(self.sig,self.global_params)
+        output_bank = self.pzfc.GetOutputBank()
+        self._dim = (output_bank.channel_count(),output_bank.buffer_length())
+    
+    def dim(self,env):
+        return np.product(self._dim)
+    
+    @property
+    def dtype(self):
+        return np.float32
+    
+    def _process(self):
+        signal = self.in_data[0].astype(np.float64)
+        self.sig.set_signal(0,signal)
+        self.pzfc.Process(self.sig)
+        output_bank = self.pzfc.GetOutputBank()
+        output = np.zeros(self._dim)
+        for c in range(self._dim[0]):
+            output[c] = np.array(output_bank.get_signal(c))
+        
+        return output.ravel()
+
 class NAP(SingleInput):
     '''
     Neural Activity Pattern

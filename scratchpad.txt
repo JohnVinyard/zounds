@@ -4,7 +4,7 @@ TOOO:
 - Reread (and understand) 'Encoding Sound Timbre in the Auditory System'
 - Reread (and understand) 'Multiscale scattering for audio classification'
 - Normalize searches so they all return addresses, like they're supposed to
-- django-esque starter app that includes config.py, display.py, ingest.py and search.py
+- Add search.py to quickstart, once all searches behave as they should
 - when nframes > 1, trailing edges aren't processed. Why not?
 - Bug: It's possible to load controllers of the wrong type with 
 	PickledController-derived classes
@@ -12,7 +12,8 @@ TOOO:
 - Non-square Gabor filters
 - "Dead" frequencies in Bark Bands
 - Something about the PyTables lock gets screwed up when writing large amounts
-  of data 
+  of data
+- Add mel scale and refactor some code in analyze.bark
 
 
 Write LearnedFeature tests
