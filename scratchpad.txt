@@ -1,20 +1,33 @@
 TOOO:
 -------------
 - Profile ingest.py. How can this be faster?
+
 - Reread (and understand) 'Encoding Sound Timbre in the Auditory System'
+
 - Reread (and understand) 'Multiscale scattering for audio classification'
+
 - Normalize searches so they all return addresses, like they're supposed to
+
 - Add search.py to quickstart, once all searches behave as they should
+
 - when nframes > 1, trailing edges aren't processed. Why not?
+
 - Bug: It's possible to load controllers of the wrong type with 
 	PickledController-derived classes
+	
 - Automatic rebuilding of search indices after data is added
+
 - Non-square Gabor filters
+
 - "Dead" frequencies in Bark Bands
+
 - Something about the PyTables lock gets screwed up when writing large amounts
   of data
+  
 - Add mel scale and refactor some code in analyze.bark
 
+- Address equivalence bug: [1,4,10] and [1,6,10] are considered equivalent.  This
+  is incorrect
 
 Write LearnedFeature tests
 
