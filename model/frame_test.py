@@ -456,10 +456,58 @@ class FrameModelTests(unittest.TestCase):
         
     
     def test_instance_getitem_slice(self):
-        self.fail()
+        class FM(Frames):
+            fft = Feature(FFT,store = False, needs = None)
+            loudness = Feature(Loudness, store = True, needs = fft)
+            
+        class Controller(DictFrameController):
+            
+            def get(self,address):
+                r = np.recarray(10,dtype=[('_id','a10'),
+                                          ('audio',np.float32,(2048,)),
+                                          ('source','a10'),
+                                          ('external_id','a10'),
+                                          ('framen',np.int32),
+                                          ('loudness',np.float32)])
+                r[:] = 1
+                return r
+            
+        Environment('test',
+                    FM,
+                    Controller,
+                    (FM,),
+                    {})
+        frames = FM['some_id']
+        sl = frames[:5]
+        self.assertTrue(isinstance(sl,FM))
+        self.assertEqual(5,len(sl))
     
     def test_instance_getitem_int(self):
-        self.fail()
+        class FM(Frames):
+            fft = Feature(FFT,store = False, needs = None)
+            loudness = Feature(Loudness, store = True, needs = fft)
+            
+        class Controller(DictFrameController):
+            
+            def get(self,address):
+                r = np.recarray(10,dtype=[('_id','a10'),
+                                          ('audio',np.float32,(2048,)),
+                                          ('source','a10'),
+                                          ('external_id','a10'),
+                                          ('framen',np.int32),
+                                          ('loudness',np.float32)])
+                r[:] = 1
+                return r
+            
+        Environment('test',
+                    FM,
+                    Controller,
+                    (FM,),
+                    {})
+        frames = FM['some_id']
+        f = frames[0]
+        self.assertTrue(isinstance(f,FM))
+        self.assertEqual(1,len(f))
         
     def test_instance_getitem_wrong_type(self):
         cls,instance = self.mock_frames_instance(10)

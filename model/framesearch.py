@@ -134,9 +134,7 @@ class Score(object):
         return nz[asrt][::-1][:n]
 
 # TODO:
-# literal euclidean distance
-# correlation (np.corr or np.dot)
-# Dynamic Time Warping
+# Return addresses
 # Configurable step size (instead of always 1)
 class ExhaustiveSearch(FrameSearch):
     
@@ -155,6 +153,7 @@ class ExhaustiveSearch(FrameSearch):
         fm = env.framemodel
         _ids = list(fm.list_ids())
         l = len(c)
+        
         frames = fm[_ids[0]]
         
         samples = np.zeros((l,frames[self.feature].shape[1]))
@@ -169,6 +168,7 @@ class ExhaustiveSearch(FrameSearch):
         
         self._std = samples.std(0)
         print self._std
+        
         
     
     @property

@@ -134,6 +134,14 @@ class FrameController(Controller):
         frames that span two patterns!
         '''
         pass
+    
+    @abstractmethod
+    def iter_id(self,step = 1):
+        '''
+        Iterate over the frames from a single id, returning two-tuples of 
+        (address,frames)
+        '''
+        pass
 
 class PyTablesUpdateNotCompleteError(BaseException):
     '''
@@ -158,7 +166,7 @@ class PyTablesFrameController(FrameController):
     (e.g. where _id == 1234), so a slice with literal row numbers is the best
     address for this controller.
     
-    This clas takes for granted that only addresses from the same pattern
+    This class takes for granted that only addresses from the same pattern
     will be compared.  
     '''
     
@@ -233,7 +241,6 @@ class PyTablesFrameController(FrameController):
         @property
         def span(self):
             return self._span
-        
         
         def __eq__(self,other):
             if len(self) != len(other):
@@ -570,6 +577,21 @@ class PyTablesFrameController(FrameController):
                 address = PyTablesFrameController.Address(key)
                 yield  address,self.model[address]
     
+    def iter_id(self,_id,step = 1):
+        rowns = self.db_read.getWhereList(self._query(_id = _id))
+        last = rowns[-1]
+        for rn in rowns[::step]:
+            if 1 == step:
+                key = rn
+            elif last - rn >= step:
+                key = slice(rn,rn + step,1)
+            elif last == rn:
+                key = last
+            else:
+                key = slice(rn,last,1)
+            address = PyTablesFrameController.Address(key)
+            yield  address,self.model[address]
+
     @property
     def _temp_filepath(self):
         '''
@@ -798,6 +820,9 @@ class DictFrameController(FrameController):
         raise NotImplemented()
     
     def iter_all(self):
+        raise NotImplemented()
+    
+    def iter_id(self):
         raise NotImplemented()
         
         
