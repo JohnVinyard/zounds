@@ -577,20 +577,14 @@ class PyTablesFrameController(FrameController):
                 address = PyTablesFrameController.Address(key)
                 yield  address,self.model[address]
     
-    def iter_id(self,_id,step = 1):
+    def iter_id(self,_id,chunksize,step = 1):
         rowns = self.db_read.getWhereList(self._query(_id = _id))
-        last = rowns[-1]
-        for rn in rowns[::step]:
-            if 1 == step:
-                key = rn
-            elif last - rn >= step:
-                key = slice(rn,rn + step,1)
-            elif last == rn:
-                key = last
-            else:
-                key = slice(rn,last,1)
-            address = PyTablesFrameController.Address(key)
-            yield  address,self.model[address]
+        address = PyTablesFrameController.Address(slice(rowns[0],rowns[-1]))
+        frames = self.model[address]
+        
+        for i in xrange(0,len(rowns),step):
+            rns = rowns[i:i+chunksize:step]
+            addr = PyTablesFrameController.Address(rns)
 
     @property
     def _temp_filepath(self):
