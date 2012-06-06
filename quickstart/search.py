@@ -6,14 +6,6 @@ from model.framesearch import *
 from time import time
 from environment import Environment
 import argparse
-
-
-#synth = FrameModel.env().synth
-
-#def p(audio):
-#    output = synth(audio)
-#    play(np.tile(output,(2,1)))
-
 import sys
 
 if __name__ == '__main__':
@@ -72,14 +64,6 @@ if __name__ == '__main__':
         starttime = time()
         results = search.search(samples[start : stop])
         print 'search took %1.4f seconds' % (time() - starttime)
-    
-
-        # Play the query
-        #play(np.tile(samples[start : stop],(2,1)))
-        # Play the search results
-        #for i,r in enumerate(results):
-        #    print 'result %i' % i
-        #    p(r)
         
         
         for _id,addr in results:
@@ -88,8 +72,3 @@ if __name__ == '__main__':
                 Environment.instance.play(FrameModel[addr].audio)
             except KeyboardInterrupt:
                 continue
-        '''
-        if raw_input('plot results?') == 'y':
-            plot_all(samples[start : stop],results)
-            raw_input('continue....')
-        '''
