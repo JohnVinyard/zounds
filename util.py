@@ -2,26 +2,7 @@ from __future__ import division
 import numpy as np
 import os.path
 
-# TODO: Get rid of this file! Move pad into a more appropriate location
 
-def pad(a,desiredlength):
-    '''
-    Pad an n-dimensional numpy array with zeros so that it is the
-    desired length.  Return it unchanged if it is greater than or
-    equal to the desired length
-    '''
-    
-    if len(a) >= desiredlength:
-        return a
-    
-    islist = isinstance(a,list)
-    a = np.array(a)
-    diff = desiredlength - len(a)
-    shape = list(a.shape)
-    shape[0] = diff
-     
-    padded = np.concatenate([a,np.zeros(shape,dtype=a.dtype)])
-    return padded.tolist() if islist else padded
 
 def flatten2d(arr):
     ls = len(arr.shape)
@@ -73,9 +54,6 @@ def downsample3d(arr,factor):
     return newarr
                 
     
-    
-    
-
 def ensure_path_exists(filename):
     '''
     Given a filename, ensure that the path to it exists

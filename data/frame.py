@@ -15,7 +15,8 @@ from celery.task import task,chord
 from controller import Controller
 from model.pattern import Pattern
 import model.frame
-from util import pad,ensure_path_exists
+from nputil import pad
+from util import ensure_path_exists
 
 class FrameController(Controller):
     __metaclass__ = ABCMeta
@@ -587,7 +588,6 @@ class PyTablesFrameController(FrameController):
             if i + chunksize >= len(rowns):
                 break
             rns = rowns[i:i+chunksize:step]
-            #addrs = [PyTablesFrameController.Address(r) for r in rns]
             fsl = np.array(range(i,i + chunksize,step))
             yield PyTablesFrameController.Address(slice(rns[0],rns[-1])), frames[fsl]
 

@@ -3,7 +3,7 @@ import numpy as np
 
 from analyze.audiostream import AudioStream
 from analyze.extractor import Extractor
-from util import pad
+from nputil import pad
 from environment import Environment
 
 class AudioSamples(Extractor):

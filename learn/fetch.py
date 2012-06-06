@@ -4,7 +4,7 @@ from abc import ABCMeta,abstractmethod
 import numpy as np
 
 from environment import Environment
-from util import pad
+from nputil import pad
 
 class Fetch(object):
     

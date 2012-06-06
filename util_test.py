@@ -1,6 +1,6 @@
 import numpy as np
 import unittest
-from util import pad
+from nputil import pad
 from random import shuffle
 
 class PadTests(unittest.TestCase):
