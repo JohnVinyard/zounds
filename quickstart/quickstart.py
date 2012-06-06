@@ -33,6 +33,7 @@ if __name__ == '__main__':
     copy('config.py',dr)
     copy('ingest.py',dr)
     copy('display.py',dr)
+    copy('search.py',dr)
     
     # Read the contents of the config file template
     configfile = os.path.join(dr,'config.py')

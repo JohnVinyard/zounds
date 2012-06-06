@@ -576,15 +576,20 @@ class PyTablesFrameController(FrameController):
                     key = slice(rn,last,1)
                 address = PyTablesFrameController.Address(key)
                 yield  address,self.model[address]
-    
+                
+    # TODO: Rename this, and the method in the abstract class
     def iter_id(self,_id,chunksize,step = 1):
         rowns = self.db_read.getWhereList(self._query(_id = _id))
         address = PyTablesFrameController.Address(slice(rowns[0],rowns[-1]))
         frames = self.model[address]
         
         for i in xrange(0,len(rowns),step):
+            if i + chunksize >= len(rowns):
+                break
             rns = rowns[i:i+chunksize:step]
-            addr = PyTablesFrameController.Address(rns)
+            #addrs = [PyTablesFrameController.Address(r) for r in rns]
+            fsl = np.array(range(i,i + chunksize,step))
+            yield PyTablesFrameController.Address(slice(rns[0],rns[-1])), frames[fsl]
 
     @property
     def _temp_filepath(self):

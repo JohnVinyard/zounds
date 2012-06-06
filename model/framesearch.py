@@ -12,13 +12,26 @@ from model import Model
 from pattern import DataPattern
 from util import pad,flatten2d
 from scipy.spatial.distance import cdist
-
+from environment import Environment
 
 def nbest(query,index,nresults = 10,metric = 'euclidean'):
     dist = cdist(np.array([query]),index,metric)[0]
     return np.argsort(dist)[:nresults]
 
-
+def soundsearch(_ids,index,random = False,nresults = 10, metric = 'euclidean'):
+    nsounds = len(_ids)
+    indices = np.random.permutation(nsounds) if random else range(nsounds)
+    FrameModel = Environment.instance.framemodel
+    for i in indices:
+        qid = _ids[i]
+        best = nbest(index[i],index,nresults = nresults, metric = metric)
+        qframes = FrameModel[qid]
+        Environment.instance.play(qframes.audio)
+        for b in best:
+            bframes = FrameModel[_ids[b]]
+            Environment.instance.play(bframes.audio)
+        raw_input('next...')
+        
 
 class MetaFrameSearch(ABCMeta):
     
@@ -133,14 +146,13 @@ class Score(object):
         asrt = np.argsort(b[nz])
         return nz[asrt][::-1][:n]
 
-# TODO:
-# Return addresses
-# Configurable step size (instead of always 1)
+# TODO: Why is this so much slower now?
 class ExhaustiveSearch(FrameSearch):
     
-    def __init__(self,_id,feature):
+    def __init__(self,_id,feature,step = 10):
         FrameSearch.__init__(self,_id,feature)
         self._std = None
+        self._step = step
     
     def _build_index(self):
         '''
@@ -165,7 +177,6 @@ class ExhaustiveSearch(FrameSearch):
             frames = fm[_ids[i]]
             samples[count : count + len(frames)] = frames[self.feature]
         
-        
         self._std = samples.std(0)
         print self._std
     
@@ -174,50 +185,44 @@ class ExhaustiveSearch(FrameSearch):
         return self.features[0]
     
     def _search(self,frames,nresults):
-        seq = frames[self.feature]
+        # get the sequence of query features at the interval
+        # specified by self._step
+        seq = frames[self.feature][::self._step]
         seq /= self._std
         ls = len(seq)
         seq = seq.ravel()
         
         env = self.env()
         c = env.framecontroller
-        fm = env.framemodel
-        
         _ids = list(c.list_ids())
-        # best is a tuple of (score,frames)
-        # KLUDGE: This is cheating. Searches should always return back-end
-        # specific addresses
+        # best is a tuple of (score,(_id,addr))
         best = []
         for _id in _ids:
-            frames = fm[_id]
-            feat = frames[self.feature]
-            feat /= self._std
-            i = 0
-            print 'comparing to _id %s' % _id
-            while i < len(feat) - ls:
-                
-                sl = feat[i:i+ls]
-                comp = pad(sl,ls)
-                dist = np.linalg.norm(comp.ravel() - seq)
-                t = (dist,(_id,i))
-                
+            skip = -1
+            for addr,frames in c.iter_id(_id,len(frames),step = self._step):
+                if skip > -1 and skip * self._step < (len(frames) / 2):
+                    skip += 1
+                    continue
+                else:
+                    skip = -1
+                feat = frames[self.feature]
+                feat /= self._std
+                feat = pad(feat,ls)
+                dist = np.linalg.norm(feat.ravel() - seq)
+                t = (dist,(_id,addr))
                 try:
                     insertion = bisect_left(best,t)
                 except ValueError:
                     print dist
                     print best
                     raise Exception()
-                
                 if insertion < nresults:
                     best.insert(insertion,t)
                     best = best[:nresults]
-                    print 'found good match at _id %s, frame %i' % (_id,i)
-                    i += int(ls / 2)
-                else:
-                    i += 1
+                    if len(best) == nresults:
+                        skip = 0
         
-        # return just the frames, and not the scores
-        return [fm[t[1][0]].audio[t[1][1] : t[1][1] + ls] for t in best]
+        return [t[1] for t in best]
             
             
         
