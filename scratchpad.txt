@@ -11,10 +11,6 @@ TOOO:
 
 - Reread (and understand) 'Multiscale scattering for audio classification'
 
-- Normalize searches so they all return addresses, like they're supposed to
-
-- Add search.py to quickstart, once all searches behave as they should
-
 - when nframes > 1, trailing edges aren't processed. Why not?
 
 - Bug: It's possible to load controllers of the wrong type with 

@@ -1,7 +1,7 @@
 from __future__ import division
 import numpy as np
 from scikits.audiolab import Sndfile
-from util import pad
+from nputil import pad
 
 
 class BadSampleRateException(BaseException):

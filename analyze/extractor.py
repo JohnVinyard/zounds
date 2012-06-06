@@ -1,5 +1,6 @@
 from abc import ABCMeta,abstractproperty,abstractmethod
-from util import pad,recurse,sort_by_lineage
+from nputil import pad
+from util import recurse,sort_by_lineage
 
 class CircularDependencyException(BaseException):
     '''
