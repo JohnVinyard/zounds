@@ -10,13 +10,15 @@ from bitarray import bitarray
 
 from model import Model
 from pattern import DataPattern
-from util import pad,flatten2d
+from nputil import pad
+from util import flatten2d
 from scipy.spatial.distance import cdist
 from environment import Environment
 
 def nbest(query,index,nresults = 10,metric = 'euclidean'):
     dist = cdist(np.array([query]),index,metric)[0]
-    return np.argsort(dist)[:nresults]
+    best = np.argsort(dist)[:nresults]
+    return best, dist[best]
 
 def soundsearch(_ids,index,random = False,nresults = 10, metric = 'euclidean'):
     nsounds = len(_ids)
@@ -24,10 +26,11 @@ def soundsearch(_ids,index,random = False,nresults = 10, metric = 'euclidean'):
     FrameModel = Environment.instance.framemodel
     for i in indices:
         qid = _ids[i]
-        best = nbest(index[i],index,nresults = nresults, metric = metric)
+        best,dist = nbest(index[i],index,nresults = nresults, metric = metric)
         qframes = FrameModel[qid]
         Environment.instance.play(qframes.audio)
-        for b in best:
+        for i,b in enumerate(best):
+            print 'distance is %1.4f' % dist[i]
             bframes = FrameModel[_ids[b]]
             Environment.instance.play(bframes.audio)
         raw_input('next...')

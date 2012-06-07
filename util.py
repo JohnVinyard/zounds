@@ -3,7 +3,7 @@ import numpy as np
 import os.path
 
 
-
+# TODO: Should this go into the nputil module as well?
 def flatten2d(arr):
     ls = len(arr.shape)
     if 1 == ls:
