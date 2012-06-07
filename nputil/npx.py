@@ -1,5 +1,6 @@
 import numpy as np
 
+
 def safe_log(a):
     '''
     Return the element-wise log of an array, checking for negative
@@ -33,7 +34,6 @@ def safe_unit_norm(a):
     return a
     
     
-# TODO: Get rid of this file! Move pad into a more appropriate location
 def pad(a,desiredlength):
     '''
     Pad an n-dimensional numpy array with zeros along the zero-th dimension

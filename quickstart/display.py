@@ -6,7 +6,7 @@ import string
 from string import Template
 from config import *
 from matplotlib import pyplot as plt
-
+from nputil import safe_log
 import numpy as np
 
 HtmlTemplate = Template('''
@@ -71,7 +71,7 @@ if __name__ == '__main__':
             if not c.get_dim(k):
                 plt.plot(data[k])
             else:
-                plt.matshow(np.rot90(np.log(data[k])))
+                plt.matshow(np.rot90(safe_log(data[k])))
             plt.savefig(fn)
             plt.clf()
             feature_html.append(FeatureTemplate.substitute(ImageUrl = url, Key = k))

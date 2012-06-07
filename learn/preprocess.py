@@ -3,6 +3,9 @@ from abc import ABCMeta,abstractmethod
 
 import numpy as np
 
+from nputil import safe_unit_norm as sun
+
+
 class Preprocess(object):
     
     __metaclass__ = ABCMeta
@@ -65,11 +68,7 @@ class UnitNorm(Preprocess):
         Preprocess.__init__(self)
         
     def _preprocess(self,data):
-        for i in range(len(data)):
-            n = np.linalg.norm(data[i])
-            if n:
-                data[i] /= n
-        return data 
+        return sun(data)
 
 class PreprocessBarkBands(MeanStd):
     
