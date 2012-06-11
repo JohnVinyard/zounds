@@ -15,6 +15,16 @@ def fft_index(freq_hz,ws,sr):
     fft_bandwidth = (sr * .5) / (ws * .5)
     return int(round(freq_hz / fft_bandwidth))
 
+def fft_span(start_hz,stop_hz,ws,sr):
+    '''
+    Given a span in hz, return the start and stop fft bin indices covering
+    that span
+    '''
+    s_index = fft_index(start_hz,ws,sr)
+    e_index = fft_index(stop_hz,ws,sr)
+    e_index = s_index + 1 if s_index == e_index else e_index
+    return s_index,e_index
+
 def hz_to_barks(hz):
     return 6. * np.log((hz/600.) + np.sqrt((hz/600.)**2 + 1))
 
@@ -39,7 +49,7 @@ def critical_bands(samplerate,
     eb = hz_to_barks(stop_freq)
     # get the bandwidth (in barks), of each
     bark_bandwidth = (eb - sb) / n_bark_bands
-
+    assert bark_bandwidth
     cb = np.ndarray(n_bark_bands)
     for i in xrange(1,n_bark_bands + 1):
         b = i * bark_bandwidth
