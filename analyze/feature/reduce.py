@@ -1,7 +1,7 @@
 import numpy as np
 from util import downsample,downsampled_shape
 from analyze.extractor import SingleInput
-
+from basic import Basic
 
 class Downsample(SingleInput):
     
@@ -22,43 +22,50 @@ class Downsample(SingleInput):
         return downsample(data,self.factor).ravel()
         
 
-class Sum(SingleInput):
+
+
+class Reduce(Basic):
     
-    def __init__(self,shape = None, dim = None, axis = None, \
-                 needs = None, key = None, nframes = 1, step = 1):
+    def __init__(self,inshape = None, op = None, axis = None, needs = None, 
+                 key = None, nframes = 1, step = 1):
         
-        SingleInput.__init__(self, needs = needs, key = key, \
-                             nframes = nframes, step = step)
-        self._dim = dim
-        self._axis = axis
-        self._shape = shape
-    
-    def dim(self,env):
-        return self._dim
-    
-    @property
-    def dtype(self):
-        return np.float32
+        _inshape = [nframes]
+        try:
+            _inshape.extend(inshape)
+        except TypeError:
+            _inshape.append(inshape)
+        
+        _op = lambda a : op(a,axis = axis)
+        
+        sh = list(_inshape)
+        sh.pop(axis)
+        _dim = np.product(sh)
+        Basic.__init__(self,inshape = _inshape, outshape = _dim, op = _op, 
+                       needs = needs, key = key, nframes = nframes, 
+                       step = step)
     
     def _process(self):
-        return self.in_data[0].reshape(self._shape).sum(axis = self._axis)
-
-class Max(SingleInput):
-    def __init__(self,shape = None, dim = None, axis = None,
-                 needs = None, key = None, nframes = 1, step = 1):
-        SingleInput.__init__(self,needs = needs, key = key, nframes = nframes, step = step)
-        self._dim = dim
-        self._shape = shape
-        self._axis = axis
+        data = super(Reduce,self)._process()
+        return data.ravel()
     
-    def dim(self,env):
-        return self._dim
-    
-    @property
-    def dtype(self):
-        return np.float32
 
-    def _process(self):
-        return self.in_data[0].reshape(self._shape).max(axis = self._axis)
+class Sum(Reduce):
+    
+    def __init__(self, inshape = None, axis = None, needs = None, 
+                 key = None, nframes = 1, step = 1):
         
+        Reduce.__init__(self,inshape = inshape, op = np.sum, axis = axis, 
+                        needs = needs, key = key, nframes = nframes, 
+                        step = step)
+
+class Max(Reduce):
     
+    def __init__(self, inshape = None, axis = None, needs = None, 
+                 key = None, nframes = 1, step = 1):
+        
+        Reduce.__init__(self,inshape = inshape, axis = axis, op = np.max,
+                        needs = needs, key = key, nframes = nframes, 
+                        step = step)
+        
+        
+
