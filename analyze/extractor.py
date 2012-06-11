@@ -123,16 +123,9 @@ class Extractor(object):
                 if len(self.input[src]):
                     # maybe have a partial input that needs to be padded
                     self.input[src] = pad(self.input[src],self.nframes)
-                    
+                
             self.done = True
         
-    @abstractmethod
-    def _process(self):
-        '''
-        A hook that derived classes must implement. This is where the feature
-        extraction happens
-        '''
-        raise NotImplemented()
     
     def process(self):
         '''
@@ -147,8 +140,20 @@ class Extractor(object):
             # remove step size from our inputs
             for src in self.sources:
                 self.input[src] = self.input[src][self.step:]
-        if not full or self.done:
+        else:
             self.out = None
+        
+        #if not full or self.done:
+        #    self.out = None
+    
+    
+    @abstractmethod
+    def _process(self):
+        '''
+        A hook that derived classes must implement. This is where the feature
+        extraction happens
+        '''
+        raise NotImplemented()
             
     def __hash__(self):
         '''

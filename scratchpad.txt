@@ -1,5 +1,7 @@
 TOOO:
 -------------
+- when nframes > 1, trailing edges aren't processed. Why not?
+
 
 - New ExhaustiveSearch implementation doesn't work
 
@@ -9,16 +11,12 @@ TOOO:
 
 - Reread (and understand) 'Multiscale scattering for audio classification'
 
-- when nframes > 1, trailing edges aren't processed. Why not?
-
 - Bug: It's possible to load controllers of the wrong type with 
 	PickledController-derived classes
 	
 - Automatic rebuilding of search indices after data is added
 
 - Non-square Gabor filters
-
-- "Dead" frequencies in Bark Bands
 
 - Something about the PyTables lock gets screwed up when writing large amounts
   of data
