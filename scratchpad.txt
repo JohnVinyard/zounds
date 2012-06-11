@@ -1,7 +1,7 @@
 TOOO:
 -------------
-- when nframes > 1, trailing edges aren't processed. Why not?
 
+- Features with a step size > 1 get zeroed at buffer boundaries
 
 - New ExhaustiveSearch implementation doesn't work
 

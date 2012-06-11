@@ -3,7 +3,7 @@ import subprocess
 import numpy as np
 
 def plot(arr,filename,figsize = (5,5), oned = False, twod = False):
-    arr = np.array(arr)
+    arr = np.array(arr).squeeze()
     plt.figure(figsize = figsize)
     if oned or 1 == len(arr.shape):
         plt.plot(arr)

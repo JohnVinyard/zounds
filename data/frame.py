@@ -46,6 +46,7 @@ class FrameController(Controller):
         '''
         pass
     
+    
     @abstractmethod
     def exists(self,source,external_id):
         '''
@@ -545,7 +546,6 @@ class PyTablesFrameController(FrameController):
         return getattr(self.db_read.cols,key).shape[1:]
     
     
-    
     def iter_feature(self,_id,feature):
         
         # BUG: The following should work, but always raises a
@@ -680,7 +680,9 @@ class PyTablesFrameController(FrameController):
         if isinstance(key,tuple) \
             and 2 == len(key) \
             and all([isinstance(k,str) for k in key]):
+            
             source,extid = key
+            print source,extid
             return self.db_read.readWhere(\
                             self._query(source = source, external_id = extid))
         

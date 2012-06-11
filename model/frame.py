@@ -282,7 +282,8 @@ class Frames(Model):
         
         for k,v in self.__class__.stored_features().iteritems():    
             setattr(self,k,self._data[k])
-        
+            
+     
     def __len__(self):
         return len(self._data)
     
