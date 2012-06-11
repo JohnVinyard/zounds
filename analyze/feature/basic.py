@@ -23,7 +23,7 @@ class Basic(SingleInput):
     
     def _process(self):
         data = np.reshape(self.in_data[:self.nframes],self._inshape)
-        return self._op(data)
+        return [self._op(data)]
 
 
 

@@ -36,6 +36,11 @@ FeatureTemplate = Template('''
 <div><img src="${ImageUrl}"/></div>
 ''')
 
+StringTemplate = Template('''
+<h3>${Key}</h3>
+<div>${Value}</div>
+''')
+
 PatternTemplate = Template('''
 <h2><a href="#">${PatternId}</a></h2>
 <div>
@@ -63,11 +68,20 @@ if __name__ == '__main__':
         feature_html = []
         data = c[_id]
         for k,v in features.iteritems():
-            if not np.all(np.isreal(data[k])):
+            if 'framen' == k:
                 continue
+            
             print '\t%s' % k
+            if 'S' == c.get_dtype(k).kind:
+                feature_html.append(StringTemplate.substitute(\
+                                                Key = k, Value = data[k][0]))
+                continue
+            
+            
             fn = os.path.join(pattern_path,'%s.png' % k)
             url = os.path.join(_id,'%s.png' % k)
+            
+                
             if not c.get_dim(k):
                 plt.plot(data[k])
             else:
@@ -75,6 +89,7 @@ if __name__ == '__main__':
             plt.savefig(fn)
             plt.clf()
             feature_html.append(FeatureTemplate.substitute(ImageUrl = url, Key = k))
+            
         pattern_html.append(PatternTemplate.substitute(PatternId = _id, Features = string.join(feature_html,'')))
 
     html = HtmlTemplate.substitute(Content = string.join(pattern_html,''))

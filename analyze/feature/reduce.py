@@ -44,9 +44,7 @@ class Reduce(Basic):
                        needs = needs, key = key, nframes = nframes, 
                        step = step)
     
-    def _process(self):
-        data = super(Reduce,self)._process()
-        return data.ravel()
+
     
 
 class Sum(Reduce):
