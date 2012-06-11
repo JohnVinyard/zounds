@@ -10,7 +10,7 @@ from bitarray import bitarray
 
 from model import Model
 from pattern import DataPattern
-from nputil import pad
+from nputil import pad,safe_unit_norm as sun
 from util import flatten2d
 from scipy.spatial.distance import cdist
 from environment import Environment
@@ -135,6 +135,8 @@ class FrameSearch(Model):
         # get a frames instance
         frames = fm(data = r)
         return self._search(frames, nresults = nresults)
+    
+    
 
 
 class Score(object):
@@ -152,7 +154,7 @@ class Score(object):
 # TODO: Why is this so much slower now?
 class ExhaustiveSearch(FrameSearch):
     
-    def __init__(self,_id,feature,step = 10):
+    def __init__(self,_id,feature,step = 1):
         FrameSearch.__init__(self,_id,feature)
         self._std = None
         self._step = step
@@ -162,70 +164,119 @@ class ExhaustiveSearch(FrameSearch):
         This is the dumbest possible brute-force search, so there's no index
         to build
         '''
-        
-        env = self.env()
-        c = env.framecontroller
-        fm = env.framemodel
-        _ids = list(fm.list_ids())
-        l = len(c)
-        
-        frames = fm[_ids[0]]
-        
-        samples = np.zeros((l,frames[self.feature].shape[1]))
-        samples[:len(frames)] = frames[self.feature]
-        count = len(frames)
-        
-        for i in range(1,len(_ids)):
-            print _ids[i]
-            frames = fm[_ids[i]]
-            samples[count : count + len(frames)] = frames[self.feature]
-        
-        self._std = samples.std(0)
-        print self._std
+        pass
+#        env = self.env()
+#        c = env.framecontroller
+#        fm = env.framemodel
+#        _ids = list(fm.list_ids())
+#        l = len(c)
+#        
+#        frames = fm[_ids[0]]
+#        
+#        samples = np.zeros((l,frames[self.feature].shape[1]))
+#        samples[:len(frames)] = frames[self.feature]
+#        count = len(frames)
+#        
+#        for i in range(1,len(_ids)):
+#            print _ids[i]
+#            frames = fm[_ids[i]]
+#            samples[count : count + len(frames)] = frames[self.feature]
+#        
+#        self._std = samples.std(0)
+#        print self._std
     
     @property
     def feature(self):
         return self.features[0]
     
+#    def _search(self,frames,nresults):
+#        # get the sequence of query features at the interval
+#        # specified by self._step
+#        seq = frames[self.feature][::self._step]
+#        seq /= self._std
+#        ls = len(seq)
+#        seq = seq.ravel()
+#        
+#        env = self.env()
+#        c = env.framecontroller
+#        _ids = list(c.list_ids())
+#        # best is a tuple of (score,(_id,addr))
+#        best = []
+#        for _id in _ids:
+#            skip = -1
+#            for addr,frames in c.iter_id(_id,len(frames),step = self._step):
+#                if skip > -1 and skip * self._step < (len(frames) / 2):
+#                    skip += 1
+#                    continue
+#                else:
+#                    skip = -1
+#                feat = frames[self.feature]
+#                feat /= self._std
+#                feat = pad(feat,ls)
+#                dist = np.linalg.norm(feat.ravel() - seq)
+#                t = (dist,(_id,addr))
+#                try:
+#                    insertion = bisect_left(best,t)
+#                except ValueError:
+#                    print dist
+#                    print best
+#                    raise Exception()
+#                if insertion < nresults:
+#                    best.insert(insertion,t)
+#                    best = best[:nresults]
+#                    if len(best) == nresults:
+#                        skip = 0
+#        
+#        return [t[1] for t in best]
+    
     def _search(self,frames,nresults):
-        # get the sequence of query features at the interval
-        # specified by self._step
-        seq = frames[self.feature][::self._step]
-        seq /= self._std
+        seq = frames[self.feature]
+        #seq /= self._std
+        #seq = sun(seq)
         ls = len(seq)
         seq = seq.ravel()
         
         env = self.env()
         c = env.framecontroller
+        fm = env.framemodel
+        
         _ids = list(c.list_ids())
-        # best is a tuple of (score,(_id,addr))
+        # best is a tuple of (score,frames)
+        # KLUDGE: This is cheating. Searches should always return back-end
+        # specific addresses
         best = []
         for _id in _ids:
-            skip = -1
-            for addr,frames in c.iter_id(_id,len(frames),step = self._step):
-                if skip > -1 and skip * self._step < (len(frames) / 2):
-                    skip += 1
-                    continue
-                else:
-                    skip = -1
-                feat = frames[self.feature]
-                feat /= self._std
-                feat = pad(feat,ls)
-                dist = np.linalg.norm(feat.ravel() - seq)
-                t = (dist,(_id,addr))
+            frames = fm[_id]
+            feat = frames[self.feature]
+            #feat /= self._std
+            #feat = sun(feat)
+            i = 0
+            print 'comparing to _id %s' % _id
+            while i < len(feat) - ls:
+                
+                sl = feat[i:i+ls]
+                comp = pad(sl,ls)
+                dist = np.linalg.norm(comp.ravel() - seq)
+                t = (dist,(_id,i))
+                
                 try:
                     insertion = bisect_left(best,t)
                 except ValueError:
                     print dist
                     print best
                     raise Exception()
-                if insertion < nresults:
+                
+                if insertion < nresults and not np.isnan(dist):
                     best.insert(insertion,t)
                     best = best[:nresults]
-                    if len(best) == nresults:
-                        skip = 0
+                    print 'found good match at _id %s, frame %i' % (_id,i)
+                    print t[0]
+                    i += int(ls / 2)
+                else:
+                    i += 1
         
-        return [t[1] for t in best]
+        # return just the frames, and not the scores
+        return [fm[t[1][0]].audio[t[1][1] : t[1][1] + ls] for t in best]
             
             
         

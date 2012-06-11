@@ -37,7 +37,7 @@ class FFT(SingleInput):
 class BarkBands(SingleInput):
     
     _triang = {}
-    _fft_index = {}
+    _fft_span = {}
     _hz_to_barks = {}
     _barks_to_hz = {}
     _erb = {}
@@ -66,17 +66,17 @@ class BarkBands(SingleInput):
         return np.float32
     
     @classmethod
-    def from_cache(cls,cache,callable,key):
+    def from_cache(cls,cache,call,key):
         try:
             return cache[key]
         except KeyError:
-            v = callable(key)
+            v = call(key)
             cache[key] = v
             return v
         
     @classmethod
-    def fft_index(cls,t):
-        return bark.fft_index(*t)
+    def fft_span(cls,t):
+        return bark.fft_span(*t)
     
     def _process(self):
         cb = np.ndarray(self.nbands,dtype=np.float32)
@@ -92,12 +92,9 @@ class BarkBands(SingleInput):
             stop_hz = hz + _herb
             ws = self.windowsize
             sr = self.samplerate
-            s_index = BarkBands.from_cache(BarkBands._fft_index,
-                                           BarkBands.fft_index,
-                                           (start_hz,ws,sr))
-            e_index = BarkBands.from_cache(BarkBands._fft_index,
-                                           BarkBands.fft_index,
-                                           (stop_hz,ws,sr))
+            s_index,e_index = BarkBands.from_cache(BarkBands._fft_span,
+                                                   BarkBands.fft_span,
+                                                   (start_hz,stop_hz,ws,sr))
             triang_size = e_index - s_index
             triwin = self.from_cache(BarkBands._triang,triang,triang_size)
             fft_frame = self.in_data[0]

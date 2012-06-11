@@ -1,8 +1,7 @@
 TOOO:
 -------------
 
-3) rename FrameController.iter_id to something more appropriate
-4) Why is Exhaustive search so much slower now
+- New ExhaustiveSearch implementation doesn't work
 
 - Profile ingest.py. How can this be faster?
 
