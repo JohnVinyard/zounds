@@ -1,5 +1,6 @@
 from __future__ import division
 import numpy as np
+from resample import Resample
 from scikits.audiolab import Sndfile
 from nputil import pad
 
@@ -40,7 +41,8 @@ class AudioStream(object):
         self.windowsize = windowsize
         self.stepsize = stepsize
         self._chunksize = self.windowsize * AudioStream._windows_in_chunk
-        self._nsteps = self._check_step() 
+        self._nsteps = self._check_step()
+        self._rs = None
         
     def _check_step(self):
         '''
@@ -61,12 +63,12 @@ class AudioStream(object):
             raise BadSampleRateException(self.samplerate,sndfile.samplerate)
         
     
-    def _iter_interchunk(self,interchunk,frames):
+    def _iter_interchunk(self,interchunk,frames,ws,ss):
         '''
         Iterate over frames that span the gap between chunks
         '''
-        ss = self.stepsize
-        ws = self.windowsize
+        #ss = self.stepsize
+        #ws = self.windowsize
         if interchunk is not None and len(interchunk):
             for i in xrange(0,self._nsteps-1):
                 offset = ss*i
@@ -83,15 +85,36 @@ class AudioStream(object):
             # average the values from the two channels
             frames = sndfile.read_frames(nframes).sum(1) / 2
         return frames
-        
+    
+    #def _resample(self,frames,snd_sample_rate,channels):
+    #    outsamples = np.zeros(self.windowsize,dtype = np.float32)
+    #    return resample(frames,outsamples,snd_sample_rate,self.samplerate,channels)
+    
         
     def __iter__(self):
         sndfile = Sndfile(self.filename)
-        channels = sndfile.channels
-        self._check_samplerate(sndfile)
+        ratio = sndfile.samplerate / self.samplerate
+        ws = int(np.ceil(self.windowsize * ratio))
+        ss = int(np.ceil(self.stepsize * ratio))
+        chunksize = int(np.ceil(self._chunksize * ratio))
+        for f in self._iter_frames(sndfile,ws,ss,chunksize):
+            if 1 == ratio:
+                yield f
+            else:
+                if None is self._rs:
+                    self._rs = Resample(sndfile.samplerate,self.samplerate)
+                outsamples = np.zeros(self.windowsize,dtype = np.float32)
+                yield self._rs(f,outsamples)
+                
         
-        ws = self.windowsize
-        ss = self.stepsize
+    def _iter_frames(self,sndfile,ws,ss,chunksize):
+        #sndfile = Sndfile(self.filename)
+        channels = sndfile.channels
+        #self._check_samplerate(sndfile)
+        
+        #ws = self.windowsize
+        #ss = self.stepsize
+        #chunksize = self._chunksize
         
         f = 0
         nframes = sndfile.nframes
@@ -102,16 +125,16 @@ class AudioStream(object):
             # get number of remaining frames
             framesleft = nframes - f 
             # determine if this will be the last chunk we read
-            lastchunk = framesleft <= self._chunksize
+            lastchunk = framesleft <= chunksize
             if lastchunk:
                 # read all remaining frames
                 frames = self._read_frames(framesleft,sndfile,channels)
             else:
                 # read the next chunk 
-                frames = self._read_frames(self._chunksize, sndfile, channels)
+                frames = self._read_frames(chunksize, sndfile, channels)
             
             if lastchunk:
-                for ic in self._iter_interchunk(interchunk,frames):
+                for ic in self._iter_interchunk(interchunk,frames,ws,ss):
                     yield ic
                 
                 for i in xrange(0,(len(frames)+1) - ss,ss):
@@ -121,7 +144,7 @@ class AudioStream(object):
                     yield frames[i:i+ws]
                 interchunk = frames[-diff:]
             else:
-                for ic in self._iter_interchunk(interchunk,frames):
+                for ic in self._iter_interchunk(interchunk,frames,ws,ss):
                     yield ic
                 for i in xrange(0,len(frames)-diff,ss):
                     yield frames[i:i+ws]   

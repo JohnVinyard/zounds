@@ -4,6 +4,7 @@
    - liblapack-dev 
    - gfortran
    - libsndfile1-dev
+   - libsamplerate-dev
    - libhdf5-serial-1.84
    - libhdf5-serial-dev
 1. mkvirtualenv zounds2
