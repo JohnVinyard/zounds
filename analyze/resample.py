@@ -35,6 +35,7 @@ class Resample(object):
                          and slowest converter
         
         '''
+        print 'resampling from %i to %i' % (orig_sample_rate,new_sample_rate)
         self._ratio = new_sample_rate / orig_sample_rate
         # check if the conversion ratio is considered valid by libsamplerate
         if not libsamplerate.src_is_valid_ratio(c_double(self._ratio)):
@@ -47,7 +48,6 @@ class Resample(object):
                                 c_int(converter_type),c_int(nchannels),error)
     
     def __call__(self,insamples,end_of_input = False):
-        print '--------------------------------------------------------'
         # ensure that the input is float data
         if np.float32 != insamples.dtype:
             insamples = insamples.astype(np.float32)
@@ -74,6 +74,6 @@ class Resample(object):
         if rv:
             # print the string error for the non-zero return code
             raise Exception(c_char_p(libsamplerate.src_strerror(c_int(rv))).value)
-        print sd.output_frames_gen
+        
         
         return outsamples
