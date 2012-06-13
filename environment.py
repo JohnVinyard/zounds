@@ -1,3 +1,4 @@
+from __future__ import division
 from uuid import uuid4
 from celery.task import subtask,chord
 from analyze.synthesize import WindowedAudioSynthesizer
@@ -87,6 +88,14 @@ class Environment(object):
     @property
     def window(self):
         return self.audio.window
+    
+    def seconds_to_frames(self,secs):
+        return int((secs * self.samplerate) / self.stepsize)
+    
+    def frames_to_seconds(self,nframes):
+        overlap = self.windowsize - self.stepsize
+        return (nframes * (self.stepsize / self.samplerate)) +\
+                 (overlap / self.samplerate)
     
     def newid(self):
         return uuid4().hex
