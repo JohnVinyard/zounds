@@ -1,7 +1,17 @@
 TOOO:
 -------------
+- BUG: Loudness isn't behaving correctly. See loudness of 'bell4', derived from
+	BarkBands, e.g.
+	
+- BUG: Features with a step-size greater than one cannot be updated because of
+	a shape mismatch
 
-- Features with a step size > 1 get zeroed at buffer boundaries
+- BUG: It's possible to add duplicates to the database because of external_id
+	truncation
+
+- BUG: Tests are being run multiple times when imported by other tests
+
+- BUG: Features with a step size > 1 get zeroed at buffer boundaries by PyTablesFramesController
 
 - New ExhaustiveSearch implementation doesn't work
 
@@ -26,20 +36,19 @@ TOOO:
 - Address equivalence bug: [1,4,10] and [1,6,10] are considered equivalent.  This
   is incorrect
 
-Write LearnedFeature tests
+- Write LearnedFeature tests
 
-Patterns
+- Patterns
 
-Sphinx documentation
+- Sphinx documentation
 
-multi-process sync - Deferred until I can figure out celery chord bug
+- multi-process sync - Deferred until I can figure out celery chord bug
 
-Add celery to list of dependencies once I've settled on using it
+- Add celery to list of dependencies once I've settled on using it
 
-Smarc audio-rate conversion by acquirers
-mp3 -> wav conversion by acquirers
+- mp3 -> wav conversion by acquirers
 
-Configurable encoder and decoder for the "audio" feature, making it possible
+- Configurable encoder and decoder for the "audio" feature, making it possible
 	to store mp3, ogg vorbis, or some other audio-encoding, instead of just
 	raw audio.  It'd be great if I could store lots of useful features AND
 	compress the data

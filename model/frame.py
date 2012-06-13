@@ -1,3 +1,4 @@
+from __future__ import division
 from abc import ABCMeta,abstractmethod
 
 import numpy as np
@@ -286,6 +287,11 @@ class Frames(Model):
      
     def __len__(self):
         return len(self._data)
+    
+    # TODO: Write tests for overlapping and non-overlapping windows
+    @property
+    def seconds(self):
+        return self.env().frames_to_seconds(len(self))
     
     def __getitem__(self,key):
         if isinstance(key,str):

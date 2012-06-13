@@ -21,8 +21,11 @@ class WindowedAudioSynthesizer(object):
             
     def play(self,audio):
         output = self(audio)
+        return self.playraw(output)
+    
+    def playraw(self,audio):
         try:
-            play(np.tile(output,(2,1)))
+            play(np.tile(audio,(2,1)))
         except KeyboardInterrupt:
             pass
         

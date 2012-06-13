@@ -115,7 +115,7 @@ class AudioStream(object):
         ws = self.windowsize
         ss = self.stepsize
         chunksize = int(np.round(self._chunksize * ratio))
-        print chunksize
+        
         
         f = 0
         nframes = sndfile.nframes

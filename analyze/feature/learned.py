@@ -39,7 +39,7 @@ class Learned(SingleInput):
     def _process(self):
         data = np.array(self.in_data[:self.nframes])
         data = data.reshape(np.product(data.shape))
-        return self.pipeline(data)
+        return [self.pipeline(data)]
     
     
         

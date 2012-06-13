@@ -116,7 +116,7 @@ class Loudness(SingleInput):
         return np.float32
         
     def _process(self):
-        return np.sum(self.in_data)
+        return np.sum(self.in_data[:self.nframes])
 
 
 class SpectralCentroid(SingleInput):
