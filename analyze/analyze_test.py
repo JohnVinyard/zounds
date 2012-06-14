@@ -1,8 +1,7 @@
 from __future__ import division
 import numpy as np
 import unittest
-from analyze.audiostream import \
-    AudioStream,BadSampleRateException,BadStepSizeException
+from analyze.audiostream import AudioStream,BadStepSizeException
 from scikits.audiolab import Sndfile,Format
 from uuid import uuid4
 from os import remove
@@ -44,12 +43,7 @@ class AudioStreamTests(unittest.TestCase):
     def test_nonexistentfile(self):
         fn = self.filename()
         self.assertRaises(IOError,lambda : AudioStream(fn).__iter__().next())
-        
-    def test_badsamplerate(self):
-        fn = self.make_sndfile(44101,2048,22050)
-        a = AudioStream(fn)
-        self.assertRaises(BadSampleRateException, lambda : a.__iter__().next())
-        self.remove_sndfile(fn)
+    
         
     def test_badstepsize(self):
         fn = self.make_sndfile(44101,2048,44100)

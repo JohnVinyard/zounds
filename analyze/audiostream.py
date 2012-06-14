@@ -5,17 +5,7 @@ from scikits.audiolab import Sndfile
 from nputil import pad
 
 
-class BadSampleRateException(BaseException):
-    '''
-    Raised when the sample rate of an audio file
-    doesn't match the sample rate of the AudioStream.
-    '''
-    def __init__(self,expectedrate,actualrate):
-        BaseException.__init__(\
-            self,
-            Exception('Sample rate should have been %i, but was %i' % \
-            (expectedrate,actualrate)))
-        
+
 class BadStepSizeException(BaseException):
     '''
     Raised when the window size is not evenly
@@ -53,14 +43,6 @@ class AudioStream(object):
         if (nsteps) % 1:
             raise BadStepSizeException()
         return int(nsteps)
-        
-    def _check_samplerate(self,sndfile):
-        '''
-        Ensure that the file's sample rate matches the sample rate
-        used to create this AudioStream instance.
-        '''
-        if sndfile.samplerate != self.samplerate:
-            raise BadSampleRateException(self.samplerate,sndfile.samplerate)
         
     
     def _iter_interchunk(self,interchunk,frames):
@@ -109,7 +91,6 @@ class AudioStream(object):
     def __iter__(self):
         sndfile = Sndfile(self.filename)
         channels = sndfile.channels
-        #self._check_samplerate(sndfile)
         ratio = sndfile.samplerate / self.samplerate
         
         ws = self.windowsize
