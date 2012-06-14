@@ -5,7 +5,7 @@ import os
 import numpy as np
 
 from model.frame import Frames,Feature,Precomputed
-from analyze.extractor import Extractor
+from analyze.extractor import Extractor,SingleInput
 from analyze.feature.spectral import FFT,Loudness,SpectralCentroid
 from analyze.feature.reduce import Downsample
 from model.pattern import FilePattern
@@ -30,6 +30,23 @@ class MockExtractor(Extractor):
     def _process(self):
         raise NotImplemented()
 
+
+class Count(SingleInput):
+    def __init__(self,needs = None, key = None, step = 10, nframes = 10):
+        SingleInput.__init__(self, needs = needs, key = key, step = step, nframes = nframes)
+        self._n = 0
+    
+    def dim(self,env):
+        return ()
+    
+    @property
+    def dtype(self):
+        return np.float32
+    
+    def _process(self):
+        n = self._n
+        self._n += 1
+        return n
 
 class PyTablesFrameControllerTests(unittest.TestCase):
     
@@ -268,7 +285,7 @@ class PyTablesFrameControllerTests(unittest.TestCase):
         self.assertTrue('fft' in features)  
     
     
-    def build_with_model(self,framemodel):
+    def build_with_model(self,framemodel,close_db = True):
         fn,FM1 = self.FM(framemodel = framemodel)
         c = FM1.controller()
         lengths = [44100,44100*2]
@@ -278,7 +295,8 @@ class PyTablesFrameControllerTests(unittest.TestCase):
             c.append(ec)
         l1 = len(c)
         old_features = c.get_features()
-        c.close()
+        if close_db:
+            c.close()
         return fn,l1,old_features
     
     def test_get_id(self):
@@ -457,6 +475,34 @@ class PyTablesFrameControllerTests(unittest.TestCase):
                          lambda old,new : len(old) != len(new),
                          lambda old,new : 'downsample' in new,
                          lambda old,new : 'centroid' in new)
+    
+    def test_feature_with_stepsize(self):
+        
+        
+        class FM1(Frames):
+            fft = Feature(FFT,store=True,needs=None)
+            count = Feature(Count,store = True, needs = None)
+        
+        
+        class FM2(Frames):
+            fft = Feature(FFT,store=True,needs=None)
+            count = Feature(Count,store = True, needs = None)
+            centroid = Feature(SpectralCentroid,store = True, needs = fft)
+        
+        fn,l1,old_features = self.build_with_model(FM1,close_db = False)
+        _id = list(FM1.list_ids())[0]
+        orig_count = FM1[_id].count
+        FM1.controller().close()
+        
+        # make sure to use the same file
+        fn,FM2 = self.FM(framemodel = FM2,filepath = fn)
+        FM2.sync()
+        c = FM2.controller()
+        self.assertEqual(l1,len(c))
+        self.assertTrue(np.all(FM2[_id].count == orig_count))
+        
+        
+        
     
     def test_sync_non_stored_ancestor(self):
         class FM1(Frames):

@@ -49,6 +49,10 @@ class Pipeline(Model):
         Learn-derived class. It is evaluated periodically by Learn.train to 
         decide when learning is complete.
         '''
+        if self.controller().id_exists(self._id):
+            raise ValueError(\
+                    '_id %s already exists. Please delete it before proceeding'\
+                     % self._id)
         data = self.fetch(nexamples = nexamples)
         # KLUDGE: Is this always OK?
         data = flatten2d(data)

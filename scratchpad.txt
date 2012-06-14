@@ -1,12 +1,16 @@
 TOOO:
 -------------
-- TODO: Slice Feature
 
-- BUG: Loudness isn't behaving correctly. See loudness of 'bell4', derived from
-	BarkBands, e.g.
-	
-- BUG: Features with a step-size greater than one cannot be updated because of
-	a shape mismatch
+
+
+- BUG: Kmeans is getting smoothed out after syncs
+
+- BUG: Loudness is being corrupted after syncs
+
+- TODO: Pool loudness KMeans with Binary RBM
+
+- TODO: Fix exhaustive search. It isn't meaningful to compare different length sounds
+- TODO: update search script so that query lengths can be specified from the command line
 
 - BUG: It's possible to add duplicates to the database because of external_id
 	truncation
@@ -15,7 +19,7 @@ TOOO:
 
 - BUG: Features with a step size > 1 get zeroed at buffer boundaries by PyTablesFramesController
 
-- New ExhaustiveSearch implementation doesn't work
+- New ExhaustiveSearch implementation doesn't work (Address Key Errors)
 
 - Profile ingest.py. How can this be faster?
 

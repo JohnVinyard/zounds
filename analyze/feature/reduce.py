@@ -46,6 +46,7 @@ class Reduce(Basic):
         sh = list(_inshape)
         sh.pop(axis)
         _dim = np.product(sh)
+        _dim = () if 1 == _dim else _dim
         Basic.__init__(self,inshape = _inshape, outshape = _dim, op = _op, 
                        needs = needs, key = key, nframes = nframes, 
                        step = step)
@@ -55,7 +56,7 @@ class Reduce(Basic):
 
 class Sum(Reduce):
     
-    def __init__(self, inshape = None, axis = None, needs = None, 
+    def __init__(self, inshape = None, axis = 0, needs = None, 
                  key = None, nframes = 1, step = 1):
         
         Reduce.__init__(self,inshape = inshape, op = np.sum, axis = axis, 

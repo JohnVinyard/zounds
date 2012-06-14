@@ -27,6 +27,9 @@ class PickledController(Controller):
     def _filename(self,_id):
         return '%s%s' % (_id,self.__class__.extension)
     
+    def id_exists(self,_id):
+        return os.path.exists(self._filename(_id))
+    
     def __getitem__(self,key):
         filename = self._filename(key)
         try:

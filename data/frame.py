@@ -98,7 +98,7 @@ class FrameController(Controller):
         return self.get(key)
     
     @abstractmethod
-    def iter_feature(self,_id,feature):
+    def iter_feature(self,_id,feature,step = 1):
         '''
         Return an iterator over a single feature from pattern _id
         '''
@@ -443,7 +443,7 @@ class PyTablesFrameController(FrameController):
                 # for this feature, unless we're at then end of
                 # the sound. Repeat the feature as many times as
                 # possible, up to step size
-                data = np.tile(np.array(v),(actual_steps,1 ))
+                data = np.tile(np.array(v),(actual_steps,1)).squeeze()
                 # deposit the data
                 bucket[k][cur:cur+steps] = data
                 # advance by steps
@@ -558,7 +558,7 @@ class PyTablesFrameController(FrameController):
         return getattr(self.db_read.cols,key).shape[1:]
     
     
-    def iter_feature(self,_id,feature):
+    def iter_feature(self,_id,feature,step = 1):
         
         # BUG: The following should work, but always raises a
         # StopIteration exception around 30 - 40 rows. I have
@@ -569,7 +569,7 @@ class PyTablesFrameController(FrameController):
         
         # Here's the less simple workaround
         feature = feature if isinstance(feature,str) else feature.key
-        rowns = self.db_read.getWhereList(self._query(_id = _id))
+        rowns = self.db_read.getWhereList(self._query(_id = _id))[::step]
         for row in self.db_read.itersequence(rowns):
             yield row[feature]
     
@@ -788,6 +788,8 @@ def sync_complete(results):
 import sys         
 setattr(sys.modules[__name__], 'Address', PyTablesFrameController.Address)
 
+
+
 class DictFrameController(FrameController):
     '''
     Completely useless, except for testing
@@ -797,45 +799,45 @@ class DictFrameController(FrameController):
         FrameController.__init__(self,framesmodel)
         
     def sync(self,add,update,delete,chain):
-        raise NotImplemented()
+        raise NotImplementedError
     
     def append(self,frames):
-        raise NotImplemented()
+        raise NotImplementedError
     
     def get(self,key):
-        raise NotImplemented()
+        raise NotImplementedError
   
     def get_features(self):
-        raise NotImplemented()
+        raise NotImplementedError
       
     def set_features(self):
-        raise NotImplemented()
+        raise NotImplementedError
     
     def get_dtype(self,key):
-        raise NotImplemented()
+        raise NotImplementedError
     
     def get_dim(self,key):
-        raise NotImplemented()
+        raise NotImplementedError
     
     def __len__(self):
-        raise NotImplemented()
+        raise NotImplementedError
     
     def external_id(self,_id):
-        raise NotImplemented()
+        raise NotImplementedError
     
     def list_ids(self):
-        raise NotImplemented()
+        raise NotImplementedError
     
-    def iter_feature(self,_id,feature_name):
-        raise NotImplemented()
+    def iter_feature(self,_id,feature_name,step = 1):
+        raise NotImplementedError
     
     def exists(self,source,external_id):
-        raise NotImplemented()
+        raise NotImplementedError
     
     def iter_all(self):
-        raise NotImplemented()
+        raise NotImplementedError
     
     def iter_id(self):
-        raise NotImplemented()
+        raise NotImplementedError
         
         

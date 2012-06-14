@@ -28,10 +28,12 @@ def soundsearch(_ids,index,random = False,nresults = 10, metric = 'euclidean'):
         qid = _ids[i]
         best,dist = nbest(index[i],index,nresults = nresults, metric = metric)
         qframes = FrameModel[qid]
+        print 'Query %s has length %1.4f' % (qframes.external_id[0],qframes.seconds)
         Environment.instance.play(qframes.audio)
         for i,b in enumerate(best):
-            print 'distance is %1.4f' % dist[i]
             bframes = FrameModel[_ids[b]]
+            print 'Sound %s has length %1.4f seconds and distance is %1.4f' % \
+                (bframes.external_id[0],bframes.seconds,dist[i])
             Environment.instance.play(bframes.audio)
         raw_input('next...')
         
