@@ -7,6 +7,7 @@ import numpy as np
 from model.frame import Frames,Feature,Precomputed
 from analyze.extractor import Extractor
 from analyze.feature.spectral import FFT,Loudness,SpectralCentroid
+from analyze.feature.reduce import Downsample
 from model.pattern import FilePattern
 from environment import Environment
 from frame import PyTablesFrameController
@@ -436,6 +437,26 @@ class PyTablesFrameControllerTests(unittest.TestCase):
                          lambda old,new : old != new,
                          lambda old,new : 'loudness' in old,
                          lambda old,new : 'loudness' in new)
+        
+    def test_sync_2d_feature_with_stepsize(self):
+        class FM1(Frames):
+            fft = Feature(FFT,store=True,needs=None)
+            downsample = Feature(Downsample,needs = fft, store = True,
+                                 size = (6,2048), factor = 2, 
+                                 step = 6, nframes = 6)
+        
+        
+        class FM2(Frames):
+            fft = Feature(FFT,store=True,needs=None)
+            downsample = Feature(Downsample,needs = fft, store = True,
+                                 size = (6,2048), factor = 2, 
+                                 step = 6, nframes = 6)
+            centroid = Feature(SpectralCentroid,store = True, needs = fft)
+        
+        self.sync_helper(FM1,FM2,
+                         lambda old,new : len(old) != len(new),
+                         lambda old,new : 'downsample' in new,
+                         lambda old,new : 'centroid' in new)
     
     def test_sync_non_stored_ancestor(self):
         class FM1(Frames):
