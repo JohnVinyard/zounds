@@ -431,10 +431,22 @@ class PyTablesFrameController(FrameController):
             if rootkey == k:
                 nframes += 1
             try:
+                # the step size for this feature
                 steps = self.steps[k]
+                # the current position, in frames, for this feature
                 cur = current[k]
-                data = np.array(v).repeat(steps, axis = 0)
+                # Figure out how many spaces are available in the
+                # bucket for this feature
+                b = bucket[k][cur:cur+steps]
+                actual_steps = len(b)
+                # actual_steps should be equal to the step size 
+                # for this feature, unless we're at then end of
+                # the sound. Repeat the feature as many times as
+                # possible, up to step size
+                data = np.tile(np.array(v),(actual_steps,1 ))
+                # deposit the data
                 bucket[k][cur:cur+steps] = data
+                # advance by steps
                 current[k] += steps
             except KeyError:
                 # this feature isn't stored

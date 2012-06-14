@@ -5,8 +5,14 @@ from basic import Basic
 
 class Downsample(SingleInput):
     
-    def __init__(self,size = None,factor = None ,needs = None, key = None):
-        SingleInput.__init__(self,needs = needs,key = key)
+    def __init__(self,size = None,factor = None ,needs = None, 
+                 key = None, step = 1, nframes = 1):
+        
+        SingleInput.__init__(self,needs = needs,key = key,
+                             step = step, nframes = nframes)
+        if 2 != len(size):
+            raise ValueError('Downsample expects a 2d input')
+        
         self.size = size
         self.factor = factor
         
@@ -18,7 +24,7 @@ class Downsample(SingleInput):
         return np.float32
     
     def _process(self):
-        data = self.in_data[0].reshape(self.size)
+        data = np.array(self.in_data[:self.nframes]).reshape(self.size)
         return downsample(data,self.factor).ravel()
         
 

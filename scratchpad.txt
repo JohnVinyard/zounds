@@ -1,5 +1,7 @@
 TOOO:
 -------------
+- TODO: Slice Feature
+
 - BUG: Loudness isn't behaving correctly. See loudness of 'bell4', derived from
 	BarkBands, e.g.
 	

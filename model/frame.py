@@ -97,7 +97,7 @@ class Precomputed(Extractor):
         self.stream = None
         
     
-    def dim(self):
+    def dim(self,env):
         '''
         Ask the datastore about the dimension of this data
         '''
@@ -142,7 +142,7 @@ class Address(object):
     '''
     A container for the most efficient way to access frames, given the backing
     store.
-    '''
+    ''' 
     __metaclass__ = ABCMeta
     
     def __init__(self,key):

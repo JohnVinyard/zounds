@@ -12,6 +12,7 @@ from scipy.ndimage.interpolation import rotate
 from environment import Environment
 from analyze.extractor import SingleInput
 from analyze import bark
+from nputil import safe_log
 
 
 
@@ -217,8 +218,7 @@ class BFCC(SingleInput):
     
     def _process(self):
         barks = self.in_data[0]
-        barks[barks == 0] = .00000001
-        return dct(np.log(barks))[:self.ncoeffs]
+        return dct(safe_log(barks))[:self.ncoeffs]
 
 class AutoCorrelation(SingleInput):
     def __init__(self, needs = None, key = None, size = None):
