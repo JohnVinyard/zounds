@@ -117,9 +117,11 @@ class Precomputed(Extractor):
         '''
         if None is self.stream:
             if 'audio' != self.key:
-                # set the step size
                 features = self._c.get_features()
+                # get an extractor for this feature
                 extractor = features[self.key].extractor()
+                # ask the extractor about the stepsize and frame length 
+                # for this feature
                 self.step = extractor.step
                 self.nframes = extractor.nframes
             # get an iterator that will iterate over this feature with 

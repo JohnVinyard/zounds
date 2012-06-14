@@ -8,11 +8,12 @@ from scipy.stats import kurtosis
 from scipy.signal import triang
 from scipy.fftpack import dct
 from scipy.ndimage.interpolation import rotate
+from scipy.spatial.distance import cdist
 
 from environment import Environment
 from analyze.extractor import SingleInput
 from analyze import bark
-from nputil import safe_log
+from nputil import safe_log,safe_unit_norm as sun
 
 
 
@@ -118,6 +119,7 @@ class Loudness(SingleInput):
         
     def _process(self):
         return np.sum(self.in_data[:self.nframes])
+        
 
 
 class SpectralCentroid(SingleInput):
@@ -235,12 +237,29 @@ class AutoCorrelation(SingleInput):
         return self.size
     
     def _process(self):
-        data = self.in_data[0]
-        n = np.linalg.norm(data)
-        if n:
-            data /= n
+        data = sun(self.in_data[0])
         return np.correlate(data,data,mode = 'full')[self.size - 1:]
 
+class SelfSimilarity(SingleInput):
+    def __init__(self,needs = None, key = None, dim = None):
+        SingleInput.__init__(self,needs = needs, key = key)
+        self._dim = dim
+    
+    @property
+    def dtype(self):
+        return np.float32
+
+    def dim(self,env):
+        return self._dim
+
+    def _process(self):
+        data = np.array(self.in_data[0])
+        data = data.reshape((len(data),1))
+        dist = np.rot90(cdist(data,data))
+        dist += 1e-12
+        return np.diag(dist)[self._dim:]
+        
+        
 class Difference(SingleInput):
     def __init__(self, needs = None, key = None, size = None):
         SingleInput.__init__(self, needs = needs, key = key)
