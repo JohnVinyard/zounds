@@ -1,16 +1,15 @@
 TOOO:
 -------------
-
-
-
-- BUG: Kmeans is getting smoothed out after syncs
-
-- BUG: Loudness is being corrupted after syncs
-
 - TODO: Pool loudness KMeans with Binary RBM
 
-- TODO: Fix exhaustive search. It isn't meaningful to compare different length sounds
+- TODO: Fix exhaustive search. It is less meaningful to compare different length sounds
+
 - TODO: update search script so that query lengths can be specified from the command line
+
+- TODO: Try BarkBands with narrower range in Hz, maybe 50hz - 12khz
+
+- BUG: Weird loudness behavior is still happening, although I can't reproduce
+	it reliably
 
 - BUG: It's possible to add duplicates to the database because of external_id
 	truncation
@@ -39,7 +38,7 @@ TOOO:
   
 - Add mel scale and refactor some code in analyze.bark
 
-- Address equivalence bug: [1,4,10] and [1,6,10] are considered equivalent.  This
+- BUG : Address equivalence bug: [1,4,10] and [1,6,10] are considered equivalent.  This
   is incorrect
 
 - Write LearnedFeature tests
