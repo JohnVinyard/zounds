@@ -115,10 +115,18 @@ class Precomputed(Extractor):
         '''
         Read a single feature for self._id
         '''
-        if None is self.stream: 
-            self.stream = self._c.iter_feature(self._id,self.key)
-    
-        
+        if None is self.stream:
+            if 'audio' != self.key:
+                # set the step size
+                features = self._c.get_features()
+                extractor = features[self.key].extractor()
+                self.step = extractor.step
+                self.nframes = extractor.nframes
+            # get an iterator that will iterate over this feature with 
+            # the step size we just discovered
+            self.stream = self._c.iter_feature(\
+                                    self._id,self.key,step = self.step)
+            
         try:
             return self.stream.next()
         except StopIteration:    
@@ -127,8 +135,6 @@ class Precomputed(Extractor):
             if self.sources:
                 self.sources[0].done = True
                 self.sources[0].out = None
-        
-        
         
     
     def __hash__(self):

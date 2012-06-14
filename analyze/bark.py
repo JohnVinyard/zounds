@@ -38,6 +38,8 @@ def erb(hz):
     '''
     return (0.108 * hz) + 24.7
 
+
+
 def critical_bands(samplerate,
                    window_size,
                    fft_frame,

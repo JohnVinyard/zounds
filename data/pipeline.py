@@ -40,6 +40,9 @@ class DictPipelineController(PipelineController):
     def __delitem__(self,key):
         del self._store[key]
     
+    def id_exists(self,_id):
+        return _id in self._store
+    
     def store(self,pipeline):
         self._store[pipeline._id] = cPickle.dumps(pipeline,cPickle.HIGHEST_PROTOCOL)
 
