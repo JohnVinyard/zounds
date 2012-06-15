@@ -355,6 +355,9 @@ class Frames(Model):
     
     @classmethod
     def random(cls):
+        '''
+        Return the frames of a random pattern/sound
+        '''
         _ids = list(cls.list_ids())
         return cls[_ids[np.random.randint(0,len(_ids) - 1)]]
         

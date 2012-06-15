@@ -597,7 +597,7 @@ class PyTablesFrameController(FrameController):
         frames = self.model[address]
         
         for i in xrange(0,len(rowns),step):
-            if i + chunksize >= len(rowns):
+            if i + chunksize >= len(rowns) - 1:
                 break
             rns = rowns[i:i+chunksize:step]
             fsl = np.array(range(i,i + chunksize,step))
