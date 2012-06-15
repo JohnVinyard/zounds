@@ -2,9 +2,6 @@ TOOO:
 -------------
 - TODO: Pool loudness KMeans with Binary RBM
 
-- TODO: Fix exhaustive search. It is less meaningful to compare different length sounds
-- New ExhaustiveSearch implementation doesn't work (Address Key Errors)
-
 - TODO: update search script so that query lengths can be specified from the command line
 
 - TODO: Try BarkBands with narrower range in Hz, maybe 50hz - 12khz
@@ -15,8 +12,6 @@ TOOO:
 - BUG: Tests are being run multiple times when imported by other tests
 
 - BUG: Features with a step size > 1 get zeroed at buffer boundaries by PyTablesFramesController
-
-
 
 - Profile ingest.py. How can this be faster?
 

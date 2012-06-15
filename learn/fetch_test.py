@@ -1,6 +1,7 @@
 import unittest
 from uuid import uuid4
 import os
+import numpy as np
 
 from analyze.analyze_test import AudioStreamTests
 from analyze.feature.spectral import FFT,Loudness
@@ -115,4 +116,13 @@ class PrecomputedFeatureTests(unittest.TestCase):
             pc = PrecomputedFeature(3,
                                   PrecomputedFeatureTests.FrameModel.fft)
             self.assertRaises(ValueError,lambda : pc(nexamples = 2000000))
+            
+    def test_with_reduction(self):
+        for i in self.implementations:
+            env,framemodel,filenames = \
+                  self.append_files(i[0], i[1])
+            pc = PrecomputedFeature(\
+                        3,PrecomputedFeatureTests.FrameModel.fft,reduction = np.max)
+            samples = pc(10)
+            self.assertEqual((10,1024),samples.shape)
     

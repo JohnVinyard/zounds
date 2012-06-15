@@ -54,6 +54,7 @@ class NeuralNetwork(object):
     
     def do_recon(self,inp,twod=False,filename=None):
         out = self.activate(inp)
+        print out.sum()
         n = out.shape[0]
         plt.figure()
         
