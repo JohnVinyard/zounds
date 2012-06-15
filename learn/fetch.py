@@ -34,10 +34,12 @@ class PrecomputedFeature(Fetch):
     to sample evenly from the database, drawing more samples from longer 
     patterns.
     '''
-    def __init__(self,nframes,feature):
+    def __init__(self,nframes,feature, reduction = None):
         Fetch.__init__(self)
         self.feature = feature
         self.nframes = nframes
+        self._reduction = reduction
+        
         
     # TODO: Write tests
     def _prob_one_fetch(self,controller,framemodel,dim,axis1,nexamples,prob):
@@ -96,8 +98,12 @@ class PrecomputedFeature(Fetch):
                     s = [0]
                 feature = pad(frames[self.feature],self.nframes)
                 for i in s:
-                    yield nsamples,\
-                            feature[i : i + self.nframes].reshape(axis1)
+                    #yield nsamples,\
+                    #        feature[i : i + self.nframes].reshape(axis1)
+                    f = feature[i : i + self.nframes]
+                    if self._reduction:
+                        f = self._reduction(f,axis = 0)
+                    yield nsamples, f.reshape(axis1)
                     nsamples += 1
     
     def _get_env(self):
@@ -118,7 +124,14 @@ class PrecomputedFeature(Fetch):
         dim = c.get_dim(self.feature) 
         dtype = c.get_dtype(self.feature)
         # BUG: This assumes features will always be either one or two dimensions
-        axis1 = self.nframes if not dim else self.nframes * dim[0]
+        
+        #axis1 = self.nframes if not dim else self.nframes * dim[0]
+        if not dim:
+            axis1 = self.nframes
+        elif self._reduction:
+            axis1 = dim[0]
+        else:
+            axis1 = self.nframes * dim[0]
         shape = (nexamples,axis1) if axis1 > 1 else (nexamples,)
         return dim,dtype,axis1,shape
         
