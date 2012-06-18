@@ -1,25 +1,66 @@
-from config import *
-from scikits.audiolab import Sndfile,play
+from __future__ import division
 import os.path
-from random import shuffle
-from model.framesearch import *
+from random import choice
 from time import time
-from environment import Environment
 import argparse
 import sys
 
-if __name__ == '__main__':
-    
+from config import *
+from scikits.audiolab import Sndfile,play
+from model.framesearch import *
+from environment import Environment
+from util import audio_files,pad
+from analyze.audiostream import read_frames_mono
+
+
+
+def parse_args():
     parser = argparse.ArgumentParser()
     aa = parser.add_argument
+    # required arguments
     aa('--feature',help='the name of the feature to use')
     aa('--searchclass',help='the name of the FrameSearch-derived class to use')
+    aa('--sounddir',help='directory from which queries will be drawn')
+    # optional arguments
+    aa('--minseconds',
+       help='the minimum length of a query',
+       type=float,
+       default = 1.0)
+    aa('--maxseconds',
+       help='the maximum length of a query',
+       type=float,
+       default=5.0)
     aa('--rebuild',
        help='forces the search index to be rebuilt',
        default = False, 
        action = 'store_true')
     
     args = parser.parse_args()
+    if args.maxseconds <= args.minseconds:
+        raise ValueError('maxseconds must be greater than minseconds')
+    return args
+
+def get_query(path,files,minseconds,maxseconds):
+    snd = Sndfile(os.path.join(path,choice(files)))
+    lensecs = snd.nframes / snd.samplerate
+    # TODO: 
+    # If the sound is less than minseconds, return
+    # the sound, padded with zeros so that it is 
+    # minseconds long
+    #
+    # If the sound is greater than minseconds, but less
+    # than maxseconds, choose a snippet between (minseconds,len(sound))
+    #
+    # If the sound is greater than maxseconds, return a snippet between
+    # minseconds and maxseconds
+    #
+    # Ensure that the samples are mono, and are at the environment's
+    # sampling rate
+    
+
+if __name__ == '__main__':
+    
+    args = parse_args()
     
     _id = 'search/%s' % args.feature    
     searchclass = eval(args.searchclass)
@@ -35,7 +76,10 @@ if __name__ == '__main__':
     
     
     # Pick a sound segment
-    d = '/home/john/snd/Test'
+    d = args.sounddir
+    minframes = Z.seconds_to_frames(args.minseconds)
+    maxframes = Z.seconds_to_frames(args.maxseconds)
+    files = audio_files(d)
     
     while True:
         start = 0

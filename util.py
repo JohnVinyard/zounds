@@ -1,6 +1,33 @@
 from __future__ import division
 import numpy as np
 import os.path
+from constants import available_file_formats
+
+
+def ensure_path_exists(filename):
+    '''
+    Given a filename, ensure that the path to it exists
+    '''
+    parts = os.path.split(filename)
+    path = os.path.join(*parts[:-1])
+    
+    if path:
+        try: 
+            os.makedirs(path)
+        except OSError:
+            # This probably means that the path already exists
+            pass
+
+def audio_files(path):
+    '''
+    Return the name of each sound file that Zounds can process in
+    the given directory
+    '''
+    # list all files in the directory
+    allfiles = os.listdir(path) 
+    return filter(\
+        lambda f : os.path.splitext(f)[1][1:] in available_file_formats,
+        allfiles)
 
 
 # TODO: Should this go into the nputil module as well?
@@ -54,21 +81,12 @@ def downsample3d(arr,factor):
     return newarr
                 
     
-def ensure_path_exists(filename):
-    '''
-    Given a filename, ensure that the path to it exists
-    '''
-    parts = os.path.split(filename)
-    path = os.path.join(*parts[:-1])
-    
-    if path:
-        try: 
-            os.makedirs(path)
-        except OSError:
-            # This probably means that the path already exists
-            pass
+
 
 def testsignal(hz,seconds=5.,sr=44100.):
+    '''
+    Create a sine wave at hz for n seconds
+    '''
     # cycles per sample
     cps = hz / sr
     # total samples

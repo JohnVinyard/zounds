@@ -1,5 +1,6 @@
 from abc import ABCMeta,abstractmethod,abstractproperty
 import os.path
+from util import audio_files
 
 from environment import Environment
 from model.pattern import FilePattern
@@ -58,7 +59,7 @@ class DiskAcquirer(Acquirer):
         return self._source
     
     def acquire(self):
-        files = filter(lambda f : os.path.splitext(f)[1] in ('.wav','.aiff','.flac'),os.listdir(self.path))
+        files = audio_files(self.path)
         lf = len(files)
         for i,fn in enumerate(files):
             fp = os.path.join(self.path,fn)

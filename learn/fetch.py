@@ -41,7 +41,8 @@ class PrecomputedFeature(Fetch):
         self._reduction = reduction
         
         
-    # TODO: Write tests
+    # TODO: I don't think this method works at all. Write some tests
+    # and find out
     def _prob_one_fetch(self,controller,framemodel,dim,axis1,nexamples,prob):
         '''
         Fetch method to use when fetching every possible sample from the database.
@@ -61,6 +62,8 @@ class PrecomputedFeature(Fetch):
                 bi += 1
                 if bi == self.nframes:
                     bi -=1
+                    if self._reduction:
+                        buffer = self._reduction(buffer,axis = 0)
                     yield i,buffer.reshape(axis1)
                     buf = np.roll(buf,-1,0)
                     buf[-1] = 0
@@ -98,8 +101,6 @@ class PrecomputedFeature(Fetch):
                     s = [0]
                 feature = pad(frames[self.feature],self.nframes)
                 for i in s:
-                    #yield nsamples,\
-                    #        feature[i : i + self.nframes].reshape(axis1)
                     f = feature[i : i + self.nframes]
                     if self._reduction:
                         f = self._reduction(f,axis = 0)
@@ -124,8 +125,6 @@ class PrecomputedFeature(Fetch):
         dim = c.get_dim(self.feature) 
         dtype = c.get_dtype(self.feature)
         # BUG: This assumes features will always be either one or two dimensions
-        
-        #axis1 = self.nframes if not dim else self.nframes * dim[0]
         if not dim:
             axis1 = self.nframes
         elif self._reduction:

@@ -137,7 +137,7 @@ class FrameSearch(Model):
         
         # get a frames instance
         frames = fm(data = r)
-        return self._search(frames, nresults = nresults)
+        return frames,self._search(frames, nresults = nresults)
     
     
 
@@ -157,31 +157,35 @@ class Score(object):
 # TODO: Why is this so much slower now?
 class ExhaustiveSearch(FrameSearch):
     
-    def __init__(self,_id,feature,step = 40):
+    def __init__(self,_id,feature,step = 1,normalize = True):
         FrameSearch.__init__(self,_id,feature)
         self._std = None
         self._step = step
+        self._normalize = normalize
     
     def _build_index(self):
-        env = self.env()
-        c = env.framecontroller
-        fm = env.framemodel
-        _ids = list(fm.list_ids())
-        l = len(c)
-        
-        frames = fm[_ids[0]]
-        
-        samples = np.zeros((l,frames[self.feature].shape[1]))
-        samples[:len(frames)] = frames[self.feature]
-        count = len(frames)
-        
-        for i in range(1,len(_ids)):
-            print _ids[i]
-            frames = fm[_ids[i]]
-            samples[count : count + len(frames)] = frames[self.feature]
-        
-        self._std = samples.std(0)
-        print self._std
+        if self._normalize:
+            env = self.env()
+            c = env.framecontroller
+            fm = env.framemodel
+            _ids = list(fm.list_ids())
+            l = len(c)
+            
+            frames = fm[_ids[0]]
+            
+            samples = np.zeros((l,frames[self.feature].shape[1]))
+            samples[:len(frames)] = frames[self.feature]
+            count = len(frames)
+            
+            for i in range(1,len(_ids)):
+                print _ids[i]
+                frames = fm[_ids[i]]
+                samples[count : count + len(frames)] = frames[self.feature]
+            
+            self._std = samples.std(0)
+            print self._std
+        else:
+            self._std = 1
     
     @property
     def feature(self):

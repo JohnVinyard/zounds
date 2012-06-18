@@ -44,18 +44,25 @@ class Resample(object):
         # create a pointer to the SRC_STATE struct, which maintains state
         # between calls to src_process()
         error = pointer(c_int(0))
+        self.nchannels = nchannels
+        self.converter_type = converter_type
         self._state = libsamplerate.src_new(\
                                 c_int(converter_type),c_int(nchannels),error)
     
-    def __call__(self,insamples,end_of_input = False):
+    def _prepare_input(self,insamples):
         # ensure that the input is float data
         if np.float32 != insamples.dtype:
             insamples = insamples.astype(np.float32)
         
+        return insamples
+    
+    def _output_buffer(self,insamples):
         outsize = int(np.round(insamples.size * self._ratio))
-        outsamples = np.zeros(outsize,dtype = np.float32)
+        return np.zeros(outsize,dtype = np.float32)
+    
+    def _src_data_struct(self,insamples,outsamples,end_of_input = False):
         # Build the SRC_DATA struct
-        sd = SRC_DATA(\
+        return SRC_DATA(\
                 # a pointer to the input samples
                 data_in = insamples.ctypes.data_as(POINTER(c_float)),
                 # a pointer to the output buffer
@@ -63,17 +70,32 @@ class Resample(object):
                 # number of input samples
                 input_frames = insamples.size,
                 # number of output samples
-                output_frames = outsize,
+                output_frames = outsamples.size,
                 # NOT the end of input, i.e., there is more data to process
                 end_of_input = int(end_of_input),
                 # the conversion ratio
                 src_ratio = self._ratio)
-        
-        # Check for a non-zero return code after each src_process() call
-        rv = libsamplerate.src_process(self._state,pointer(sd))
-        if rv:
+    
+    def _check_for_error(self,return_code):
+        if return_code:
             # print the string error for the non-zero return code
-            raise Exception(c_char_p(libsamplerate.src_strerror(c_int(rv))).value)
-        
-        
+            raise Exception(\
+                c_char_p(libsamplerate.src_strerror(c_int(return_code))).value)
+            
+    def all_at_once(self,insamples):
+        insamples = self._prepare_input(insamples)
+        outsamples = self._output_buffer(insamples)
+        sd = self._src_data_struct(insamples, outsamples)
+        rv = libsamplerate.src_simple(pointer(sd),
+                                      c_int(self.converter_type),
+                                      c_int(self.nchannels))
+        self._check_for_error(rv)
+        return outsamples
+    
+    def __call__(self,insamples,end_of_input = False):
+        insamples = self._prepare_input(insamples)
+        outsamples = self._output_buffer(insamples)
+        sd = self._src_data_struct(insamples, outsamples, end_of_input)
+        rv = libsamplerate.src_process(self._state,pointer(sd))
+        self._check_for_error(rv)
         return outsamples

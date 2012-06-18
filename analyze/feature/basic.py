@@ -24,7 +24,8 @@ class Basic(SingleInput):
         return np.float32
     
     def _process(self):
-        data = np.reshape(self.in_data[:self.nframes],self._inshape)
+        data = np.array(self.in_data[:self.nframes])
+        data = data.reshape(self._inshape)
         return [self._op(data)]
 
 

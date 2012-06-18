@@ -36,6 +36,25 @@ class FFT(SingleInput):
         '''
         return np.abs(np.fft.rfft(self.in_data[0]))[1:]
 
+# KlUDGE: Generalize this, and collapse into FFT
+class FFT2(SingleInput):
+    
+    def __init__(self,inshape = None,needs=None,key=None,nframes = 1,step = 1):
+        SingleInput.__init__(self,needs = needs, nframes = nframes, 
+                             step = step, key = key)
+        self._inshape = inshape
+    
+    def dim(self,env):
+        return int(self._inshape / 2)
+    
+    @property
+    def dtype(self):
+        return np.float32
+
+    def _process(self):
+        data = np.array(self.in_data[:self.nframes]).reshape(self._inshape)
+        return np.abs(np.fft.rfft(data)[1:])
+    
 class BarkBands(SingleInput):
     
     _triang = {}
