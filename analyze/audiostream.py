@@ -7,6 +7,7 @@ from nputil import pad
 def read_frames_mono(sndfile,nframes = None):
     if None is nframes:
         nframes = sndfile.nframes
+    
     if sndfile.channels == 1:
         return sndfile.read_frames(nframes)
     elif sndfile.channels == 2:
