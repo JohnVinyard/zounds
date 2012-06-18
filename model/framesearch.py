@@ -14,6 +14,7 @@ from nputil import pad,safe_unit_norm as sun
 from util import flatten2d
 from scipy.spatial.distance import cdist
 from environment import Environment
+from multiprocessing import Pool
 
 def nbest(query,index,nresults = 10,metric = 'euclidean'):
     dist = cdist(np.array([query]),index,metric)[0]
@@ -153,6 +154,46 @@ class Score(object):
         nz = np.nonzero(b)[0]
         asrt = np.argsort(b[nz])
         return nz[asrt][::-1][:n]
+    
+    
+    
+    
+
+def _search_parallel(args):
+    _ids,nresults,key,feature,step,std = args
+    ls = len(feature)
+    feature /= std
+    seq = feature.ravel()
+    c = Environment.instance.framecontroller_class(\
+                                *Environment.instance._framecontroller_args)
+    best = []
+    querylen = len(feature)
+    for _id in _ids:
+        skip = -1
+        for addr,frames in c.iter_id(_id,querylen,step = step):
+            if skip > -1 and skip * step < (len(frames) / 2):
+                skip += 1
+                continue
+            else:
+                skip = -1
+            feat = frames[key]
+            feat /= std
+            feat = pad(feat,ls)
+            dist = np.linalg.norm(feat.ravel() - seq)
+            t = (dist,(_id,addr))
+            try:
+                insertion = bisect_left(best,t)
+            except ValueError:
+                print dist
+                print best
+                raise Exception()
+            if insertion < nresults:
+                best.insert(insertion,t)
+                best = best[:nresults]
+                if len(best) == nresults:
+                    skip = 0
+    print 'DONE'
+    return [t[1] for t in best]
 
 # TODO: Why is this so much slower now?
 class ExhaustiveSearch(FrameSearch):
@@ -191,97 +232,75 @@ class ExhaustiveSearch(FrameSearch):
     def feature(self):
         return self.features[0]
     
+    
     def _search(self,frames,nresults):
-        # get the sequence of query features at the interval
-        # specified by self._step
+        nprocesses = 4
+        _ids = list(self.env().framecontroller.list_ids())
+        chunksize = int(len(_ids) / nprocesses)
+        chunks = [_ids[i : None if i == nprocesses - 1 else i + chunksize] \
+                  for i in xrange(nprocesses)]
+        print [len(c) for c in chunks]
         seq = frames[self.feature][::self._step]
-        seq /= self._std
-        ls = len(seq)
-        seq = seq.ravel()
+        key = self.feature.key
+        args = [(c,nresults,key,seq,self._step,self._std) \
+                for c in chunks]
+        p = Pool(processes = nprocesses)
+        scores = p.map(_search_parallel,args)
+        final = self._combine(nresults,*scores)
+        return final
+    
+    
+    def _combine(self,nresults,*scores):
+        s = []
+        [s.extend(score) for score in scores]
+        s.sort()
+        return [t[1] for t in s[:nresults]]
+    
+    
+            
         
-        env = self.env()
-        c = env.framecontroller
-        _ids = list(c.list_ids())
-        # best is a tuple of (score,(_id,addr))
-        best = []
-        querylen = len(frames)
-        for _id in _ids:
-            skip = -1
-            for addr,frames in c.iter_id(_id,querylen,step = self._step):
-                if skip > -1 and skip * self._step < (len(frames) / 2):
-                    skip += 1
-                    continue
-                else:
-                    skip = -1
-                feat = frames[self.feature]
-                feat /= self._std
-                feat = pad(feat,ls)
-                dist = np.linalg.norm(feat.ravel() - seq)
-                t = (dist,(_id,addr))
-                try:
-                    insertion = bisect_left(best,t)
-                except ValueError:
-                    print dist
-                    print best
-                    raise Exception()
-                if insertion < nresults:
-                    best.insert(insertion,t)
-                    best = best[:nresults]
-                    if len(best) == nresults:
-                        skip = 0
-        
-        return [t[1] for t in best]
     
 #    def _search(self,frames,nresults):
-#        seq = frames[self.feature]
-#        #seq /= self._std
-#        #seq = sun(seq)
+#        # get the sequence of query features at the interval
+#        # specified by self._step
+#        seq = frames[self.feature][::self._step]
+#        seq /= self._std
 #        ls = len(seq)
 #        seq = seq.ravel()
 #        
 #        env = self.env()
 #        c = env.framecontroller
-#        fm = env.framemodel
-#        
 #        _ids = list(c.list_ids())
-#        # best is a tuple of (score,frames)
-#        # KLUDGE: This is cheating. Searches should always return back-end
-#        # specific addresses
+#        # best is a tuple of (score,(_id,addr))
 #        best = []
+#        querylen = len(frames)
 #        for _id in _ids:
-#            frames = fm[_id]
-#            feat = frames[self.feature]
-#            #feat /= self._std
-#            #feat = sun(feat)
-#            i = 0
-#            print 'comparing to _id %s' % _id
-#            while i < len(feat) - ls:
-#                
-#                sl = feat[i:i+ls]
-#                comp = pad(sl,ls)
-#                dist = np.linalg.norm(comp.ravel() - seq)
-#                t = (dist,(_id,i))
-#                
+#            skip = -1
+#            for addr,frames in c.iter_id(_id,querylen,step = self._step):
+#                if skip > -1 and skip * self._step < (len(frames) / 2):
+#                    skip += 1
+#                    continue
+#                else:
+#                    skip = -1
+#                feat = frames[self.feature]
+#                feat /= self._std
+#                feat = pad(feat,ls)
+#                dist = np.linalg.norm(feat.ravel() - seq)
+#                t = (dist,(_id,addr))
 #                try:
 #                    insertion = bisect_left(best,t)
 #                except ValueError:
 #                    print dist
 #                    print best
 #                    raise Exception()
-#                
-#                if insertion < nresults and not np.isnan(dist):
+#                if insertion < nresults:
 #                    best.insert(insertion,t)
 #                    best = best[:nresults]
-#                    print 'found good match at _id %s, frame %i' % (_id,i)
-#                    print t[0]
-#                    i += int(ls / 2)
-#                else:
-#                    i += 1
+#                    if len(best) == nresults:
+#                        skip = 0
 #        
-#        # return just the frames, and not the scores
-#        return [fm[t[1][0]].audio[t[1][1] : t[1][1] + ls] for t in best]
-            
-            
+#        return [t[1] for t in best]
+    
         
 class LshSearch(FrameSearch):
     
