@@ -4,7 +4,14 @@ from resample import Resample
 from scikits.audiolab import Sndfile
 from nputil import pad
 
-
+def read_frames_mono(sndfile,nframes = None):
+    if None is nframes:
+        nframes = sndfile.nframes
+    if sndfile.channels == 1:
+        return sndfile.read_frames(nframes)
+    elif sndfile.channels == 2:
+        # average the values from the two channels
+        return sndfile.read_frames(nframes).sum(1) / 2
 
 class BadStepSizeException(BaseException):
     '''
@@ -75,13 +82,7 @@ class AudioStream(object):
         
         
         def rf(nframes,sndfile,channels,end_of_input = False):
-            
-            if channels == 1:
-                frames = sndfile.read_frames(nframes)
-            elif channels == 2:
-                # average the values from the two channels
-                frames = sndfile.read_frames(nframes).sum(1) / 2
-            
+            frames = read_frames_mono(sndfile,nframes)
             r = rs(frames,end_of_input)
             return r
         

@@ -1,8 +1,13 @@
 TOOO:
 -------------
-- TODO: Pool loudness KMeans with Binary RBM
+
 
 - TODO: update search script so that query lengths can be specified from the command line
+
+- TODO: update search script so that directory to draw sounds from can be specified
+ from the command line
+ 
+- TODO: Parallelize ExhaustiveSearch
 
 - TODO: Try BarkBands with narrower range in Hz, maybe 50hz - 12khz
 
