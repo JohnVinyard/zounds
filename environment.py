@@ -57,6 +57,7 @@ class Environment(object):
         self.framemodel = framemodel
         
         self.framecontroller_class = framecontroller
+        self._framecontroller_args = framecontroller_args
         
         # a dictionary-like object mapping classes to data backends
         self.data = data
@@ -106,6 +107,9 @@ class Environment(object):
     def append(self,pattern):
         ec = self.extractor_chain(pattern)
         self.framecontroller.append(ec)
+    
+    def unique_controller(self):
+        return self.framecontroller_class(*self._framecontroller_args)
     
     def __repr__(self):
         return '''Environment(
