@@ -137,7 +137,7 @@ class FrameSearch(Model):
         
         # get a frames instance
         frames = fm(data = r)
-        return frames,self._search(frames, nresults = nresults)
+        return self._search(frames, nresults = nresults)
     
     
 

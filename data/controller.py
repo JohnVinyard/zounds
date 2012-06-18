@@ -40,7 +40,10 @@ class PickledController(Controller):
     
     def __delitem__(self,key):
         path = self._filename(key)
-        os.remove(path)
+        try:
+            os.remove(path)
+        except OSError:
+            raise KeyError(key)
             
     
     def store(self,pipeline):

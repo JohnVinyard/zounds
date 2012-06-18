@@ -1,12 +1,5 @@
 TOOO:
 -------------
-
-
-- TODO: update search script so that query lengths can be specified from the command line
-
-- TODO: update search script so that directory to draw sounds from can be specified
- from the command line
- 
 - TODO: Parallelize ExhaustiveSearch
 
 - TODO: Try BarkBands with narrower range in Hz, maybe 50hz - 12khz
@@ -27,11 +20,9 @@ TOOO:
 - Bug: It's possible to load controllers of the wrong type with 
 	PickledController-derived classes
 	
-- Automatic rebuilding of search indices after data is added
+- FEATURE : Automatic rebuilding of search indices after data is added
 
-- Non-square Gabor filters
-
-- Something about the PyTables lock gets screwed up when writing large amounts
+- BUG: Something about the PyTables lock gets screwed up when writing large amounts
   of data
   
 - Add mel scale and refactor some code in analyze.bark
