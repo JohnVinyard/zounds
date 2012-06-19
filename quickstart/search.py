@@ -99,6 +99,10 @@ def parse_args():
        help='forces the search index to be rebuilt',
        default = False, 
        action = 'store_true')
+    aa('--nresults',
+       help='the number of results to return for each query',
+       type = int,
+       default = 10)
     
     args,leftover = parser.parse_known_args()
     # KLUDGE: I need to be able to pass arbitrary kwargs to the search class
@@ -180,7 +184,7 @@ if __name__ == '__main__':
         query = get_query(d,files,args.minseconds,args.maxseconds)
         # Do the search and time it
         starttime = time()
-        results = search.search(query)
+        results = search.search(query,args.nresults)
         print 'search took %1.4f seconds' % (time() - starttime)
         # play the query sound
         Z.synth.playraw(query)
