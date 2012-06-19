@@ -590,7 +590,7 @@ class PyTablesFrameController(FrameController):
                 address = PyTablesFrameController.Address(key)
                 yield  address,self.model[address]
                 
-    # TODO: Rename this, and the method in the abstract class
+    
     def iter_id(self,_id,chunksize,step = 1):
         rowns = self.db_read.getWhereList(self._query(_id = _id))
         address = PyTablesFrameController.Address(slice(rowns[0],rowns[-1]))

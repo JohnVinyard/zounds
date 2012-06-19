@@ -35,7 +35,7 @@ class Reduce(Basic):
     def __init__(self,inshape = None, op = None, axis = None, needs = None, 
                  key = None, nframes = 1, step = 1):
         
-        _inshape = [nframes]
+        _inshape = [nframes] if nframes > 1 else []
         try:
             _inshape.extend(inshape)
         except TypeError:

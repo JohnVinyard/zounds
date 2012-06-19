@@ -1,6 +1,15 @@
 TOOO:
 -------------
-- TODO: Parallelize ExhaustiveSearch
+- TODO: Refactor FFT code
+
+- TODO: Visualize Exhaustive search results (features and distances)
+
+- TODO: Ensure that ab works with a few different algorithms
+
+- BUG: Step sizes of > 1 seem to screw up parallelized ExhaustiveSearch
+
+-TODO: Compare results from serial and parallel ExhaustiveSearch implementations,
+		ensuring they're identical
 
 - TODO: Try BarkBands with narrower range in Hz, maybe 50hz - 12khz
 
@@ -24,7 +33,7 @@ TOOO:
 
 - BUG: Something about the PyTables lock gets screwed up when writing large amounts
   of data
-  
+
 - Add mel scale and refactor some code in analyze.bark
 
 - BUG : Address equivalence bug: [1,4,10] and [1,6,10] are considered equivalent.  This

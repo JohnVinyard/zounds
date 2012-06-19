@@ -17,7 +17,7 @@ class WindowedAudioSynthesizer(object):
             start = i * self.stepsize
             stop = start + self.windowsize
             output[start : stop] += f
-        return output * .8
+        return output
             
     def play(self,audio):
         output = self(audio)
@@ -25,7 +25,7 @@ class WindowedAudioSynthesizer(object):
     
     def playraw(self,audio):
         try:
-            play(np.tile(audio,(2,1)))
+            play(np.tile(audio,(2,1)) * .8)
         except KeyboardInterrupt:
             pass
         

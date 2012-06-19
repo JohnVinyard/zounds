@@ -227,7 +227,7 @@ def _search_parallel(args):
 class ExhaustiveSearch(FrameSearch):
     
     def __init__(self,_id,feature,step = 1,
-                 normalize = True,multi_process = True):
+                 normalize = True,multi_process = False):
         
         FrameSearch.__init__(self,_id,feature)
         self._std = None
@@ -331,6 +331,7 @@ class ExhaustiveSearch(FrameSearch):
                     skip = -1
                 feat = frames[self.feature]
                 feat /= self._std
+                feat[np.isnan(feat)] = 0
                 feat = pad(feat,ls)
                 dist = np.linalg.norm(feat.ravel() - seq)
                 t = (dist,(_id,addr))
