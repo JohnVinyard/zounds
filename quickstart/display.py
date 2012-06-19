@@ -5,7 +5,7 @@ import sys
 import string
 from string import Template
 from config import *
-from matplotlib import pyplot as plt
+from visualize.plot import plot
 from nputil import safe_log
 import numpy as np
 
@@ -80,14 +80,7 @@ if __name__ == '__main__':
             
             fn = os.path.join(pattern_path,'%s.png' % k)
             url = os.path.join(_id,'%s.png' % k)
-            
-                
-            if not c.get_dim(k):
-                plt.plot(data[k])
-            else:
-                plt.matshow(np.rot90(safe_log(data[k])))
-            plt.savefig(fn)
-            plt.clf()
+            plot(data[k],fn)
             feature_html.append(FeatureTemplate.substitute(ImageUrl = url, Key = k))
             
         pattern_html.append(PatternTemplate.substitute(PatternId = _id, Features = string.join(feature_html,'')))

@@ -3,6 +3,7 @@ import subprocess
 import numpy as np
 
 def plot(arr,filename,figsize = (5,5), oned = False, twod = False):
+    
     arr = np.array(arr).squeeze()
     plt.figure(figsize = figsize)
     if oned or 1 == len(arr.shape):
@@ -11,7 +12,6 @@ def plot(arr,filename,figsize = (5,5), oned = False, twod = False):
         plt.matshow(np.rot90(arr))
     else:
         raise ValueError('arr must have 1 or 2 dimensions')
-    
     plt.show()
     plt.savefig(filename)
     plt.clf()

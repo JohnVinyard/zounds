@@ -63,7 +63,9 @@ class BarkBands(SingleInput):
     _barks_to_hz = {}
     _erb = {}
     
-    def __init__(self,nbands = None,needs=None, key=None):
+    def __init__(self,needs=None, key=None,
+                 nbands = None,start_freq_hz = 50, stop_freq_hz = 20000):
+        
         SingleInput.__init__(self,needs=needs, nframes=1, step=1, key=key)
         if None is nbands:
             raise ValueError('an integer must be supplied for nbands')
@@ -73,8 +75,8 @@ class BarkBands(SingleInput):
         self.samplerate = self.env.samplerate
         self.windowsize = self.env.windowsize
         
-        self.start_freq_hz = 50
-        self.stop_freq_hz = 20000
+        self.start_freq_hz = start_freq_hz
+        self.stop_freq_hz = stop_freq_hz
         self.start_bark = bark.hz_to_barks(self.start_freq_hz)
         self.stop_bark = bark.hz_to_barks(self.stop_freq_hz)
         self.bark_bandwidth = (self.stop_bark - self.start_bark) / self.nbands
@@ -152,8 +154,8 @@ class SpectralCentroid(SingleInput):
     From http://en.wikipedia.org/wiki/Spectral_centroid
     '''
     
-    def __init__(self,needs = None,key = None):
-        SingleInput.__init__(self,needs = needs,key = key)
+    def __init__(self,needs = None,key = None,step = 1):
+        SingleInput.__init__(self,needs = needs,key = key, step = step)
         self._bins = None
         self._bins_sum = None
     
@@ -165,7 +167,7 @@ class SpectralCentroid(SingleInput):
         return np.float32
     
     def _process(self):
-        spectrum = self.in_data[0]
+        spectrum = np.array(self.in_data[0]).squeeze()
         if self._bins is None:
             self._bins = np.arange(1,len(spectrum) + 1)
             self._bins_sum = np.sum(self._bins)
@@ -192,8 +194,8 @@ class SpectralFlatness(SingleInput):
     From http://en.wikipedia.org/wiki/Spectral_flatness
     '''
     
-    def __init__(self, needs = None, key = None):
-        SingleInput.__init__(self,needs = needs, key = key)
+    def __init__(self, needs = None, key = None, step = 1):
+        SingleInput.__init__(self,needs = needs, key = key, step = step)
     
     def dim(self,env):
         return ()
@@ -203,11 +205,10 @@ class SpectralFlatness(SingleInput):
         return np.float32
     
     def _process(self):
-        spectrum = self.in_data[0]
+        spectrum = np.array(self.in_data[0]).squeeze()
         avg = np.average(spectrum)
         # avoid divide-by-zero errors
-        f = gmean(spectrum) / avg if avg else 0
-        return f
+        return gmean(spectrum) / avg if avg else 0
 
 class Kurtosis(SingleInput):
     
@@ -226,9 +227,12 @@ class Kurtosis(SingleInput):
     
 class BFCC(SingleInput):
     
-    def __init__(self, needs = None, key = None, ncoeffs = 13):
+    def __init__(self, needs = None, key = None, ncoeffs = 13,exclude = 1):
         SingleInput.__init__(self, needs = needs, key = key)
         self.ncoeffs = ncoeffs
+        # the first coefficient is often dropped, as it carries information
+        # about the loudness of the signal
+        self.exclude = exclude
     
     @property
     def dtype(self):
@@ -239,7 +243,7 @@ class BFCC(SingleInput):
     
     def _process(self):
         barks = self.in_data[0]
-        return dct(safe_log(barks))[:self.ncoeffs]
+        return dct(safe_log(barks))[self.exclude: self.exclude + self.ncoeffs]
 
 class AutoCorrelation(SingleInput):
     def __init__(self, needs = None, key = None, size = None):
