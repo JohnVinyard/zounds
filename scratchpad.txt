@@ -1,6 +1,12 @@
 TOOO:
 -------------
+- TODO: Try concatenating different sum axes in scatter app
+
+- TODO: Write CompositeFeature tests
+
 - TODO: Refactor FFT code
+
+- TODO: Write tests for refactored FFT code
 
 - TODO: Visualize Exhaustive search results (features and distances)
 
