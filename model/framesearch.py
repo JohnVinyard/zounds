@@ -4,6 +4,7 @@ import time
 import struct
 import random
 from bisect import bisect_left
+import os
 
 import numpy as np
 from bitarray import bitarray
@@ -156,22 +157,49 @@ class Score(object):
         return nz[asrt][::-1][:n]
     
     
+
+# KLUDGE ###################################################################
+# The following code is used by the parallel search implementation of 
+# ExhaustiveSearch.  It really sucks that instance and class methods can't
+# be pickled, and thus can't be easily used by the multiprocessing module.
+# Perhaps I should move all things ExhautiveSearch into a seperate module, 
+# at least
+
+LOCK_NAME = 'ExhaustiveSearch.lock'
+
+def acquire_lock():
+    while os.path.exists(LOCK_NAME):
+        time.sleep(0.1)
+    with open(LOCK_NAME,'w') as f:
+        pass
     
-    
+def release_lock():
+    try:
+        os.remove(LOCK_NAME)
+    except OSError:
+        pass
 
 def _search_parallel(args):
     _ids,nresults,key,feature,step,std = args
     ls = len(feature)
     feature /= std
     seq = feature.ravel()
+    
+    # KLUDGE: Opening handles to the same PyTables file from multiple processes
+    # at the same time seems to cause all kinds of unpredictable craziness.
+    # Once we're passed this point, concurrent reads seem to work OK.  Force
+    # the opening of the file to happen serially.
+    acquire_lock()
     c = Environment.instance.framecontroller_class(\
-                                *Environment.instance._framecontroller_args)
+                    *Environment.instance._framecontroller_args)
+    release_lock()
+    print 'GOT PYTABLES HANDLE'
     best = []
     querylen = len(feature)
     for _id in _ids:
         skip = -1
         for addr,frames in c.iter_id(_id,querylen,step = step):
-            if skip > -1 and skip * step < (len(frames) / 2):
+            if skip > -1 and skip * step < (ls / 2):
                 skip += 1
                 continue
             else:
@@ -192,17 +220,27 @@ def _search_parallel(args):
                 best = best[:nresults]
                 if len(best) == nresults:
                     skip = 0
-    print 'DONE'
-    return [t[1] for t in best]
+    return best
 
-# TODO: Why is this so much slower now?
+############################################################################
+
 class ExhaustiveSearch(FrameSearch):
     
-    def __init__(self,_id,feature,step = 1,normalize = True):
+    def __init__(self,_id,feature,step = 1,
+                 normalize = True,multi_process = True):
+        
         FrameSearch.__init__(self,_id,feature)
         self._std = None
         self._step = step
         self._normalize = normalize
+        self._multi_process = multi_process
+    
+    def _search(self,frames,nresults):
+        if self._multi_process:
+            return self._search_multi_process(frames, nresults)
+        
+        return self._search_single_process(frames, nresults)
+        
     
     def _build_index(self):
         if self._normalize:
@@ -233,13 +271,22 @@ class ExhaustiveSearch(FrameSearch):
         return self.features[0]
     
     
-    def _search(self,frames,nresults):
+    def _search_multi_process(self,frames,nresults):
+        '''
+        Split the _id space into four chunks, and search them seperately.
+        Combine the results from each search to find the nresults best segments.
+        '''
+        # make sure the lock is released, just in case something went
+        # wrong last time
+        release_lock()
         nprocesses = 4
         _ids = list(self.env().framecontroller.list_ids())
         chunksize = int(len(_ids) / nprocesses)
-        chunks = [_ids[i : None if i == nprocesses - 1 else i + chunksize] \
-                  for i in xrange(nprocesses)]
-        print [len(c) for c in chunks]
+        chunks = []
+        for i in xrange(nprocesses):
+            start = i*chunksize
+            stop = start + chunksize
+            chunks.append(_ids[start:stop])
         seq = frames[self.feature][::self._step]
         key = self.feature.key
         args = [(c,nresults,key,seq,self._step,self._std) \
@@ -251,55 +298,55 @@ class ExhaustiveSearch(FrameSearch):
     
     
     def _combine(self,nresults,*scores):
+        '''
+        Combine results from multiple _search processes
+        '''
         s = []
         [s.extend(score) for score in scores]
         s.sort()
         return [t[1] for t in s[:nresults]]
     
     
-            
+    def _search_single_process(self,frames,nresults):
+        # get the sequence of query features at the interval
+        # specified by self._step
+        seq = frames[self.feature][::self._step]
+        seq /= self._std
+        ls = len(seq)
+        seq = seq.ravel()
         
-    
-#    def _search(self,frames,nresults):
-#        # get the sequence of query features at the interval
-#        # specified by self._step
-#        seq = frames[self.feature][::self._step]
-#        seq /= self._std
-#        ls = len(seq)
-#        seq = seq.ravel()
-#        
-#        env = self.env()
-#        c = env.framecontroller
-#        _ids = list(c.list_ids())
-#        # best is a tuple of (score,(_id,addr))
-#        best = []
-#        querylen = len(frames)
-#        for _id in _ids:
-#            skip = -1
-#            for addr,frames in c.iter_id(_id,querylen,step = self._step):
-#                if skip > -1 and skip * self._step < (len(frames) / 2):
-#                    skip += 1
-#                    continue
-#                else:
-#                    skip = -1
-#                feat = frames[self.feature]
-#                feat /= self._std
-#                feat = pad(feat,ls)
-#                dist = np.linalg.norm(feat.ravel() - seq)
-#                t = (dist,(_id,addr))
-#                try:
-#                    insertion = bisect_left(best,t)
-#                except ValueError:
-#                    print dist
-#                    print best
-#                    raise Exception()
-#                if insertion < nresults:
-#                    best.insert(insertion,t)
-#                    best = best[:nresults]
-#                    if len(best) == nresults:
-#                        skip = 0
-#        
-#        return [t[1] for t in best]
+        env = self.env()
+        c = env.framecontroller
+        _ids = list(c.list_ids())
+        # best is a tuple of (score,(_id,addr))
+        best = []
+        querylen = len(frames)
+        for _id in _ids:
+            skip = -1
+            for addr,frames in c.iter_id(_id,querylen,step = self._step):
+                if skip > -1 and skip * self._step < (querylen / 2):
+                    skip += 1
+                    continue
+                else:
+                    skip = -1
+                feat = frames[self.feature]
+                feat /= self._std
+                feat = pad(feat,ls)
+                dist = np.linalg.norm(feat.ravel() - seq)
+                t = (dist,(_id,addr))
+                try:
+                    insertion = bisect_left(best,t)
+                except ValueError:
+                    print dist
+                    print best
+                    raise Exception()
+                if insertion < nresults:
+                    best.insert(insertion,t)
+                    best = best[:nresults]
+                    if len(best) == nresults:
+                        skip = 0
+        
+        return [t[1] for t in best]
     
         
 class LshSearch(FrameSearch):
