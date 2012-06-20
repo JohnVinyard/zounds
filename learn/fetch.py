@@ -5,6 +5,7 @@ import numpy as np
 
 from environment import Environment
 from nputil import pad
+from random import choice
 
 class Fetch(object):
     
@@ -171,29 +172,48 @@ class PrecomputedPatch(PrecomputedFeature):
     '''
     def __init__(self,nframes,feature,fullsize,patch):
         PrecomputedFeature.__init__(self,nframes,feature)
+        '''
+        nframes -  the number of frames of feature to fetch
+        feature - the feature to fetch
+        fullsize - the shape of the full patch, from which we'll be slicing
+        patch - Can be one of the following:
+            - a slice, if fullsize is one-dimensional
+            - a list of slices, one for each dimension, if fullsize is
+              multi-dimensional
+            - a 3-tuple, representing (start,stop,step). This is interpreted as:
+              "choose a slice of length step, beginning at choice(start,stop,step)"
+            - a list of 3-tuples when fullsize is multidimensional. Each tuple
+              is interpreted according to the rules above
+             
+        '''
         
         # TODO: Check that number of dimensions of fullsize and patch agree,
         # and that all slices are valid for fullsize
         
         # a tuple representing the desired shape of the data before "cutting"
         self.fullsize = fullsize
-        # a slice, or list of slices representing the "patch" to cut from the
-        # full size feature
-        if callable(patch):
-            self._patch = patch
-        elif isinstance(patch,slice):
-            self._patch = [patch]
-        elif isinstance(patch,list):
-            self._patch = patch
-        else:
-            raise ValueError('patch must be a callable, slice, or a list of slices')
+        
+        self._patch = patch if isinstance(patch,list) else [patch]
+        self._static = all(map(lambda i : isinstance(i,slice),self._patch))
+        if not self._static:
+            try:
+                self._ranges = [range(*t) for t in self._patch]
+            except TypeError:
+                raise ValueError('patch must be a slice, a list of slices, \
+                                    a 3-tuple, or a list of 3-tuples')
     
     @property
     def patch(self):
-        if callable(self._patch):
-            return self._patch()
+        if self._static:
+            return self._patch
         
-        return self._patch
+        # patch is random. Choose a random n-dimensional slice with the
+        # parameters specified by self._patch
+        p = []
+        for i,t in enumerate(self._patch):
+            start = choice(self._ranges[i])
+            p.append(slice(start,start + t[2]))
+        return p
     
     def __call__(self, nexamples = None):
         FM,c,l = self._get_env()

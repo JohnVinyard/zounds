@@ -3,8 +3,6 @@ TOOO:
 
 - TODO: Visualize Exhaustive search results (features and distances)
 
-- BUG: Callable patch problem for PrecomptedPatch
-		
 - BUG: ingest doesn't exclude sounds already in the db
 
 - TODO: Refactor FFT code

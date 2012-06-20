@@ -268,13 +268,17 @@ class ExtractorChain(object):
                     yield c.key if c.key else c,c.out
                     
                 
-    def collect(self):
+    def collect(self,nframes = None):
         '''
         Turn the crank until we run out of data
         '''
+        i = 0
         bucket = self.bucket()  
         for k,v in self.process():
             bucket[k].append(v)
+            i+=1
+            if nframes is not None and i > nframes:
+                break
         return bucket
     
     
