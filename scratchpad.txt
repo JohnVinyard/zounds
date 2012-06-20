@@ -1,21 +1,15 @@
 TOOO:
 -------------
-- TODO: Tile Feature, which "broadcasts" a single feature across an 
-		incoming feature
-		
+
+- TODO: Visualize Exhaustive search results (features and distances)
+
 - BUG: Callable patch problem for PrecomptedPatch
 		
 - BUG: ingest doesn't exclude sounds already in the db
 
-- TODO: Stats for stored features
-
-- TODO: Try concatenating different sum axes in scatter app
-
 - TODO: Refactor FFT code
 
 - TODO: Write tests for refactored FFT code
-
-- TODO: Visualize Exhaustive search results (features and distances)
 
 - TODO: Ensure that ab works with a few different algorithms
 
@@ -23,8 +17,6 @@ TOOO:
 
 -TODO: Compare results from serial and parallel ExhaustiveSearch implementations,
 		ensuring they're identical
-
-- TODO: Try BarkBands with narrower range in Hz, maybe 50hz - 12khz
 
 - BUG: It's possible to add duplicates to the database because of external_id
 	truncation

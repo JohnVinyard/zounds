@@ -42,16 +42,6 @@ class Learned(SingleInput):
         return [self.pipeline(data)]
     
 
-from random import choice
-def tall_patch():
-    xstart = choice(range(0,10,2))
-    ystart = choice(range(0,200,10))
-    return [slice(xstart,xstart + 2),slice(ystart,ystart + 10)]
-
-def fat_patch():
-    ystart = choice(range(0,200,2))
-    return [slice(0,10),slice(ystart,ystart + 2)]
-
 class Tile(SingleInput):
     
     def __init__(self, needs = None, key = None, nframes = 1, step = 1,
