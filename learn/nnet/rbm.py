@@ -62,6 +62,9 @@ class Rbm(NeuralNetwork,Learn):
     def hdim(self):
         return self._hdim
 
+    @property
+    def dim(self):
+        return self.hdim
 
     def _up(self,v):
         '''

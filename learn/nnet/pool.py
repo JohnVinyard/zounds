@@ -22,6 +22,10 @@ class Pooling(NeuralNetwork,Learn):
     def hdim(self):
         return self._layer1.hdim
     
+    @property
+    def dim(self):
+        return self.hdim
+    
     def _aggregate(self,data):
         return self._pooling_method(data,axis = 0)
     

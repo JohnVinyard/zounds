@@ -41,6 +41,14 @@ class Pipeline(Model):
         self.learn = learn
         # the date this pipeline completed training
         self.trained_date = None
+    
+    @property
+    def dim(self):
+        try:
+            return self.learn.dim
+        except NameError:
+            raise NotImplemented('%s has not implemented a dim property' % \
+                                self.learn.__class__.__name__)
         
 
     def train(self,nexamples,stopping_condition):

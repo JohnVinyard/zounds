@@ -2,7 +2,11 @@ from matplotlib import pyplot as plt
 import subprocess
 import numpy as np
 
-def plot(arr,filename,figsize = (5,5), oned = False, twod = False):
+def plot(arr,filename,figsize = (5,5), oned = False, twod = False, gray = False):
+    if gray:
+        plt.gray()
+    else:
+        plt.spectral()
     arr = np.array(arr).squeeze()
     plt.figure(figsize = figsize)
     if oned or 1 == len(arr.shape):
@@ -21,8 +25,6 @@ def video(arr,filename,audiofile,rate):
     rescaled = arr - arr.min()
     # ensure that the maximum value is 2**8
     rescaled = (rescaled * (255. / rescaled.max())).astype(np.uint8)
-    print rescaled.min()
-    print rescaled.max()
     vs = VideoSink(rescaled.shape[1:],filename = filename, 
                    audiofile = audiofile, rate = rate)
     for a in rescaled:
