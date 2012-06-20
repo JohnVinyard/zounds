@@ -244,24 +244,7 @@ class ExhaustiveSearch(FrameSearch):
     
     def _build_index(self):
         if self._normalize:
-            env = self.env()
-            c = env.framecontroller
-            fm = env.framemodel
-            _ids = list(fm.list_ids())
-            l = len(c)
-            
-            frames = fm[_ids[0]]
-            
-            samples = np.zeros((l,frames[self.feature].shape[1]))
-            samples[:len(frames)] = frames[self.feature]
-            count = len(frames)
-            
-            for i in range(1,len(_ids)):
-                print _ids[i]
-                frames = fm[_ids[i]]
-                samples[count : count + len(frames)] = frames[self.feature]
-            
-            self._std = samples.std(0)
+            self._std = self.feature.std()
             print self._std
         else:
             self._std = 1

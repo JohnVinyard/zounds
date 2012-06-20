@@ -40,7 +40,6 @@ class Reduce(Basic):
             _inshape.extend(inshape)
         except TypeError:
             _inshape.append(inshape)
-        
         _op = lambda a : op(a,axis = axis)
         
         sh = list(_inshape)
@@ -65,7 +64,7 @@ class Sum(Reduce):
 
 class Max(Reduce):
     
-    def __init__(self, inshape = None, axis = None, needs = None, 
+    def __init__(self, inshape = None, axis = 0, needs = None, 
                  key = None, nframes = 1, step = 1):
         
         Reduce.__init__(self,inshape = inshape, axis = axis, op = np.max,

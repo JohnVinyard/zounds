@@ -10,9 +10,9 @@ from analyze.feature.metadata import \
     MetaDataExtractor, LiteralExtractor,CounterExtractor
 from analyze.feature.rawaudio import AudioSamples
 from util import recurse,sort_by_lineage
+from environment import Environment
 
 
-# TODO: MultiFeature class (like for minhash features)
 class Feature(object):
     '''
     
@@ -48,6 +48,26 @@ class Feature(object):
             needs = CounterExtractor()
         return self.extractor_cls(needs = needs,key = key,**self.args)
     
+    @property
+    def step(self):
+        return self.extractor().step
+    
+    @property
+    def nframes(self):
+        return self.extractor().nframes
+    
+    # BUG: This may not always return the correct answer, if the property
+    # depends on the input sources. See Composite extractor, e.g.
+    @property
+    def dtype(self):
+        return self.extractor().dtype
+    
+    # BUG: This may not always return the correct answer, if the property
+    # depends on the input sources. See Composite extractor, e.g.
+    @property
+    def dim(self):
+        return self.extractor().dim(Environment.instance)
+    
     @recurse
     def depends_on(self):
         '''
@@ -55,6 +75,20 @@ class Feature(object):
         on.
         '''
         return self.needs
+    
+    def _stat(self,aggregate,step = None,axis = 0):
+        s = self.step if step is None else step
+        return Environment.instance.framecontroller.stat(\
+                                            self,aggregate,step = s, axis = axis)
+    
+    def mean(self,step = None,axis = 0):
+        return self._stat(np.mean,step = step, axis = axis)
+    
+    def sum(self,step = None, axis = 0):
+        return self._stat(np.sum,step = step, axis = axis)
+    
+    def std(self,step = None, axis = 0):
+        return self._stat(np.std, step = step, axis = axis)
     
     # TODO: Write tests
     def __eq__(self,other):
