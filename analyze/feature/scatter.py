@@ -240,7 +240,6 @@ class Scatter(SingleInput):
         #order_one = safe_log(np.abs(np.array(out[1])))
         order_two = safe_log(np.abs(np.array(out[2]))) 
         out = order_two
-        print 'I am recomputing %s' % str(out.shape)
         return out
         
         

@@ -19,7 +19,6 @@ class Composite(Extractor):
         return np.float32
     
     def _process(self):
-        print 'composite'
         return np.concatenate([np.array(self.input[source]).ravel() \
                                for source in self.sources]).ravel()
     

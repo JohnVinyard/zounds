@@ -1,8 +1,12 @@
 TOOO:
 -------------
-- TODO: Try concatenating different sum axes in scatter app
+- BUG: ingest doesn't exclude sounds already in the db
 
-- TODO: Write CompositeFeature tests
+- TODO: Plot 3d movies
+
+- TODO: Stats for stored features
+
+- TODO: Try concatenating different sum axes in scatter app
 
 - TODO: Refactor FFT code
 

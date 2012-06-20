@@ -3,7 +3,6 @@ import subprocess
 import numpy as np
 
 def plot(arr,filename,figsize = (5,5), oned = False, twod = False):
-    
     arr = np.array(arr).squeeze()
     plt.figure(figsize = figsize)
     if oned or 1 == len(arr.shape):
@@ -11,20 +10,35 @@ def plot(arr,filename,figsize = (5,5), oned = False, twod = False):
     elif twod or 2 == len(arr.shape):
         plt.matshow(np.rot90(arr))
     else:
-        raise ValueError('arr must have 1 or 2 dimensions')
+        raise ValueError('arr must have 1, 2, or 3 dimensions')
     plt.show()
     plt.savefig(filename)
     plt.clf()
+
+
+def video(arr,filename,audiofile,rate):
+    # ensure that the minimum value is zero
+    rescaled = arr - arr.min()
+    # ensure that the maximum value is 2**8
+    rescaled = (rescaled * (255. / rescaled.max())).astype(np.uint8)
+    print rescaled.min()
+    print rescaled.max()
+    vs = VideoSink(rescaled.shape[1:],filename = filename, 
+                   audiofile = audiofile, rate = rate)
+    for a in rescaled:
+        vs.run(a)
+    vs.close()
     
 
 class VideoSink(object) :
 
-    def __init__( self, size, filename="output", rate=10, byteorder="bgra", audiofile = None):
+    def __init__( self, size, filename='output', rate=10, byteorder='Y8', audiofile = None):
         self.size = size
         cmdstring  = ['mencoder',
                     '/dev/stdin',
                     '-demuxer', 'rawvideo',
-                    '-rawvideo', 'w=%i:h=%i'%size[::-1]+":fps=%i:format=%s"%(rate,byteorder),
+                    '-rawvideo', ('w=%i:h=%i'%size[::-1]) + \
+                    (':fps=%i:format=%s'%(rate,byteorder)),
                     '-o', filename+'.avi',
                     '-ovc', 'lavc']
             
