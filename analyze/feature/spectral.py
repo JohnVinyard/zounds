@@ -39,13 +39,25 @@ class FFT(SingleInput):
 # KlUDGE: Generalize this, and collapse into FFT
 class FFT2(SingleInput):
     
-    def __init__(self,inshape = None,needs=None,key=None,nframes = 1,step = 1):
+    def __init__(self,inshape = None,needs=None,key=None,
+                 nframes = 1,step = 1,axis = 0):
+        
         SingleInput.__init__(self,needs = needs, nframes = nframes, 
                              step = step, key = key)
-        self._inshape = inshape
+        
+        if isinstance(inshape,int):
+            self._inshape = (inshape,)
+        elif isinstance(inshape,tuple):
+            self._inshape = inshape
+        else:
+            raise ValueError('inshape must be an int or a tuple')
+        
+        self._axis = axis
     
     def dim(self,env):
-        return int(self._inshape / 2)
+        a = np.array(self._inshape,dtype = np.float32)
+        a[0] = int(a[0] / 2)
+        return int(np.product(a))
     
     @property
     def dtype(self):
@@ -53,7 +65,8 @@ class FFT2(SingleInput):
 
     def _process(self):
         data = np.array(self.in_data[:self.nframes]).reshape(self._inshape)
-        return np.abs(np.fft.rfft(data)[1:])
+        # the slice here is to remove the zero-frequency term
+        return [np.abs(np.fft.rfft(data,axis = self._axis)[1:]).ravel()]
     
 class BarkBands(SingleInput):
     

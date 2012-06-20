@@ -1,6 +1,5 @@
 from __future__ import division
 from abc import ABCMeta,abstractmethod
-
 import numpy as np
 
 from model import Model
