@@ -13,7 +13,6 @@ class KMeans(Learn):
         self.n_centroids = n_centroids
         self.codebook = None
         
-        
     
     @property
     def indim(self):
@@ -22,6 +21,10 @@ class KMeans(Learn):
     @property
     def hdim(self):
         return self.codebook.shape[0]
+    
+    @property
+    def dim(self):
+        return self.hdim
     
     def train(self,data,stopping_condition):
         self._indim = data.shape[1]

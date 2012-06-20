@@ -125,6 +125,10 @@ class Autoencoder(NeuralNetwork,Learn):
     @property
     def hdim(self):
         return self._netp._hdim
+    
+    @property
+    def dim(self):
+        return self.hdim
 
 
     ## ACTIVATION OF THE NETWORK #########################################

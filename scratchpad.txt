@@ -1,8 +1,11 @@
 TOOO:
 -------------
+- TODO: Tile Feature, which "broadcasts" a single feature across an 
+		incoming feature
+		
+- BUG: Callable patch problem for PrecomptedPatch
+		
 - BUG: ingest doesn't exclude sounds already in the db
-
-- TODO: Plot 3d movies
 
 - TODO: Stats for stored features
 
