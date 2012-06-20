@@ -6,7 +6,7 @@ def plot(arr,filename,figsize = (5,5), oned = False, twod = False, gray = False)
     if gray:
         plt.gray()
     else:
-        plt.spectral()
+        plt.jet()
     arr = np.array(arr).squeeze()
     plt.figure(figsize = figsize)
     if oned or 1 == len(arr.shape):

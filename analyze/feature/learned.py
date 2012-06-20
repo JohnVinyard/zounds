@@ -41,8 +41,17 @@ class Learned(SingleInput):
         data = data.reshape(np.product(data.shape))
         return [self.pipeline(data)]
     
-    
-        
+
+from random import choice
+def tall_patch():
+    xstart = choice(range(0,10,2))
+    ystart = choice(range(0,200,10))
+    return [slice(xstart,xstart + 2),slice(ystart,ystart + 10)]
+
+def fat_patch():
+    ystart = choice(range(0,200,2))
+    return [slice(0,10),slice(ystart,ystart + 2)]
+
 class Tile(SingleInput):
     
     def __init__(self, needs = None, key = None, nframes = 1, step = 1,
@@ -62,7 +71,7 @@ class Tile(SingleInput):
         ravel - if True, output is flattened, otherwise, it is returned as
                 number of tiles x out_tile_shape
         '''
-        
+        SingleInput.__init__(self,needs = needs,nframes = nframes, step = step, key = key)
         self.pipeline = Pipeline[pipeline_id]
         self._inshape = inshape
         self._slicedim = slicedim

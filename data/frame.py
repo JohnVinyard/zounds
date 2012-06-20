@@ -93,6 +93,10 @@ class FrameController(Controller):
         '''
         pass
     
+    @abstractmethod
+    def stat(self,feature,aggregate,axis = 0,step = 1):
+        pass
+    
     
     def __getitem__(self,key):
         return self.get(key)
@@ -558,6 +562,10 @@ class PyTablesFrameController(FrameController):
         return getattr(self.db_read.cols,key).shape[1:]
     
     
+    def stat(self,feature,aggregate,axis = 0, step = 1):
+        key = feature if isinstance(feature,str) else feature.key
+        return aggregate([row[key] for row in self.db_read[::step]],axis = axis)
+    
     def iter_feature(self,_id,feature,step = 1):
         
         # BUG: The following should work, but always raises a
@@ -839,5 +847,8 @@ class DictFrameController(FrameController):
     
     def iter_id(self):
         raise NotImplementedError
+    
+    def stat(self,feature,aggregate,axis = 0, step = 1):
+        pass
         
         
