@@ -48,8 +48,8 @@ class UnitNorm(Basic):
 
 class SliceX(SingleInput):
     
-    def __init__(self, needs = None, key = None, slce = None):
-        SingleInput.__init__(self, needs = needs, key = key, nframes = 1, step = 1)
+    def __init__(self, needs = None, key = None, slce = None, nframes = 1, step = 1):
+        SingleInput.__init__(self, needs = needs, key = key, nframes = nframes, step = step)
         if 1 == len(slce):
             self._slice = slice(0,slce[0],1)
         elif 2 == len(slce):
@@ -66,3 +66,21 @@ class SliceX(SingleInput):
     
     def _process(self):
         return [self.in_data[0][self._slice]]
+
+
+class Threshold(SingleInput):
+    
+    def __init__(self,needs = None, key = None, thresh = None):
+        SingleInput.__init__(self,needs = needs, key = key)
+        self._thresh = thresh
+    
+    @property
+    def dtype(self):
+        return np.uint8
+    
+    def dim(self,env):
+        return ()
+    
+    def _process(self):
+        return int(self.in_data[0] > self._thresh)
+        

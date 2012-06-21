@@ -3,8 +3,9 @@ TOOO:
 
 - TODO: Visualize Exhaustive search results (features and distances)
 
-- BUG: ingest doesn't exclude sounds already in the db
-
+- BUG: It's possible to add duplicates to the database because of external_id
+	truncation
+	
 - TODO: Refactor FFT code
 
 - TODO: Write tests for refactored FFT code
@@ -16,8 +17,7 @@ TOOO:
 -TODO: Compare results from serial and parallel ExhaustiveSearch implementations,
 		ensuring they're identical
 
-- BUG: It's possible to add duplicates to the database because of external_id
-	truncation
+
 
 - BUG: Tests are being run multiple times when imported by other tests
 
