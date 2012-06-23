@@ -80,8 +80,14 @@ def downsample3d(arr,factor):
                 newarr[x,y,z] = arr[xstart : xstop, ystart : ystop, zstart : zstop].mean()
     return newarr
                 
-    
 
+from itertools import product
+def ds(arr,factor):
+    oldshape = np.array(arr.shape)
+    newshape = np.array(oldshape / factor).astype(np.int16)
+    return np.array([arr[[slice(x,x+factor) for x in coord]].mean() \
+                     for coord in product(*[range(0,shape) for shape in newshape])])\
+                     .reshape(newshape)
 
 def testsignal(hz,seconds=5.,sr=44100.):
     '''
