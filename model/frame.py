@@ -290,8 +290,6 @@ class MetaFrame(type):
         return self(address)
 
 
-
-# TODO: Frames classes should implement FramesController interface
 class Frames(Model):
     '''
     

@@ -12,7 +12,8 @@ class Composite(Extractor):
     
     
     def dim(self,env):
-        return np.sum([np.product(s.dim(env)) * self.nframes for s in self.sources])
+        dims = [int(np.product(s.dim(env)) * self.nframes) for s in self.sources]
+        return np.sum(dims)
     
     @property
     def dtype(self):

@@ -1,5 +1,8 @@
 TOOO:
 -------------
+- TODO: Generalize Downsample method to any dimension
+
+- TODO: Tile method should work with any extractor, not just a Pipeline 
 
 - TODO: Visualize Exhaustive search results (features and distances)
 
@@ -16,8 +19,6 @@ TOOO:
 
 -TODO: Compare results from serial and parallel ExhaustiveSearch implementations,
 		ensuring they're identical
-
-
 
 - BUG: Tests are being run multiple times when imported by other tests
 
