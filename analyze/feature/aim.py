@@ -2,7 +2,7 @@ import aimc
 import numpy as np
 from analyze.extractor import SingleInput
 from environment import Environment
-from util import downsample,downsample3d
+from util import downsample
 from itertools import permutations,product
 
 class PZFC(SingleInput):
@@ -176,9 +176,6 @@ class GoogleBoxCut(SingleInput):
         # times the number of boxes
         self._total_size *= self._total_boxes
         self._total_size = int(self._total_size)
-        
-        self._downsample = self._downsample2d if 2 == self._dims \
-                            else self._downsample3d
 
     def dim(self,env):
         return self._total_size
@@ -186,12 +183,6 @@ class GoogleBoxCut(SingleInput):
     @property
     def dtype(self):
         return np.float32
-    
-    def _downsample2d(self,arr,factor):
-        return downsample(arr,factor)
-    
-    def _downsample3d(self,arr,factor):
-        return downsample3d(arr,factor)
     
     _PRODUCT_CACHE = {}
     def _product(self,scale,data):
@@ -211,7 +202,7 @@ class GoogleBoxCut(SingleInput):
         boxes = np.zeros((self._bas[scale],self._vec_size))
         prod = self._product(scale, data)
         for i,coords in enumerate(prod):
-            box = self._downsample(data[coords],scale)
+            box = downsample(data[coords],scale)
             vec = np.concatenate([box.mean(i).ravel() for i in xrange(self._dims)])
             boxes[i] = vec
         return boxes.ravel()

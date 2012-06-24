@@ -1,4 +1,5 @@
 from __future__ import division
+from itertools import product
 import numpy as np
 import os.path
 from constants import available_file_formats
@@ -41,53 +42,27 @@ def flatten2d(arr):
         return arr.reshape((arr.shape[0],np.product(arr.shape[1:])))
 
 def downsampled_shape(shape,factor):
-    if 2 != len(shape):
-        raise ValueError('downsampling can only be performed on 2d arrays')
-    
-    return int(shape[0] / factor),int(shape[1] / factor)
-
-def downsample(myarr,factor):
     '''
-    Downsample a 2D array by averaging over *factor* pixels in each axis.
-    Crops upper edge if the shape is not a multiple of factor.
+    Return the new shape of an array with shape, once downsampled
+    by factor.
     '''
-    if 1 == factor:
-        return myarr
-    
-    xs,ys = myarr.shape
-    crarr = myarr[:xs-(xs % int(factor)),:ys-(ys % int(factor))]
-    dsarr = np.concatenate([[crarr[i::factor,j::factor] 
-        for i in xrange(factor)] 
-        for j in xrange(factor)]).mean(axis=0)
-    return dsarr
+    return tuple((np.array(shape) / factor).astype(np.int32))
 
-def downsample3d(arr,factor):
-    if 1 == factor:
-        return arr
-    
-    oldshape = np.array(arr.shape)
-    newshape = np.array(oldshape / factor).astype(np.int16)
+
+def downsample(arr,factor,method = 'mean'):
+    if method == 'mean':
+        m = lambda a : np.mean(a)
+    elif method == 'max':
+        m = lambda a : np.mean(a)
+    else:
+        raise ValueError('method must be one of ("mean","max")')
+    newshape = downsampled_shape(arr.shape,factor)
     newarr = np.zeros(newshape)
-    for x in xrange(0,newshape[0]):
-        for y in xrange(0,newshape[1]):
-            for z in xrange(0,newshape[2]):
-                xstart = x*factor
-                xstop = xstart + factor
-                ystart = y*factor
-                ystop = ystart + factor
-                zstart = z * factor
-                zstop = zstart + factor
-                newarr[x,y,z] = arr[xstart : xstop, ystart : ystop, zstart : zstop].mean()
+    prod = product(*[range(0,shape) for shape in newshape])
+    for coord in prod:
+        sl = [slice(x*factor,x*factor+factor) for x in coord]
+        newarr[coord] = m(arr[sl])
     return newarr
-                
-
-from itertools import product
-def ds(arr,factor):
-    oldshape = np.array(arr.shape)
-    newshape = np.array(oldshape / factor).astype(np.int16)
-    return np.array([arr[[slice(x,x+factor) for x in coord]].mean() \
-                     for coord in product(*[range(0,shape) for shape in newshape])])\
-                     .reshape(newshape)
 
 def testsignal(hz,seconds=5.,sr=44100.):
     '''

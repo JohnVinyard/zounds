@@ -20,7 +20,7 @@ def plot(arr,filename,figsize = (5,5), oned = False, twod = False, gray = False)
     plt.clf()
 
 
-def video(arr,filename,audiofile,rate):
+def video(arr,filename,audiofile = None,rate = 10):
     # ensure that the minimum value is zero
     rescaled = arr - arr.min()
     # ensure that the maximum value is 2**8
