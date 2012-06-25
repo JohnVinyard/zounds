@@ -1,6 +1,8 @@
 TOOO:
 -------------
-- TODO: Generalize Downsample method to any dimension
+- TODO: Random sampling method that avoids silence
+
+- TODO: Pass an id or a (source,external_id) argument to search.py as the query 
 
 - TODO: Tile method should work with any extractor, not just a Pipeline 
 

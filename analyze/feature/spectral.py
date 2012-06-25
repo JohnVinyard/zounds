@@ -154,33 +154,8 @@ class Loudness(SingleInput):
         
     def _process(self):
         return np.sum(self.in_data[:self.nframes])
-        
-class Transients(SingleInput):
-    '''
-    Transients convolves a loudness measure with a high pass filter that responds
-    strongly to fast changes.
-    '''
-    def __init__(self,needs = None, key = None, nframes = 60, step = 30):
-        SingleInput.__init__(self,needs = needs, nframes = nframes, 
-                             step = step, key = key)
-        
-        # a very simple, high pass filter. This will have a strong
-        # response to fast changes
-        self._filter = -np.ones(11)
-        self._filter[6] = 10
-    
-    def dim(self,env):
-        return self.nframes
-    
-    @property
-    def dtype(self):
-        return np.float32
-    
-    def _process(self):
-        d = np.array(self.in_data[:self.nframes]).ravel()
-        d = sun(d)
-        c = convolve(d,self._filter,'same')
-        return c
+
+
 
 class SpectralCentroid(SingleInput):
     '''
@@ -299,7 +274,7 @@ class AutoCorrelation(SingleInput):
         return self.size
     
     def _process(self):
-        data = sun(self.in_data[0])
+        data = sun(np.array(self.in_data[0]).reshape(self.size))
         return np.correlate(data,data,mode = 'full')[self.size - 1:]
 
 class SelfSimilarity(SingleInput):

@@ -89,6 +89,12 @@ class Feature(object):
     def std(self,step = None, axis = 0):
         return self._stat(np.std, step = step, axis = axis)
     
+    def max(self,step = None, axis = 0):
+        return self._stat(np.max, step = step, axis = axis)
+    
+    def min(self,step = None, axis = 0):
+        return self._stat(np.min, step = step, axis = axis)
+    
     # TODO: Write tests
     def __eq__(self,other):
         return self.__class__ == other.__class__ \
