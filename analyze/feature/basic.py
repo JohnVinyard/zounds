@@ -2,7 +2,7 @@ from __future__ import division
 import numpy as np
 from analyze.extractor import SingleInput
 from nputil import safe_unit_norm as sun
-
+from scipy.signal import convolve
 
 class Basic(SingleInput):
     
@@ -83,4 +83,32 @@ class Threshold(SingleInput):
     
     def _process(self):
         return int(self.in_data[0] > self._thresh)
+
+class Sharpen(SingleInput):
+    '''
+    Convolve input with a simple high-pass filter to accentuate peaks
+    '''
+    
+    def __init__(self,needs = None, key = None, nframes = 1, step = 1, 
+                 kernel_size = 11,sharpness = 10,inshape = None):
+        SingleInput.__init__(self,needs = needs, nframes = nframes,
+                             step = step, key = key)
+        
+        if not kernel_size % 2:
+            raise ValueError('kernel_size must be odd')
+        
+        self._filter = -np.ones(kernel_size)
+        self._filter[int(kernel_size / 2)] = sharpness
+        self._inshape = inshape
+    
+    def dim(self,env):
+        return self._inshape
+    
+    @property
+    def dtype(self):
+        return np.float32
+    
+    def _process(self):
+        d = np.array(self.in_data[:self.nframes]).reshape(self._inshape)
+        return convolve(d,self._filter,mode = 'same')
         
