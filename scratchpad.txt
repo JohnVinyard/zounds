@@ -1,6 +1,15 @@
 TOOO:
 -------------
-- TODO: Random sampling method that avoids silence
+- TODO: Nice printing for Extractor, FrameModel, Preproces, Learn, Environment, etc...
+
+- BUG: Features with a step size > 1 get zeroed at buffer boundaries by PyTablesFramesController
+
+
+
+- TODO: Bug with zoundsapps/transients/config.py which keeps causing "lhs and
+	rhs are ancestors of each other" error
+	
+- TODO: Random sampling method (for learning) that avoids silence
 
 - TODO: Pass an id or a (source,external_id) argument to search.py as the query 
 
@@ -15,7 +24,7 @@ TOOO:
 
 - TODO: Write tests for refactored FFT code
 
-- TODO: Ensure that ab works with a few different algorithms
+- TODO: Ensure that quickstart/ab.py works with a few different algorithms
 
 - BUG: Step sizes of > 1 seem to screw up parallelized ExhaustiveSearch
 
@@ -24,7 +33,7 @@ TOOO:
 
 - BUG: Tests are being run multiple times when imported by other tests
 
-- BUG: Features with a step size > 1 get zeroed at buffer boundaries by PyTablesFramesController
+
 
 - Profile ingest.py. How can this be faster?
 

@@ -335,8 +335,6 @@ class Flux(SingleInput):
         return np.linalg.norm(diff)
     
     
-        
-
 class Intervals(SingleInput):
     
     def __init__(self,needs = None, key = None, nintervals = None):

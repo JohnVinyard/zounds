@@ -119,6 +119,11 @@ def sort_by_lineage(class_method):
         rhs_l = class_method(rhs)
         
         if lhs in rhs_l and rhs in lhs_l:
+            print lhs
+            print lhs_l
+            print rhs
+            print rhs_l
+            
             raise ValueError('lhs and rhs are ancestors of each other')
         
         if rhs in lhs_l:

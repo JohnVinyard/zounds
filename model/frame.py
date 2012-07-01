@@ -123,17 +123,59 @@ class Feature(object):
           self.args)
     
 
-class Precomputed(Extractor):
+
+
+class Dummy(Extractor):
+    '''
+    A no-op extractor, useful during database synchronization in cases where
+    an unstored feature upon which stored features depend has no changes in its
+    lineage.  This means that the depdendent features can simply be read from 
+    the database, however, we'd like to insert a proxy for the unstored feature,
+    to keep extractor chain construction simple and easy to understand.
+    '''
+    def __init__(self,_id,feature_name,controller, needs = None):
+        Extractor.__init__(self, key = feature_name, needs = needs)
+        self._c = controller
+        self._id = _id
+        self.stream = None
+    
+    def dim(self,env):
+        return ()
+    
+    @property
+    def dtype(self):
+        return np.float32
+    
+    def _init_stream(self):
+        self.stream = xrange(len(self._c[self._id])).__iter__()
+
+    def _process(self):
+        if None is self.stream:
+            self._init_stream()
+        try:
+            return self.stream.next()
+        except StopIteration:
+            self.out = None
+            self.done = True
+            if self.sources:
+                self.sources[0].done = True
+                self.sources[0].out = None
+    
+    def __hash__(self):
+        return hash(\
+                    (self.__class__.__name__,
+                     self._id,
+                     self.key))
+
+            
+class Precomputed(Dummy):
     '''
     Read pre-computed features from the database
     '''
     
     
     def __init__(self,_id,feature_name,controller,needs = None):
-        Extractor.__init__(self,key=feature_name,needs=needs)
-        self._c = controller
-        self._id = _id
-        self.stream = None
+        Dummy.__init__(self,_id,feature_name,controller, needs = needs)
         
     
     def dim(self,env):
@@ -149,40 +191,19 @@ class Precomputed(Extractor):
         '''
         return self._c.get_dtype(self.key)
     
-        
-    def _process(self):
-        '''
-        Read a single feature for self._id
-        '''
-        if None is self.stream:
-            if 'audio' != self.key:
-                features = self._c.get_features()
-                # get an extractor for this feature
-                extractor = features[self.key].extractor()
-                # ask the extractor about the stepsize and frame length 
-                # for this feature
-                self.step = extractor.step
-                self.nframes = extractor.nframes
-            # get an iterator that will iterate over this feature with 
-            # the step size we just discovered
-            self.stream = self._c.iter_feature(\
-                                    self._id,self.key,step = self.step)
-            
-        try:
-            return self.stream.next()
-        except StopIteration:    
-            self.out = None
-            self.done = True
-            if self.sources:
-                self.sources[0].done = True
-                self.sources[0].out = None
-        
-    
-    def __hash__(self):
-        return hash(\
-                    (self.__class__.__name__,
-                     self._id,
-                     self.key))
+    def _init_stream(self):
+        if 'audio' != self.key:
+            features = self._c.get_features()
+            # get an extractor for this feature
+            extractor = features[self.key].extractor()
+            # ask the extractor about the stepsize and frame length 
+            # for this feature
+            self.step = extractor.step
+            self.nframes = extractor.nframes
+        # get an iterator that will iterate over this feature with 
+        # the step size we just discovered
+        self.stream = self._c.iter_feature(\
+                                self._id,self.key,step = self.step)
 
 # TODO: Write better documentation
 class Address(object):
@@ -586,16 +607,11 @@ class Frames(Model):
             if not transitional or f in recompute:
                 e = f.extractor(needs=needs,key=k)
             elif not f.store and k not in recompute:
-                # KLUDGE: We're in a situation where the old feature doesn't 
+                # We're in a situation where the old feature doesn't 
                 # need to be recomputed, but also isn't stored. This means that
                 # the precomputed extractor would try to read values that aren't
-                # in the database.  Insert a dummy precomputed extractor for
-                # a value we know will be there.  This is a bad, and likely
-                # inefficient solution.
-                e = Precomputed(pattern._id,
-                                '_id',
-                                cls.controller(),
-                                needs = needs)
+                # in the database.  Insert a dummy extractor.
+                e = Dummy(pattern._id,k,cls.controller())
             else:
                 # Nothing in this feature's lineage has changed, so
                 # we can safely just read values from the database
