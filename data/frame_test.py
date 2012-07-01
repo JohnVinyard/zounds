@@ -6,7 +6,8 @@ import numpy as np
 
 from model.frame import Frames,Feature,Precomputed
 from analyze.extractor import Extractor,SingleInput
-from analyze.feature.spectral import FFT,Loudness,SpectralCentroid
+from analyze.feature.spectral import FFT,Loudness,SpectralCentroid,SpectralFlatness,BarkBands
+from analyze.feature.basic import UnitNorm
 from analyze.feature.reduce import Downsample
 from model.pattern import FilePattern
 from environment import Environment
@@ -476,6 +477,9 @@ class PyTablesFrameControllerTests(unittest.TestCase):
                          lambda old,new : 'downsample' in new,
                          lambda old,new : 'centroid' in new)
     
+    
+            
+    
     def test_feature_with_stepsize(self):
         
         
@@ -541,6 +545,23 @@ class PyTablesFrameControllerTests(unittest.TestCase):
         self.assertTrue(isinstance(chain['loudness'],Precomputed))
         self.assertTrue(isinstance(chain['centroid'],SpectralCentroid))
         self.assertTrue(isinstance(chain['fft'],FFT))
+        
+        
+    def test_sync_unstored_unchanged_feature_in_lineage(self):
+        class FM1(Frames):
+            fft = Feature(FFT, needs = None, store = False)
+            bark = Feature(BarkBands, needs = fft, store = True, nbands = 100)
+            barkun = Feature(UnitNorm, needs = bark, inshape = 100, store = False)
+            loud = Feature(Loudness, needs = barkun, store = True)
+            flat = Feature(SpectralFlatness, needs = loud, store = True)
+        
+        class FM2(Frames):
+            fft = Feature(FFT, needs = None, store = False)
+            bark = Feature(BarkBands, needs = fft, store = True, nbands = 100)
+            barkun = Feature(UnitNorm, needs = bark, inshape = 100, store = False)
+            loud = Feature(Loudness, needs = barkun, store = True)
+
+        self.sync_helper(FM1,FM2,lambda old,new : 'flat' not in new)
                         
                         
     def test_sync_ancestor_feature_recomputed(self):
@@ -573,6 +594,7 @@ class PyTablesFrameControllerTests(unittest.TestCase):
                          lambda old,new : len(old) != len(new),
                          lambda old,new : 'loudness' in old,
                          lambda old,new : 'loudness' not in new)
+
         
     def test_iter_all_step_size_1(self):
         

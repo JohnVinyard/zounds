@@ -8,10 +8,10 @@ from scikits.audiolab import Sndfile,play
 from model.framesearch import *
 from environment import Environment
 from util import audio_files
-from nputil import pad
 from analyze.audiostream import read_frames_mono
 from analyze.resample import Resample
 from time import time
+from visualize.plot import plot
 
 class Zndfile(Sndfile):
     '''
@@ -184,7 +184,7 @@ if __name__ == '__main__':
         query = get_query(d,files,args.minseconds,args.maxseconds)
         # Do the search and time it
         starttime = time()
-        results = search.search(query,args.nresults)
+        queryframes,results = search.search(query,args.nresults)
         print 'search took %1.4f seconds' % (time() - starttime)
         # play the query sound
         Z.synth.playraw(query)
@@ -195,3 +195,17 @@ if __name__ == '__main__':
                 Environment.instance.play(FrameModel[addr].audio)
             except KeyboardInterrupt:
                 continue
+        
+        # TODO: Visualize the distance between
+        if raw_input('visualize_rersults? (y or n)') == 'y':
+            plot(queryframes[args.feature],'query')
+            to_delete = ['query.png']
+            for i,r in enumerate(results):
+                _id,addr = r
+                frames = FrameModel[addr]
+                fn = '%s_%i' % (frames.external_id[0],i)
+                plot(frames[args.feature],fn)
+                to_delete.append('%s.png' % fn)
+            raw_input('press any key to continue')
+            for delete in to_delete:
+                os.remove(delete)

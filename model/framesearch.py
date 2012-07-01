@@ -139,7 +139,7 @@ class FrameSearch(Model):
         
         # get a frames instance
         frames = fm(data = r)
-        return self._search(frames, nresults = nresults)
+        return frames,self._search(frames, nresults = nresults)
     
     
 
@@ -325,6 +325,7 @@ class ExhaustiveSearch(FrameSearch):
                     print best
                     raise Exception()
                 if insertion < nresults:
+                    print dist
                     best.insert(insertion,t)
                     best = best[:nresults]
                     if len(best) == nresults:

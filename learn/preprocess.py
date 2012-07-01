@@ -62,6 +62,7 @@ class MeanStd(Preprocess):
         
         return newdata
 
+
 class UnitNorm(Preprocess):
     
     def __init__(self):
