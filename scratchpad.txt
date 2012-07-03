@@ -1,14 +1,12 @@
 TOOO:
 -------------
-- TODO: Nice printing for Extractor, FrameModel, Preproces, Learn, Environment, etc...
+- BUG: Pooled doesn't work for nested Pooled features
 
-- BUG: Features with a step size > 1 get zeroed at buffer boundaries by PyTablesFramesController
+- BUG: Features with nframes and stepsize that don't agree aren't stored properly
+      at buffer boundaries
 
+- TODO: Nice printing for Extractor, FrameModel, Preprocess, Learn, Environment, etc...
 
-
-- TODO: Bug with zoundsapps/transients/config.py which keeps causing "lhs and
-	rhs are ancestors of each other" error
-	
 - TODO: Random sampling method (for learning) that avoids silence
 
 - TODO: Pass an id or a (source,external_id) argument to search.py as the query 
@@ -32,8 +30,6 @@ TOOO:
 		ensuring they're identical
 
 - BUG: Tests are being run multiple times when imported by other tests
-
-
 
 - Profile ingest.py. How can this be faster?
 

@@ -34,9 +34,8 @@ class Pooling(NeuralNetwork,Learn):
         # how many blocks are we pooling?
         # KLUDGE: I shouldn't know about the "learn" property here.  Pipeline
         # should probably have indim and outdim properties
-        
         if 1 == ld:
-            pool_size = data.shape[0] / self._layer0.learn. indim
+            pool_size = data.shape[0] / self._layer0.learn.indim
         else:
             pool_size = data.shape[1] / self._layer0.learn.indim
         # reshape the data so that it can be processed by the layer 0 network
