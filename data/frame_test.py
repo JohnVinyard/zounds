@@ -1,3 +1,4 @@
+from __future__ import division
 import unittest
 from uuid import uuid4
 import os
@@ -114,11 +115,14 @@ class PyTablesFrameControllerTests(unittest.TestCase):
            indir = False,
            audio_config = AudioConfig,
            framemodel = None,
-           filepath = None):
+           filepath = None,
+           loudness_frames = 1,
+           loudness_step = 1):
         
         class FM1(Frames):
             fft = Feature(FFT,store=True,needs=None)
-            loudness = Feature(Loudness,store=True,needs=fft)
+            loudness = Feature(Loudness,store=True,needs=fft,
+                               step = loudness_step, nframes = loudness_frames)
         
         if filepath:
             fn = filepath
@@ -212,6 +216,19 @@ class PyTablesFrameControllerTests(unittest.TestCase):
         ec = FM1.extractor_chain(p)
         c.append(ec)
         self.assertEqual(2,len(c))
+    
+    def test_step_size_greater_than_one_crosses_buffer_boundary(self):
+        fn,FM1 = self.FM(loudness_step = 10,loudness_frames = 20)
+        c = FM1.controller()
+        l = c._desired_buffer_size * FM1.env().windowsize * 2
+        fn = self.make_sndfile(l,FM1.env())
+        p = FilePattern('0','test','0',fn)
+        ec = FM1.extractor_chain(p)
+        c.append(ec)
+        loudness = c['0']['loudness']
+        print np.where(loudness == 0)
+        print len(loudness)
+        self.assertTrue(np.all(loudness > 0))
     
     def test_list_ids(self):
         fn,FM1 = self.FM()

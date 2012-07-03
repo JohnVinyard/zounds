@@ -1,3 +1,4 @@
+from __future__ import division
 import numpy as np
 from scipy.cluster.vq import kmeans
 from scipy.spatial.distance import cdist
@@ -38,7 +39,16 @@ class KMeans(Learn):
         feature = np.zeros(len(self.codebook),dtype = np.uint8)
         feature[best] = 1
         return feature
-
+    
+class SoftKMeans(KMeans):
+    def __init__(self,n_centroids):
+        KMeans.__init__(self,n_centroids)
+    
+    def __call__(self,data):
+        dist = cdist(np.array([data]),self.codebook)[0]
+        dist[dist == 0] = -1e12
+        return 1 / dist
+        
 # KLUDGE: This doesn't belong here
 class PCA(Learn):
     
