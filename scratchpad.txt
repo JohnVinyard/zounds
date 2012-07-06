@@ -2,10 +2,9 @@ TOOO:
 -------------
 - TODO: Try new convolved feature
 
-- TODO: Refactor FFT code
+- TODO: nframes_actual property for extractors/features 
 
-- TODO: Write tests for refactored FFT code
-
+- TODO: Buffer boundary bug with inherited nframes (60 -> 1)
 
 - BUG: Pooled doesn't work for nested Pooled features
 

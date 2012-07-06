@@ -38,79 +38,27 @@ class FFT(SingleInput):
             a = np.array(self._inshape,dtype = np.float32)
             a[0] = int(a[0] / 2)
             self._dim = int(np.product(a))
+        else:
+            ws = Environment.instance.windowsize
+            self._dim = int(ws / 2)
+            self._inshape = (ws,)
+            
+        # create a list of slices to remove the zero-frequency term along
+        # whichever axis we're computing the FFT
+        self._slice = [slice(None) for i in xrange(len(self._inshape))]
+        # this slice will remove the zero-frequency term
+        self._slice[self._axis] = slice(1,None)
 
     @property
     def dtype(self):
         return np.float32
     
-    def dim(self,env):
-        if None is self._dim:
-            self._dim = int(env.windowsize / 2)
-            self._inshape = (self._dim,)
+    def dim(self,env):    
         return self._dim
     
     def _process(self):
-        if None is self._slice:
-            # create a list of slices to remove the zero-frequency term along
-            # whichever axis we're computing the FFT
-            self._slice = [slice(None) for i in xrange(len(self._inshape))]
-            # this slice will remove the zero-frequency term
-            self._slice[self._axis] = slice(1,None)
-            
         data = np.array(self.in_data[:self.nframes]).reshape(self._inshape)
-        return [np.abs(np.fft.rfft(data,axis = self._axis)[self._slice]).ravel()]
-        
-
-#class FFT(SingleInput):
-#    
-#    def __init__(self,needs=None,key=None):
-#        SingleInput.__init__(self,needs=needs,nframes=1,step=1,key=key)
-#    
-#    def dim(self,env):
-#        return int(env.windowsize / 2)
-#    
-#    @property
-#    def dtype(self):
-#        return np.float32
-#        
-#    def _process(self):
-#        '''
-#        Return the magnitudes only, discarding phase and the zero
-#        frequency component
-#        '''
-#        return np.abs(np.fft.rfft(self.in_data[0]))[1:]
-#
-## KlUDGE: Generalize this, and collapse into FFT
-#class FFT2(SingleInput):
-#    
-#    def __init__(self,inshape = None,needs=None,key=None,
-#                 nframes = 1,step = 1,axis = 0):
-#        
-#        SingleInput.__init__(self,needs = needs, nframes = nframes, 
-#                             step = step, key = key)
-#        
-#        if isinstance(inshape,int):
-#            self._inshape = (inshape,)
-#        elif isinstance(inshape,tuple):
-#            self._inshape = inshape
-#        else:
-#            raise ValueError('inshape must be an int or a tuple')
-#        
-#        self._axis = axis
-#    
-#    def dim(self,env):
-#        a = np.array(self._inshape,dtype = np.float32)
-#        a[0] = int(a[0] / 2)
-#        return int(np.product(a))
-#    
-#    @property
-#    def dtype(self):
-#        return np.float32
-#
-#    def _process(self):
-#        data = np.array(self.in_data[:self.nframes]).reshape(self._inshape)
-#        # the slice here is to remove the zero-frequency term
-#        return [np.abs(np.fft.rfft(data,axis = self._axis)[1:]).ravel()]
+        return np.abs(np.fft.rfft(data,axis = self._axis)[self._slice]).ravel()
     
 class BarkBands(SingleInput):
     
@@ -177,7 +125,7 @@ class BarkBands(SingleInput):
                                                    (start_hz,stop_hz,ws,sr))
             triang_size = e_index - s_index
             triwin = self.from_cache(BarkBands._triang,triang,triang_size)
-            fft_frame = self.in_data[0]
+            fft_frame = np.array(self.in_data[0]).ravel()
             cb[i - 1] = \
                 (fft_frame[s_index : e_index] * triwin).sum()
         
