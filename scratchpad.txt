@@ -1,14 +1,14 @@
 TOOO:
 -------------
+1) - TODO: Buffer boundary bug with inherited nframes (60 -> 1)
+- TODO: nframes_actual property for extractors/features
+
+
+2) - BUG: Pooled doesn't work for nested Pooled features
+
 - TODO: Try new convolved feature
 
-- TODO: nframes_actual property for extractors/features 
-
-- TODO: Buffer boundary bug with inherited nframes (60 -> 1)
-
-- BUG: Pooled doesn't work for nested Pooled features
-
-- TODO: Nice printing for Extractor, FrameModel, Preprocess, Learn, Environment, etc...
+ - TODO: Nice printing for Extractor, FrameModel, Preprocess, Learn, Environment, etc...
 
 - TODO: Random sampling method (for learning) that avoids silence
 
@@ -21,7 +21,6 @@ TOOO:
 - BUG: It's possible to add duplicates to the database because of external_id
 	truncation
 	
-
 - TODO: Ensure that quickstart/ab.py works with a few different algorithms
 
 - BUG: Step sizes of > 1 seem to screw up parallelized ExhaustiveSearch
