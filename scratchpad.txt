@@ -2,6 +2,11 @@ TOOO:
 -------------
 - TODO: Try new convolved feature
 
+- TODO: Refactor FFT code
+
+- TODO: Write tests for refactored FFT code
+
+
 - BUG: Pooled doesn't work for nested Pooled features
 
 - TODO: Nice printing for Extractor, FrameModel, Preprocess, Learn, Environment, etc...
@@ -17,9 +22,6 @@ TOOO:
 - BUG: It's possible to add duplicates to the database because of external_id
 	truncation
 	
-- TODO: Refactor FFT code
-
-- TODO: Write tests for refactored FFT code
 
 - TODO: Ensure that quickstart/ab.py works with a few different algorithms
 
