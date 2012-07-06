@@ -117,10 +117,11 @@ class PyTablesFrameControllerTests(unittest.TestCase):
            framemodel = None,
            filepath = None,
            loudness_frames = 1,
-           loudness_step = 1):
+           loudness_step = 1,
+           store_loudness = True):
         
         class FM1(Frames):
-            fft = Feature(FFT,store=True,needs=None)
+            fft = Feature(FFT,store=store_loudness,needs=None)
             loudness = Feature(Loudness,store=True,needs=fft,
                                step = loudness_step, nframes = loudness_frames)
         
@@ -217,7 +218,7 @@ class PyTablesFrameControllerTests(unittest.TestCase):
         c.append(ec)
         self.assertEqual(2,len(c))
     
-    def test_step_size_greater_than_one_crosses_buffer_boundary(self):
+    def test_nframes_and_step_size_disagree_crosses_buffer_boundary(self):
         fn,FM1 = self.FM(loudness_step = 10,loudness_frames = 20)
         c = FM1.controller()
         l = c._desired_buffer_size * FM1.env().windowsize * 2
@@ -226,9 +227,8 @@ class PyTablesFrameControllerTests(unittest.TestCase):
         ec = FM1.extractor_chain(p)
         c.append(ec)
         loudness = c['0']['loudness']
-        print np.where(loudness == 0)
-        print len(loudness)
         self.assertTrue(np.all(loudness > 0))
+        
     
     def test_list_ids(self):
         fn,FM1 = self.FM()

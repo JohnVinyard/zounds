@@ -70,6 +70,15 @@ class Max(Reduce):
         Reduce.__init__(self,inshape = inshape, axis = axis, op = np.max,
                         needs = needs, key = key, nframes = nframes, 
                         step = step)
+
+class Min(Reduce):
+    
+    def __init__(self, inshape = None, axis = 0, needs = None, 
+                 key = None, nframes = 1, step = 1):
+        
+        Reduce.__init__(self,inshape = inshape, axis = axis, op = np.min,
+                        needs = needs, key = key, nframes = nframes, 
+                        step = step)
         
         
 

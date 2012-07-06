@@ -1,9 +1,8 @@
 TOOO:
 -------------
-- BUG: Pooled doesn't work for nested Pooled features
+- TODO: Try new convolved feature
 
-- BUG: Features with nframes and stepsize that don't agree aren't stored properly
-      at buffer boundaries
+- BUG: Pooled doesn't work for nested Pooled features
 
 - TODO: Nice printing for Extractor, FrameModel, Preprocess, Learn, Environment, etc...
 

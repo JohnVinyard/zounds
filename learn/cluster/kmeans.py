@@ -48,6 +48,21 @@ class SoftKMeans(KMeans):
         dist = cdist(np.array([data]),self.codebook)[0]
         dist[dist == 0] = -1e12
         return 1 / dist
+    
+
+class ThresholdKMeans(SoftKMeans):
+    def __init__(self,n_centroids,threshold):
+        SoftKMeans.__init__(self,n_centroids)
+        self._threshold = threshold
+
+    def __call__(self,data):
+        if data.sum() < self._threshold:
+            return np.zeros(len(self.codebook))
+
+        dist = cdist(np.array([data]),self.codebook)[0]
+        dist[dist == 0] = -1e12
+        return 1 / dist
+
         
 # KLUDGE: This doesn't belong here
 class PCA(Learn):
