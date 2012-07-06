@@ -410,6 +410,11 @@ class PyTablesFrameController(FrameController):
         bufsize = self._buffer_size
         rootkey = filter(lambda e : e.finite,chain)[0].key
         bucket = np.recarray(self._max_buffer_size,self.recarray_dtype)
+        # a dictionary that maps feature keys to the discrepancy between
+        # nframes and step sizes
+        discrep = dict(((e.key, e.nframes - e.step) for e in chain))
+        # keep track of the number of times we've written a block
+        blocks_written = 0
         nframes = 0
         current = dict((k,0) for k in self.steps.keys())
         start_row = None
@@ -427,6 +432,7 @@ class PyTablesFrameController(FrameController):
                     nframes = 0
                     bucket[:] = 0
                     current = dict((k,0) for k in self.steps.keys())
+                    blocks_written += 1
                 except PyTablesFrameController.WriteLockException:
                     # someone else has the write lock. Let's just keep 
                     # processing for awhile (within reason)
@@ -437,21 +443,35 @@ class PyTablesFrameController(FrameController):
             try:
                 # the step size for this feature
                 steps = self.steps[k]
-                # the current position, in frames, for this feature
-                cur = current[k]
-                # Figure out how many spaces are available in the
-                # bucket for this feature
-                b = bucket[k][cur:cur+steps]
-                actual_steps = len(b)
-                # actual_steps should be equal to the step size 
-                # for this feature, unless we're at then end of
-                # the sound. Repeat the feature as many times as
-                # possible, up to step size
-                data = np.tile(np.array(v),(actual_steps,1)).squeeze()
-                # deposit the data
-                bucket[k][cur:cur+steps] = data
-                # advance by steps
-                current[k] += steps
+                negstep = discrep[k]
+                if  negstep and blocks_written and nframes == steps:
+                    # this feature has a discrepancy between nframes and stepsize,
+                    # and we're currently at a buffer boundary.  Since this
+                    # feature didn't have enough data when the last block was
+                    # written, we'll have to write to existing rows.
+                    self._write_mode()
+                    # get the column for this feature
+                    col = getattr(self.db_write.cols,k)
+                    # write the data to the existing rows
+                    col[-negstep:] = np.tile(np.array(v),(steps,1)).squeeze()
+                    # switch back to read mode
+                    self._read_mode()
+                else:    
+                    # the current position, in frames, for this feature
+                    cur = current[k]
+                    # Figure out how many spaces are available in the
+                    # bucket for this feature
+                    b = bucket[k][cur:cur+steps]
+                    actual_steps = len(b)
+                    # actual_steps should be equal to the step size 
+                    # for this feature, unless we're at then end of
+                    # the sound. Repeat the feature as many times as
+                    # possible, up to step size
+                    data = np.tile(np.array(v),(actual_steps,1)).squeeze()
+                    # deposit the data
+                    bucket[k][cur:cur+steps] = data
+                    # advance by steps
+                    current[k] += steps
             except KeyError:
                 # this feature isn't stored
                 pass

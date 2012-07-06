@@ -274,7 +274,7 @@ class AutoCorrelation(SingleInput):
         return self.size
     
     def _process(self):
-        data = sun(np.array(self.in_data[0]).reshape(self.size))
+        data = np.array(self.in_data[0]).reshape(self.size)
         return np.correlate(data,data,mode = 'full')[self.size - 1:]
 
 class SelfSimilarity(SingleInput):
