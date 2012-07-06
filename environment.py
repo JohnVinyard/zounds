@@ -108,6 +108,8 @@ class Environment(object):
         ec = self.extractor_chain(pattern)
         self.framecontroller.append(ec)
     
+    # KLUDGE: This is specific to PyTables, i.e., there are lots of problems
+    # with concurrent reads.  This should be handled some other way.
     def unique_controller(self):
         return self.framecontroller_class(*self._framecontroller_args)
     

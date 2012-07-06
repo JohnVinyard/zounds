@@ -1,3 +1,4 @@
+import numpy as np
 from abc import ABCMeta,abstractproperty,abstractmethod
 from nputil import pad
 from util import recurse,sort_by_lineage
@@ -95,6 +96,35 @@ class Extractor(object):
     @recurse
     def _deep_sources(self):
         return self.sources
+    
+    
+    def nframes_abs(self, nframes = None):
+        '''
+        Since nframes is expressed in terms of the extractors upon which this 
+        one depends, the nframes property doesn't necessarily return an answer 
+        in absolute frames.  
+        
+        This method does its best to answer the question "how many absolute 
+        frames must be processed before this extractor can compute its feature"?
+        '''
+        if nframes is None:
+            nframes = [self.nframes]
+        
+        if self.sources:
+            # KLUDGE: We're choosing the max number of frames from all extractors
+            # on which we depend. Hopefully, there will either be only a single
+            # requisite extractor, OR, the multiple sources will have the same
+            # nframes values.  I can't really imagine a situation in which 
+            # neither would be true at the moment, but such a situation would
+            # break this method.
+            nframes.append(max([e.nframes for e in self.sources]))
+            for s in self.sources:
+                s.nframes_real(nframes = nframes)
+                
+        # the product of the "path" of nframes values leading back to the root
+        # extractor should tell us how many absolute frames this extractor needs
+        return np.product(nframes)
+             
     
     def depends_on(self,e):
         '''

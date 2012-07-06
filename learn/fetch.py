@@ -197,7 +197,16 @@ class PrecomputedPatch(PrecomputedFeature):
         self._static = all(map(lambda i : isinstance(i,slice),self._patch))
         if not self._static:
             try:
-                self._ranges = [range(*t) for t in self._patch]
+                self._ranges = []
+                for i,t in enumerate(self._patch):
+                    start,stop,step = t[0],t[1],t[2]
+                    self._ranges.append(range(start,
+                                              # if the fullsize in this dimension
+                                              # isn't evenly divisible by the
+                                              # step size, ensure that the slices
+                                              # never overflow
+                                              stop - (self.fullsize[i] % t[2]),
+                                              step))
             except TypeError:
                 raise ValueError('patch must be a slice, a list of slices, \
                                     a 3-tuple, or a list of 3-tuples')
