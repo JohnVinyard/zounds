@@ -1,9 +1,5 @@
 TOOO:
 -------------
-1) - TODO: Buffer boundary bug with inherited nframes (60 -> 1)
-- TODO: nframes_actual property for extractors/features
-
-
 2) - BUG: Pooled doesn't work for nested Pooled features
 
 - TODO: Try new convolved feature

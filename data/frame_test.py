@@ -228,6 +228,33 @@ class PyTablesFrameControllerTests(unittest.TestCase):
         c.append(ec)
         loudness = c['0']['loudness']
         self.assertTrue(np.all(loudness > 0))
+    
+    def test_nframes_and_step_size_disagree_crosses_buffer_boundary_compound_nframes(self):
+        class FM(Frames):
+            fft = Feature(FFT,store=True,needs=None)
+            loudness = Feature(Loudness,store=True,needs=fft,
+                               step = 10, nframes = 20)
+            l2 = Feature(Loudness, store = True, needs = loudness,
+                         step = 10, nframes = 1)
+        
+        
+        fn = self.hdf5_filename()
+        Environment('test',
+                    FM,
+                    PyTablesFrameController,
+                    (FM,fn),
+                    {},
+                    PyTablesFrameControllerTests.AudioConfig)
+        
+        c = FM.controller()
+        l = c._desired_buffer_size * FM.env().windowsize * 2
+        fn = self.make_sndfile(l,FM.env())
+        p = FilePattern('0','test','0',fn)
+        ec = FM.extractor_chain(p)
+        c.append(ec)
+        l2 = c['0']['l2']
+        self.assertTrue(np.all(l2 > 0))
+        
         
     
     def test_list_ids(self):

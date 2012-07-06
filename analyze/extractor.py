@@ -119,10 +119,10 @@ class Extractor(object):
             # break this method.
             nframes.append(max([e.nframes for e in self.sources]))
             for s in self.sources:
-                s.nframes_real(nframes = nframes)
+                s.nframes_abs(nframes = nframes)
                 
         # the product of the "path" of nframes values leading back to the root
-        # extractor should tell us how many absolute frames this extractor needs
+        # extractor should tell us how many absolute frames this extractor needs    
         return np.product(nframes)
              
     

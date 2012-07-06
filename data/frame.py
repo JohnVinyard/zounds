@@ -412,7 +412,7 @@ class PyTablesFrameController(FrameController):
         bucket = np.recarray(self._max_buffer_size,self.recarray_dtype)
         # a dictionary that maps feature keys to the discrepancy between
         # nframes and step sizes
-        discrep = dict(((e.key, e.nframes - e.step) for e in chain))
+        discrep = dict(((e.key, e.nframes_abs() - e.step) for e in chain))
         # keep track of the number of times we've written a block
         blocks_written = 0
         nframes = 0
