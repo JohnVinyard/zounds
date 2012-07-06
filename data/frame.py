@@ -444,7 +444,7 @@ class PyTablesFrameController(FrameController):
                 # the step size for this feature
                 steps = self.steps[k]
                 negstep = discrep[k]
-                if  negstep and blocks_written and nframes == steps:
+                if  negstep > 0 and blocks_written and nframes == steps:
                     # this feature has a discrepancy between nframes and stepsize,
                     # and we're currently at a buffer boundary.  Since this
                     # feature didn't have enough data when the last block was
@@ -453,7 +453,13 @@ class PyTablesFrameController(FrameController):
                     # get the column for this feature
                     col = getattr(self.db_write.cols,k)
                     # write the data to the existing rows
-                    col[-negstep:] = np.tile(np.array(v),(steps,1)).squeeze()
+                    data = np.tile(np.array(v),(steps,1)).squeeze()
+                    print '--------------------------------------'
+                    print k
+                    print negstep
+                    print data.shape
+                    print col[-negstep:].shape
+                    col[-negstep:] = data
                     # switch back to read mode
                     self._read_mode()
                 else:    

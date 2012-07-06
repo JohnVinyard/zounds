@@ -406,7 +406,7 @@ class Frames(Model):
             # run the chain
             d = ec.collect()
             # cache the results
-            setattr(self,k,np.array(d[k]))
+            setattr(self,k,np.array(d[k]).squeeze())
             return Model.__getattribute__(self,k)
         else:
             return f
