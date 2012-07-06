@@ -17,57 +17,100 @@ from analyze import bark
 from nputil import safe_log,safe_unit_norm as sun
 
 
-
 class FFT(SingleInput):
     
-    def __init__(self,needs=None,key=None):
-        SingleInput.__init__(self,needs=needs,nframes=1,step=1,key=key)
-    
-    def dim(self,env):
-        return int(env.windowsize / 2)
-    
-    @property
-    def dtype(self):
-        return np.float32
+    def __init__(self, needs = None, key = None, inshape = None, 
+                 nframes = 1, step = 1, axis = 0):
         
-    def _process(self):
-        '''
-        Return the magnitudes only, discarding phase and the zero
-        frequency component
-        '''
-        return np.abs(np.fft.rfft(self.in_data[0]))[1:]
-
-# KlUDGE: Generalize this, and collapse into FFT
-class FFT2(SingleInput):
-    
-    def __init__(self,inshape = None,needs=None,key=None,
-                 nframes = 1,step = 1,axis = 0):
-        
-        SingleInput.__init__(self,needs = needs, nframes = nframes, 
+        SingleInput.__init__(self, needs = needs, nframes = nframes, 
                              step = step, key = key)
-        
-        if isinstance(inshape,int):
-            self._inshape = (inshape,)
-        elif isinstance(inshape,tuple):
-            self._inshape = inshape
-        else:
-            raise ValueError('inshape must be an int or a tuple')
-        
         self._axis = axis
-    
-    def dim(self,env):
-        a = np.array(self._inshape,dtype = np.float32)
-        a[0] = int(a[0] / 2)
-        return int(np.product(a))
-    
+        self._dim = None
+        self._slice = None
+        if None is inshape or isinstance(inshape,tuple):
+            self._inshape = inshape
+        elif isinstance(inshape,int):
+            self._inshape = (inshape,)
+        else:
+            raise ValueError('inshape must be None, an int, or a tuple')
+        
+        if None is not self._inshape:
+            a = np.array(self._inshape,dtype = np.float32)
+            a[0] = int(a[0] / 2)
+            self._dim = int(np.product(a))
+
     @property
     def dtype(self):
         return np.float32
-
+    
+    def dim(self,env):
+        if None is self._dim:
+            self._dim = int(env.windowsize / 2)
+            self._inshape = (self._dim,)
+        return self._dim
+    
     def _process(self):
+        if None is self._slice:
+            # create a list of slices to remove the zero-frequency term along
+            # whichever axis we're computing the FFT
+            self._slice = [slice(None) for i in xrange(len(self._inshape))]
+            # this slice will remove the zero-frequency term
+            self._slice[self._axis] = slice(1,None)
+            
         data = np.array(self.in_data[:self.nframes]).reshape(self._inshape)
-        # the slice here is to remove the zero-frequency term
-        return [np.abs(np.fft.rfft(data,axis = self._axis)[1:]).ravel()]
+        return [np.abs(np.fft.rfft(data,axis = self._axis)[self._slice]).ravel()]
+        
+
+#class FFT(SingleInput):
+#    
+#    def __init__(self,needs=None,key=None):
+#        SingleInput.__init__(self,needs=needs,nframes=1,step=1,key=key)
+#    
+#    def dim(self,env):
+#        return int(env.windowsize / 2)
+#    
+#    @property
+#    def dtype(self):
+#        return np.float32
+#        
+#    def _process(self):
+#        '''
+#        Return the magnitudes only, discarding phase and the zero
+#        frequency component
+#        '''
+#        return np.abs(np.fft.rfft(self.in_data[0]))[1:]
+#
+## KlUDGE: Generalize this, and collapse into FFT
+#class FFT2(SingleInput):
+#    
+#    def __init__(self,inshape = None,needs=None,key=None,
+#                 nframes = 1,step = 1,axis = 0):
+#        
+#        SingleInput.__init__(self,needs = needs, nframes = nframes, 
+#                             step = step, key = key)
+#        
+#        if isinstance(inshape,int):
+#            self._inshape = (inshape,)
+#        elif isinstance(inshape,tuple):
+#            self._inshape = inshape
+#        else:
+#            raise ValueError('inshape must be an int or a tuple')
+#        
+#        self._axis = axis
+#    
+#    def dim(self,env):
+#        a = np.array(self._inshape,dtype = np.float32)
+#        a[0] = int(a[0] / 2)
+#        return int(np.product(a))
+#    
+#    @property
+#    def dtype(self):
+#        return np.float32
+#
+#    def _process(self):
+#        data = np.array(self.in_data[:self.nframes]).reshape(self._inshape)
+#        # the slice here is to remove the zero-frequency term
+#        return [np.abs(np.fft.rfft(data,axis = self._axis)[1:]).ravel()]
     
 class BarkBands(SingleInput):
     
