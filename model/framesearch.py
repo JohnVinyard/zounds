@@ -296,7 +296,9 @@ class ExhaustiveSearch(FrameSearch):
         seq = frames[self.feature][::self._step]
         seq /= self._std
         ls = len(seq)
-        seq = seq.ravel()
+        
+        # TODO: Uncomment the following
+        #seq = seq.ravel()
         
         env = self.env()
         c = env.framecontroller
@@ -313,10 +315,17 @@ class ExhaustiveSearch(FrameSearch):
                 else:
                     skip = -1
                 feat = frames[self.feature]
-                feat /= self._std
-                feat[np.isnan(feat)] = 0
-                feat = pad(feat,ls)
-                dist = np.linalg.norm(feat.ravel() - seq)
+                
+                # TODO: Uncomment the following 4 lines
+                #feat /= self._std
+                #feat[np.isnan(feat)] = 0
+                #feat = pad(feat,ls)
+                #dist = np.linalg.norm(feat.ravel() - seq)
+                
+                feat = feat.max(0)
+                seq2 = seq.max(0)
+                dist = np.linalg.norm(feat - seq2)
+                
                 t = (dist,(_id,addr))
                 try:
                     insertion = bisect_left(best,t)
