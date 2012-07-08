@@ -165,6 +165,57 @@ class PrecomputedFeature(Fetch):
         return data[np.random.permutation(len(data))]
         
 
+class _Patch(object):
+    
+    __metaclass__ = ABCMeta
+    
+    def __init__(self):
+        object.__init__(self)
+    
+    @abstractmethod
+    def _slice(self):
+        pass
+    
+    @abstractmethod
+    def __call__(self,arr):
+        pass
+
+class Patch(_Patch):
+    
+    def __init__(self,start,stop,size,step = None):
+        _Patch.__init__(self)
+        self.fullsize = stop - start
+        self.start = start
+        self.step = step if step else size
+        self.size = size
+        self.stop = stop
+        self._range = range(self.start,self.stop-(size-1),self.step)
+    
+    def _slice(self):
+        start = choice(self._range)
+        stop = start + self.size
+        return slice(start,stop)
+    
+    def __call__(self,arr):
+        return arr[self._slice()]
+
+class NDPatch(_Patch):
+    
+    def __init__(self,*patches):
+        _Patch.__init__(self)
+        self.patches = patches
+    
+    def __iter__(self):
+        return self.patches.__iter__()
+    
+    def _slice(self):
+        return [p._slice() for p in self]
+    
+    def __call__(self,arr):
+        return arr[self._slice()]
+        
+        
+
 # TODO: Write tests
 class PrecomputedPatch(PrecomputedFeature):
     '''
@@ -193,36 +244,16 @@ class PrecomputedPatch(PrecomputedFeature):
         # a tuple representing the desired shape of the data before "cutting"
         self.fullsize = fullsize
         
-        self._patch = patch if isinstance(patch,list) else [patch]
+        self._patch = patch if isinstance(patch,list) else patch
         self._static = all(map(lambda i : isinstance(i,slice),self._patch))
-        if not self._static:
-            try:
-                self._ranges = []
-                for i,t in enumerate(self._patch):
-                    start,stop,step = t[0],t[1],t[2]
-                    self._ranges.append(range(start,
-                                              # if the fullsize in this dimension
-                                              # isn't evenly divisible by the
-                                              # step size, ensure that the slices
-                                              # never overflow
-                                              stop - (self.fullsize[i] % t[2]),
-                                              step))
-            except TypeError:
-                raise ValueError('patch must be a slice, a list of slices, \
-                                    a 3-tuple, or a list of 3-tuples')
     
     @property
     def patch(self):
         if self._static:
             return self._patch
         
-        # patch is random. Choose a random n-dimensional slice with the
-        # parameters specified by self._patch
-        p = []
-        for i,t in enumerate(self._patch):
-            start = choice(self._ranges[i])
-            p.append(slice(start,start + t[2]))
-        return p
+        return self._patch._slice()
+    
     
     def __call__(self, nexamples = None):
         FM,c,l = self._get_env()
