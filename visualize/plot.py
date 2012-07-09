@@ -19,6 +19,14 @@ def plot(arr,filename,figsize = (5,5), oned = False, twod = False, gray = False)
     plt.savefig(filename)
     plt.clf()
 
+def plot_series(arr,filename,figsize = (5,5), oned = False, twod = False, gray = False):
+    for i,a in enumerate(arr):
+        plot(a,'%s_%i' % (filename,i),figsize=figsize,oned=oned,twod=twod,gray=gray)
+
+def plot_vars(d,figsize=(5,5),oned = False, twod = False, gray = False,*names):
+    for n in names:
+        plot(d[n],n,figsize=figsize,oned=oned,twod=twod,gray=gray)
+            
 
 def video(arr,filename,audiofile = None,rate = 10):
     # ensure that the minimum value is zero
