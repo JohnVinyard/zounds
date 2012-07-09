@@ -26,13 +26,15 @@ def safe_unit_norm(a):
     Ensure that the vector or vectors have unit norm
     '''
     if 1 == len(a.shape):
-        return _safe_unit_norm(a)
-
-    for q in xrange(len(a)):
-        a[q] = _safe_unit_norm(a[q])
+        n = np.linalg.norm(a)
+        if n:
+            return a / n
+        return a
     
-    return a
-    
+    norm = np.sum(np.abs(a)**2,axis=-1)**(1./2)
+    reg = a / norm[:,np.newaxis]
+    reg[np.isnan(reg)] = 0
+    return reg
     
 def pad(a,desiredlength):
     '''

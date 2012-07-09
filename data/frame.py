@@ -454,11 +454,6 @@ class PyTablesFrameController(FrameController):
                     col = getattr(self.db_write.cols,k)
                     # write the data to the existing rows
                     data = np.tile(np.array(v),(steps,1)).squeeze()
-                    print '--------------------------------------'
-                    print k
-                    print negstep
-                    print data.shape
-                    print col[-negstep:].shape
                     col[-negstep:] = data
                     # switch back to read mode
                     self._read_mode()

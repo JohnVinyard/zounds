@@ -1,7 +1,5 @@
 TOOO:
 -------------
-TODO: PrecomputedPatch should have a step size as well
-
 TODO:  Try lowpass filter subtraction method for spectrogram sharpening
 
 2) - BUG: Pooled doesn't work for nested Pooled features

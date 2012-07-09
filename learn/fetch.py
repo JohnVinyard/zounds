@@ -231,11 +231,7 @@ class PrecomputedPatch(PrecomputedFeature):
             - a slice, if fullsize is one-dimensional
             - a list of slices, one for each dimension, if fullsize is
               multi-dimensional
-            - a 3-tuple, representing (start,stop,step). This is interpreted as:
-              "choose a slice of length step, beginning at choice(range(start,stop,step))"
-            - a list of 3-tuples when fullsize is multidimensional. Each tuple
-              is interpreted according to the rules above
-             
+            - a Patch or NDPatch instance
         '''
         
         # TODO: Check that number of dimensions of fullsize and patch agree,
