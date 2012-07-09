@@ -19,11 +19,22 @@ def plot(arr,filename,figsize = (5,5), oned = False, twod = False, gray = False)
     plt.savefig(filename)
     plt.clf()
 
-def plot_series(arr,filename,figsize = (5,5), oned = False, twod = False, gray = False):
+def plot_series(arr,filename,figsize = (5,5), oned = False, 
+                twod = False, gray = False):
+    '''
+    Create several plot images, appending a unique number to each image file
+    name. The size of dimension zero determines the number of plots to create.
+    '''
     for i,a in enumerate(arr):
         plot(a,'%s_%i' % (filename,i),figsize=figsize,oned=oned,twod=twod,gray=gray)
 
-def plot_vars(d,figsize=(5,5),oned = False, twod = False, gray = False,*names):
+def plot_vars(d,names,figsize=(5,5),oned = False, twod = False, gray = False):
+    '''
+    Useful for plotting variables defined in the current context, e.g., if two
+    arrays named 'a' and 'b' are defined:
+    
+    plot_vars(globals(),['a','b'])
+    '''
     for n in names:
         plot(d[n],n,figsize=figsize,oned=oned,twod=twod,gray=gray)
             
