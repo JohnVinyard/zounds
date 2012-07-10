@@ -1,6 +1,5 @@
 import numpy as np
 
-
 def safe_log(a):
     '''
     Return the element-wise log of an array, checking for negative
@@ -11,15 +10,6 @@ def safe_log(a):
     
     return np.log(a + 1e-12)
 
-def _safe_unit_norm(a):
-    '''
-    Ensure that a vector has unit norm.
-    '''
-    n = np.linalg.norm(a)
-    if n:
-        return a / n
-    
-    return a
 
 def safe_unit_norm(a):
     '''
