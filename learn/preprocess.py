@@ -82,6 +82,21 @@ class PreprocessBarkBands(MeanStd):
         data = np.log(data)
         return MeanStd._preprocess(self, data)
     
+
+class Whiten(Preprocess):
+    
+    def __init__(self,weights = None):
+        Preprocess.__init__(self)
+        self._weights = None
+    
+    def _preprocess(self,data):
+        if self._weights is None:
+            cov = np.dot(data.T,data)
+            u,s,v = np.linalg.svd(cov)
+            d = np.diag(1. / np.sqrt(np.diag(s) + 1e-12))
+            self._weights = np.dot(d,u.T)
+        
+        return data * self._weights
         
 class SequentialPreprocessor(Preprocess):
     '''

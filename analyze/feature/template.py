@@ -65,8 +65,15 @@ def _soft_activation(dist,act_thresh):
     Return 1 / distance, so that templates with the lowest distances
     have the highest values
     '''
-    dist[dist == 0] = 1e-12
-    return (1. / dist).max(0)
+    
+    #dist[dist == 0] = 1e-3
+    #return (1. / dist).max(0)
+    
+    # triangle activation function reccomended here
+    # http://robotics.stanford.edu/~ang/papers/nipsdlufl10-AnalysisSingleLayerUnsupervisedFeatureLearning.pdf
+    dist.mean() - dist
+    dist[dist < 0] = 0
+    return dist
     
 def _hard_activation(dist,act_thresh):
     '''
@@ -114,14 +121,19 @@ class TemplateMatch(SingleInput):
             raise ValueError(\
             'codebooks, sizes, and silence_thresholds must all have the same' +
             'number of elements')
+        # KLUDGE: numpy arrays aren't hashable. Is this the best way to 
+        # pass the codebooks to __init__?
+        # KLUDGE: I shouldn't know about the dimension of the codebooks here!
+        self._codebooks = []
+        for cb in codebooks:
+            arr = np.fromfile(cb,dtype = np.float32)
+            arr = arr.reshape((500,int(arr.size/500)))
+            self._codebooks.append(arr)
         self._inshape = inshape
-        # KLUDGE: I should be passing the codeoboks as numpy arrays, however,
-        # data controllers aren't wired up when I define the FrameModel class.
-        codebooks = [Pipeline[cb].learn.codebook for cb in codebooks]
         self._nbooks = len(codebooks)
-        self._codebooks = [sun(cb) for cb in codebooks]
+        self._codebooks = [sun(cb) for cb in self._codebooks]
         # the output dimension will be the combined size of all the codebooks
-        self._dim = np.sum([len(cb) for cb in codebooks])
+        self._dim = np.sum([len(cb) for cb in self._codebooks])
         self._dtype = np.float32 if soft_activation else np.uint8
         self._sizes = sizes
         self._silence_thresh = silence_thresholds

@@ -63,7 +63,8 @@ class Pipeline(Model):
                      % self._id)
         data = self.fetch(nexamples = nexamples)
         # KLUDGE: Is this always OK?
-        data = flatten2d(data)
+        if data is not None:
+            data = flatten2d(data)
         data = self.preprocess(data)
         # TODO checkpoints, incremental save
         self.learn.train(data,stopping_condition)

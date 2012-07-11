@@ -500,7 +500,7 @@ class MinHashSearch(FrameSearch):
         ...
     ]
     '''
-    def __init__(self,_id,feature,step,size):
+    def __init__(self,_id,feature,step = 1,size = None):
         FrameSearch.__init__(self,_id,feature)
         self._index = None
         self.step = step
