@@ -84,19 +84,24 @@ class SliceX(SingleInput):
 
 class Threshold(SingleInput):
     
-    def __init__(self,needs = None, key = None, thresh = None):
-        SingleInput.__init__(self,needs = needs, key = key)
+    def __init__(self,needs = None, key = None, thresh = None, nframes = 1, step = 1):
+        SingleInput.__init__(self,needs = needs, key = key, nframes = nframes, step = step)
         self._thresh = thresh
+        try:
+            self._dim = len(thresh)
+        except AttributeError:
+            self._dim = ()
     
     @property
     def dtype(self):
         return np.uint8
     
     def dim(self,env):
-        return ()
+        return self._dim
     
     def _process(self):
-        return int(self.in_data[0] > self._thresh)
+        data = np.array(self.in_data).ravel()
+        return [(data > self._thresh).astype(self.dtype)]
 
 class Sharpen(SingleInput):
     '''

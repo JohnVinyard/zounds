@@ -5,7 +5,9 @@ from learn.learn import Learn
 
 class MinHash(Learn):
     '''
-    A hash that approximates the Jaccard distance.
+    A hash that approximates the Jaccard distance between two binary feature 
+    vectors.
+    
     http://en.wikipedia.org/wiki/MinHash
     '''
     def __init__(self,size,nhashes):
@@ -27,10 +29,11 @@ class MinHash(Learn):
         permutation of the input
         '''
         a = np.ndarray(self.nhashes)
+        a[:] = self.size + 1
         for i,h in enumerate(self.hashes):
             try:
                 a[i] = np.where(data[h] == 1)[0][0]
             except IndexError:
-                a[i] = self.size + 1
+                pass
         return a
             

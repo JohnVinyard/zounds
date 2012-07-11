@@ -47,32 +47,32 @@ def toeplitz2d(patch,size,silence_thresh):
     nz = l.sum(1) > silence_thresh
     # Give each sub-patch unit-norm. Return the unit-normed sub-patches 
     # and the "valid" indices
-    return sun(l),np.nonzero(nz)[0]
+    return w,sun(l),np.nonzero(nz)[0]
 
 
 
 def feature(args):
-    patch,size,thresh,codebook,dim,activation,act_thresh = args
-    mat,nz = toeplitz2d(patch, size, thresh)
+    patch,size,thresh,codebook,activation,act_thresh = args
+    width,mat,nz = toeplitz2d(patch, size, thresh)
     if not len(nz):
-        return np.zeros(dim)
+        return np.zeros(len(codebook))
     dist = cdist(mat[nz],codebook)
     return activation(dist,act_thresh)
 
 
 def _soft_activation(dist,act_thresh):
-        '''
-        Return 1 / distance, so that templates with the lowest distances
-        have the highest values
-        '''
-        dist[dist == 0] = 1e-12
-        return (1. / dist).max(0)
+    '''
+    Return 1 / distance, so that templates with the lowest distances
+    have the highest values
+    '''
+    dist[dist == 0] = 1e-12
+    return (1. / dist).max(0)
     
 def _hard_activation(dist,act_thresh):
     '''
     Pass the soft activation through a hard thresholding function
     '''
-    act = _soft_activation(dist)
+    act = _soft_activation(dist,act_thresh)
     return act <= act_thresh
 
 from model.pipeline import Pipeline
@@ -128,7 +128,7 @@ class TemplateMatch(SingleInput):
         self.activation = \
             _soft_activation if soft_activation else _hard_activation
         self._hard_activation_thresh = hard_activation_thresh
-        self._process = \
+        self.__process = \
             self._process_multi if multiprocess else self._process_single
         
         self._args = self._build_args(None)
@@ -146,7 +146,6 @@ class TemplateMatch(SingleInput):
                  self._sizes[i],
                  self._silence_thresh[i],
                  self._codebooks[i],
-                 self._dim,
                  self.activation,
                  self._hard_activation_thresh]\
                 for i in xrange(self._nbooks)]
@@ -155,14 +154,16 @@ class TemplateMatch(SingleInput):
         for i,arg in enumerate(self._args):
             self._args[i][0] = data
     
-    def _process_single(self):
-        data = np.array(self.in_data[:self.nframes]).reshape(self._inshape)
-        self._update_args(data)
-        return np.concatenate([feature(arg) for arg in self._args])
+    def _process_single(self,data):
+        return [feature(arg) for arg in self._args]
         
     
-    def _process_multi(self):
+    def _process_multi(self,data):
+        return [self._pool.map(feature,self._args)]
+    
+    
+    def _process(self):
         data = np.array(self.in_data[:self.nframes]).reshape(self._inshape)
         self._update_args(data)
-        return np.concatenate([self._pool.map(feature,self._args)])
+        return [np.concatenate(self.__process(data)).ravel()]
               
