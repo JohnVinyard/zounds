@@ -35,11 +35,21 @@ class PrecomputedFeature(Fetch):
     to sample evenly from the database, drawing more samples from longer 
     patterns.
     '''
-    def __init__(self,nframes,feature, reduction = None):
+    def __init__(self,nframes,feature, reduction = None,filter = None):
+        '''
+        nframes - the number of frames for each sample, e.g. nframes = 10
+                  means each sample will consist of 10 frames of feature
+        feature - a Feature instance
+        reduction - An aggregate function (e.g., max() or sum()) to apply to 
+                   samples before returning them
+        filter -   a callable which takes the samples, and returns the indices
+                   to keep
+        '''
         Fetch.__init__(self)
         self.feature = feature
         self.nframes = nframes
         self._reduction = reduction
+        self._filter = filter
         
         
     # TODO: I don't think this method works at all. Write some tests
@@ -162,6 +172,9 @@ class PrecomputedFeature(Fetch):
                 # We tried to write to an index outside the bounds of data, which
                 # means we're done collecting data.
                 break
+        if self._filter is not None:
+            data = data[self._filter(data)]
+        
         return data[np.random.permutation(len(data))]
         
 
@@ -221,7 +234,7 @@ class PrecomputedPatch(PrecomputedFeature):
     '''
     Cut arbitrary patches from samples drawn from the database
     '''
-    def __init__(self,nframes,feature,fullsize,patch):
+    def __init__(self,nframes,feature,fullsize,patch,filter = None):
         PrecomputedFeature.__init__(self,nframes,feature)
         '''
         nframes -  the number of frames of feature to fetch
@@ -232,6 +245,8 @@ class PrecomputedPatch(PrecomputedFeature):
             - a list of slices, one for each dimension, if fullsize is
               multi-dimensional
             - a Patch or NDPatch instance
+        filter -   a callable which takes the samples, and returns the indices
+                   to keep
         '''
         
         # TODO: Check that number of dimensions of fullsize and patch agree,
@@ -242,6 +257,7 @@ class PrecomputedPatch(PrecomputedFeature):
         
         self._patch = patch if isinstance(patch,list) else patch
         self._static = all(map(lambda i : isinstance(i,slice),self._patch))
+        self._filter = filter
     
     @property
     def patch(self):
@@ -280,6 +296,8 @@ class PrecomputedPatch(PrecomputedFeature):
                 # means we're done collecting data.
                 break
         print '-----------------------------------------------------------'
+        if self._filter is not None:
+            data = data[self._filter(data)]
         return data[np.random.permutation(len(data))]
 
 class StaticPrecomputedFeature(Fetch):

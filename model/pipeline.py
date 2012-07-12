@@ -1,6 +1,7 @@
 from datetime import datetime
 from util import flatten2d
 from model import Model
+from multiprocessing import Pool
 
 class MetaPipeline(type):
     
@@ -77,4 +78,14 @@ class Pipeline(Model):
     
     def store(self):
         self.controller().store(self)
+
+
+def _train(args):
+    pipeline,nexamples,stop_cond = args
+    pipeline.train(nexamples,stop_cond)
+
+def train_many(pipelines,nsamples,stop_condition,nprocesses = 4):
+    pool = Pool(nprocesses)
+    args = [(p,nsamples,stop_condition) for p in pipelines]
+    pool.map(_train,args)
         

@@ -47,16 +47,20 @@ def toeplitz2d(patch,size,silence_thresh):
     nz = l.sum(1) > silence_thresh
     # Give each sub-patch unit-norm. Return the unit-normed sub-patches 
     # and the "valid" indices
-    return w,sun(l),np.nonzero(nz)[0]
+    return sun(l),np.nonzero(nz)[0]
 
 
 
 def feature(args):
-    patch,size,thresh,codebook,activation,act_thresh = args
-    width,mat,nz = toeplitz2d(patch, size, thresh)
+    patch,size,thresh,codebook,weights,activation,act_thresh = args
+    mat,nz = toeplitz2d(patch, size, thresh)
     if not len(nz):
         return np.zeros(len(codebook))
-    dist = cdist(mat[nz],codebook)
+    
+    mat = mat[nz]
+    if weights is not None:
+        mat *= weights
+    dist = cdist(mat,codebook)
     return activation(dist,act_thresh)
 
 
@@ -65,15 +69,13 @@ def _soft_activation(dist,act_thresh):
     Return 1 / distance, so that templates with the lowest distances
     have the highest values
     '''
-    
-    #dist[dist == 0] = 1e-3
-    #return (1. / dist).max(0)
-    
-    # triangle activation function reccomended here
+    # variations on the triangle activation function recommended here:
     # http://robotics.stanford.edu/~ang/papers/nipsdlufl10-AnalysisSingleLayerUnsupervisedFeatureLearning.pdf
-    dist.mean() - dist
+    dist[dist == 0] = 1e-3
+    dist = (1. / dist)
+    dist -= dist.mean(1)[:,np.newaxis]
     dist[dist < 0] = 0
-    return dist
+    return dist.max(0)
     
 def _hard_activation(dist,act_thresh):
     '''
@@ -89,7 +91,7 @@ class TemplateMatch(SingleInput):
     Convolve each template from any number of codebooks with a spectrogram
     '''
     def __init__(self,needs = None, key = None, nframes = None, step = None,
-                 inshape = None, codebooks = None, sizes = None, 
+                 inshape = None, codebooks = None, weights = None, sizes = None, 
                  silence_thresholds = None, soft_activation = False,
                  hard_activation_thresh = 3,multiprocess = True):
         '''
@@ -97,6 +99,10 @@ class TemplateMatch(SingleInput):
                     (nframes,nbands of spectrogram)
         codebooks - A tuple of 2d codebooks, each containing templates to be 
                     convolved with the input spectrogram
+        weights   - Weights to multiply each subpatch by before kmeans coding.
+                    This probably means that whitening was performed prior to
+                    learning the means. Input to be coded needs to be transformed
+                    similarly.
         sizes     - A template dimension for each codebook. Codebooks are "flat",
                     i.e., 2d. These are the dimensions codes from each book should
                     be shaped into prior to convolution.
@@ -116,19 +122,17 @@ class TemplateMatch(SingleInput):
         SingleInput.__init__(self, needs = needs, key = key, 
                              nframes = nframes, step = step)
         
-        
-        if 1 != len(set([len(codebooks),len(sizes),len(silence_thresholds)])):
+        if weights is None:
+            weights = len(codebooks)*[None]
+        if 1 != len(set([len(codebooks),len(sizes),len(silence_thresholds),len(weights)])):
             raise ValueError(\
             'codebooks, sizes, and silence_thresholds must all have the same' +
             'number of elements')
-        # KLUDGE: numpy arrays aren't hashable. Is this the best way to 
-        # pass the codebooks to __init__?
-        # KLUDGE: I shouldn't know about the dimension of the codebooks here!
-        self._codebooks = []
-        for cb in codebooks:
-            arr = np.fromfile(cb,dtype = np.float32)
-            arr = arr.reshape((500,int(arr.size/500)))
-            self._codebooks.append(arr)
+        
+        self._weights = weights
+        # KLUDGE: I should be passing in numpy arrays directly. This class should
+        # know nothing about the Pipeline class
+        self._codebooks = [Pipeline[cb].learn.codebook for cb in codebooks]
         self._inshape = inshape
         self._nbooks = len(codebooks)
         self._codebooks = [sun(cb) for cb in self._codebooks]
@@ -158,6 +162,7 @@ class TemplateMatch(SingleInput):
                  self._sizes[i],
                  self._silence_thresh[i],
                  self._codebooks[i],
+                 self._weights[i],
                  self.activation,
                  self._hard_activation_thresh]\
                 for i in xrange(self._nbooks)]

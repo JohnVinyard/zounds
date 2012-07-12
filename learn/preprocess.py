@@ -105,6 +105,9 @@ class SequentialPreprocessor(Preprocess):
     def __init__(self,preprocessors):
         Preprocess.__init__(self)
         self._p = preprocessors
+    
+    def __getitem__(self,index):
+        return self._p[index]
         
     def _preprocess(self,data):
         for p in self._p:
