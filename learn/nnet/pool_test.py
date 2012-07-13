@@ -1,7 +1,7 @@
 import unittest
 import numpy as np
 from model.pipeline import Pipeline
-from learn.nnet import NeuralNetwork
+from learn.nnet.nnet import NeuralNetwork
 from learn.fetch import Fetch
 from learn.preprocess import NoOp
 
@@ -48,6 +48,4 @@ class PoolTests(unittest.TestCase):
         for tr in self.to_remove:
             del Pipeline[tr]
     
-    def test_two_layers(self):
-        l0 = MockNN()
     
