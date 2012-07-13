@@ -84,6 +84,11 @@ def _hard_activation(dist,act_thresh):
     act = _soft_activation(dist,act_thresh)
     return act <= act_thresh
 
+
+
+
+
+
 from model.pipeline import Pipeline
 from multiprocessing import Pool
 class TemplateMatch(SingleInput):

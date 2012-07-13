@@ -75,6 +75,30 @@ def testsignal(hz,seconds=5.,sr=44100.):
     return np.sin(np.arange(0,ts*cps,cps) * (2*np.pi))
 
 
+def notes(events,envelope,sr=44100.):
+    '''
+    events   - a list of tuples of (time_secs,pitch)
+    envelope - an envelope to be applied to each note. All notes will have 
+               the same duration. 
+    '''
+    # sort the events by ascending time
+    srt = sorted(events,cmp = lambda e1,e2 : cmp(e1[0],e2[0]))
+    # the length of the envelope (and therefore the lenght of all events), in
+    # samples
+    le = len(envelope)
+    # the length of the entire signal
+    l = (srt[-1][0] * sr) + le
+    sig = np.zeros(l)
+    # the length of the envelope, in seconds
+    els = le/sr
+    for e in srt:
+        ts = int(e[0] * sr)
+        note = testsignal(e[1],els) * envelope
+        sig[ts : ts + le] += note
+    return sig
+        
+
+
 # TODO: This is used in analyze.extractor and model.frame. Can it be
 # factored out into a *better*, common location?
 def recurse(fn):

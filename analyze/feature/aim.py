@@ -47,15 +47,18 @@ class NAP(SingleInput):
         self.sig = aimc.SignalBank()
         self.sig.Initialize(1,self.env.windowsize,self.env.samplerate)
         
-        self.pzfc = aimc.ModulePZFC(aimc.Parameters())
-        self.hcl = aimc.ModuleHCL(aimc.Parameters())
+        pzfc_params = aimc.Parameters()
+        pzfc_params.SetFloat('pzfc.highest_frequency',12000.)
+        self.pzfc = aimc.ModulePZFC(pzfc_params)
+        hcl_params = aimc.Parameters()
+        self.hcl = aimc.ModuleHCL(hcl_params)
         self.pzfc.AddTarget(self.hcl)
         self.global_params = aimc.Parameters()
-        self.global_params.SetBool('nap.do_log_compression',True)
+        
         self.pzfc.Initialize(self.sig,self.global_params)
         
-        output_bank = self.hcl.GetOutputBank()
         
+        output_bank = self.hcl.GetOutputBank()
         self._dim = (output_bank.channel_count(),output_bank.buffer_length())
          
     
@@ -89,7 +92,9 @@ class AIM(SingleInput):
         self.sig = aimc.SignalBank()
         self.sig.Initialize(1,self.env.windowsize,self.env.samplerate)
         
-        self.pzfc = aimc.ModulePZFC(aimc.Parameters())
+        pzfc_params = aimc.Parameters()
+        pzfc_params.SetFloat('pzfc.highest_frequency',12000.)
+        self.pzfc = aimc.ModulePZFC(pzfc_params)
         self.hcl = aimc.ModuleHCL(aimc.Parameters())
         self.local_max = aimc.ModuleLocalMax(aimc.Parameters())
         self.sai = aimc.ModuleSAI(aimc.Parameters())

@@ -193,8 +193,13 @@ class Rbm(NeuralNetwork,Learn):
         '''
         '''
         batch_size = 100
-        nbatches = len(samples) / batch_size
-        samples = samples.reshape((nbatches,batch_size,samples.shape[1]))
+        nbatches = int(len(samples) / batch_size)
+        # If the number of samples isn't evenly divisible by batch size, we're
+        # just going to shave off the end.  If the training set is sufficiently
+        # large (hopefully in the tens or hundreds of thousands), this shouldn't
+        # be a big deal.
+        samples = samples[:nbatches*batch_size].reshape(\
+                                        (nbatches,batch_size,samples.shape[1]))
         # initialize some variables we'll
         # use during training, but then throw away
         self._wvelocity = np.zeros(self._weights.shape)

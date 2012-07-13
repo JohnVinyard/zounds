@@ -50,9 +50,9 @@ class Pipeline(Model):
         except NameError:
             raise NotImplemented('%s has not implemented a dim property' % \
                                 self.learn.__class__.__name__)
-        
+            
 
-    def train(self,nexamples,stopping_condition):
+    def train(self,nexamples,stopping_condition,data = None):
         '''
         param stopping_condition: A callable that is specific to the 
         Learn-derived class. It is evaluated periodically by Learn.train to 
@@ -62,7 +62,7 @@ class Pipeline(Model):
             raise ValueError(\
                     '_id %s already exists. Please delete it before proceeding'\
                      % self._id)
-        data = self.fetch(nexamples = nexamples)
+        data = self.fetch(nexamples = nexamples) if data is None else data
         # KLUDGE: Is this always OK?
         if data is not None:
             data = flatten2d(data)
@@ -81,11 +81,13 @@ class Pipeline(Model):
 
 
 def _train(args):
-    pipeline,nexamples,stop_cond = args
-    pipeline.train(nexamples,stop_cond)
+    pipeline,nexamples,data,stop_cond = args
+    pipeline.train(nexamples,stop_cond, data = data)
 
 def train_many(pipelines,nsamples,stop_condition,nprocesses = 4):
     pool = Pool(nprocesses)
-    args = [(p,nsamples,stop_condition) for p in pipelines]
-    pool.map(_train,args)
+    for i in range(0,len(pipelines),nprocesses):
+        args = [(p,nsamples,p.fetch(nsamples),stop_condition) \
+                    for p in pipelines[i : i + nprocesses]]
+        pool.map(_train,args)
         

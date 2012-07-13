@@ -4,9 +4,6 @@ from util import ensure_path_exists
 
 
 
-
-
-
 class Controller(object):
     '''
     Base class for all data controllers. These classes are responsible for
