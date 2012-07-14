@@ -23,6 +23,12 @@ class NeuralNetwork(object):
         Using the hidden or latent variables, return the reconstructed output
         '''
         raise NotImplemented('nnet is meant to be an abstract base class')
+    
+    # KLUDGE: This shouldn't be here. Neural Networks and KMeans-like classes
+    # should inherit from a common class
+    @property
+    def codebook(self):
+        return self._weights.T
 
     def _show_1d(self,f):
         plt.plot(f) 

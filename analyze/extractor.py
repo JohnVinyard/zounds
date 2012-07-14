@@ -302,13 +302,15 @@ class ExtractorChain(object):
         '''
         Turn the crank until we run out of data
         '''
+        rootkey = self.chain[0].key
         i = 0
         bucket = self.bucket()  
         for k,v in self.process():
             bucket[k].append(v)
-            i+=1
-            if nframes is not None and i > nframes:
-                break
+            if k == rootkey:
+                i+=1
+                if nframes is not None and i > nframes:
+                    break
         return bucket
     
     

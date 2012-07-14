@@ -212,6 +212,8 @@ class Scatter(SingleInput):
         nj = self.total_filters
         ds = self.downsample_fac(sig.resolution, nj)
         return self.conv(sig,sigf,self._lowpass[int(sig.resolution)],2**ds)
+        
+        
     
     def conv(self,sig,sigf,flter,dsfac):
         return np.fft.ifft(sigf * flter)[::dsfac] * np.sqrt(dsfac)
@@ -237,9 +239,8 @@ class Scatter(SingleInput):
                     S[o].extend(children)
                 out[o - 1].append(self.smooth(sig))
         
-        #order_one = safe_log(np.abs(np.array(out[1])))
-        order_two = safe_log(np.abs(np.array(out[2]))) 
-        out = order_two
-        return out
+        order_one = np.abs(np.array(out[1]))
+        #order_two = safe_log(np.abs(np.array(out[2]))) 
+        return order_one
         
         
