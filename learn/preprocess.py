@@ -41,6 +41,15 @@ class Add(Preprocess):
     def _preprocess(self,data):
         return data + self.n
 
+class Multiply(Preprocess):
+    
+    def __init__(self,n):
+        Preprocess.__init__(self)
+        self.n = n
+    
+    def _preprocess(self,data):
+        return data * self.n
+
 class SubtractMean(Preprocess):
     
     def __init__(self,mean = None, axis = 0):
