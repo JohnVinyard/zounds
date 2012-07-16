@@ -1,11 +1,17 @@
 TOOO:
 -------------
+
 Use bfcc flux to do synthesis. Create a new ordering of frames so that flux
  stays close to the same, but different frames are used.
  
 Finish Constant-Q implementation 
 
 TODO:  Try lowpass filter subtraction method for spectrogram sharpening
+
+Allow step-sizes that aren't windowsize / 2
+
+Allow nframes values of -1, or inf, or something, so that processing
+can be done all at once.
 
 2) - BUG: Pooled doesn't work for nested Pooled features
 

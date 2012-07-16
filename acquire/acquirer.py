@@ -69,8 +69,11 @@ class DiskAcquirer(Acquirer):
                                   extid,
                                   fp)
             if not self.framecontroller.exists(self.source,extid):
-                print 'importing %s, file %i of %i' % (fn,i,lf)
-                self.framecontroller.append(self.extractor_chain(pattern))
+                try:
+                    print 'importing %s, file %i of %i' % (fn,i,lf)
+                    self.framecontroller.append(self.extractor_chain(pattern))
+                except IOError:
+                    print 'ERROR! : data from %s was unreadable' % fn
             
             
             

@@ -41,6 +41,10 @@ class KMeans(Learn):
         return feature
 
 from util import flatten2d
+
+# BUG: The problem with this method is that the exemplars are taken from the
+# database, so there will be very large activations for these.  Ideally, we'd
+# like to resynthesize from the fft means 
 class ConvolutionalKMeans(KMeans):
     
     def __init__(self,n_centroids,patch_shape):
