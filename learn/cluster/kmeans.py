@@ -39,6 +39,40 @@ class KMeans(Learn):
         feature = np.zeros(len(self.codebook),dtype = np.uint8)
         feature[best] = 1
         return feature
+
+from util import flatten2d
+class ConvolutionalKMeans(KMeans):
+    
+    def __init__(self,n_centroids,patch_shape):
+        KMeans.__init__(self,n_centroids)
+        self._patch_shape = patch_shape if isinstance(patch_shape,tuple) \
+                            else (patch_shape,)
+    
+    def train(self,data,stopping_condition):
+        '''
+        The idea here is to avoid redundant codes, i.e., codes that are simply
+        translated.  The plan to avoid this is as follows:
+        
+        1) take an fft of input patches
+        2) perform kmeans clustering on the real-valued (phase is discarded) fft coefficients
+        3) find the best exemplars of the resulting clusters in the fft data from step one.
+        4) the corresponding patches from the input data are our codebook
+        '''
+        data = data.reshape((len(data),) + self._patch_shape)
+        # we always want to treat the first dimension as examples, and compute
+        # an n-dimensional fft over the remaining dimensions
+        axes = -np.arange(len(data.shape))[1:][::-1]
+        # take an n-dimensional fft of each data example
+        f = np.fft.rfftn(data,axes = axes)
+        # compute k-means on the real-valued (discarded phase) fft coefficients
+        codebook,distortion = kmeans(flatten2d(abs(f)),self.n_centroids)
+        self._hdim = len(codebook)
+        # find exemplars in the input data whose coefficients most closely match
+        # the codebook fft coefficients, ignoring phase
+        dist = cdist(codebook,flatten2d(abs(f)))
+        self.codebook = flatten2d(data[np.argmin(dist,1)])
+        
+    
     
 class SoftKMeans(KMeans):
     def __init__(self,n_centroids):
