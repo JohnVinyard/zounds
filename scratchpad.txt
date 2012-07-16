@@ -1,12 +1,15 @@
 TOOO:
 -------------
+Use bfcc flux to do synthesis. Create a new ordering of frames so that flux
+ stays close to the same, but different frames are used.
+ 
+Finish Constant-Q implementation 
+
 TODO:  Try lowpass filter subtraction method for spectrogram sharpening
 
 2) - BUG: Pooled doesn't work for nested Pooled features
 
 - TODO: Nice printing for Extractor, FrameModel, Preprocess, Learn, Environment, etc...
-
-- TODO: Random sampling method (for learning) that avoids silence
 
 - TODO: Pass an id or a (source,external_id) argument to search.py as the query 
 
