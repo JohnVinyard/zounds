@@ -1,6 +1,6 @@
 TOOO:
 -------------
-TODO: Fix test module references
+TODO: How can I ensure that dependencies.sh is executable?
 
 TODO: Ensure that all quickstart scripts use argparse.
 

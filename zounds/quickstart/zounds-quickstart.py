@@ -29,12 +29,13 @@ if __name__ == '__main__':
     os.makedirs(os.path.join(args.directory,'datastore'))
     
     dr = args.directory
+    # get the zounds installation path.
+    import zounds
+    zp = zounds.__path__
     # copy the files to the new app directory
-    copy('config.py',dr)
-    copy('ingest.py',dr)
-    copy('display.py',dr)
-    copy('search.py',dr)
-    copy('ab.py',dr)
+    for fn in os.listdir(zp):
+        if fn != __file__:
+            copy(os.path.join(zp,fn),dr)
     
     # Read the contents of the config file template
     configfile = os.path.join(dr,'config.py')
