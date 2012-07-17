@@ -28,4 +28,7 @@ class WindowedAudioSynthesizer(object):
             play(np.tile(audio,(2,1)) * .8)
         except KeyboardInterrupt:
             pass
-        
+
+# TODO: FFT synthesizer
+# TODO: DCT synthesizer
+# TODO: ConstantQ synthesizer
