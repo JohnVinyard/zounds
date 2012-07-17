@@ -1,7 +1,4 @@
-
-
 from abc import ABCMeta, abstractmethod
-
 
 class Learn(object):
     

@@ -1,6 +1,6 @@
 import numpy as np
-from util import downsample,downsampled_shape
-from analyze.extractor import SingleInput
+from zounds.util import downsample,downsampled_shape
+from zounds.analyze.extractor import SingleInput
 from basic import Basic
 
 class Downsample(SingleInput):

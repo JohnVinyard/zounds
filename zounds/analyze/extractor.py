@@ -1,7 +1,7 @@
 import numpy as np
 from abc import ABCMeta,abstractproperty,abstractmethod
-from nputil import pad
-from util import recurse,sort_by_lineage
+from zounds.nputil import pad
+from zounds.util import recurse,sort_by_lineage
 
 class CircularDependencyException(BaseException):
     '''

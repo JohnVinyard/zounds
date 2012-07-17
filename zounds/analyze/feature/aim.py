@@ -1,8 +1,8 @@
 import aimc
 import numpy as np
-from analyze.extractor import SingleInput
-from environment import Environment
-from util import downsample
+from zounds.analyze.extractor import SingleInput
+from zounds.environment import Environment
+from zounds.util import downsample
 from itertools import permutations,product
 
 class PZFC(SingleInput):

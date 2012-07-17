@@ -4,8 +4,8 @@ import numpy as np
 from scipy.signal.filter_design import butter
 from scipy.signal import lfilter
 from scipy.sparse import csr_matrix
-from nputil import pad
-from visualize.plot import plot
+from zounds.nputil import pad
+from zounds.visualize.plot import plot
 
 # TODO: This is a special case of the toeplitz2d function.  Create a generalized,
 # cythonized version of this.

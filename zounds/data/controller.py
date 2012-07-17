@@ -1,6 +1,6 @@
 import cPickle
 import os
-from util import ensure_path_exists
+from zounds.util import ensure_path_exists
 
 
 

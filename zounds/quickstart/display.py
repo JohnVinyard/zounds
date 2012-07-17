@@ -5,9 +5,8 @@ import sys
 import string
 from string import Template
 from config import *
-from visualize.plot import plot
-from nputil import safe_log
-import numpy as np
+from zounds.visualize.plot import plot
+from zounds.nputil import safe_log
 
 HtmlTemplate = Template('''
 <html>

@@ -11,10 +11,10 @@ from bitarray import bitarray
 
 from model import Model
 from pattern import DataPattern
-from nputil import pad,safe_unit_norm as sun
-from util import flatten2d
+from zounds.nputil import pad,safe_unit_norm as sun
+from zounds.util import flatten2d
 from scipy.spatial.distance import cdist
-from environment import Environment
+from zounds.environment import Environment
 from multiprocessing import Pool
 
 def nbest(query,index,nresults = 10,metric = 'euclidean'):

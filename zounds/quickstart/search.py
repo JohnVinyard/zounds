@@ -2,16 +2,16 @@ from __future__ import division
 import os.path
 from random import choice
 import argparse
+from time import time
 
 from config import *
 from scikits.audiolab import Sndfile,play
-from model.framesearch import *
-from environment import Environment
-from util import audio_files
-from analyze.audiostream import read_frames_mono
-from analyze.resample import Resample
-from time import time
-from visualize.plot import plot
+from zounds.model.framesearch import *
+from zounds.environment import Environment
+from zounds.util import audio_files
+from zounds.analyze.audiostream import read_frames_mono
+from zounds.analyze.resample import Resample
+from zounds.visualize.plot import plot
 
 class Zndfile(Sndfile):
     '''

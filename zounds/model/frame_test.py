@@ -5,9 +5,9 @@ import numpy as np
 
 from frame import Frames,Feature,Precomputed
 from pattern import FilePattern
-from environment import Environment
-from analyze.feature.spectral import FFT,Loudness,SpectralCentroid
-from data.frame import DictFrameController
+from zounds.environment import Environment
+from zounds.analyze.feature.spectral import FFT,Loudness,SpectralCentroid
+from zounds.data.frame import DictFrameController
 
 
 

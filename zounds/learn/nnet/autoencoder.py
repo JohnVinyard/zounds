@@ -4,7 +4,7 @@ from scipy.optimize import fmin_l_bfgs_b as bfgs
 import cPickle
 from nnet import NeuralNetwork,sigmoid
 
-from learn.learn import Learn
+from zounds.learn.learn import Learn
 
 
 class Params:

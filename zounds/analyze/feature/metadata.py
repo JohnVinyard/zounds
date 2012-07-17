@@ -1,6 +1,6 @@
 from __future__ import division
 import numpy as np
-from analyze.extractor import Extractor,SingleInput
+from zounds.analyze.extractor import Extractor,SingleInput
 
 class MetaDataExtractor(Extractor):
     

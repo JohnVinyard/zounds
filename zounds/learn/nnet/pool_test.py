@@ -1,9 +1,9 @@
 import unittest
 import numpy as np
-from model.pipeline import Pipeline
-from learn.nnet.nnet import NeuralNetwork
-from learn.fetch import Fetch
-from learn.preprocess import NoOp
+from zounds.model.pipeline import Pipeline
+from nnet import NeuralNetwork
+from zounds.learn.fetch import Fetch
+from zounds.learn.preprocess import NoOp
 
 class MockNN(NeuralNetwork):
     

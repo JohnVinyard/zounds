@@ -2,14 +2,14 @@ from __future__ import division
 from abc import ABCMeta,abstractmethod
 import numpy as np
 
-from model import Model
-from pattern import FilePattern,DataPattern
-from analyze.extractor import Extractor,ExtractorChain
-from analyze.feature.metadata import \
+from zounds.model.model import Model
+from zounds.model.pattern import FilePattern,DataPattern
+from zounds.analyze.extractor import Extractor,ExtractorChain
+from zounds.analyze.feature.metadata import \
     MetaDataExtractor, LiteralExtractor,CounterExtractor
-from analyze.feature.rawaudio import AudioSamples
-from util import recurse,sort_by_lineage
-from environment import Environment
+from zounds.analyze.feature.rawaudio import AudioSamples
+from zounds.util import recurse,sort_by_lineage
+from zounds.environment import Environment
 
 
 class Feature(object):

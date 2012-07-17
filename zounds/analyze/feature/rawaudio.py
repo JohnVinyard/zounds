@@ -1,10 +1,10 @@
 from __future__ import division
 import numpy as np
 
-from analyze.audiostream import AudioStream
-from analyze.extractor import Extractor
-from nputil import pad
-from environment import Environment
+from zounds.analyze.audiostream import AudioStream
+from zounds.analyze.extractor import Extractor
+from zounds.nputil import pad
+from zounds.environment import Environment
 
 class AudioSamples(Extractor):
     

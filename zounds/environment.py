@@ -1,6 +1,6 @@
 from __future__ import division
 from uuid import uuid4
-from analyze.synthesize import WindowedAudioSynthesizer
+from zounds.analyze.synthesize import WindowedAudioSynthesizer
 
 class AudioConfig:
     samplerate = 44100

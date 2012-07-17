@@ -1,7 +1,7 @@
 from __future__ import division
 import numpy as np
 import unittest
-from analyze.audiostream import AudioStream,BadStepSizeException
+from zounds.analyze.audiostream import AudioStream,BadStepSizeException
 from scikits.audiolab import Sndfile,Format
 from uuid import uuid4
 from os import remove
@@ -111,7 +111,7 @@ class AudioStreamTests(unittest.TestCase):
 
 
 ## ExtractorTests #############################################################
-from analyze.extractor import \
+from zounds.analyze.extractor import \
     Extractor,SingleInput,ExtractorChain,RootlessExtractorChainException
     
 class RootExtractor(Extractor):

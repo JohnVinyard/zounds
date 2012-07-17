@@ -1,4 +1,4 @@
-from environment import Environment
+from zounds.environment import Environment
 
 class Model(object):
     

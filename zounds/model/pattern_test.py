@@ -1,7 +1,5 @@
 import unittest
 
-
-    
 class PatternTests(unittest.TestCase):
     
     def setUp(self):

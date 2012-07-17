@@ -3,14 +3,14 @@ import os.path
 import shutil
 from uuid import uuid4
 
-from environment import Environment
+from zounds.environment import Environment
 from pipeline import PickledPipelineController
 from frame import DictFrameController
 
-from model.pipeline import Pipeline
-from model.frame import Frames
+from zounds.model.pipeline import Pipeline
+from zounds.model.frame import Frames
  
-from model.pipeline_test import MockFetch,AddPreprocess,MockLearn
+from zounds.model.pipeline_test import MockFetch,AddPreprocess,MockLearn
 
 
 class PickledLearningControllerTests(unittest.TestCase):
