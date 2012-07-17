@@ -1,7 +1,0 @@
-1) Run dependencies.sh. This will install a bunch of packages that the python dependencies rely on. Type 'nano dependencies.sh' to look at the list of packages, and the justification for each.
-
-2) Unfortunately, setup.py has problems installing numpy and scipy, so these will have to be installed by hand. Type 'sudo pip install numpy' and 'sudo pip install scipy', in that order, to install them.
-
-3) Run 'python setup.py install'. This ain't perfect either.  For some reason, scikits.audiolab and tables (PyTables) both cause problems. Simply reissue the 'python setup.py install' command after these errors, and things seem to continue along just fine. Your guess is as good as mine.
-
-4) cd to the installation directory, probably /usr/local/lib/python2.x/dist-packages/Zounds-X.XX-pyX.X.egg/zounds and run 'nosetests'.

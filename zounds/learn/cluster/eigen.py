@@ -1,7 +1,7 @@
 from __future__ import division
-from learn.learn import Learn
+from zounds.learn.learn import Learn
 import numpy as np
-from nputil import safe_unit_norm as sun
+from zounds.nputil import safe_unit_norm as sun
 from scipy.spatial.distance import cdist
 
 

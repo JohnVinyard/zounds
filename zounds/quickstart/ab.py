@@ -1,7 +1,7 @@
 from __future__ import division
 from config import *
 import numpy as np
-from nputil import pad
+from zounds.nputil import pad
 import cPickle
 from random import choice
 import sys

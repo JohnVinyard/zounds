@@ -10,11 +10,9 @@ from tables import \
 
 import numpy as np
 
-from celery.task import task,chord
-
+import zounds.model.frame
 from controller import Controller
 from zounds.model.pattern import Pattern
-import zounds.model.frame
 from zounds.nputil import pad
 from zounds.util import ensure_path_exists
 
@@ -749,12 +747,10 @@ class PyTablesFrameController(FrameController):
         
     
     
-    
+'''
 # KLUDGE: this should be a PyTablesFrameController class method, if at all possible
 @task(name='data.frame.sync_one')
 def sync_one(newmodel,filepath,_id,add,update,delete,recompute):
-    '''
-    '''
     oldc = PyTablesFrameController(newmodel,filepath)
     newc = PyTablesFrameController(newmodel,oldc._temp_filepath)
     _id_query = '_id == "%s"' % _id
@@ -808,7 +804,7 @@ def sync_complete(results):
     os.rename(tmpfilepath,filepath)
     print 'sync complete'
     return True
-   
+'''
     
 # Crazy Bad KLUDGE: I rely on FrameController-derived classes to define a back-end
 # specific Address class as a nested class. This makes those classes impossible

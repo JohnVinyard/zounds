@@ -2,7 +2,7 @@ from __future__ import division
 import numpy as np
 from scipy.cluster.vq import kmeans
 from scipy.spatial.distance import cdist
-from learn.learn import Learn
+from zounds.learn.learn import Learn
 from sklearn.decomposition import PCA as SKPCA
 
 # KLUDGE: I've added indim and hdim so this class can be used 
