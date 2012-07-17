@@ -3,7 +3,7 @@ from uuid import uuid4
 import os
 import numpy as np
 
-from zounds.analyze.analyze_test import AudioStreamTests
+from zounds.analyze.test_analyze import AudioStreamTests
 from zounds.analyze.feature.spectral import FFT,Loudness
 from zounds.data.frame import PyTablesFrameController
 from zounds.model.frame import Feature,Frames
