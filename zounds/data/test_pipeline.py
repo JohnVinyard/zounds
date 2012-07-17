@@ -10,7 +10,7 @@ from frame import DictFrameController
 from zounds.model.pipeline import Pipeline
 from zounds.model.frame import Frames
  
-from zounds.model.pipeline_test import MockFetch,AddPreprocess,MockLearn
+from zounds.model.test_pipeline import MockFetch,AddPreprocess,MockLearn
 
 
 class PickledLearningControllerTests(unittest.TestCase):

@@ -14,7 +14,7 @@ from zounds.analyze.feature.reduce import Downsample
 from zounds.model.pattern import FilePattern
 from zounds.environment import Environment
 from frame import PyTablesFrameController
-from zounds.analyze.analyze_test import AudioStreamTests
+from zounds.analyze.test_analyze import AudioStreamTests
 
 
 class MockExtractor(Extractor):
