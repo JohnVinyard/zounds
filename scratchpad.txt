@@ -1,14 +1,11 @@
 TOOO:
 -------------
-TODO: Zounds name in setup.py should be lowercase
+TODO: Ensure that all quickstart scripts use argparse.
+
+TODO: quickstart.py needs to be modified to copy files
+from the install directory
 
 TODO: How should quickstart.py be handled?
-
-TODO: What's the setuptools way to write/include an INSTALL file?
-
-TODO: Remove old *_test.py files from hg repo.
-
-TODO: Get rid of celery dependencies
 
 TODO: README file for setuptools
 

@@ -5,7 +5,7 @@ from scipy.cluster.vq import whiten,kmeans
 from scipy.spatial.distance import cdist
 from bitarray import bitarray
 
-from learn.learn import Learn
+from zounds.learn.learn import Learn
 
 class Lsh(Learn):
     

@@ -37,12 +37,22 @@ for dirpath, dirnames, filenames in os.walk(zounds_dir):
         packages.append(string.join(pathparts[index:],'.'))
 
 
+def read(fname):
+    '''
+    This is yanked from the setuptools documentation at 
+    http://packages.python.org/an_example_pypi_project/setuptools.html. It is
+    used to read the text from the README file.
+    '''
+    return open(os.path.join(os.path.dirname(__file__), fname)).read()
+
 setup(
-      name = 'Zounds',
+      name = 'zounds',
       version = '0.01',
       url = 'http://www.johnvinyard.com',
       author = 'John Vinyard',
       author_email = 'john.vinyard@gmail.com',
+      long_description = read('README.txt'),
+      scripts = ['zounds/quickstart/quickstart.py'],
       packages = packages,
       install_requires = ['tables','cython','numexpr',
                           'nose','scikits.audiolab',

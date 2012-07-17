@@ -1,6 +1,6 @@
 import numpy as np
 
-from learn.learn import Learn
+from zounds.learn.learn import Learn
 
 
 class MinHash(Learn):
