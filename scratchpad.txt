@@ -1,5 +1,12 @@
 TOOO:
 -------------
+TODO: Zounds name in setup.py should be lowercase
+
+TODO: How should quickstart.py be handled?
+
+TODO: What's the setuptools way to write/include an INSTALL file?
+
+TODO: Remove old *_test.py files from hg repo.
 
 TODO: Get rid of celery dependencies
 
