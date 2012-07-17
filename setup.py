@@ -1,4 +1,4 @@
-from distutils.core import setup
+from setuptools import setup
 
 setup(
       name = 'Zounds',
@@ -6,5 +6,9 @@ setup(
       url = 'http://www.johnvinyard.com',
       author = 'John Vinyard',
       author_email = 'john.vinyard@gmail.com',
-      packages = ['']
+      packages = ['','acquire','analyze','data','learn',
+                  'model','nputil','queue','visualize'],
+      install_requires = ['tables','cython','numexpr',
+                          'nose','scikits.audiolab',
+                          'matplotlib','scipy','numpy']
 )
