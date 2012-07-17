@@ -8,4 +8,8 @@ libsndfile1-dev \
 libsamplerate-dev \
 libhdf5-serial-1.8.4 \
 libhdf5-serial-dev \
-python-pip
+python-pip \
+libfreetype6-dev \
+libpng-dev \
+libasound2-dev \
+g++ \

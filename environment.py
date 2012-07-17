@@ -1,6 +1,5 @@
 from __future__ import division
 from uuid import uuid4
-from celery.task import subtask,chord
 from analyze.synthesize import WindowedAudioSynthesizer
 
 class AudioConfig:
