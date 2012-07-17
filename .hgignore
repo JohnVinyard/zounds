@@ -4,3 +4,4 @@ syntax: glob
 analyze/features.png
 zounds2
 python
+doc/build
