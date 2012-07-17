@@ -1,20 +1,16 @@
 from __future__ import division
-from itertools import product
 
 import numpy as np
-
 from scipy.stats.mstats import gmean
 from scipy.stats import kurtosis
 from scipy.signal import triang
 from scipy.fftpack import dct
-from scipy.ndimage.interpolation import rotate
 from scipy.spatial.distance import cdist
-from scipy.signal import convolve
 
-from environment import Environment
-from analyze.extractor import SingleInput
-from analyze import bark
-from nputil import safe_log,safe_unit_norm as sun
+from zounds.environment import Environment
+from zounds.analyze.extractor import SingleInput
+import zounds.analyze.bark as bark
+from zounds.nputil import safe_log,safe_unit_norm as sun
 
 
 class FFT(SingleInput):

@@ -8,7 +8,7 @@ try:
     if vparts[0] < 1 or vparts[1] < 6:
         print npmsg % ('  Yours is version %s' % numpy.__version__)
         exit()
-    print 'You''ve got numpy version %s. Great!' % numpy.__version__
+    print 'You\'ve got numpy version %s. Great!' % numpy.__version__
 except ImportError:
     print npmsg % ''
     exit()
@@ -16,7 +16,7 @@ except ImportError:
 spmsg = 'You must have scipy installed. Type "sudo pip install scipy" to install.'
 try:
     import scipy
-    print 'You''ve got scipy version %s. Great!' % scipy.__version__
+    print 'You\'ve got scipy version %s. Great!' % scipy.__version__
 except ImportError:
     print spmsg
     exit()

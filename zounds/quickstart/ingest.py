@@ -1,5 +1,5 @@
 from config import *
-from acquire.acquirer import DiskAcquirer
+from zounds.acquire.acquirer import DiskAcquirer
 import sys
 
 

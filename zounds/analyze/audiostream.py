@@ -2,7 +2,7 @@ from __future__ import division
 import numpy as np
 from resample import Resample
 from scikits.audiolab import Sndfile
-from nputil import pad
+from zounds.nputil import pad
 
 def read_frames_mono(sndfile,nframes = None):
     if None is nframes:

@@ -1,8 +1,8 @@
 from __future__ import division
 import numpy as np
-from environment import Environment
-from analyze.extractor import SingleInput
-from model.pipeline import Pipeline
+from zounds.environment import Environment
+from zounds.analyze.extractor import SingleInput
+from zounds.model.pipeline import Pipeline
 from itertools import product
 
 # TODO: Write tests!

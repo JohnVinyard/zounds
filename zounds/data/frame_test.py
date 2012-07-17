@@ -5,16 +5,16 @@ import os
 
 import numpy as np
 
-from model.frame import Frames,Feature,Precomputed
-from analyze.extractor import Extractor,SingleInput
-from analyze.feature.spectral import FFT,Loudness,SpectralCentroid,SpectralFlatness,BarkBands
-from analyze.feature.basic import UnitNorm
-from analyze.feature.reduce import Downsample
-from model.pattern import FilePattern
-from environment import Environment
+from zounds.model.frame import Frames,Feature,Precomputed
+from zounds.analyze.extractor import Extractor,SingleInput
+from zounds.analyze.feature.spectral import \
+    FFT,Loudness,SpectralCentroid,SpectralFlatness,BarkBands
+from zounds.analyze.feature.basic import UnitNorm
+from zounds.analyze.feature.reduce import Downsample
+from zounds.model.pattern import FilePattern
+from zounds.environment import Environment
 from frame import PyTablesFrameController
-
-from analyze.analyze_test import AudioStreamTests
+from zounds.analyze.analyze_test import AudioStreamTests
 
 
 class MockExtractor(Extractor):

@@ -1,7 +1,7 @@
 from __future__ import division
 import numpy as np
-from analyze.extractor import SingleInput
-from nputil import safe_log,safe_unit_norm as sun
+from zounds.analyze.extractor import SingleInput
+from zounds.nputil import safe_log,safe_unit_norm as sun
 from scipy.signal import convolve
 
 class Basic(SingleInput):

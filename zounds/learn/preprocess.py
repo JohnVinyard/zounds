@@ -3,7 +3,7 @@ from abc import ABCMeta,abstractmethod
 
 import numpy as np
 
-from nputil import safe_unit_norm as sun
+from zounds.nputil import safe_unit_norm as sun
 
 
 class Preprocess(object):

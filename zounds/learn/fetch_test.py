@@ -3,12 +3,12 @@ from uuid import uuid4
 import os
 import numpy as np
 
-from analyze.analyze_test import AudioStreamTests
-from analyze.feature.spectral import FFT,Loudness
-from data.frame import PyTablesFrameController
-from model.frame import Feature,Frames
-from model.pattern import FilePattern
-from environment import Environment
+from zounds.analyze.analyze_test import AudioStreamTests
+from zounds.analyze.feature.spectral import FFT,Loudness
+from zounds.data.frame import PyTablesFrameController
+from zounds.model.frame import Feature,Frames
+from zounds.model.pattern import FilePattern
+from zounds.environment import Environment
 
 from fetch import PrecomputedFeature
 

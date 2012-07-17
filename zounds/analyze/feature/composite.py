@@ -1,5 +1,5 @@
 import numpy as np
-from analyze.extractor import Extractor
+from zounds.analyze.extractor import Extractor
 
 
 class Composite(Extractor):

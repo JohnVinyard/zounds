@@ -3,8 +3,8 @@ from abc import ABCMeta,abstractmethod
 
 import numpy as np
 
-from environment import Environment
-from nputil import pad
+from zounds.environment import Environment
+from zounds.nputil import pad
 from random import choice
 
 class Fetch(object):

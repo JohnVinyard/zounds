@@ -1,8 +1,8 @@
-from analyze.extractor import Extractor,ExtractorChain
+from zounds.analyze.extractor import Extractor,ExtractorChain
 from composite import Composite
 import numpy as np
 import unittest
-from analyze.analyze_test import RootExtractor
+from zounds.analyze.analyze_test import RootExtractor
 
 class SourceData(Extractor):
     

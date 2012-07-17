@@ -13,10 +13,10 @@ import numpy as np
 from celery.task import task,chord
 
 from controller import Controller
-from model.pattern import Pattern
-import model.frame
-from nputil import pad
-from util import ensure_path_exists
+from zounds.model.pattern import Pattern
+import zounds.model.frame
+from zounds.nputil import pad
+from zounds.util import ensure_path_exists
 
 class FrameController(Controller):
     __metaclass__ = ABCMeta
@@ -176,7 +176,7 @@ class PyTablesFrameController(FrameController):
     will be compared.  
     '''
     
-    class Address(model.frame.Address):
+    class Address(zounds.model.frame.Address):
         
         # key types
         INTEGER = object()
@@ -189,7 +189,7 @@ class PyTablesFrameController(FrameController):
         a slice, or a list of ints
         '''
         def __init__(self,key):
-            model.frame.Address.__init__(self,key)
+            zounds.model.frame.Address.__init__(self,key)
             if isinstance(key,int) or isinstance(key,np.integer):
                 # address of a single frame
                 self._len = 1
@@ -573,12 +573,12 @@ class PyTablesFrameController(FrameController):
         return row[0]['source'],row[0]['external_id']
     
     def get_dtype(self,key):
-        if isinstance(key,model.frame.Feature):
+        if isinstance(key,zounds.model.frame.Feature):
             key = key.key
         return getattr(self.db_read.cols,key).dtype
     
     def get_dim(self,key):
-        if isinstance(key,model.frame.Feature):
+        if isinstance(key,zounds.model.frame.Feature):
             key = key.key
         return getattr(self.db_read.cols,key).shape[1:]
     

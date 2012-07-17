@@ -1,5 +1,5 @@
 from datetime import datetime
-from util import flatten2d
+from zounds.util import flatten2d
 from model import Model
 from multiprocessing import Pool
 

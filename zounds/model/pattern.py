@@ -57,8 +57,8 @@ Once more, a pattern using the previous one
 '''
 import numpy as np
 
-from model import Model
-from analyze.feature.rawaudio import AudioFromDisk,AudioFromMemory
+from zounds.model.model import Model
+from zounds.analyze.feature.rawaudio import AudioFromDisk,AudioFromMemory
 
 
 class Pattern(Model):

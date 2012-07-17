@@ -1,10 +1,10 @@
 from __future__ import division
 import numpy as np
 
-from analyze.extractor import SingleInput
-from environment import Environment
-from nputil import safe_unit_norm,safe_log
-from util import downsample
+from zounds.analyze.extractor import SingleInput
+from zounds.environment import Environment
+from zounds.nputil import safe_unit_norm,safe_log
+from zounds.util import downsample
 from scipy.fftpack import dct
 
 # Debugging

@@ -9,7 +9,7 @@ class AudioConfig:
     window = None
 
 # FrameModel
-from model.frame import Frames, Feature
+from zounds.model.frame import Frames, Feature
 
 
 class FrameModel(Frames):
@@ -17,14 +17,14 @@ class FrameModel(Frames):
 
 
 # Data backends
-from model.pattern import Pattern
-from model.pipeline import Pipeline
-from model.framesearch import MinHashSearch,LshSearch,ExhaustiveSearch
+from zounds.model.pattern import Pattern
+from zounds.model.pipeline import Pipeline
+from zounds.model.framesearch import MinHashSearch,LshSearch,ExhaustiveSearch
 
-from data.pipeline import PickledPipelineController
-from data.pattern import InMemory
-from data.frame import PyTablesFrameController
-from data.search import PickledSearchController
+from zounds.data.pipeline import PickledPipelineController
+from zounds.data.pattern import InMemory
+from zounds.data.frame import PyTablesFrameController
+from zounds.data.search import PickledSearchController
 
 data = {
             
@@ -36,7 +36,7 @@ data = {
 }
 
 
-from environment import Environment
+from environment import zounds.Environment
 dbfile = '${Directory}/datastore/frames.h5'
 Z = Environment(
                 source,                             # name of this application

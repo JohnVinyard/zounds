@@ -2,7 +2,7 @@ from __future__ import division
 import numpy as np
 
 from learn import Learn
-from environment import Environment
+from zounds.environment import Environment
 
 class Normalize(Learn):
     '''

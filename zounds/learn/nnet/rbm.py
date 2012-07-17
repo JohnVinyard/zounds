@@ -2,7 +2,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 from nnet import NeuralNetwork,sigmoid,stochastic_binary as sb
-from learn.learn import Learn
+from zounds.learn.learn import Learn
 
 
 class Rbm(NeuralNetwork,Learn):

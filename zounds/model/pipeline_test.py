@@ -2,14 +2,14 @@ import unittest
 
 import numpy as np
 
-from environment import Environment
+from zounds.environment import Environment
 from frame import Frames
-from data.frame import DictFrameController
-from data.pipeline import DictPipelineController
+from zounds.data.frame import DictFrameController
+from zounds.data.pipeline import DictPipelineController
 from pipeline import Pipeline
-from learn.fetch import Fetch
-from learn.preprocess import Preprocess
-from learn.learn import Learn
+from zounds.learn.fetch import Fetch
+from zounds.learn.preprocess import Preprocess
+from zounds.learn.learn import Learn
 
 class MockFetch(Fetch):
     

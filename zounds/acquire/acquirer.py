@@ -1,9 +1,9 @@
 from abc import ABCMeta,abstractmethod,abstractproperty
 import os.path
-from util import audio_files
+from zounds.util import audio_files
 
-from environment import Environment
-from model.pattern import FilePattern
+from zounds.environment import Environment
+from zounds.model.pattern import FilePattern
 
 
 

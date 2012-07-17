@@ -1,8 +1,8 @@
 import unittest
 import numpy as np
-from analyze.extractor import Extractor,ExtractorChain
-from analyze.feature.spectral import FFT
-from environment import Environment
+from zounds.analyze.extractor import Extractor,ExtractorChain
+from spectral import FFT
+from zounds.environment import Environment
 
 class RootExtractor(Extractor):
     
