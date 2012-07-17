@@ -1,6 +1,8 @@
 TOOO:
 -------------
 
+- Why is PyTables writing so f***'in slow sometimes?
+
 Use bfcc flux to do synthesis. Create a new ordering of frames so that flux
  stays close to the same, but different frames are used.
  
