@@ -33,3 +33,8 @@ sudo apt-get install python-dev libblas-dev liblapack-dev gfortran libsndfile1-d
 	to end of ~/.virtualenvs/zounds2/bin/postdeactivate
 
 1. in zounds2 root run "nosetests"
+
+Distribution
+-----------------------
+- "python setup.py sdist" in zounds root
+- distribution should contain a README, the dependencies.sh file, and zounds.tar.gz

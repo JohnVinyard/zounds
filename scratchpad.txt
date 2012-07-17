@@ -1,6 +1,10 @@
 TOOO:
 -------------
 
+TODO: Get rid of celery dependencies
+
+TODO: README file for setuptools
+
 - Why is PyTables writing so f***'in slow sometimes?
 
 Use bfcc flux to do synthesis. Create a new ordering of frames so that flux
