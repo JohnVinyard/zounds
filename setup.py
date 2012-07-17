@@ -52,7 +52,7 @@ setup(
       author = 'John Vinyard',
       author_email = 'john.vinyard@gmail.com',
       long_description = read('README.txt'),
-      scripts = ['zounds/quickstart/quickstart.py'],
+      scripts = ['zounds/quickstart/zounds-quickstart.py'],
       packages = packages,
       install_requires = ['tables','cython','numexpr',
                           'nose','scikits.audiolab',

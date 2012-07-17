@@ -41,6 +41,7 @@ def flatten2d(arr):
     else:
         return arr.reshape((arr.shape[0],np.product(arr.shape[1:])))
 
+# TODO: Should this go into the nputil module as well?
 def downsampled_shape(shape,factor):
     '''
     Return the new shape of an array with shape, once downsampled
@@ -48,7 +49,7 @@ def downsampled_shape(shape,factor):
     '''
     return tuple((np.array(shape) / factor).astype(np.int32))
 
-
+# TODO: Should this go into the nputil module as well?
 def downsample(arr,factor,method = 'mean'):
     if method == 'mean':
         m = lambda a : np.mean(a)
@@ -64,6 +65,7 @@ def downsample(arr,factor,method = 'mean'):
         newarr[coord] = m(arr[sl])
     return newarr
 
+# TODO: This should go into a new "synthesize" module
 def testsignal(hz,seconds=5.,sr=44100.):
     '''
     Create a sine wave at hz for n seconds
@@ -74,7 +76,7 @@ def testsignal(hz,seconds=5.,sr=44100.):
     ts = seconds * sr
     return np.sin(np.arange(0,ts*cps,cps) * (2*np.pi))
 
-
+# TODO: This should go into a new synthesize module.
 def notes(events,envelope,sr=44100.):
     '''
     events   - a list of tuples of (time_secs,pitch)
@@ -170,6 +172,3 @@ def sort_by_lineage(class_method):
         return 0
     
     return _sort
-    
-
-    
