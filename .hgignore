@@ -1,7 +1,10 @@
 syntax: glob
 *.pyc
+*.h5
 *~
 analyze/features.png
 zounds2
 python
 doc/build
+Zounds.egg-info
+dist
