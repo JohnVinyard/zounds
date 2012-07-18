@@ -37,6 +37,7 @@ for dirpath, dirnames, filenames in os.walk(zounds_dir):
         packages.append(string.join(pathparts[index:],'.'))
 
 
+
 def read(fname):
     '''
     This is yanked from the setuptools documentation at 
@@ -53,8 +54,10 @@ setup(
       author_email = 'john.vinyard@gmail.com',
       long_description = read('README.txt'),
       scripts = ['zounds/quickstart/zounds-quickstart.py'],
+      package_data = {'quickstart' : ['*.py']},
+      include_package_data = True,
       packages = packages,
-      install_requires = ['tables','cython','numexpr',
+      install_requires = ['bitarray','tables','cython','numexpr',
                           'nose','scikits.audiolab',
                           'matplotlib','scipy','numpy']
 )

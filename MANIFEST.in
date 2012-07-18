@@ -1,4 +1,4 @@
 include README.txt
 include MANIFEST.in
 include dependencies.sh
-recursive-include zounds/quickstart *
+recursive-include zounds/quickstart *.py

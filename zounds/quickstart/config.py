@@ -10,10 +10,11 @@ class AudioConfig:
 
 # FrameModel
 from zounds.model.frame import Frames, Feature
-
+from zounds.analyze.feature.spectral import FFT,BarkBands
 
 class FrameModel(Frames):
-    raise Exception('Add some features here!')
+    fft = Feature(FFT, store = False)
+    bark = Feature(BarkBands, nbands = 100, stop_freq_hz = 12000)
 
 
 # Data backends
@@ -36,7 +37,7 @@ data = {
 }
 
 
-from environment import zounds.Environment
+from zounds.environment import Environment
 dbfile = '${Directory}/datastore/frames.h5'
 Z = Environment(
                 source,                             # name of this application
