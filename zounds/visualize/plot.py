@@ -2,6 +2,7 @@ from matplotlib import pyplot as plt
 import subprocess
 import numpy as np
 
+# TODO: How does this work on other systems, where matplotlib is working correctly?
 def plot(arr,filename,figsize = (5,5), oned = False, twod = False, gray = False):
     if gray:
         plt.gray()
