@@ -1,5 +1,9 @@
 TOOO:
 -------------
+TODO: What can I hack out of config.py?
+
+TODO: Sphinx documentation
+ 
 TODO: Include LZO Headers for PyTables support
 
 TODO: zounds-quickstart script isn't working
@@ -11,14 +15,11 @@ TODO: How can I ensure that dependencies.sh is executable?
 
 TODO: Ensure that all quickstart scripts use argparse.
 
-TODO: quickstart.py needs to be modified to copy files
-from the install directory
-
-TODO: How should quickstart.py be handled?
-
 TODO: README file for setuptools
 
 - Why is PyTables writing so f***'in slow sometimes?
+
+- Faster, chunk-based or all-at-once processing for Extractors
 
 Use bfcc flux to do synthesis. Create a new ordering of frames so that flux
  stays close to the same, but different frames are used.
