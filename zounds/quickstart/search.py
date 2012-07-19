@@ -4,6 +4,8 @@ from random import choice
 import argparse
 from time import time
 
+import numpy as np
+
 from config import *
 from scikits.audiolab import Sndfile,play
 from zounds.model.framesearch import *

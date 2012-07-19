@@ -349,8 +349,17 @@ class Frames(Model):
         
         for k,v in self.__class__.stored_features().iteritems():    
             setattr(self,k,self._data[k])
-            
-     
+    
+    # BUG: What if the frames instance is composed of more than one sound?
+    def __str__(self):
+        print '''%s(
+    zounds id   :   %s,
+    source      :   %s,
+    external_id : %s,
+    n_seconds   : %1.4f,
+)''' % (self._id[0],self._source[0],self.external_id[0],self.seconds)
+    
+        
     def __len__(self):
         return len(self._data)
     
