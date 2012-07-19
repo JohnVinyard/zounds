@@ -1,17 +1,9 @@
 TOOO:
 -------------
-TODO: What can I hack out of config.py?
-
 TODO: Sphinx documentation
  
-TODO: Include LZO Headers for PyTables support
-
-TODO: zounds-quickstart script isn't working
-
 TODO: There are still a couple broken test references in
 analyze/feature/test_composite.py
-
-TODO: How can I ensure that dependencies.sh is executable?
 
 TODO: Ensure that all quickstart scripts use argparse.
 
