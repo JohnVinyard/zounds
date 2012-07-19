@@ -3,6 +3,7 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
+
 Welcome to Zounds' documentation!
 ==================================
 **Zounds** is a library designed to make experimenting with audio features a breeze!
@@ -33,30 +34,22 @@ Welcome to Zounds' documentation!
 		LinearRbm(100,500))
 	
 	# grab 10,000 samples of bark bands from the database, at random, and train
-	# for 100 epochs
+	# for 100 epochs. Then save the results.
 	pl.train(10000,lambda epoch,error: epoch > 100)
 	
 
+Download
+====================================
+Get the latest source distribution here: `zounds-0.01.tar.gz <https://bitbucket.org/jvinyard/zounds2/downloads/zounds-0.01.tar.gz>`_
 
-Contents:
+Get the source: `Zounds on BitBucket <https://bitbucket.org/jvinyard/zounds2/src>`_
 
-.. toctree::
-   :maxdepth: 2
+Documentation
+=====================================
+* :doc:`Installation </installation>`
+* :doc:`Quick Start </quick-start>`
+* TODO: API Documentation
 
-Frames
-===================================
-.. automodule:: zounds.model.frame
-	:members:
-
-Pattern
-===================================
-.. automodule:: zounds.model.pattern
-	:members:
-
-Analyze
-===================================
-.. automodule:: zounds.analyze.audiostream
-	:members:
 
 Indices and tables
 ==================

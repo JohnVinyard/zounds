@@ -1,6 +1,9 @@
 TOOO:
 -------------
+ 
 TODO: Sphinx documentation
+
+TODO: Warning for AIM features when overlapping windows are used.
  
 TODO: There are still a couple broken test references in
 analyze/feature/test_composite.py
