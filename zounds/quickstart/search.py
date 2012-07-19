@@ -2,7 +2,6 @@ from __future__ import division
 import os.path
 from random import choice
 import argparse
-from time import time
 
 import numpy as np
 
@@ -14,6 +13,7 @@ from zounds.util import audio_files
 from zounds.analyze.audiostream import read_frames_mono
 from zounds.analyze.resample import Resample
 from zounds.visualize.plot import plot
+from time import time
 
 class Zndfile(Sndfile):
     '''

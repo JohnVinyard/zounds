@@ -195,12 +195,17 @@ Here's a quick explanation of the options:
 - **sounddir** is a directory containing audio files from which we'll be randomly pulling queries
 - **nresults** is the number of results we'd like returned for each query.  We've chosen a low number here, since our database is probably pretty small.
 
+Chances are the search results won't impress you much, since we're using a very 
+low-level feature, but this should give you a feel for how to quickly try out
+other features and search implementations.
+
 ====================================================
 The FrameModel class
 ====================================================
 Let's see what the FrameModel class you defined in config.py is good for.::
 	
 	from config import FrameModel,Z
+	import numpy as np
 	print '================================================================'
 	print 'The database-wide, feature-wise mean and standard deviation of the bark feature'
 	print FrameModel.bark.mean()
@@ -210,16 +215,16 @@ Let's see what the FrameModel class you defined in config.py is good for.::
 	print FrameModel.loud.min()
 	print FrameModel.loud.max()
 	print '================================================================'
-	print 'Grab a random sound from the database'
+	print 'Grab a random sound from the database and play it'
 	frames = FrameModel.random()
 	print frames
 	Z.play(frames.audio)
 	print '================================================================'
-	print 'Features are just numpy arrays.'
-	print frames.loudness.shape
-	print frames.loudness.dtype
+	print 'Features are just numpy arrays.  Here\'s the shape and datatype of the "loud" feature'
+	print frames.loud.shape
+	print frames.loud.dtype
 	print '================================================================'
-	print 'Features that aren\'t stored can be computed on the fly and cached by simply accessing them'
+	print 'Features that aren\'t stored can be computed on the fly and cached by simply accessing them. Here\'s the shape and datatype of the "fft" feature'
 	print frames.fft.shape
 	print frames.fft.dtype
 	print '================================================================'
