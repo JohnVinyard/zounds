@@ -18,7 +18,7 @@ from analyze.feature.spectral import FFT, Loudness
 from model.frame import Frames, Feature
 
 class FrameModel(Frames):    
-    fft      = Feature(FFT,      store = True, needs = None)
+    fft      = Feature(FFT,store = True)
     loudness = Feature(Loudness, store = True, needs = fft)
     
 
