@@ -39,9 +39,8 @@ if __name__ == '__main__':
     with open(configfile,'r') as f:
         config_t = string.Template(f.read())
     
-    # Substitute the user-specified source and directory parameters
-    s = config_t.substitute({'Source'    : args.source,
-                             'Directory' : args.directory})
+    # Substitute the user-specified source parameter
+    s = config_t.substitute({'Source'    : args.source})
     
     # Write the real config file to disk
     with open(configfile,'w') as f:

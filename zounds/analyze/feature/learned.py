@@ -41,7 +41,7 @@ class Learned(SingleInput):
         data = data.reshape(np.product(data.shape))
         return [self.pipeline(data)]
     
-
+# TODO: Generalize this to take any extractor, not just a learned one.
 class Tile(SingleInput):
     
     def __init__(self, needs = None, key = None, nframes = 1, step = 1,

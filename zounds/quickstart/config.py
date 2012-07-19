@@ -14,31 +14,21 @@ from zounds.analyze.feature.spectral import FFT,BarkBands
 
 class FrameModel(Frames):
     fft = Feature(FFT, store = False)
-    bark = Feature(BarkBands, nbands = 100, stop_freq_hz = 12000)
+    bark = Feature(BarkBands, needs = fft, nbands = 100, stop_freq_hz = 12000)
 
 
 # Data backends
-from zounds.model.pattern import Pattern
-from zounds.model.pipeline import Pipeline
-from zounds.model.framesearch import MinHashSearch,LshSearch,ExhaustiveSearch
-
-from zounds.data.pipeline import PickledPipelineController
-from zounds.data.pattern import InMemory
+from zounds.model.framesearch import ExhaustiveSearch
 from zounds.data.frame import PyTablesFrameController
 from zounds.data.search import PickledSearchController
 
 data = {
-            
-    Pattern             : InMemory(),
-    Pipeline            : PickledPipelineController(),
-    MinHashSearch       : PickledSearchController(),
-    LshSearch           : PickledSearchController(),
     ExhaustiveSearch    : PickledSearchController()
 }
 
 
 from zounds.environment import Environment
-dbfile = '${Directory}/datastore/frames.h5'
+dbfile = 'datastore/frames.h5'
 Z = Environment(
                 source,                             # name of this application
                 FrameModel,                         # our frame model
