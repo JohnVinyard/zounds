@@ -80,6 +80,8 @@ class DiskAcquirer(Acquirer):
                     self.framecontroller.append(self.extractor_chain(pattern))
                 except IOError:
                     print 'ERROR! : data from %s was unreadable' % fn
+            else:
+                print 'skipping %s' % fn
             
             
             
