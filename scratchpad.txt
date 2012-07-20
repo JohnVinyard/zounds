@@ -1,8 +1,6 @@
 TOOO:
 -------------
 
-TODO: Delete tabletest.py
- 
 TODO: Sphinx documentation
 
 TODO: Warning for AIM features when overlapping windows are used.
@@ -13,8 +11,6 @@ analyze/feature/test_composite.py
 TODO: Ensure that all quickstart scripts use argparse.
 
 TODO: README file for setuptools
-
-- Why is PyTables writing so f***'in slow sometimes?
 
 - Faster, chunk-based or all-at-once processing for Extractors
 
