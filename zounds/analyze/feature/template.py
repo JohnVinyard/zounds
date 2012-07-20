@@ -1,9 +1,10 @@
 import numpy as np
-from nputil import safe_unit_norm as sun
+from zounds.nputil import safe_unit_norm as sun
 from scipy.spatial.distance import cdist
 
-from analyze.extractor import SingleInput
-from model.pipeline import Pipeline
+from zoumds.analyze.extractor import SingleInput
+from zounds.model.pipeline import Pipeline
+from multiprocessing import Pool
 
 def toeplitz2d(patch,size,silence_thresh):
     '''
@@ -87,10 +88,6 @@ def _hard_activation(dist,act_thresh):
 
 
 
-
-
-from model.pipeline import Pipeline
-from multiprocessing import Pool
 class TemplateMatch(SingleInput):
     '''
     Convolve each template from any number of codebooks with a spectrogram

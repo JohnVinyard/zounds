@@ -40,7 +40,7 @@ class KMeans(Learn):
         feature[best] = 1
         return feature
 
-from util import flatten2d
+from zounds.util import flatten2d
 
 # BUG: The problem with this method is that the exemplars are taken from the
 # database, so there will be very large activations for these.  Ideally, we'd

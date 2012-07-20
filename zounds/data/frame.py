@@ -729,6 +729,7 @@ class PyTablesFrameController(FrameController):
             ec = self.model.extractor_chain(p,
                                             transitional=True,
                                             recompute = recompute)
+            print 'updating %s - %s' % (p.source,p.external_id)
             # process this pattern and insert it into the new database
             newc.append(ec)
         

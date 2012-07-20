@@ -50,8 +50,7 @@ class Pipeline(Model):
         except NameError:
             raise NotImplemented('%s has not implemented a dim property' % \
                                 self.learn.__class__.__name__)
-            
-
+    
     def train(self,nexamples,stopping_condition,data = None):
         '''
         param stopping_condition: A callable that is specific to the 

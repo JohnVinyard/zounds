@@ -1,7 +1,8 @@
 TOOO:
 -------------
-
 TODO: Sphinx documentation
+
+TODO: Use the python logging module
 
 TODO: Warning for AIM features when overlapping windows are used.
  
@@ -59,9 +60,6 @@ can be done all at once.
 	
 - FEATURE : Automatic rebuilding of search indices after data is added
 
-- BUG: Something about the PyTables lock gets screwed up when writing large amounts
-  of data
-
 - Add mel scale and refactor some code in analyze.bark
 
 - BUG : Address equivalence bug: [1,4,10] and [1,6,10] are considered equivalent.  This
@@ -70,8 +68,6 @@ can be done all at once.
 - Write LearnedFeature tests
 
 - Patterns
-
-- Sphinx documentation
 
 - multi-process sync - Deferred until I can figure out celery chord bug
 
