@@ -39,12 +39,18 @@ class Acquirer(object):
         pass
     
     @abstractmethod
+    def _acquire(self):
+        pass
+    
     def acquire(self):
         '''
         Do the work necessary to acquire sound data, process it, and
         insert it into the db
         '''
-        pass
+        # let subclasses do the dirty work
+        self._acquire()
+        # update indexes, if applicable for this data store
+        self.framecontroller.update_index()
     
 class DiskAcquirer(Acquirer):
     
@@ -58,7 +64,7 @@ class DiskAcquirer(Acquirer):
     def source(self):
         return self._source
     
-    def acquire(self):
+    def _acquire(self):
         files = audio_files(self.path)
         lf = len(files)
         for i,fn in enumerate(files):

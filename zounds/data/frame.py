@@ -38,6 +38,13 @@ class FrameController(Controller):
         pass
     
     @abstractmethod
+    def list_external_ids(self):
+        '''
+        List all pattern (source,external_id) pairs
+        '''
+        pass
+    
+    @abstractmethod
     def external_id(self,_id):
         '''
         Return a two-tuple of source,external_id for this _id
@@ -144,6 +151,14 @@ class FrameController(Controller):
         '''
         Iterate over the frames from a single id, returning two-tuples of 
         (address,frames)
+        '''
+        pass
+    
+    @abstractmethod
+    def update_index(self):
+        '''
+        Force updates on all table indexes. This may do nothing, depending
+        on the backing store.
         '''
         pass
 
@@ -342,6 +357,11 @@ class PyTablesFrameController(FrameController):
                                           'frames',
                                            desc)
             self.db_write = self.dbfile_write.root.frames
+            # Don't update indexes automatically. This significantly slows down
+            # write times, because the index is updated each time flush() is called.
+            # This means write times get slower and slower as the table size
+            # increases.
+            self.db_write.autoIndex = False
             
             # create a table to store our schema as a pickled byte array
             class FrameSchema(IsDescription):
@@ -396,6 +416,23 @@ class PyTablesFrameController(FrameController):
             self.recarray_dtype.append((k,col.dtype,col.shape[1:]))
          
         self.has_lock = False
+        # Between the time append is first called, and the database is re-indexed,
+        # we're going to keep an in memory list of external ids.  This is because
+        # we don't want to update the indexes on each flush() call, but acquirers
+        # need to check if a particular (source,external_id) pair already exists
+        # in the database.
+        self._temp_external_ids = None
+        
+    def update_index(self):
+        '''
+        Force updates on all table indexes.
+        '''
+        self._write_mode()
+        self.db_write.reIndexDirty()
+        # the indexes have been updated, so external_ids queries will be fast
+        # again. Throw away the in-memory store.
+        self._temp_external_ids = None
+        self._read_mode()
     
     def _append(self,frames):
         self._write_mode()
@@ -403,6 +440,7 @@ class PyTablesFrameController(FrameController):
         self.db_write.append(frames)
         self.db_write.flush()
         self._read_mode()
+        
     
     def append(self,chain):
         bufsize = self._buffer_size
@@ -438,6 +476,7 @@ class PyTablesFrameController(FrameController):
                     
             if rootkey == k:
                 nframes += 1
+
             try:
                 # the step size for this feature
                 steps = self.steps[k]
@@ -481,14 +520,20 @@ class PyTablesFrameController(FrameController):
         if start_row is None:
             start_row = self.db_read.__len__()
         
-        print 'appending %i rows' % nframes
+        source = bucket[0]['source']
+        external_id = bucket[0]['external_id']
         self._append(bucket[:nframes])
-        
         stop_row = self.db_read.__len__()
         # release the lock for the next writer
         self.release_lock()
         
-         
+        if self._temp_external_ids is None:
+            # This is the first time append() has been called since the indexes
+            # have been updated. Create the in-memory list of external_ids
+            self._temp_external_ids = dict(((t,None) for t in self.list_external_ids()))
+        
+        # update the in-memory hashtable of external ids
+        self._temp_external_ids[(source,external_id)] = None
         return PyTablesFrameController.Address(slice(start_row,stop_row))
     
         
@@ -559,8 +604,17 @@ class PyTablesFrameController(FrameController):
         assert len(l) == len(s)
         return s
     
+    def list_external_ids(self):
+        rows = self.db_read.readWhere(self._query(framen = 0))
+        return zip(rows['source'],rows['external_id'])
+    
     def exists(self,source,external_id):
+        if self._temp_external_ids is not None:
+            # we've currently got an in-memory hashtable of external_ids that's
+            # being kept up-to-date. It's safe, and much faster to use it.
+            return (source,external_id) in self._temp_external_ids
         
+        # We need to query the database directly.
         rows = self.db_read.readWhere(\
                     self._query(source = source,external_id = external_id))
         return len(rows) > 0
@@ -867,5 +921,9 @@ class DictFrameController(FrameController):
     
     def stat(self,feature,aggregate,axis = 0, step = 1):
         pass
+    
+    def update_index(self):
+        pass
         
-        
+    def list_external_ids(self):
+        pass
