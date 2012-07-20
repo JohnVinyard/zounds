@@ -58,11 +58,6 @@ class FFT(SingleInput):
     
 class BarkBands(SingleInput):
     
-    _triang = {}
-    _fft_span = {}
-    _hz_to_barks = {}
-    _barks_to_hz = {}
-    _erb = {}
     
     def __init__(self,needs=None, key=None,
                  nbands = None,start_freq_hz = 50, stop_freq_hz = 20000):
@@ -81,6 +76,7 @@ class BarkBands(SingleInput):
         self.start_bark = bark.hz_to_barks(self.start_freq_hz)
         self.stop_bark = bark.hz_to_barks(self.stop_freq_hz)
         self.bark_bandwidth = (self.stop_bark - self.start_bark) / self.nbands
+        self._build_data()
 
     def dim(self,env):
         return self.nbands
@@ -89,43 +85,36 @@ class BarkBands(SingleInput):
     def dtype(self):
         return np.float32
     
-    @classmethod
-    def from_cache(cls,cache,call,key):
-        try:
-            return cache[key]
-        except KeyError:
-            v = call(key)
-            cache[key] = v
-            return v
-        
-    @classmethod
-    def fft_span(cls,t):
-        return bark.fft_span(*t)
-    
-    def _process(self):
-        cb = np.ndarray(self.nbands,dtype=np.float32)
+    def _build_data(self):
+        # slices of fft coefficients
+        self._slices = []
+        # triangle windows to multiply the fft slices by
+        self._triwins = []
         for i in xrange(1,self.nbands + 1):
             b = i * self.bark_bandwidth
-            hz = BarkBands.from_cache(BarkBands._barks_to_hz, 
-                                      bark.barks_to_hz, 
-                                      b)
-            _erb = BarkBands.from_cache(BarkBands._erb, bark.erb, hz)
-            _herb = _erb / 2.
+            hz = bark.barks_to_hz(b)
+            _herb = bark.erb(hz) / 2.
             start_hz = hz - _herb
             start_hz = 0 if start_hz < 0 else start_hz
             stop_hz = hz + _herb
-            ws = self.windowsize
-            sr = self.samplerate
-            s_index,e_index = BarkBands.from_cache(BarkBands._fft_span,
-                                                   BarkBands.fft_span,
-                                                   (start_hz,stop_hz,ws,sr))
+            s_index,e_index = bark.fft_span(\
+                            start_hz,stop_hz,self.windowsize,self.samplerate)
             triang_size = e_index - s_index
-            triwin = self.from_cache(BarkBands._triang,triang,triang_size)
-            fft_frame = np.array(self.in_data[0]).ravel()
-            cb[i - 1] = \
-                (fft_frame[s_index : e_index] * triwin).sum()
+            triwin = triang(triang_size)
+            self._slices.append(slice(s_index,e_index))
+            self._triwins.append(triwin)
+    
+    def _process(self):
+        cb = np.ndarray(self.nbands,dtype=np.float32)
+        fft_frame = np.array(self.in_data[0]).ravel()
+        for i in xrange(self.nbands):
+            cb[i] = \
+                (fft_frame[self._slices[i]] * self._triwins[i]).sum()
         
         return cb
+    
+    
+    
 
 class Loudness(SingleInput):
     
