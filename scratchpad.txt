@@ -1,10 +1,6 @@
 TOOO:
 -------------
-TODO: How do I build the toeplitz extension with setuptools?
-
 TODO: extractors using multiprocessing hang when updating database
-
-TODO: Cannot join child process bug (Think this might be fixed...fingers crossed)
 
 TODO: Tryout idea for "stealing" phases in convolutional kmeans
 
