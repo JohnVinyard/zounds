@@ -89,4 +89,4 @@ def train_many(pipelines,nsamples,stop_condition,nprocesses = 4):
         args = [(p,nsamples,p.fetch(nsamples),stop_condition) \
                     for p in pipelines[i : i + nprocesses]]
         pool.map(_train,args)
-        
+     
