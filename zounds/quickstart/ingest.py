@@ -1,6 +1,5 @@
 from config import *
 from zounds.acquire.acquirer import DiskAcquirer
-import sys
 import argparse
 
 if __name__ == '__main__':
