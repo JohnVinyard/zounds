@@ -352,12 +352,16 @@ class Frames(Model):
     
     # BUG: What if the frames instance is composed of more than one sound?
     def __str__(self):
-        print '''%s(
-    zounds id   :   %s,
-    source      :   %s,
+        return '''%s(
+    zounds id   : %s,
+    source      : %s,
     external_id : %s,
     n_seconds   : %1.4f,
-)''' % (self._id[0],self.source[0],self.external_id[0],self.seconds)
+)''' % (self.__class__.__name__,
+        self._id[0],
+        self.source[0],
+        self.external_id[0],
+        self.seconds)
     
         
     def __len__(self):
