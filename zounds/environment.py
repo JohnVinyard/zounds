@@ -113,6 +113,10 @@ class Environment(object):
         return self.framecontroller_class(*self._framecontroller_args)
     
     def __repr__(self):
+        data = '''{%s
+    }'''
+        data = data % ''.join(['\n\t%s : %s' % \
+            (k.__name__,v.__class__.__name__) for k,v in self.data.iteritems()])
         return '''Environment(
     source     : %s,
     samplerate : %i,
@@ -120,7 +124,7 @@ class Environment(object):
     stepsize   : %i,
     data       : %s 
 )
-''' % (self.source,self.samplerate,self.windowsize,self.stepsize,self.data)
+''' % (self.source,self.samplerate,self.windowsize,self.stepsize,data)
 
     def __str__(self):
         return self.__repr__()

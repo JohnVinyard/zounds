@@ -1,8 +1,8 @@
 TOOO:
 -------------
-TODO: Two modes for ExhaustiveSearch
+TODO: Finish cython toeplitz implementation
 
-TODO: FrameModel.__str__ bug
+TODO: Two modes for ExhaustiveSearch
 
 TODO: Cleanup Environment.__str__ data section
 
@@ -72,12 +72,6 @@ can be done all at once.
   is incorrect
 
 - Write LearnedFeature tests
-
-- Patterns
-
-- multi-process sync - Deferred until I can figure out celery chord bug
-
-- Add celery to list of dependencies once I've settled on using it
 
 - mp3 -> wav conversion by acquirers
 
