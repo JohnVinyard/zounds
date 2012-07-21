@@ -298,7 +298,7 @@ class ExhaustiveSearch(FrameSearch):
         ls = len(seq)
         
         # TODO: I'm not calling ravel for the sequence search
-        seq = seq.ravel()
+        #seq = seq.ravel()
         
         env = self.env()
         c = env.framecontroller
@@ -316,16 +316,16 @@ class ExhaustiveSearch(FrameSearch):
                     skip = -1
                 feat = frames[self.feature]
                 
-                
-                feat /= self._std
-                feat[np.isnan(feat)] = 0
-                feat = pad(feat,ls)
-                dist = np.linalg.norm(feat.ravel() - seq)
+                # TODO: This is what I'm calling for "normal" searches
+                #feat /= self._std
+                #feat[np.isnan(feat)] = 0
+                #feat = pad(feat,ls)
+                #dist = np.linalg.norm(feat.ravel() - seq)
                 
                 # TODO: This is what I'm using for the template search
-                #feat = feat.max(0)
-                #seq2 = seq.max(0)
-                #dist = np.linalg.norm(feat - seq2)
+                feat = feat.max(0)
+                seq2 = seq.max(0)
+                dist = np.linalg.norm(feat - seq2)
                 
                 t = (dist,(_id,addr))
                 try:

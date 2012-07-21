@@ -1,5 +1,13 @@
 TOOO:
 -------------
+TODO: Two modes for ExhaustiveSearch
+
+TODO: Detect dirty indexes and update them
+
+TODO: FrameModel.__str__ bug
+
+TODO: Cleanup Environment.__str__ data section
+
 TODO: Sphinx documentation
 
 TODO: Use the python logging module

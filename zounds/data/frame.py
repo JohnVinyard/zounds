@@ -422,6 +422,8 @@ class PyTablesFrameController(FrameController):
         # need to check if a particular (source,external_id) pair already exists
         # in the database.
         self._temp_external_ids = None
+        # update the indexes, if need be
+        self.update_index()
         
     def update_index(self):
         '''
@@ -673,8 +675,11 @@ class PyTablesFrameController(FrameController):
                 
     
     def iter_id(self,_id,chunksize,step = 1):
+        # get all the row numbers occupied by this id
         rowns = self.db_read.getWhereList(self._query(_id = _id))
-        address = PyTablesFrameController.Address(slice(rowns[0],rowns[-1]))
+        # convert the row numbers to an address instance
+        address = PyTablesFrameController.Address(slice(rowns[0],rowns[-1] + 1))
+        
         frames = self.model[address]
         
         for i in xrange(0,len(rowns),step):
