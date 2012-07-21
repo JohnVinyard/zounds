@@ -489,7 +489,14 @@ class Frames(Model):
             # something has changed. Sync the database
             c.sync(add,update,delete,recompute)
         
-         
+    @classmethod
+    def is_leaf(cls,features,in_question):
+        for f in features.itervalues():
+            if in_question in f.depends_on():
+                return False
+        
+        return True
+            
     @classmethod
     def update_report(cls,newframesmodel):
         '''
@@ -519,6 +526,10 @@ class Frames(Model):
         update = dict()
         for k,v in newfeatures.iteritems():
             if (k not in cls.features) or (v.store and not cls.features[k].store):
+                
+                if not v.store and cls.is_leaf(newfeatures, v):
+                    continue
+                
                 # This is a new feature, or it 
                 # has switched from un-stored to stored
                 add[k] = v

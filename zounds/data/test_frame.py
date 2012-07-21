@@ -589,6 +589,41 @@ class PyTablesFrameControllerTests(unittest.TestCase):
         self.assertTrue(isinstance(chain['loudness'],Precomputed))
         self.assertTrue(isinstance(chain['centroid'],SpectralCentroid))
         self.assertTrue(isinstance(chain['fft'],FFT))
+    
+    def test_unstored_with_stored_ancestor(self):
+        class FM1(Frames):
+            fft = Feature(FFT,store=True,needs=None)
+            loudness = Feature(Loudness,store=True,needs=fft)
+            
+        class FM2(Frames):
+            fft = Feature(FFT,store=False,needs=None)
+            loudness = Feature(Loudness,store=True,needs=fft)
+            
+        fn,l1,old_features = self.build_with_model(FM1)
+        
+        fn,FM2 = self.FM(framemodel = FM2, filepath = fn)
+        add,update,delete,recompute = FM2._sync()
+        
+        self.assertTrue('fft' in delete)
+        self.assertTrue('fft' not in recompute)
+    
+    def test_add_unstored_leaf(self):
+        class FM1(Frames):
+            fft = Feature(FFT,store=True,needs=None)
+            
+            
+        class FM2(Frames):
+            fft = Feature(FFT,store=True,needs=None)
+            loudness = Feature(Loudness,store=False,needs=fft)
+            
+        fn,l1,old_features = self.build_with_model(FM1)
+        
+        fn,FM2 = self.FM(framemodel = FM2, filepath = fn)
+        add,update,delete,recompute = FM2._sync()
+        self.assertFalse(add)
+        self.assertFalse(update)
+        self.assertFalse(delete)
+        self.assertFalse(recompute)
         
         
     def test_sync_unstored_unchanged_feature_in_lineage(self):
