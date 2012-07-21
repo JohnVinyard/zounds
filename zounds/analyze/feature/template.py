@@ -5,6 +5,14 @@ from scipy.spatial.distance import cdist
 from zounds.analyze.extractor import SingleInput
 from zounds.model.pipeline import Pipeline
 from multiprocessing import Pool
+from zounds.nputil import toeplitz2dc
+
+def toeplitz2d2(patch,size,silence_thresh):
+    l = toeplitz2dc(patch.astype(np.float32),size)
+    l -= l.min()
+    nz = l.sum(1) > silence_thresh
+    return sun(l),np.nonzero(nz)[0]
+
 
 def toeplitz2d(patch,size,silence_thresh):
     '''
@@ -54,7 +62,7 @@ def toeplitz2d(patch,size,silence_thresh):
 
 def feature(args):
     patch,size,thresh,codebook,weights,activation,act_thresh = args
-    mat,nz = toeplitz2d(patch, size, thresh)
+    mat,nz = toeplitz2d2(patch, size, thresh)
     if not len(nz):
         return np.zeros(len(codebook))
     
