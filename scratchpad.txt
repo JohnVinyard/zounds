@@ -1,6 +1,6 @@
 TOOO:
 -------------
-TODO: Finish cython toeplitz implementation
+TODO: How do I build the toeplitz extension with setuptools?
 
 TODO: extractors using multiprocessing hang when updating database
 
