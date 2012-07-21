@@ -2,13 +2,9 @@ TOOO:
 -------------
 TODO: extractors using multiprocessing hang when updating database
 
-BUG: Unstored feature with stored dependent gets recomputed
-
-BUG: Leaves that aren't stored shouldn't be computed
-
 TODO: Cannot join child process bug
 
-TODO: Adding unstored leaf extractor shouldn't trigger an update
+TODO: Tryout idea for "stealing" phases in convolutional kmeans
 
 TODO: Finish cython toeplitz implementation
 
