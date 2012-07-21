@@ -150,7 +150,8 @@ class TemplateMatch(SingleInput):
             self._process_multi if multiprocess else self._process_single
         
         self._args = self._build_args(None)
-        self._pool = Pool(self._nbooks)
+        self._pool = None
+        
     
     @property
     def dtype(self):
@@ -176,12 +177,13 @@ class TemplateMatch(SingleInput):
     def _process_single(self,data):
         return [feature(arg) for arg in self._args]
         
-    
     def _process_multi(self,data):
         return [self._pool.map(feature,self._args)]
     
-    
     def _process(self):
+        if self._pool is None:
+            self._pool = Pool(self._nbooks)
+        
         data = np.array(self.in_data[:self.nframes]).reshape(self._inshape)
         self._update_args(data)
         return [np.concatenate(self.__process(data)).ravel()]

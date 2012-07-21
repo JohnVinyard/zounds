@@ -459,7 +459,6 @@ class PyTablesFrameController(FrameController):
         for k,v in chain.process():
             if rootkey == k and \
                 (nframes == bufsize or nframes >= self._max_buffer_size):
-                
                 # we've reached our smallest buffer size. Let's attempt a write
                 try:
                     self.acquire_lock(nframes)
@@ -496,7 +495,7 @@ class PyTablesFrameController(FrameController):
                     col[-negstep:] = data
                     # switch back to read mode
                     self._read_mode()
-                else:    
+                else:
                     # the current position, in frames, for this feature
                     cur = current[k]
                     # Figure out how many spaces are available in the
@@ -515,8 +514,7 @@ class PyTablesFrameController(FrameController):
             except KeyError:
                 # this feature isn't stored
                 pass
-            
-            
+        
         # We've processed the entire file. Wait until we can get the write lock    
         self.acquire_lock(nframes,wait=True)
         if start_row is None:
@@ -550,7 +548,6 @@ class PyTablesFrameController(FrameController):
             BaseException.__init__(self)
         
     def acquire_lock(self,nframes,wait=False):
-        
         if self.has_lock:
             return
         
@@ -697,27 +694,9 @@ class PyTablesFrameController(FrameController):
         '''
         fn,extension = os.path.splitext(self.filepath)
         return '%s_sync%s' % (fn,extension)
-        
     
     
-            
     def sync(self,add,update,delete,recompute):
-        
-        if self.model.env().parallel:
-            callback = sync_complete.subtask()
-            _ids = self.list_ids()
-            header = [sync_one.subtask(\
-                        (self.model,self.filepath,_id,add,update,delete,recompute))\
-                       for _id in _ids]
-            # BUG: The callback is never called
-            result = chord(header)(callback)
-            result.get()
-            self._load(self.filepath)
-            return
-        
-        self._sync(add,update,delete,recompute)
-    
-    def _sync(self,add,update,delete,recompute):
         # each process needs its own reader
         newc = PyTablesFrameController(self.model,self._temp_filepath)
         new_ids = newc.list_ids()
@@ -734,6 +713,7 @@ class PyTablesFrameController(FrameController):
             ec = self.model.extractor_chain(p,
                                             transitional=True,
                                             recompute = recompute)
+            print ec.chain
             print 'updating %s - %s' % (p.source,p.external_id)
             # process this pattern and insert it into the new database
             newc.append(ec)
@@ -806,65 +786,7 @@ class PyTablesFrameController(FrameController):
         self.close()
         
     
-    
-'''
-# KLUDGE: this should be a PyTablesFrameController class method, if at all possible
-@task(name='data.frame.sync_one')
-def sync_one(newmodel,filepath,_id,add,update,delete,recompute):
-    oldc = PyTablesFrameController(newmodel,filepath)
-    newc = PyTablesFrameController(newmodel,oldc._temp_filepath)
-    _id_query = '_id == "%s"' % _id
-    oldrows = oldc.db_read.getWhereList(_id_query)
-    newrows = newc.db_read.getWhereList(_id_query)
-    oldlen = len(oldrows)
-    newlen = len(newrows)
-    
-    if oldlen == newlen:
-        # this id has already been processed
-        return
-     
-    if newlen:
-        # There are some rows in the new database with id, but
-        # there aren't the same number as oldlen, meaning that 
-        # something probably went wrong during the sync. To keep
-        # things simple, let's delete what's there and start over
-        newc.acquire_lock(newc._max_buffer_size, wait = True)
-        newc._write_mode()
-        newc.db_write.removeRows(newrows)
-        newc._read_mode()
-        newc.release_lock()
-    
-    p = Pattern(_id,*oldc.external_id(_id))
-    ec = newmodel.extractor_chain(p,transitional = True,recompute = recompute)
-    newc.append(ec)
-    print 'processed %s' % _id
-    oldc.close()
-    newc.close()
-    return (newmodel,filepath)
-    
 
-# KLUDGE: this should be a PyTablesFrameController class method, if at all possible
-@task(name='data.frame.sync_complete')
-def sync_complete(results):
-    newmodel = results[0][0]
-    filepath = results[0][1]
-    oldc = PyTablesFrameController(newmodel,filepath)
-    tmpfilepath = oldc._temp_filepath
-    newc = PyTablesFrameController(newmodel,tmpfilepath)
-    oldids = oldc.list_ids()
-    newids = newc.list_ids()
-    
-    if (len(oldc) != len(newc) or oldids != newids):
-        raise PyTablesUpdateNotCompleteError()
-    
-    
-    oldc.close()
-    newc.close()
-    os.remove(filepath)
-    os.rename(tmpfilepath,filepath)
-    print 'sync complete'
-    return True
-'''
     
 # Crazy Bad KLUDGE: I rely on FrameController-derived classes to define a back-end
 # specific Address class as a nested class. This makes those classes impossible

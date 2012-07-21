@@ -79,7 +79,8 @@ class SliceX(SingleInput):
         return np.float32
     
     def _process(self):
-        return [self.in_data[0][self._slice]]
+        data = np.array(self.in_data[:self.nframes]).ravel()
+        return [data[self._slice]]
 
 
 class Threshold(SingleInput):
