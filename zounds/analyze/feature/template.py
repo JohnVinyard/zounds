@@ -2,7 +2,7 @@ import numpy as np
 from zounds.nputil import safe_unit_norm as sun
 from scipy.spatial.distance import cdist
 
-from zoumds.analyze.extractor import SingleInput
+from zounds.analyze.extractor import SingleInput
 from zounds.model.pipeline import Pipeline
 from multiprocessing import Pool
 
