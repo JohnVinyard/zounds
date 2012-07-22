@@ -47,10 +47,19 @@ from zounds.util import flatten2d
 # like to resynthesize from the fft means 
 class ConvolutionalKMeans(KMeans):
     
-    def __init__(self,n_centroids,patch_shape):
+    def __init__(self,n_centroids,patch_shape,fft_codebook = False):
+        '''
+        n_centroids - the number of kmeans clusters to learn
+        patch_shape - the 2d shape of sample patches
+        fft_codebook - If False (default), the codebook is inferred by finding
+                       the input sample with the best matching fft coefficients
+                       for each code.  If True, the codebook *is* the fft coefficients.
+        '''
         KMeans.__init__(self,n_centroids)
         self._patch_shape = patch_shape if isinstance(patch_shape,tuple) \
                             else (patch_shape,)
+        self.fft_codebook = fft_codebook
+    
     
     def train(self,data,stopping_condition):
         '''
@@ -71,10 +80,14 @@ class ConvolutionalKMeans(KMeans):
         # compute k-means on the real-valued (discarded phase) fft coefficients
         codebook,distortion = kmeans(flatten2d(abs(f)),self.n_centroids)
         self._hdim = len(codebook)
-        # find exemplars in the input data whose coefficients most closely match
-        # the codebook fft coefficients, ignoring phase
-        dist = cdist(codebook,flatten2d(abs(f)))
-        self.codebook = flatten2d(data[np.argmin(dist,1)])
+        if self.fft_codebook:
+            # the fft coefficients themselves will be our codebook
+            self.codebook = codebook
+        else:
+            # find exemplars in the input data whose coefficients most closely match
+            # the codebook fft coefficients, ignoring phase
+            dist = cdist(codebook,flatten2d(abs(f)))
+            self.codebook = flatten2d(data[np.argmin(dist,1)])
         
     
     
@@ -102,7 +115,7 @@ class ThresholdKMeans(SoftKMeans):
         return 1 / dist
 
         
-# KLUDGE: This doesn't belong here
+# KLUDGE: This doesn't belong in the cluster module
 class PCA(Learn):
     
     def __init__(self,n_dim):

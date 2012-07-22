@@ -6,12 +6,28 @@ from zounds.analyze.extractor import SingleInput
 from zounds.model.pipeline import Pipeline
 from multiprocessing import Pool
 from zounds.nputil import toeplitz2dc
+from scipy.sparse import csr_matrix
+from sklearn.metrics.pairwise import euclidean_distances as ed
+from zounds.util import flatten2d
 
 def toeplitz2d2(patch,size,silence_thresh):
     l = toeplitz2dc(patch.astype(np.float32),size)
     l -= l.min()
     nz = l.sum(1) > silence_thresh
     return sun(l),np.nonzero(nz)[0]
+
+def toeplitz2d_exp(patch,size,silence_thresh):
+    l = toeplitz2dc(patch.astype(np.float32),size)
+    nz = (l - l.min()).sum(1) > silence_thresh
+    # exclude any patches that are below the silence threshold, take the
+    # example-wise unit-norm, and reshape into 3 dimensions (examples,x,y)
+    l = sun(l[nz])
+    l = l.reshape((l.shape[0],) + size)
+    # take the 2d fft of each example
+    f = np.abs(np.fft.rfft2(l))
+    return flatten2d(f)
+    
+    
 
 
 def toeplitz2d(patch,size,silence_thresh):
@@ -67,6 +83,19 @@ def feature(args):
         return np.zeros(len(codebook))
     
     mat = mat[nz]
+    if weights is not None:
+        mat *= weights
+    dist = cdist(mat,codebook)
+    return activation(dist,act_thresh)
+
+def feature_exp(args):
+    # This is different from feature in that it expects "unimportant" entries
+    # to already be removed from mat.
+    patch,size,thresh,codebook,weights,activation,act_thresh = args
+    mat = toeplitz2d_exp(patch, size, thresh)
+    if not mat.shape[0]:
+        return np.zeros(len(codebook))
+    
     if weights is not None:
         mat *= weights
     dist = cdist(mat,codebook)
@@ -145,9 +174,19 @@ class TemplateMatch(SingleInput):
         self._codebooks = [Pipeline[cb].learn.codebook for cb in codebooks]
         self._inshape = inshape
         self._nbooks = len(codebooks)
-        self._codebooks = [sun(cb) for cb in self._codebooks]
         # the output dimension will be the combined size of all the codebooks
         self._dim = np.sum([len(cb) for cb in self._codebooks])
+        
+        # TODO: This is the original line
+        #self._codebooks = [sun(cb) for cb in self._codebooks]
+        
+        # TODO: This is the new thing
+        #for i in range(len(self._codebooks)):
+        #    self._codebooks[i][self._codebooks[i] < 1] = 0
+        #    self._codebooks[i] = csr_matrix(self._codebooks[i])
+        # End new thing
+        
+        
         self._dtype = np.float32 if soft_activation else np.uint8
         self._sizes = sizes
         self._silence_thresh = silence_thresholds
@@ -160,6 +199,8 @@ class TemplateMatch(SingleInput):
         self._args = self._build_args(None)
         self._pool = None
         
+        # TODO: Make this an __init__ parameter
+        self.feature_func = feature_exp
     
     @property
     def dtype(self):
@@ -183,10 +224,10 @@ class TemplateMatch(SingleInput):
             self._args[i][0] = data
     
     def _process_single(self,data):
-        return [feature(arg) for arg in self._args]
+        return [self.feature_func(arg) for arg in self._args]
         
     def _process_multi(self,data):
-        return [self._pool.map(feature,self._args)]
+        return [self._pool.map(self.feature_func,self._args)]
     
     def _process(self):
         if self._pool is None:
