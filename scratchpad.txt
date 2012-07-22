@@ -1,5 +1,9 @@
 TOOO:
 -------------
+TODO: Look at the correlation between patch distance and phaseless fft coefficient distance
+
+TODO: Do another installation test run and move up a new dist package
+
 TODO: extractors using multiprocessing hang when updating database
 
 TODO: Tryout idea for "stealing" phases in convolutional kmeans
