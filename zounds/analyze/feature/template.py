@@ -28,7 +28,8 @@ def toeplitz2d_exp(patch,size,silence_thresh):
     return flatten2d(f)
     
     
-
+def toeplitz2d_step(patch,size,silence_thresh):
+    pass
 
 def toeplitz2d(patch,size,silence_thresh):
     '''
@@ -197,7 +198,6 @@ class TemplateMatch(SingleInput):
             self._process_multi if multiprocess else self._process_single
         
         self._args = self._build_args(None)
-        self._pool = None
         
         # TODO: Make this an __init__ parameter
         self.feature_func = feature_exp
@@ -227,12 +227,12 @@ class TemplateMatch(SingleInput):
         return [self.feature_func(arg) for arg in self._args]
         
     def _process_multi(self,data):
-        return [self._pool.map(self.feature_func,self._args)]
+        pool = Pool(self._nbooks)
+        results = [pool.map(self.feature_func,self._args)]
+        pool.close()
+        return results
     
     def _process(self):
-        if self._pool is None:
-            self._pool = Pool(self._nbooks)
-        
         data = np.array(self.in_data[:self.nframes]).reshape(self._inshape)
         self._update_args(data)
         return [np.concatenate(self.__process(data)).ravel()]
