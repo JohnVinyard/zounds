@@ -1,14 +1,17 @@
 TOOO:
 -------------
-TODO: Look at the correlation between patch distance and phaseless fft coefficient distance
+- BUG: It's possible to add duplicates to the database because of external_id
+	truncation
+
+TODO: Two modes for ExhaustiveSearch
+
+TODO: Two modes for TemplateMatch (fft and regular)
+
+TODO: Cannot join child process bug
 
 TODO: Do another installation test run and move up a new dist package
 
 TODO: extractors using multiprocessing hang when updating database
-
-TODO: Tryout idea for "stealing" phases in convolutional kmeans
-
-TODO: Two modes for ExhaustiveSearch
 
 TODO: Sphinx documentation
 
@@ -47,8 +50,7 @@ can be done all at once.
 
 - TODO: Visualize Exhaustive search results (features and distances)
 
-- BUG: It's possible to add duplicates to the database because of external_id
-	truncation
+
 	
 - TODO: Ensure that quickstart/ab.py works with a few different algorithms
 
