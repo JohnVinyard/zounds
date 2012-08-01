@@ -357,11 +357,13 @@ class Frames(Model):
     source      : %s,
     external_id : %s,
     n_seconds   : %1.4f,
+    n_frames    : %i
 )''' % (self.__class__.__name__,
         self._id[0],
         self.source[0],
         self.external_id[0],
-        self.seconds)
+        self.seconds,
+        len(self))
     
         
     def __len__(self):

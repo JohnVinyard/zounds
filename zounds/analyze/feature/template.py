@@ -9,6 +9,7 @@ from zounds.nputil import toeplitz2dc
 from scipy.sparse import csr_matrix
 from sklearn.metrics.pairwise import euclidean_distances as ed
 from zounds.util import flatten2d
+from zounds.learn.nnet.nnet import sigmoid
 
 def toeplitz2d2(patch,size,silence_thresh):
     l = toeplitz2dc(patch.astype(np.float32),size)
@@ -18,9 +19,12 @@ def toeplitz2d2(patch,size,silence_thresh):
 
 def toeplitz2d_exp(patch,size,silence_thresh):
     l = toeplitz2dc(patch.astype(np.float32),size)
-    nz = (l - l.min()).sum(1) > silence_thresh
+    #nz = (l - l.min()).sum(1) > silence_thresh
+    
     # exclude any patches that are below the silence threshold, take the
     # example-wise unit-norm, and reshape into 3 dimensions (examples,x,y)
+    s = l.sum(1)
+    nz = np.where(s > s.mean())[0]
     l = sun(l[nz])
     l = l.reshape((l.shape[0],) + size)
     # take the 2d fft of each example
@@ -28,8 +32,7 @@ def toeplitz2d_exp(patch,size,silence_thresh):
     return flatten2d(f)
     
     
-def toeplitz2d_step(patch,size,silence_thresh):
-    pass
+
 
 def toeplitz2d(patch,size,silence_thresh):
     '''
@@ -81,11 +84,18 @@ def feature(args):
     patch,size,thresh,codebook,weights,activation,act_thresh = args
     mat,nz = toeplitz2d2(patch, size, thresh)
     if not len(nz):
-        return np.zeros(len(codebook))
+        return np.zeros(codebook.shape[0])
     
     mat = mat[nz]
     if weights is not None:
         mat *= weights
+    
+    
+    #take the n patches with the best snr ratio
+    #snr = mat.mean(1) / mat.std(1)
+    #srt = np.argsort(snr)
+    #mat = mat[srt[:1200]]
+    
     dist = cdist(mat,codebook)
     return activation(dist,act_thresh)
 
@@ -110,8 +120,8 @@ def _soft_activation(dist,act_thresh):
     '''
     # variations on the triangle activation function recommended here:
     # http://robotics.stanford.edu/~ang/papers/nipsdlufl10-AnalysisSingleLayerUnsupervisedFeatureLearning.pdf
-    dist[dist == 0] = 1e-3
-    dist = (1. / dist)
+    dist[dist == 0] = 1e-2
+    dist = 1. / dist
     dist -= dist.mean(1)[:,np.newaxis]
     dist[dist < 0] = 0
     return dist.max(0)
@@ -177,15 +187,7 @@ class TemplateMatch(SingleInput):
         self._nbooks = len(codebooks)
         # the output dimension will be the combined size of all the codebooks
         self._dim = np.sum([len(cb) for cb in self._codebooks])
-        
-        # TODO: This is the original line
-        #self._codebooks = [sun(cb) for cb in self._codebooks]
-        
-        # TODO: This is the new thing
-        #for i in range(len(self._codebooks)):
-        #    self._codebooks[i][self._codebooks[i] < 1] = 0
-        #    self._codebooks[i] = csr_matrix(self._codebooks[i])
-        # End new thing
+        self._codebooks = [sun(cb) for cb in self._codebooks]
         
         
         self._dtype = np.float32 if soft_activation else np.uint8
@@ -200,7 +202,7 @@ class TemplateMatch(SingleInput):
         self._args = self._build_args(None)
         
         # TODO: Make this an __init__ parameter
-        self.feature_func = feature_exp
+        self.feature_func = feature
     
     @property
     def dtype(self):

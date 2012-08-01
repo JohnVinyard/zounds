@@ -294,7 +294,9 @@ class ExhaustiveSearch(FrameSearch):
         # get the sequence of query features at the interval
         # specified by self._step
         seq = frames[self.feature][::self._step]
-        seq /= self._std
+        
+        if self._normalize:
+            seq /= self._std
         ls = len(seq)
         
         # TODO: I'm not calling ravel for the sequence search

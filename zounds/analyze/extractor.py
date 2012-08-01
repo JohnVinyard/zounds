@@ -172,9 +172,6 @@ class Extractor(object):
                 self.input[src] = self.input[src][self.step:]
         else:
             self.out = None
-        
-        #if not full or self.done:
-        #    self.out = None
     
     
     @abstractmethod

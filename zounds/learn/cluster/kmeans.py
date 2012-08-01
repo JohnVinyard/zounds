@@ -81,7 +81,6 @@ class ConvolutionalKMeans(KMeans):
         codebook,distortion = kmeans(flatten2d(abs(f)),self.n_centroids)
         self._hdim = len(codebook)
         if self.fft_codebook:
-            # the fft coefficients themselves will be our codebook
             self.codebook = codebook
         else:
             # find exemplars in the input data whose coefficients most closely match
@@ -114,6 +113,20 @@ class ThresholdKMeans(SoftKMeans):
         dist[dist == 0] = -1e12
         return 1 / dist
 
+class TopNKMeans(KMeans):
+    
+    def __init__(self,n_centroids,topn):
+        KMeans.__init__(self,n_centroids)
+        self.topn = topn
+    
+    def __call__(self,data):
+        dist = cdist(np.array([data]),self.codebook)[0]
+        srt = np.argsort(dist)
+        dist[srt[:self.topn]] = 1
+        dist[srt[self.topn:]] = 0
+        return dist
+        
+    
         
 # KLUDGE: This doesn't belong in the cluster module
 class PCA(Learn):
