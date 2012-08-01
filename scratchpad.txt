@@ -1,13 +1,17 @@
 TOOO:
 -------------
+TODO: Answer the question "Is chunk based processing faster?"
+
+TODO: Answer the question "How do file system seek times compare to PyTables?"
+
+TODO: Get rid of runtime warning in safe_unit_norm
+
 - BUG: It's possible to add duplicates to the database because of external_id
 	truncation
 
 TODO: Two modes for ExhaustiveSearch
 
 TODO: Two modes for TemplateMatch (fft and regular)
-
-TODO: Cannot join child process bug
 
 TODO: Do another installation test run and move up a new dist package
 
@@ -50,8 +54,6 @@ can be done all at once.
 
 - TODO: Visualize Exhaustive search results (features and distances)
 
-
-	
 - TODO: Ensure that quickstart/ab.py works with a few different algorithms
 
 - BUG: Step sizes of > 1 seem to screw up parallelized ExhaustiveSearch

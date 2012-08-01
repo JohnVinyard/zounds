@@ -675,7 +675,10 @@ class PyTablesFrameController(FrameController):
         # get all the row numbers occupied by this id
         rowns = self.db_read.getWhereList(self._query(_id = _id))
         # convert the row numbers to an address instance
-        address = PyTablesFrameController.Address(slice(rowns[0],rowns[-1] + 1))
+        try:
+            address = PyTablesFrameController.Address(slice(rowns[0],rowns[-1] + 1))
+        except IndexError:
+            return
         
         frames = self.model[address]
         

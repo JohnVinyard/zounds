@@ -25,7 +25,7 @@ class WindowedAudioSynthesizer(object):
     
     def playraw(self,audio):
         try:
-            play(np.tile(audio,(2,1)) * .8)
+            play(np.tile(audio,(2,1)) * .6)
         except KeyboardInterrupt:
             pass
 
