@@ -5,8 +5,8 @@ from zounds.analyze2 import chunksize
 
 class MetaDataExtractor(Extractor):
     
-    def __init__(self,pattern,key = None):
-        Extractor.__init__(self,needs = None,key=key)
+    def __init__(self,pattern,key = None,needs = None):
+        Extractor.__init__(self,needs = needs,key=key)
         self.pattern = pattern
         self.store = False
         self.finite = False
@@ -19,7 +19,8 @@ class MetaDataExtractor(Extractor):
         raise NotImplementedError()
     
     def _process(self):
-        return self.pattern.data()
+        l = len(self.input[self.sources[0]])
+        return [self.pattern.data()] * l
 
 
 class LiteralExtractor(SingleInput):
@@ -54,7 +55,7 @@ class CounterExtractor(Extractor):
         return np.int32
     
     def _process(self):
-        l = len(self.in_data[0])
+        l = len(self.input[self.sources[0]])
         c = np.arange(self.n,self.n + l)
         self.n += l
         return c

@@ -15,7 +15,8 @@ class AudioSamples(Extractor):
         self.stepsize = stepsize
         self.key = 'audio'
         env = Environment.instance
-        self.window = env.window if None is not env.window else self.oggvorbis(self.windowsize)
+        self.window = env.window if None is not env.window else \
+                     self.oggvorbis(self.windowsize)
         
     
     def dim(self,env):
@@ -60,25 +61,22 @@ class AudioSamples(Extractor):
             # an extractor on which it depends that it is done.  This is 
             # necessary because the MetaData extractor generates data with
             # no source. It has no idea when to stop.
-            self.sources[0].out = None
-            self.sources[0].done = True
+            #self.sources[0].out = None
+            #self.sources[0].done = True
     
     
 class AudioFromDisk(AudioSamples):
     
-    def __init__(self,samplerate,windowsize,stepsize, needs = None):
+    def __init__(self,samplerate,windowsize,stepsize, filename, needs = None):
         AudioSamples.__init__(self,samplerate,windowsize,stepsize,needs = needs)
         self._init = False
+        self.filename = filename
     
     @property
     def stream(self):
         if not self._init:
-            data = self.input[self.sources[0]][0]
-            print data
-            # KLUDGE: I shouldn't have to know a specific name here
-            filename = data['filename']
             self._stream = AudioStream(\
-                            filename,
+                            self.filename,
                             self.samplerate,
                             self.windowsize,
                             self.stepsize).__iter__()

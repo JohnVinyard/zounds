@@ -582,18 +582,18 @@ class Frames(Model):
         that can transform raw audio data into the desired set of features.
         '''
         
-        meta = MetaDataExtractor(pattern,key = 'meta') 
+         
         if transitional:      
             ra = Precomputed(pattern._id,
                              'audio',
                              cls.controller(),
-                             needs = meta)
+                             needs = None)
         else:
-            ra = pattern.audio_extractor(needs = meta)
-        
+            ra = pattern.audio_extractor(needs = None)
+        meta = MetaDataExtractor(pattern,key = 'meta',needs = ra)
             
         # We now need to build the extractor chain, but we can't be sure
-        # which order we'll iterate over the extractors in, so, we need
+        # which order we'll iterate over the extractors in, so we need
         # to sort based on dependencies
         features = cls.features.items()
         by_lineage = sort_by_lineage(Feature.depends_on)
@@ -606,7 +606,7 @@ class Frames(Model):
         # been built by the time they're needed by another extractor
         
         # start building the chain
-        chain = [meta,ra]
+        chain = [ra,meta]
         # keep track of the extractors we've built, so they can be
         # passed in to the 'needs' parameter of the constructors of dependent 
         # extractors as necessary
@@ -620,10 +620,10 @@ class Frames(Model):
                 # Frames class will be using the MetaDataExtractor as a source,
                 # while any features defined on the Frames-derived class will
                 # be using AudioFromDisk. This might not always be the case!!
-                if hasattr(Frames,k):
-                    needs = meta
-                else:
+                if k == 'meta':
                     needs = ra
+                else:
+                    needs = meta
             else:
                 # this extractor depended on another feature
                 needs = [d[q] for q in f.needs]
