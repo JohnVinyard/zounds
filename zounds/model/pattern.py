@@ -103,14 +103,14 @@ class FilePattern(Pattern):
     def __init__(self,_id,source,external_id,filename):
         Pattern.__init__(self,_id,source,external_id)
         self.filename = filename
-        self._data['filename'] = self.filename
 
-    
+
     def audio_extractor(self, needs = None):
         e = self.__class__.env()
         return AudioFromDisk(e.samplerate,
                              e.windowsize,
                              e.stepsize,
+                             self.filename,
                              needs = needs)
 
 class DataPattern(Pattern):
