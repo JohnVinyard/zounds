@@ -1,6 +1,6 @@
 TOOO:
 -------------
-TODO: Answer the question "Is chunk based processing faster?"
+TODO: Answer the question "Is chunk based processing faster?" YES
 
 TODO: Answer the question "How do file system seek times compare to PyTables?"
 
