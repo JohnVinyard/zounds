@@ -1,8 +1,8 @@
 from __future__ import division
 import numpy as np
 
-from zounds.analyze.audiostream import AudioStream
-from zounds.analyze.extractor import Extractor
+from zounds.analyze2.audiostream import AudioStream
+from zounds.analyze2.extractor import Extractor
 from zounds.nputil import pad
 from zounds.environment import Environment
 
@@ -74,6 +74,7 @@ class AudioFromDisk(AudioSamples):
     def stream(self):
         if not self._init:
             data = self.input[self.sources[0]][0]
+            print data
             # KLUDGE: I shouldn't have to know a specific name here
             filename = data['filename']
             self._stream = AudioStream(\

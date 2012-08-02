@@ -58,7 +58,9 @@ Once more, a pattern using the previous one
 import numpy as np
 
 from zounds.model.model import Model
-from zounds.analyze.feature.rawaudio import AudioFromDisk,AudioFromMemory
+# KLUDGE: This is temporarily set to point at the experimental, chunk-based
+# analyze2 module
+from zounds.analyze2.feature.rawaudio import AudioFromDisk,AudioFromMemory
 
 
 class Pattern(Model):

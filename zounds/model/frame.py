@@ -4,10 +4,11 @@ import numpy as np
 
 from zounds.model.model import Model
 from zounds.model.pattern import FilePattern,DataPattern
-from zounds.analyze.extractor import Extractor,ExtractorChain
-from zounds.analyze.feature.metadata import \
+# KLUDGE: These are temporarily set to point at the experimental analyze2 module
+from zounds.analyze2.extractor import Extractor,ExtractorChain
+from zounds.analyze2.feature.metadata import \
     MetaDataExtractor, LiteralExtractor,CounterExtractor
-from zounds.analyze.feature.rawaudio import AudioSamples
+from zounds.analyze2.feature.rawaudio import AudioSamples
 from zounds.util import recurse,sort_by_lineage
 from zounds.environment import Environment
 

@@ -19,7 +19,7 @@ class MetaDataExtractor(Extractor):
         raise NotImplementedError()
     
     def _process(self):
-        return [self.pattern.data()] * chunksize
+        return self.pattern.data()
 
 
 class LiteralExtractor(SingleInput):
@@ -37,7 +37,7 @@ class LiteralExtractor(SingleInput):
         return self._dtype
     
     def _process(self):
-        return [self.in_data[0][self.key]] * chunksize
+        return self.in_data[0][self.key]
 
 class CounterExtractor(Extractor):
     
@@ -54,6 +54,7 @@ class CounterExtractor(Extractor):
         return np.int32
     
     def _process(self):
-        c = np.arange(self.n,self.n + chunksize)
-        self.n += chunksize
+        l = len(self.in_data[0])
+        c = np.arange(self.n,self.n + l)
+        self.n += l
         return c
