@@ -133,4 +133,4 @@ def windowed(a,windowsize,stepsize = None,dopad = False):
     newshape = (n,windowsize)+a.shape[1:]
     newstrides = (stepsize*s,s) + a.strides[1:]
     return leftover,np.ndarray.__new__(\
-            np.ndarray,strides=newstrides,shape=newshape,buffer=a,dtype=a.dtype)     
+            np.ndarray,strides=newstrides,shape=newshape,buffer=a,dtype=a.dtype)
