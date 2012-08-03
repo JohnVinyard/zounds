@@ -38,7 +38,7 @@ class FFT(SingleInput):
             ws = Environment.instance.windowsize
             self._dim = int(ws / 2)
             self._inshape = (ws,)
-            
+        
         # create a list of slices to remove the zero-frequency term along
         # whichever axis we're computing the FFT
         self._slice = [slice(None) for i in xrange(len(self._inshape))]

@@ -4,6 +4,7 @@ from zounds.nputil import pad
 from zounds.util import recurse,sort_by_lineage
 from zounds.analyze2 import chunksize
 from zounds.nputil import windowed
+from zounds.environment import Environment
 
 class CircularDependencyException(BaseException):
     '''
@@ -83,7 +84,8 @@ class Extractor(object):
         self.input = dict([(src,[]) for src in self.sources])
         # a dictionary mapping the extractors on which we depend
         # to the leftover portions of the inputs we'll be collecting from
-        self.leftover = dict([(src,[]) for src in self.sources])
+        self.leftover = dict([(src,None) for src in self.sources])
+
         
     @property
     def is_root(self):
@@ -147,6 +149,12 @@ class Extractor(object):
             for src in self.sources:
                 leftover,data = windowed(\
                                 src.out,self.nframes,self.step,dopad = alldone)
+                if self.leftover[src] is None:
+                    self.leftover[src] = np.zeros((0,) + data.shape[1:])
+                
+                print self.key,src
+                print self.leftover[src].shape
+                print data.shape
                 data = np.concatenate([self.leftover[src],data])
                 self.input[src].append(data)
                 self.leftover[src] = leftover
@@ -156,8 +164,16 @@ class Extractor(object):
     # KLUDGE: I'm assuming that chunksize will always be larger than 
     # the highest nframes value. 
     def process(self):
-        # Um, is this right? Can it be this simple?
+        full = all([len(self.input[src]) for src in self.sources])
+        if not full:
+            self.out = None
+            return
+        
+        for src in self.sources:
+            self.input[src] = np.array(self.input[src]).squeeze()
         self.out = self._process()
+        for src in self.sources:
+            self.input[src] = []
     
     @abstractmethod
     def _process(self):
@@ -275,11 +291,13 @@ class ExtractorChain(object):
         A generator that will extract features until the source data runs out
         '''
         while not all([c.done for c in self.chain]):
+            print '-----------------------------------------------------'
             for c in self.chain:
                 c.collect()
                 c.process()
                 if c.out is not None:
                     yield c.key if c.key else c,c.out
+            
                     
                 
     def collect(self,nframes = None):
