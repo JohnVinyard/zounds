@@ -38,10 +38,10 @@ class FFT(SingleInput):
             ws = Environment.instance.windowsize
             self._dim = int(ws / 2)
             self._inshape = (ws,)
-            
+        
         # create a list of slices to remove the zero-frequency term along
         # whichever axis we're computing the FFT
-        self._slice = [slice(None) for i in xrange(len(self._inshape))]
+        self._slice = [slice(None) for i in xrange(len(self._inshape) + 1)]
         # this slice will remove the zero-frequency term
         self._slice[self._axis] = slice(1,None)
 
@@ -49,13 +49,12 @@ class FFT(SingleInput):
     def dtype(self):
         return np.float32
     
-    def dim(self,env):    
+    def dim(self,env):
+        print dir(self)
         return self._dim
     
     def _process(self):
-        data = np.array(self.in_data[:self.nframes])
-        # reshape the data to conform to expectations
-        data = data.reshape((data.shape[0],) + self._inshape)
+        data = self.in_data
         # return the magnitudes of a real-valued fft along the axis specified,
         # excluding the zero-frequency term
         return np.abs(np.fft.rfft(data,axis = self._axis)[self._slice])
@@ -109,16 +108,7 @@ class BarkBands(SingleInput):
             self._triwins.append(triwin)
     
     def _process(self):
-        '''
-        cb = np.ndarray(self.nbands,dtype=np.float32)
-        fft_frame = np.array(self.in_data[0]).ravel()
-        for i in xrange(self.nbands):
-            cb[i] = \
-                (fft_frame[self._slices[i]] * self._triwins[i]).sum()
-        
-        return cb
-        '''
-        fft = self.in_data[0]
+        fft = self.in_data
         return bark.bark_bands(self.samplerate, 
                                self.windowsize, 
                                self.nbands, 

@@ -620,10 +620,10 @@ class Frames(Model):
                 # Frames class will be using the MetaDataExtractor as a source,
                 # while any features defined on the Frames-derived class will
                 # be using AudioFromDisk. This might not always be the case!!
-                if k == 'meta':
-                    needs = ra
-                else:
+                if k in ['audio','source','external_id','framen','_id']:
                     needs = meta
+                else:
+                    needs = ra
             else:
                 # this extractor depended on another feature
                 needs = [d[q] for q in f.needs]
