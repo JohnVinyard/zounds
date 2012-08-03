@@ -469,12 +469,12 @@ class PyTablesFrameController(FrameController):
                 continue
             
             if k == rootkey and blocks_processed > 1:
+                print current_length
                 self.acquire_lock()
                 toappend = bucket[:current_length]
                 toappend = np.concatenate([leftover,toappend])
                 if start_row is None:
                     start_row = self.db_read.__len__()
-                print len(toappend)
                 self._append(toappend)
                 self.release_lock()
                 nframes += toappend.shape[0]
@@ -507,12 +507,12 @@ class PyTablesFrameController(FrameController):
         
 
         if current_length:
+            print current_length
             self.acquire_lock()
             toappend = bucket[:current_length]
             toappend = np.concatenate([leftover,toappend])
             if start_row is None:
                 start_row = self.db_read.__len__()
-            print len(toappend)
             self._append(toappend)
             self.release_lock()
             nframes += toappend.shape[0]
@@ -530,7 +530,6 @@ class PyTablesFrameController(FrameController):
         external_id = bucket[0]['external_id']
         # update the in-memory hashtable of external ids
         self._temp_external_ids[(source,external_id)] = None
-        print nframes,stop_row - start_row
         return PyTablesFrameController.Address(slice(start_row,stop_row))
             
     
