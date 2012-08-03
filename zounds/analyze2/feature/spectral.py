@@ -50,7 +50,6 @@ class FFT(SingleInput):
         return np.float32
     
     def dim(self,env):
-        print dir(self)
         return self._dim
     
     def _process(self):
@@ -118,3 +117,35 @@ class BarkBands(SingleInput):
                                fft.shape[0],
                                self._slices,
                                self._triwins)
+
+
+class Loudness(SingleInput):
+    
+    def __init__(self,needs=None,nframes=1,step=1,key=None):
+        SingleInput.__init__(self,needs=needs,nframes=nframes,step=step,key=key)
+    
+    def dim(self,env):
+        return ()
+    
+    @property
+    def dtype(self):
+        return np.float32
+        
+    def _process(self):
+        return np.sum(self.in_data,axis = -1)
+
+# TODO: Get rid of this
+class Mean(SingleInput):
+    
+    def __init__(self,needs = None, nframes = 1, step = 1, key = None):
+        SingleInput.__init__(self,needs = needs, nframes = nframes, step = step, key = key)
+    
+    def dim(self,env):
+        return ()
+
+    @property
+    def dtype(self):
+        return np.float32
+    
+    def _process(self):
+        return np.mean(self.in_data,axis = -1)

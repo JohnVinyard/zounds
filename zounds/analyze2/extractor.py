@@ -147,15 +147,12 @@ class Extractor(object):
         
         if all([s.out is not None for s in self.sources]):
             for src in self.sources:
-                leftover,data = windowed(\
-                                src.out,self.nframes,self.step,dopad = alldone)
+                indata = src.out
                 if self.leftover[src] is None:
-                    self.leftover[src] = np.zeros((0,) + data.shape[1:])
-                
-                print self.key,src
-                print self.leftover[src].shape
-                print data.shape
-                data = np.concatenate([self.leftover[src],data])
+                    self.leftover[src] = np.zeros((0,) + indata.shape[1:])
+                indata = np.concatenate([self.leftover[src],indata])
+                leftover,data = windowed(\
+                                indata,self.nframes,self.step,dopad = alldone)
                 self.input[src].append(data)
                 self.leftover[src] = leftover
         
@@ -164,13 +161,27 @@ class Extractor(object):
     # KLUDGE: I'm assuming that chunksize will always be larger than 
     # the highest nframes value. 
     def process(self):
+        
+        # Ensure that there's enough data to perform processing
         full = all([len(self.input[src]) for src in self.sources])
         if not full:
             self.out = None
             return
+
         
         for src in self.sources:
-            self.input[src] = np.array(self.input[src]).squeeze()
+            # remove any extraneous dimensions
+            data = np.array(self.input[src]).squeeze()
+            dim = src.dim(Environment.instance)
+            inshape = data.shape
+            # Ensure that extractors with a dimension greater than 1 always
+            # deliver 2d arrays, i.e. frames x features 
+            if dim != () and len(inshape) < 2:
+                # there was only one frame, so the frame dimension was removed
+                # by the squeeze() call. Restore it.
+                data = data.reshape((1,inshape[0]))    
+            self.input[src] = data
+    
         self.out = self._process()
         for src in self.sources:
             self.input[src] = []
@@ -291,7 +302,6 @@ class ExtractorChain(object):
         A generator that will extract features until the source data runs out
         '''
         while not all([c.done for c in self.chain]):
-            print '-----------------------------------------------------'
             for c in self.chain:
                 c.collect()
                 c.process()
