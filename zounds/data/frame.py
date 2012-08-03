@@ -349,6 +349,11 @@ class PyTablesFrameController(FrameController):
             self.steps[k] = v[2]
             pos += 1
         
+        # Store a two-tuple containing the key and stepsize of the feature with
+        # the largest step value
+        self.largest_step = \
+            sorted(self.steps.items(),lambda a,b : cmp(a[1],b[1]))[-1]
+        
         if not os.path.exists(filepath):
             
             # create the table
@@ -443,100 +448,91 @@ class PyTablesFrameController(FrameController):
         self.db_write.flush()
         self._read_mode()
         
+    def _recarray(self,n):
+        '''
+        Return a numpy recarray with nframes, able to contain all stored features 
+        '''
+        return np.recarray(n,self.recarray_dtype)
+    
     
     def append(self,chain):
-        bufsize = self._buffer_size
-        rootkey = filter(lambda e : e.finite,chain)[0].key
-        bucket = np.recarray(self._max_buffer_size,self.recarray_dtype)
-        # a dictionary that maps feature keys to the discrepancy between
-        # nframes and step sizes
-        discrep = dict(((e.key, e.nframes_abs() - e.step) for e in chain))
-        # keep track of the number of times we've written a block
-        blocks_written = 0
+        rootkey = 'audio'
+        blocks_processed = 0
         nframes = 0
-        current = dict((k,0) for k in self.steps.keys())
+        leftover = self._recarray(0)
         start_row = None
+        bucket = None
+        current_length = None
         for k,v in chain.process():
-            if rootkey == k and \
-                (nframes == bufsize or nframes >= self._max_buffer_size):
-                # we've reached our smallest buffer size. Let's attempt a write
-                try:
-                    self.acquire_lock(nframes)
-                    if start_row is None:
-                        start_row = self.db_read.__len__()
-                    # we got the lock. Let's write the data we have
-                    self._append(bucket[:nframes])
-                    nframes = 0
-                    bucket[:] = 0
-                    current = dict((k,0) for k in self.steps.keys())
-                    blocks_written += 1
-                except PyTablesFrameController.WriteLockException:
-                    # someone else has the write lock. Let's just keep 
-                    # processing for awhile (within reason)
-                    bufsize += self._buffer_size
-                    
-            if rootkey == k:
-                nframes += 1
-
+            
+            if k not in self.steps:
+                continue
+            
+            if k == rootkey and blocks_processed > 1:
+                self.acquire_lock()
+                toappend = bucket[:current_length]
+                toappend = np.concatenate([leftover,toappend])
+                if start_row is None:
+                    start_row = self.db_read.__len__()
+                print len(toappend)
+                self._append(toappend)
+                self.release_lock()
+                nframes += toappend.shape[0]
+                leftover = bucket[current_length:]
+            
+            # remove any extraneous dimensions
             try:
-                # the step size for this feature
-                steps = self.steps[k]
-                negstep = discrep[k]
-                if  negstep > 0 and blocks_written and nframes == steps:
-                    # this feature has a discrepancy between nframes and stepsize,
-                    # and we're currently at a buffer boundary.  Since this
-                    # feature didn't have enough data when the last block was
-                    # written, we'll have to write to existing rows.
-                    self._write_mode()
-                    # get the column for this feature
-                    col = getattr(self.db_write.cols,k)
-                    # write the data to the existing rows
-                    data = np.tile(np.array(v),(steps,1)).squeeze()
-                    col[-negstep:] = data
-                    # switch back to read mode
-                    self._read_mode()
-                else:
-                    # the current position, in frames, for this feature
-                    cur = current[k]
-                    # Figure out how many spaces are available in the
-                    # bucket for this feature
-                    b = bucket[k][cur:cur+steps]
-                    actual_steps = len(b)
-                    # actual_steps should be equal to the step size 
-                    # for this feature, unless we're at then end of
-                    # the sound. Repeat the feature as many times as
-                    # possible, up to step size
-                    data = np.tile(np.array(v),(actual_steps,1)).squeeze()
-                    # deposit the data
-                    bucket[k][cur:cur+steps] = data
-                    # advance by steps
-                    current[k] += steps
-            except KeyError:
-                # this feature isn't stored
-                pass
+                data = v.squeeze()
+            except AttributeError:
+                data = v
+            
+            if k == rootkey:
+                # create a bucket that will hold every frame in this chunk
+                bucket = self._recarray(data.shape[0])
+            
+            # repeat the incoming data by the feature's stepsize, so all features
+            # line up
+            hydrated = np.repeat(data,self.steps[k],0)
+            lh = min(bucket.shape[0],hydrated.shape[0])
+            # assign the "hydrated" data to the feature in the bucket
+            bucket[k][:lh] = hydrated[:lh] 
+            
+            if k == self.largest_step[0]:
+                # the feature with the largest step size determines how many
+                # frames will be written for this chunk
+                current_length = lh
+            
+            if k == rootkey:
+                blocks_processed += 1
         
-        # We've processed the entire file. Wait until we can get the write lock    
-        self.acquire_lock(nframes,wait=True)
-        if start_row is None:
-            start_row = self.db_read.__len__()
+
+        if current_length:
+            self.acquire_lock()
+            toappend = bucket[:current_length]
+            toappend = np.concatenate([leftover,toappend])
+            if start_row is None:
+                start_row = self.db_read.__len__()
+            print len(toappend)
+            self._append(toappend)
+            self.release_lock()
+            nframes += toappend.shape[0]
+            
         
-        source = bucket[0]['source']
-        external_id = bucket[0]['external_id']
-        self._append(bucket[:nframes])
         stop_row = self.db_read.__len__()
-        # release the lock for the next writer
-        self.release_lock()
-        
         if self._temp_external_ids is None:
             # This is the first time append() has been called since the indexes
             # have been updated. Create the in-memory list of external_ids
-            self._temp_external_ids = dict(((t,None) for t in self.list_external_ids()))
+            self._temp_external_ids = \
+                dict(((t,None) for t in self.list_external_ids()))
         
+        
+        source = bucket[0]['source']
+        external_id = bucket[0]['external_id']
         # update the in-memory hashtable of external ids
         self._temp_external_ids[(source,external_id)] = None
+        print nframes,stop_row - start_row
         return PyTablesFrameController.Address(slice(start_row,stop_row))
-    
-        
+            
     
     @property
     def lock_filename(self):
@@ -546,25 +542,16 @@ class PyTablesFrameController(FrameController):
         
         def __init__(self):
             BaseException.__init__(self)
-        
-    def acquire_lock(self,nframes,wait=False):
+    
+    def acquire_lock(self):
         if self.has_lock:
             return
         
-        locked = os.path.exists(self.lock_filename) 
-        if locked and\
-             (not wait) and \
-             (nframes < self._max_buffer_size):
-            # Someone else has the lock, but we haven't been explicity
-            # instructed to wait, and we haven't yet reached our max buffer 
-            # size.
-            raise PyTablesFrameController.WriteLockException()
-        
-        # Either we've reached our maximum buffer size, or we've been
-        # explicitly instructed to wait for the lock
+        locked = os.path.exists(self.lock_filename)
         while locked:
-            time.sleep(1)
+            time.sleep(0.1)
             locked = os.path.exists(self.lock_filename)
+        
         
         f = open(self.lock_filename,'w')
         f.close()

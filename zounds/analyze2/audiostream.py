@@ -36,7 +36,7 @@ class AudioStream(object):
             # libsamplerate doesn't generate enough samples the first time
             # src_process is called. We're calling it once here, so the "real"
             # output will come out click-free
-            chunksize = int(np.round(self._chunksize * ratio))
+            chunksize = int(np.round(self.windowsize * ratio))
             rs(np.zeros(chunksize,dtype = np.float32))
         
         
