@@ -19,8 +19,7 @@ class MetaDataExtractor(Extractor):
     
     def _process(self):
         l = len(self.input[self.sources[0]])
-        out = np.array([self.pattern.data()] * l)
-        return out 
+        return np.array([self.pattern.data()] * l) 
 
 
 class LiteralExtractor(SingleInput):
@@ -37,11 +36,11 @@ class LiteralExtractor(SingleInput):
         return self._dtype
     
     def _process(self):
-        # Possible KLUDGE: Since this extractor has frames = 1 and stepsize = 1,
-        # numpy's broadcasting rules will take care of the assignment of this
-        # value to any size collection.
         data = self.in_data
-        return data[0][self.key]
+        # KLUDGE: Factor this code out from this and the following extractor
+        if data.shape == ():
+            data = data.reshape((1,)) 
+        return np.array([data[0][self.key]] * data.shape[0]) 
 
 class CounterExtractor(Extractor):
     
