@@ -474,15 +474,19 @@ class PyTablesFrameController(FrameController):
     
     def _commit_frames(self,current_length,bucket,start_row,
                        nframes,leftover,blocks_processed,lengths):
-        
+        '''
         if blocks_processed - 1:
             for k,l in lengths.iteritems():
+                print k,l,current_length
+                if current_length == bucket.shape[0]:
+                    continue
+                
                 diff = current_length - l
                 print 'DIFF: %s, %i' % (k,diff)
                 leftover[k][-diff:] = bucket[k][:diff]
                 bucket[k] = np.roll(bucket[k],-diff)
                 bucket[k][-diff:] = 0
-                
+        '''     
                 
         current_length = sorted(lengths.values())[0]
         print current_length
@@ -499,13 +503,24 @@ class PyTablesFrameController(FrameController):
     
     def append(self,chain):
         rootkey = 'audio'
+        # keep track of the chunks we've processed
         blocks_processed = 0
+        # keep track of the total number of frames that have been committed
         nframes = 0
+        # initialize the "leftover" array with an zero-length recarray
         leftover = self._recarray(0)
+        # start_row will contain the first row in the PyTables database that
+        # contains data about this pattern
         start_row = None
+        # a container for incoming data
         bucket = None
+        # The number of frames in the current bucket that will be written to the
+        # database
         current_length = None
+        # the lengths of each hydrated (i.e., repeated stepsize times) feature
         lengths = dict()
+        
+        
         for k,v in chain.process():
             
             if k not in self.steps:
@@ -513,35 +528,34 @@ class PyTablesFrameController(FrameController):
                 continue
             
             if k == rootkey and blocks_processed > 0:
+                # A full round of features has been computed. It's time to 
+                # commit it to the database
                 current_length,start_row,nframes,leftover = \
                     self._commit_frames(current_length,bucket,
                                         start_row,nframes,leftover,
                                         blocks_processed,lengths)
+                # throw away length data. It will need to be re-calculated
                 lengths = dict()
             
-            # remove any extraneous dimensions
-            try:
-                data = v.squeeze()
-            except AttributeError:
-                data = v
-            
+            # remove any extraneous (length 1) dimensions
+            data = v.squeeze()
             if k == rootkey:
-                # create a bucket that will hold every frame in this chunk
+                # create a bucket that will hold every frame in this chunk. The
+                # root extractor should have a stepsize of one, so this is the 
+                # length of the current chunk in absolute frames.
                 bucket = self._recarray(data.shape[0])
             
             # repeat the incoming data by the feature's stepsize, so all features
             # line up
             hydrated = np.repeat(data,self.steps[k],0)
+            # choose the lowest of the chunk length or the feature length.  The
+            # current chunk may have fewer frames than the stepsize of the
+            # current feature.
             lh = min(bucket.shape[0],hydrated.shape[0])
             # assign the "hydrated" data to the feature in the bucket
             bucket[k][:lh] = hydrated[:lh]
             lengths[k] = lh
-            print k,lh
             
-            #if k == self.largest_step[0]:
-                # the feature with the largest step size determines how many
-                # frames will be written for this chunk
-            #    current_length = lh
             
             if k == rootkey:
                 blocks_processed += 1
@@ -553,15 +567,15 @@ class PyTablesFrameController(FrameController):
                                         start_row,nframes,leftover,
                                         blocks_processed,lengths)
         
-        if leftover.shape[0]:
-            current_length,start_row,nframes,leftover = \
-                self._commit_frames(current_length,
-                                    leftover, 
-                                    start_row, 
-                                    nframes, 
-                                    self._recarray(0),
-                                    blocks_processed,
-                                    lengths)
+        #if leftover.shape[0]:
+        #    current_length,start_row,nframes,leftover = \
+        #        self._commit_frames(current_length,
+        #                            leftover, 
+        #                            start_row, 
+        #                            nframes, 
+        #                            self._recarray(0),
+        #                            blocks_processed,
+        #                            lengths)
         
         stop_row = self.db_read.__len__()
         if self._temp_external_ids is None:

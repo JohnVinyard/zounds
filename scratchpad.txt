@@ -2,8 +2,6 @@ TOOO:
 -------------
 - Fix "zero values at chunk boundaries" bug
 
-- Ensure that on-the-fly processing is working
-
 - Do chunk-based version of TemplateMatch
 
 - Ensure that syncing is working
@@ -48,9 +46,6 @@ Use bfcc flux to do synthesis. Create a new ordering of frames so that flux
 Finish Constant-Q implementation 
 
 TODO:  Try lowpass filter subtraction method for spectrogram sharpening
-
-Allow nframes values of -1, or inf, or something, so that processing
-can be done all at once.
 
 2) - BUG: Pooled doesn't work for nested Pooled features
 
