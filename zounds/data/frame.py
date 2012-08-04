@@ -510,7 +510,6 @@ class PyTablesFrameController(FrameController):
             print current_length
             self.acquire_lock()
             toappend = bucket[:current_length]
-            toappend = np.concatenate([leftover,toappend])
             if start_row is None:
                 start_row = self.db_read.__len__()
             self._append(toappend)
@@ -577,8 +576,6 @@ class PyTablesFrameController(FrameController):
         self.dbfile_read = openFile(self.filepath,'r')
         self.db_read = self.dbfile_read.root.frames
         self.schema_read = self.dbfile_read.root.schema
-        
-    
     
     def __len__(self):
         return self.db_read.__len__()

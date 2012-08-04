@@ -56,9 +56,8 @@ class DiskAcquirer(Acquirer):
     
     def __init__(self,path,source = None):
         Acquirer.__init__(self)
-        self.path = path
+        self.path = os.path.normpath(path)
         self._source = source if source else os.path.split(self.path)[1]
-        
     
     @property
     def source(self):
@@ -76,7 +75,8 @@ class DiskAcquirer(Acquirer):
                                   fp)
             if not self.framecontroller.exists(self.source,extid):
                 try:
-                    print 'importing %s, file %i of %i' % (fn,i,lf)
+                    print 'importing %s, %s, file %i of %i' % \
+                             (self.source,fn,i,lf)
                     self.framecontroller.append(self.extractor_chain(pattern))
                 except IOError:
                     print 'ERROR! : data from %s was unreadable' % fn
