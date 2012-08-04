@@ -455,6 +455,18 @@ class PyTablesFrameController(FrameController):
         return np.recarray(n,self.recarray_dtype)
     
     
+    def _commit_frames(self,current_length,bucket,start_row,nframes,leftover):
+        self.acquire_lock()
+        toappend = bucket[:current_length]
+        toappend = np.concatenate([leftover,toappend])
+        if start_row is None:
+            start_row = self.db_read.__len__()
+        self._append(toappend)
+        self.release_lock()
+        nframes += toappend.shape[0]
+        leftover = bucket[current_length:]
+        return start_row,nframes,leftover
+    
     def append(self,chain):
         rootkey = 'audio'
         blocks_processed = 0
@@ -466,19 +478,13 @@ class PyTablesFrameController(FrameController):
         for k,v in chain.process():
             
             if k not in self.steps:
+                # This isn't a stored feature, so it's safe to skip
                 continue
             
-            if k == rootkey and blocks_processed > 1:
-                print current_length
-                self.acquire_lock()
-                toappend = bucket[:current_length]
-                toappend = np.concatenate([leftover,toappend])
-                if start_row is None:
-                    start_row = self.db_read.__len__()
-                self._append(toappend)
-                self.release_lock()
-                nframes += toappend.shape[0]
-                leftover = bucket[current_length:]
+            if k == rootkey and blocks_processed > 0:
+                start_row,nframes,leftover = \
+                    self._commit_frames(current_length,bucket,
+                                        start_row,nframes,leftover)
             
             # remove any extraneous dimensions
             try:
@@ -507,15 +513,9 @@ class PyTablesFrameController(FrameController):
         
 
         if current_length:
-            print current_length
-            self.acquire_lock()
-            toappend = bucket[:current_length]
-            if start_row is None:
-                start_row = self.db_read.__len__()
-            self._append(toappend)
-            self.release_lock()
-            nframes += toappend.shape[0]
-            
+            start_row,nframes,leftover = \
+                    self._commit_frames(current_length,bucket,
+                                        start_row,nframes,leftover)
         
         stop_row = self.db_read.__len__()
         if self._temp_external_ids is None:

@@ -1,6 +1,6 @@
 TOOO:
 -------------
-- Fix missing _ids bug
+- Fix "zero values at chunk boundaries" bug
 
 - Do chunk-based version of TemplateMatch
 
