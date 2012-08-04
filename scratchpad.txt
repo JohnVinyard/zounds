@@ -1,6 +1,16 @@
 TOOO:
 -------------
-TODO: Answer the question "Is chunk based processing faster?" YES
+- Fix missing _ids bug
+
+- Do chunk-based version of TemplateMatch
+
+- Ensure that syncing is working
+
+- Standardize "inshape"-type parameters
+
+- Faster, chunk-based or all-at-once processing for Extractors
+
+- Allow step-sizes that aren't windowsize / 2
 
 TODO: Answer the question "How do file system seek times compare to PyTables?"
 
@@ -30,16 +40,12 @@ TODO: Ensure that all quickstart scripts use argparse.
 
 TODO: README file for setuptools
 
-- Faster, chunk-based or all-at-once processing for Extractors
-
 Use bfcc flux to do synthesis. Create a new ordering of frames so that flux
  stays close to the same, but different frames are used.
  
 Finish Constant-Q implementation 
 
 TODO:  Try lowpass filter subtraction method for spectrogram sharpening
-
-Allow step-sizes that aren't windowsize / 2
 
 Allow nframes values of -1, or inf, or something, so that processing
 can be done all at once.

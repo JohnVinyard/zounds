@@ -9,6 +9,5 @@ if __name__ == '__main__':
        help = 'the directory to ingest sound files from',
        required = True)
     args = parser.parse_args()
-    path = args.path
-    DiskAcquirer(path).acquire()
+    DiskAcquirer(args.path).acquire()
     

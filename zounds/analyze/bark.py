@@ -92,10 +92,6 @@ def bark_bands(\
         samplerate,window_size,nbands,start_freq_hz,stop_freq_hz,fft,nframes,
         slices,triwins):
     
-    #if nframes == 1:
-    #    print fft.shape
-    #    fft = fft.reshape((1,fft.shape[0]))
-    
     cb = np.ndarray((nframes,nbands),dtype=np.float32)
     for i in xrange(nbands):
         cb[:,i] = (fft[:,slices[i]] * triwins[i]).sum(1)
