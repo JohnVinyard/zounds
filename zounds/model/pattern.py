@@ -104,7 +104,6 @@ class FilePattern(Pattern):
         Pattern.__init__(self,_id,source,external_id)
         self.filename = filename
 
-
     def audio_extractor(self, needs = None):
         e = self.__class__.env()
         return AudioFromDisk(e.samplerate,
@@ -121,14 +120,13 @@ class DataPattern(Pattern):
     def __init__(self,_id,source,external_id,samples):
         Pattern.__init__(self,_id,source,external_id)
         self.samples = samples
-        self._data['samples'] = samples
         
-    
     def audio_extractor(self,needs = None):
         e = self.__class__.env()
         return AudioFromMemory(e.samplerate,
                                e.windowsize,
                                e.stepsize,
+                               self.samples,
                                needs = needs)
 
 class Zound(Pattern,list):

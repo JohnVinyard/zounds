@@ -85,18 +85,19 @@ class AudioFromDisk(AudioSamples):
     
 class AudioFromMemory(AudioSamples):
     
-    def __init__(self,samplerate,windowsize,stepsize,needs = None):
+    def __init__(self,samplerate,windowsize,stepsize,samples,needs = None):
         AudioSamples.__init__(self,samplerate,windowsize,stepsize,needs = needs)
         self._init = False
+        self.samples = samples
     
     
     class Stream(object):
         
-        def __init__(self,samples,chunksize,windowsize,samplerate):
+        def __init__(self,samples,chunksize,windowsize,stepsize):
             object.__init__(self)
             self.chunksize = chunksize
             self.windowsize = windowsize
-            self.samplerate = samplerate
+            self.stepsize = stepsize
             self.samples = samples
             self.done = False
         
@@ -116,9 +117,6 @@ class AudioFromMemory(AudioSamples):
     @property
     def stream(self):
         if not self._init:
-            data = self.input[self.sources[0]][0]
-            # KLUDGE: I shouldn't have to know a specific name here
-            self.samples = data['samples']
             self._stream = AudioFromMemory.Stream(\
                             self.samples,chunksize,self.windowsize,self.stepsize)
             self._init = True
