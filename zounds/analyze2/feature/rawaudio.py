@@ -1,9 +1,10 @@
 from __future__ import division
 import numpy as np
 
+from zounds.analyze2 import chunksize
 from zounds.analyze2.audiostream import AudioStream
 from zounds.analyze2.extractor import Extractor
-from zounds.nputil import pad
+from zounds.nputil import pad,windowed
 from zounds.environment import Environment
 
 class AudioSamples(Extractor):
@@ -17,7 +18,7 @@ class AudioSamples(Extractor):
         env = Environment.instance
         self.window = env.window if None is not env.window else \
                      self.oggvorbis(self.windowsize)
-        
+        self.iterator = None
     
     def dim(self,env):
         return (self.windowsize,)
@@ -36,6 +37,8 @@ class AudioSamples(Extractor):
                      self.windowsize,
                      self.stepsize))
     
+    # BUG: This will only work if windows overlap by half. Is it possible to
+    # generalize this to be sensitive to the window overlap? 
     def oggvorbis(self,s):
         '''
         This is taken from the ogg vorbis spec 
@@ -50,19 +53,13 @@ class AudioSamples(Extractor):
         return f * (1. / f.max())
     
     def _process(self):
-        
-        try:
-            return self.stream.next() * self.window
-        except StopIteration:
+        if not self.iterator:
+            self.iterator = self.stream.__iter__()
+        out = self.iterator.next() * self.window
+        if self.stream.done:
             self.out = None
             self.done = True
-            
-            # KLUDGE: This is a bit odd.   The RawAudio extractor is telling
-            # an extractor on which it depends that it is done.  This is 
-            # necessary because the MetaData extractor generates data with
-            # no source. It has no idea when to stop.
-            #self.sources[0].out = None
-            #self.sources[0].done = True
+        return out
     
     
 class AudioFromDisk(AudioSamples):
@@ -79,7 +76,7 @@ class AudioFromDisk(AudioSamples):
                             self.filename,
                             self.samplerate,
                             self.windowsize,
-                            self.stepsize).__iter__()
+                            self.stepsize)
             self._init = True
         
         return self._stream
@@ -91,21 +88,39 @@ class AudioFromMemory(AudioSamples):
     def __init__(self,samplerate,windowsize,stepsize,needs = None):
         AudioSamples.__init__(self,samplerate,windowsize,stepsize,needs = needs)
         self._init = False
-        
-    def get_stream(self):
-        '''
-        A generator that returns a sliding window along samples
-        '''
-        for i in xrange(0,len(self.samples),self.stepsize):
-            yield pad(self.samples[i : i + self.windowsize],self.windowsize)
     
+    
+    class Stream(object):
+        
+        def __init__(self,samples,chunksize,windowsize,samplerate):
+            object.__init__(self)
+            self.chunksize = chunksize
+            self.windowsize = windowsize
+            self.samplerate = samplerate
+            self.samples = samples
+            self.done = False
+        
+        def __iter__(self):
+            ls = len(self.samples)
+            leftover = np.zeros(0)
+            for i in range(0,ls,chunksize):
+                start = i
+                stop = i + chunksize
+                self.done = stop >= ls
+                current = np.concatenate([leftover,self.samples[start:stop]])
+                leftover,w = windowed(\
+                    current,self.windowsize,self.stepsize,dopad = self.done)
+                yield w
+        
+        
     @property
     def stream(self):
         if not self._init:
             data = self.input[self.sources[0]][0]
             # KLUDGE: I shouldn't have to know a specific name here
             self.samples = data['samples']
-            self._stream = self.get_stream()
+            self._stream = AudioFromMemory.Stream(\
+                            self.samples,chunksize,self.windowsize,self.stepsize)
             self._init = True
         
         return self._stream
