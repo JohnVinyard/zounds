@@ -118,7 +118,6 @@ class BarkBands(SingleInput):
                                self._slices,
                                self._triwins)
 
-
 class Loudness(SingleInput):
     
     def __init__(self,needs=None,nframes=1,step=1,key=None):
@@ -138,7 +137,8 @@ class Loudness(SingleInput):
 class Mean(SingleInput):
     
     def __init__(self,needs = None, nframes = 1, step = 1, key = None):
-        SingleInput.__init__(self,needs = needs, nframes = nframes, step = step, key = key)
+        SingleInput.__init__(\
+                self,needs = needs, nframes = nframes, step = step, key = key)
     
     def dim(self,env):
         return ()

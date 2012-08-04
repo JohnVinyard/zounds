@@ -454,8 +454,38 @@ class PyTablesFrameController(FrameController):
         '''
         return np.recarray(n,self.recarray_dtype)
     
+    '''
+    steps = self.steps[k]
+    negstep = discrep[k]
+    if  negstep > 0 and blocks_written and nframes == steps:
+        # this feature has a discrepancy between nframes and stepsize,
+        # and we're currently at a buffer boundary.  Since this
+        # feature didn't have enough data when the last block was
+        # written, we'll have to write to existing rows.
+        self._write_mode()
+        # get the column for this feature
+        col = getattr(self.db_write.cols,k)
+        # write the data to the existing rows
+        data = np.tile(np.array(v),(steps,1)).squeeze()
+        col[-negstep:] = data
+        # switch back to read mode
+        self._read_mode()
+    '''
     
-    def _commit_frames(self,current_length,bucket,start_row,nframes,leftover):
+    def _commit_frames(self,current_length,bucket,start_row,
+                       nframes,leftover,blocks_processed,lengths):
+        
+        if blocks_processed - 1:
+            for k,l in lengths.iteritems():
+                diff = current_length - l
+                print 'DIFF: %s, %i' % (k,diff)
+                leftover[k][-diff:] = bucket[k][:diff]
+                bucket[k] = np.roll(bucket[k],-diff)
+                bucket[k][-diff:] = 0
+                
+                
+        current_length = sorted(lengths.values())[0]
+        print current_length
         self.acquire_lock()
         toappend = bucket[:current_length]
         toappend = np.concatenate([leftover,toappend])
@@ -465,7 +495,7 @@ class PyTablesFrameController(FrameController):
         self.release_lock()
         nframes += toappend.shape[0]
         leftover = bucket[current_length:]
-        return start_row,nframes,leftover
+        return current_length,start_row,nframes,leftover
     
     def append(self,chain):
         rootkey = 'audio'
@@ -475,6 +505,7 @@ class PyTablesFrameController(FrameController):
         start_row = None
         bucket = None
         current_length = None
+        lengths = dict()
         for k,v in chain.process():
             
             if k not in self.steps:
@@ -482,9 +513,11 @@ class PyTablesFrameController(FrameController):
                 continue
             
             if k == rootkey and blocks_processed > 0:
-                start_row,nframes,leftover = \
+                current_length,start_row,nframes,leftover = \
                     self._commit_frames(current_length,bucket,
-                                        start_row,nframes,leftover)
+                                        start_row,nframes,leftover,
+                                        blocks_processed,lengths)
+                lengths = dict()
             
             # remove any extraneous dimensions
             try:
@@ -501,21 +534,34 @@ class PyTablesFrameController(FrameController):
             hydrated = np.repeat(data,self.steps[k],0)
             lh = min(bucket.shape[0],hydrated.shape[0])
             # assign the "hydrated" data to the feature in the bucket
-            bucket[k][:lh] = hydrated[:lh] 
+            bucket[k][:lh] = hydrated[:lh]
+            lengths[k] = lh
+            print k,lh
             
-            if k == self.largest_step[0]:
+            #if k == self.largest_step[0]:
                 # the feature with the largest step size determines how many
                 # frames will be written for this chunk
-                current_length = lh
+            #    current_length = lh
             
             if k == rootkey:
                 blocks_processed += 1
         
 
-        if current_length:
-            start_row,nframes,leftover = \
+        if bucket.shape[0] or leftover.shape[0]:
+            current_length,start_row,nframes,leftover = \
                     self._commit_frames(current_length,bucket,
-                                        start_row,nframes,leftover)
+                                        start_row,nframes,leftover,
+                                        blocks_processed,lengths)
+        
+        if leftover.shape[0]:
+            current_length,start_row,nframes,leftover = \
+                self._commit_frames(current_length,
+                                    leftover, 
+                                    start_row, 
+                                    nframes, 
+                                    self._recarray(0),
+                                    blocks_processed,
+                                    lengths)
         
         stop_row = self.db_read.__len__()
         if self._temp_external_ids is None:

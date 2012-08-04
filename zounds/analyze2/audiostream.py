@@ -23,6 +23,7 @@ class AudioStream(object):
         self.samplerate = samplerate
         self.windowsize = windowsize
         self.stepsize = stepsize
+        self.done = False
         
     def _read_frames(self,sndfile):
         
@@ -77,5 +78,7 @@ class AudioStream(object):
         leftover,w = windowed(frames,ws,ss,dopad = True)
         # we're done with the sound file
         sndfile.close()
+        # set a flag indicating that there are no more samples to b read
+        self.done = True
         # yield the final chunk
         yield w

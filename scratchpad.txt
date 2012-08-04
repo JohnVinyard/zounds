@@ -2,6 +2,8 @@ TOOO:
 -------------
 - Fix "zero values at chunk boundaries" bug
 
+- Ensure that on-the-fly processing is working
+
 - Do chunk-based version of TemplateMatch
 
 - Ensure that syncing is working

@@ -161,15 +161,13 @@ class Extractor(object):
     # KLUDGE: I'm assuming that chunksize will always be larger than 
     # the highest nframes value. 
     def process(self):
-        
         # Ensure that there's enough data to perform processing
         full = all([len(self.input[src]) for src in self.sources])
         if not full:
             self.out = None
             return
 
-        
-        for src in self.sources:
+        for src in self.sources:            
             # remove any extraneous dimensions
             data = np.array(self.input[src]).squeeze()
             dim = src.dim(Environment.instance)
