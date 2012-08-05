@@ -15,6 +15,8 @@ from controller import Controller
 from zounds.model.pattern import Pattern
 from zounds.nputil import pad
 from zounds.util import ensure_path_exists
+from zounds.util import Bucket
+
 
 class FrameController(Controller):
     __metaclass__ = ABCMeta
@@ -397,24 +399,7 @@ class PyTablesFrameController(FrameController):
         self.dbfile_read = openFile(filepath,'r')
         self.db_read = self.dbfile_read.root.frames
         self.schema_read = self.dbfile_read.root.schema
-        
-        # TODO: Consider moving this out of __init__
-        # create our buffer
-        def lcd(numbers):
-            i = 1
-            while any([i % n for n in numbers]):
-                i += 1
-            return i
-        
-        self._desired_buffer_size = 1000
-        # once we've processed this much data, stop and wait to write it
-        self._max_buffer_size = self._desired_buffer_size * 2
-        
-        # find the lowest common multiple of all step sizes
-        l = lcd(self.steps.values())
-        # find a whole number multiple of the lowest common
-        # multiple that puts us close to our desired buffer size
-        self._buffer_size = l * int(self._desired_buffer_size / l)
+                
         self.recarray_dtype = []
         for k in self.db_read.colnames:
             col = getattr(self.db_read.cols,k)
@@ -454,90 +439,31 @@ class PyTablesFrameController(FrameController):
         '''
         return np.recarray(n,self.recarray_dtype)
     
-    '''
-    steps = self.steps[k]
-    negstep = discrep[k]
-    if  negstep > 0 and blocks_written and nframes == steps:
-        # this feature has a discrepancy between nframes and stepsize,
-        # and we're currently at a buffer boundary.  Since this
-        # feature didn't have enough data when the last block was
-        # written, we'll have to write to existing rows.
-        self._write_mode()
-        # get the column for this feature
-        col = getattr(self.db_write.cols,k)
-        # write the data to the existing rows
-        data = np.tile(np.array(v),(steps,1)).squeeze()
-        col[-negstep:] = data
-        # switch back to read mode
-        self._read_mode()
-    '''
-    
-    def _commit_frames(self,current_length,bucket,start_row,
-                       nframes,leftover,blocks_processed,lengths):
-        '''
-        if blocks_processed - 1:
-            for k,l in lengths.iteritems():
-                print k,l,current_length
-                if current_length == bucket.shape[0]:
-                    continue
-                
-                diff = current_length - l
-                print 'DIFF: %s, %i' % (k,diff)
-                leftover[k][-diff:] = bucket[k][:diff]
-                bucket[k] = np.roll(bucket[k],-diff)
-                bucket[k][-diff:] = 0
-        '''     
-                
-        current_length = sorted(lengths.values())[0]
-        print current_length
-        self.acquire_lock()
-        toappend = bucket[:current_length]
-        toappend = np.concatenate([leftover,toappend])
-        if start_row is None:
-            start_row = self.db_read.__len__()
-        self._append(toappend)
-        self.release_lock()
-        nframes += toappend.shape[0]
-        leftover = bucket[current_length:]
-        return current_length,start_row,nframes,leftover
     
     def append(self,chain):
         rootkey = 'audio'
-        # keep track of the chunks we've processed
-        blocks_processed = 0
-        # keep track of the total number of frames that have been committed
-        nframes = 0
-        # initialize the "leftover" array with an zero-length recarray
-        leftover = self._recarray(0)
-        # start_row will contain the first row in the PyTables database that
-        # contains data about this pattern
         start_row = None
-        # a container for incoming data
         bucket = None
-        # The number of frames in the current bucket that will be written to the
-        # database
-        current_length = None
-        # the lengths of each hydrated (i.e., repeated stepsize times) feature
-        lengths = dict()
-        
+        buckets = []
+        offsets = dict()
         
         for k,v in chain.process():
-            
             if k not in self.steps:
-                # This isn't a stored feature, so it's safe to skip
                 continue
             
-            if k == rootkey and blocks_processed > 0:
-                # A full round of features has been computed. It's time to 
-                # commit it to the database
-                current_length,start_row,nframes,leftover = \
-                    self._commit_frames(current_length,bucket,
-                                        start_row,nframes,leftover,
-                                        blocks_processed,lengths)
-                # throw away length data. It will need to be re-calculated
-                lengths = dict()
+            if k == rootkey and bucket is not None:
+                buckets.append(Bucket(bucket,offsets))
             
-            # remove any extraneous (length 1) dimensions
+            if k == rootkey and len(buckets) == 2:
+                b1,b2 = buckets
+                b1,b2 = b1.combine(b2)
+                if start_row is None:
+                    start_row = self.db_read.__len__()
+                self.acquire_lock()
+                self._append(b1.recarray)
+                self.release_lock()
+                buckets = [b2]
+            
             data = v.squeeze()
             if k == rootkey:
                 # create a bucket that will hold every frame in this chunk. The
@@ -554,29 +480,28 @@ class PyTablesFrameController(FrameController):
             lh = min(bucket.shape[0],hydrated.shape[0])
             # assign the "hydrated" data to the feature in the bucket
             bucket[k][:lh] = hydrated[:lh]
-            lengths[k] = lh
+            offsets[k] = bucket.shape[0] - lh
+        
+        # KLUDGE: Refactor this. There's a lot of duplicated code
+        
+        if bucket is not None and not buckets:
+            # the entire pattern was processed in a single chunk
+            b = Bucket(bucket,offsets)
+            start_row = self.db_read.__len__()
+            self.acquire_lock()
+            self._append(b.abbreviated)
+            self.release_lock()
+        elif buckets:
+            if start_row is None:
+                start_row = self.db_read.__len__()
+            buckets.append(Bucket(bucket,offsets))
+            b1,b2 = buckets
+            b1,b2 = b1.combine(b2)
+            self.acquire_lock()
+            self._append(np.concatenate([b1.recarray,b2.abbreviated]))
+            self.release_lock()
+        
             
-            
-            if k == rootkey:
-                blocks_processed += 1
-        
-
-        if bucket.shape[0] or leftover.shape[0]:
-            current_length,start_row,nframes,leftover = \
-                    self._commit_frames(current_length,bucket,
-                                        start_row,nframes,leftover,
-                                        blocks_processed,lengths)
-        
-        #if leftover.shape[0]:
-        #    current_length,start_row,nframes,leftover = \
-        #        self._commit_frames(current_length,
-        #                            leftover, 
-        #                            start_row, 
-        #                            nframes, 
-        #                            self._recarray(0),
-        #                            blocks_processed,
-        #                            lengths)
-        
         stop_row = self.db_read.__len__()
         if self._temp_external_ids is None:
             # This is the first time append() has been called since the indexes
@@ -590,8 +515,8 @@ class PyTablesFrameController(FrameController):
         # update the in-memory hashtable of external ids
         self._temp_external_ids[(source,external_id)] = None
         return PyTablesFrameController.Address(slice(start_row,stop_row))
-            
     
+        
     @property
     def lock_filename(self):
         return self.filepath + '.lock'
