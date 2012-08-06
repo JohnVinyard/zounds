@@ -13,7 +13,7 @@ def read_frames_mono(sndfile,nframes = None):
         return sndfile.read_frames(nframes)
     elif sndfile.channels == 2:
         # average the values from the two channels
-        return sndfile.read_frames(nframes).sum(1) / 2
+        return sndfile.read_frames(nframes).sum(1) * .5
 
 
 class AudioStream(object):

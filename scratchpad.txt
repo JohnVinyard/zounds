@@ -1,7 +1,5 @@
 TOOO:
 -------------
-- Profile chunk-based processing
-
 - Do chunk-based version of TemplateMatch
 
 - Ensure that syncing is working
@@ -11,6 +9,18 @@ TOOO:
 - Allow step-sizes that aren't windowsize / 2
 
 - Faster, chunk-based or all-at-once processing for Extractors
+
+- Add a note in the docs about the source distribution being the preferred route
+
+- Add a small collection of soundfiles downloadable from the doc site
+
+- Human-friendly output numbers from ingest.py
+
+- If you're on Ubuntu, you can use the command `xdg-open <html-file>` to open a local file or URL using the default browser.
+
+- Make a note in the documentation about ALSA audio
+
+- Try writing a simple, realtime JACK-based audio player (check out Alex McLean's SmoothDirt repo)
 
 TODO: Answer the question "How do file system seek times compare to PyTables?"
 

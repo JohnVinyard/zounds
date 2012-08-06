@@ -93,6 +93,6 @@ def bark_bands(\
         slices,triwins):
     
     cb = np.ndarray((nframes,nbands),dtype=np.float32)
-    for i in xrange(nbands):
+    for i in xrange(nbands): 
         cb[:,i] = (fft[:,slices[i]] * triwins[i]).sum(1)
     return cb
