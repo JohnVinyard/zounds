@@ -1,16 +1,16 @@
 TOOO:
 -------------
-- Fix "zero values at chunk boundaries" bug
+- Profile chunk-based processing
 
 - Do chunk-based version of TemplateMatch
 
 - Ensure that syncing is working
 
-- Standardize "inshape"-type parameters
-
-- Faster, chunk-based or all-at-once processing for Extractors
+- Standardize "inshape"-type parameter names
 
 - Allow step-sizes that aren't windowsize / 2
+
+- Faster, chunk-based or all-at-once processing for Extractors
 
 TODO: Answer the question "How do file system seek times compare to PyTables?"
 
