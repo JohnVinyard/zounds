@@ -1,7 +1,7 @@
 from __future__ import division
 import numpy as np
 from zounds.analyze2.extractor import Extractor,SingleInput
-from zounds.analyze2 import chunksize
+
 
 class MetaDataExtractor(Extractor):
     

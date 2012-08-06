@@ -76,12 +76,12 @@ class DiskAcquirer(Acquirer):
             if not self.framecontroller.exists(self.source,extid):
                 try:
                     print 'importing %s, %s, file %i of %i' % \
-                             (self.source,fn,i,lf)
+                             (self.source,fn,i+1,lf)
                     self.framecontroller.append(self.extractor_chain(pattern))
                 except IOError:
                     print 'ERROR! : data from %s was unreadable' % fn
             else:
-                print 'skipping %s' % fn
+                print 'Skipping %s. It\'s already in the database.' % fn
             
             
             

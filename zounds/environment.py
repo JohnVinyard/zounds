@@ -31,7 +31,8 @@ class Environment(object):
                  framecontroller,
                  framecontroller_args,
                  data,
-                 audio = AudioConfig):
+                 audio = AudioConfig,
+                 chunk_size_seconds = 45.):
         
         object.__init__(self)
         
@@ -65,6 +66,8 @@ class Environment(object):
         self.data[framemodel] = self.framecontroller
         if not Environment._test:
             self.framemodel.sync()
+        
+        self.chunksize = chunk_size_seconds * self.samplerate
     
     def play(self,audio):
         self.synth.play(audio)

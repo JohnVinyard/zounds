@@ -552,8 +552,9 @@ class PyTablesFrameController(FrameController):
                     start_row = self.db_read.__len__()
                 self._ensure_lock_and_append(b1.recarray)
                 buckets = [b2]
-            print k,v.shape
-            data = v.squeeze()
+                
+            
+            data = v
             if k == rootkey:
                 # create a bucket that will hold every frame in this chunk. The
                 # root extractor should have a stepsize of one, so this is the 
