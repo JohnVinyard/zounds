@@ -1,4 +1,6 @@
 from setuptools import setup
+import os
+import string
 
 # TODO: This code should only run when the 'install' command is used.
 npmsg = 'You must have numpy >= 1.6 installed.%s Type "sudo pip install numpy" to install.'
@@ -21,8 +23,7 @@ except ImportError:
     print spmsg
     exit()
 
-import os
-import string
+
 # build up the list of packages
 packages = []
 root_dir = os.path.dirname(__file__)
@@ -46,6 +47,18 @@ def read(fname):
     '''
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
+python_packages = ['bitarray','tables','cython','numexpr',
+                   'nose','scikits.audiolab',
+                   'matplotlib','scipy','numpy']
+
+# argparse was introduced into the standard library in python 2.7. Instead of
+# checking the python version, just try to import it. If the import fails, add
+# argparse to the list of dependencies
+try:
+    import argparse
+except ImportError:
+    python_packages.append('argparse')
+
 setup(
       name = 'zounds',
       version = '0.01',
@@ -57,7 +70,5 @@ setup(
       package_data = {'quickstart' : ['*.py']},
       include_package_data = True,
       packages = packages,
-      install_requires = ['bitarray','tables','cython','numexpr',
-                          'nose','scikits.audiolab',
-                          'matplotlib','scipy','numpy']
+      install_requires = python_packages
 )
