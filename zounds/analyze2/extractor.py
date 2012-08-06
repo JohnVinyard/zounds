@@ -2,7 +2,6 @@ import numpy as np
 from abc import ABCMeta,abstractproperty,abstractmethod
 from zounds.nputil import pad
 from zounds.util import recurse,sort_by_lineage
-from zounds.analyze2 import chunksize
 from zounds.nputil import windowed
 from zounds.environment import Environment
 
@@ -168,16 +167,7 @@ class Extractor(object):
             return
 
         for src in self.sources:            
-            # remove any extraneous dimensions
-            data = np.array(self.input[src]).squeeze()
-            dim = src.dim(Environment.instance)
-            inshape = data.shape
-            # Ensure that extractors with a dimension greater than 1 always
-            # deliver 2d arrays, i.e. frames x features 
-            if dim != () and len(inshape) < 2:
-                # there was only one frame, so the frame dimension was removed
-                # by the squeeze() call. Restore it.
-                data = data.reshape((1,inshape[0]))    
+            data = np.array(self.input[src][0])    
             self.input[src] = data
     
         self.out = self._process()

@@ -1,7 +1,5 @@
 from __future__ import division
 import numpy as np
-
-from zounds.analyze2 import chunksize
 from zounds.analyze2.audiostream import AudioStream
 from zounds.analyze2.extractor import Extractor
 from zounds.nputil import pad,windowed
@@ -101,12 +99,16 @@ class AudioFromMemory(AudioSamples):
             self.samples = samples
             self.done = False
         
+        @property
+        def chunksize(self):
+            return Environment.instance.chunksize
+        
         def __iter__(self):
             ls = len(self.samples)
             leftover = np.zeros(0)
-            for i in range(0,ls,chunksize):
+            for i in range(0,ls,self.chunksize):
                 start = i
-                stop = i + chunksize
+                stop = i + self.chunksize
                 self.done = stop >= ls
                 current = np.concatenate([leftover,self.samples[start:stop]])
                 leftover,w = windowed(\

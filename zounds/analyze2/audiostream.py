@@ -3,7 +3,7 @@ import numpy as np
 from resample import Resample
 from scikits.audiolab import Sndfile
 from zounds.nputil import windowed
-from zounds.analyze2 import chunksize
+from zounds.environment import Environment
 
 def read_frames_mono(sndfile,nframes = None):
     if None is nframes:
@@ -24,6 +24,10 @@ class AudioStream(object):
         self.windowsize = windowsize
         self.stepsize = stepsize
         self.done = False
+    
+    @property
+    def chunksize(self):
+        return Environment.instance.chunksize
         
     def _read_frames(self,sndfile):
         
@@ -58,14 +62,14 @@ class AudioStream(object):
         ws = self.windowsize
         ss = self.stepsize
         leftover = []
-        while framesleft >= chunksize:
+        while framesleft >= self.chunksize:
             # Read a chunk of samples from the audio file at self.samplerate
-            frames = read_frames(chunksize,sndfile,channels,False)
+            frames = read_frames(self.chunksize,sndfile,channels,False)
             # Combine any leftover samples from the last chunk with the current chunk
             frames = np.concatenate([leftover,frames])
             # Get a windowed array
             leftover,w = windowed(frames,ws,ss,dopad = False)
-            framen += chunksize
+            framen += self.chunksize
             framesleft = nframes - framen
             yield w
             

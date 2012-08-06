@@ -1,7 +1,5 @@
 TOOO:
 -------------
-- Do chunk-based version of TemplateMatch
-
 - Ensure that syncing is working
 
 - Standardize "inshape"-type parameter names
@@ -13,8 +11,6 @@ TOOO:
 - Add a note in the docs about the source distribution being the preferred route
 
 - Add a small collection of soundfiles downloadable from the doc site
-
-- Human-friendly output numbers from ingest.py
 
 - If you're on Ubuntu, you can use the command `xdg-open <html-file>` to open a local file or URL using the default browser.
 
@@ -75,8 +71,6 @@ TODO:  Try lowpass filter subtraction method for spectrogram sharpening
 		ensuring they're identical
 
 - BUG: Tests are being run multiple times when imported by other tests
-
-- Profile ingest.py. How can this be faster?
 
 - Reread (and understand) 'Encoding Sound Timbre in the Auditory System'
 
