@@ -15,7 +15,88 @@ from controller import Controller
 from zounds.model.pattern import Pattern
 from zounds.nputil import pad
 from zounds.util import ensure_path_exists
-from zounds.util import Bucket
+
+
+
+class Bucket(object):
+    '''
+    A convenience class that ensures that features with differing step sizes
+    are all aligned properly, and that features are never lost or zeroed at 
+    chunk boundaries
+    '''
+    def __init__(self,recarray,offsets):
+        '''
+        Parameters
+            recarray - a numpy recarray containing hydrated 
+                      (i.e., repeated stepsize times) feature values
+            offsets  - a dictionary mapping feature names to the difference 
+                       between absolute (audio) frames, and the number of frames
+                       that were computed for this feature for this chunk.
+        '''
+        object.__init__(self)
+        self.recarray = recarray
+        self.offsets = offsets
+    
+    @property
+    def clean(self):
+        '''
+        Returns true if no features have an offset, i.e., every frame in the 
+        chunk was computed for every feature.
+        '''
+        return not any(self.offsets.values())
+    
+    @property
+    def frames(self):
+        '''
+        The number of absolute (audio) frames in the chunk
+        '''
+        return self.recarray.shape[0]
+    
+    @property
+    def largest_offset(self):
+        '''
+        The offset value of the feature with the largest offset, i.e., the largest
+        number of frames that were not computed for this chunk
+        '''
+        return max(self.offsets.values())
+    
+    @property
+    def abbreviated(self):
+        '''
+        Return a slice of the recarray such that no frames are invalid or yet
+        to be computed
+        '''
+        lo = self.largest_offset
+        if not lo:
+            return self.recarray
+    
+        return self.recarray[:-lo]
+    
+
+    def combine(self,other):
+        '''
+        Combine two buckets such that any invalid/uncomputed slots in the self
+        recarray are filled in by values from the other recarray. Self becomes
+        "clean", while other becomes jagged, unless both self and other are
+        already clean.
+        '''
+        if self.clean:
+            return self,other
+        
+        for k,ofs in self.offsets.iteritems():
+            if ofs == 0:
+                # the offset for this feature is currently zero, so there's
+                # no need to shuffle any data around
+                continue
+            # move ofs frames from other to self
+            self.recarray[k][-ofs:] = other.recarray[k][:ofs]
+            # slide other ofs frames into the "past"
+            other.recarray[k] = np.roll(other.recarray[k],-ofs)
+            other.recarray[k][-ofs:] = 0
+            other.offsets[k] += ofs
+        
+        
+        return self,other
 
 
 class FrameController(Controller):
@@ -439,8 +520,19 @@ class PyTablesFrameController(FrameController):
         '''
         return np.recarray(n,self.recarray_dtype)
     
+    def _ensure_lock_and_append(self,record):
+        self.acquire_lock()
+        self._append(record)
+        self.release_lock()
     
     def append(self,chain):
+        
+        
+        def combine_buckets(b):
+            b1,b2 = b
+            return b1.combine(b2)
+        
+        
         rootkey = 'audio'
         start_row = None
         bucket = None
@@ -452,16 +544,13 @@ class PyTablesFrameController(FrameController):
                 continue
             
             if k == rootkey and bucket is not None:
-                buckets.append(Bucket(bucket,offsets))
+                buckets.append(Bucket(bucket,dict(offsets)))
             
             if k == rootkey and len(buckets) == 2:
-                b1,b2 = buckets
-                b1,b2 = b1.combine(b2)
+                b1,b2 = combine_buckets(buckets)
                 if start_row is None:
                     start_row = self.db_read.__len__()
-                self.acquire_lock()
-                self._append(b1.recarray)
-                self.release_lock()
+                self._ensure_lock_and_append(b1.recarray)
                 buckets = [b2]
             
             data = v.squeeze()
@@ -482,24 +571,19 @@ class PyTablesFrameController(FrameController):
             bucket[k][:lh] = hydrated[:lh]
             offsets[k] = bucket.shape[0] - lh
         
-        # KLUDGE: Refactor this. There's a lot of duplicated code
         
         if bucket is not None and not buckets:
             # the entire pattern was processed in a single chunk
-            b = Bucket(bucket,offsets)
+            b = Bucket(bucket,dict(offsets))
             start_row = self.db_read.__len__()
-            self.acquire_lock()
-            self._append(b.abbreviated)
-            self.release_lock()
+            self._ensure_lock_and_append(b.recarray)
         elif buckets:
             if start_row is None:
                 start_row = self.db_read.__len__()
-            buckets.append(Bucket(bucket,offsets))
-            b1,b2 = buckets
-            b1,b2 = b1.combine(b2)
-            self.acquire_lock()
-            self._append(np.concatenate([b1.recarray,b2.abbreviated]))
-            self.release_lock()
+            buckets.append(Bucket(bucket,dict(offsets)))
+            b1,b2 = combine_buckets(buckets)
+            record = np.concatenate([b1.recarray,b2.abbreviated])
+            self._ensure_lock_and_append(record)
         
             
         stop_row = self.db_read.__len__()
