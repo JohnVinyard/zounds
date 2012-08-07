@@ -190,7 +190,7 @@ class FrameController(Controller):
         return self.get(key)
     
     @abstractmethod
-    def iter_feature(self,_id,feature,step = 1):
+    def iter_feature(self,_id,feature,step = 1,chunksize=1):
         '''
         Return an iterator over a single feature from pattern _id
         '''
@@ -691,7 +691,7 @@ class PyTablesFrameController(FrameController):
         key = feature if isinstance(feature,str) else feature.key
         return aggregate([row[key] for row in self.db_read[::step]],axis = axis)
     
-    def iter_feature(self,_id,feature,step = 1):
+    def iter_feature(self,_id,feature,step = 1,chunksize = 1):
         
         # BUG: The following should work, but always raises a
         # StopIteration exception around 30 - 40 rows. I have
@@ -703,8 +703,14 @@ class PyTablesFrameController(FrameController):
         # Here's the less simple workaround
         feature = feature if isinstance(feature,str) else feature.key
         rowns = self.db_read.getWhereList(self._query(_id = _id))[::step]
-        for row in self.db_read.itersequence(rowns):
-            yield row[feature]
+        if chunksize == 1:
+            for row in self.db_read.itersequence(rowns):
+                yield row[feature]
+        else:
+            for i in xrange(rowns[0],rowns[-1],chunksize):
+                stop = i + chunksize
+                indices = np.where((rowns >= i) & (rowns < stop))[0]
+                yield self.db_read[rowns[indices]][feature]
     
     def iter_all(self, step = 1):
         _ids = list(self.list_ids())
@@ -890,7 +896,7 @@ class DictFrameController(FrameController):
     def list_ids(self):
         raise NotImplementedError
     
-    def iter_feature(self,_id,feature_name,step = 1):
+    def iter_feature(self,_id,feature_name,step = 1,chunksize = 1):
         raise NotImplementedError
     
     def exists(self,source,external_id):

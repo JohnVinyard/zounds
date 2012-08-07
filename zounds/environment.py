@@ -36,8 +36,14 @@ class Environment(object):
         
         object.__init__(self)
         
+        
         # audio settings, samplerate, windowsize and stepsize
         self.audio = audio
+        
+        # processing chunk size, in samples
+        self.chunksize = chunk_size_seconds * self.samplerate
+        # approximate number of absolute frames in each chunk
+        self.chunksize_frames = int(self.chunksize / self.stepsize)
         
         # A synthesizer that can create raw audio samples from the encoding
         # stored in the 'audio' feature of frames.  Note that for now, the
@@ -67,7 +73,7 @@ class Environment(object):
         if not Environment._test:
             self.framemodel.sync()
         
-        self.chunksize = chunk_size_seconds * self.samplerate
+        
     
     def play(self,audio):
         self.synth.play(audio)

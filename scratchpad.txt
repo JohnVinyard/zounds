@@ -27,8 +27,6 @@ TODO: Get rid of runtime warning in safe_unit_norm
 
 TODO: Two modes for ExhaustiveSearch
 
-TODO: Two modes for TemplateMatch (fft and regular)
-
 TODO: Do another installation test run and move up a new dist package
 
 TODO: extractors using multiprocessing hang when updating database
