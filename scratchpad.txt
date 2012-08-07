@@ -2,6 +2,8 @@ TOOO:
 -------------
 - Standardize "inshape"-type parameter names
 
+- update all tests
+
 - Faster, chunk-based or all-at-once processing for Extractors
 
 - Add a note in the docs about the source distribution being the preferred route
