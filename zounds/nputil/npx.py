@@ -1,5 +1,30 @@
 import numpy as np
 
+def norm_shape(shape):
+    '''
+    Parameters
+        shape - an int, or a tuple of ints
+    
+    Returns
+        a shape tuple
+    '''
+    try:
+        i = int(shape)
+        return (i,)
+    except TypeError:
+        # shape was not a number
+        pass
+
+    try:
+        t = tuple(shape)
+        return t
+    except TypeError:
+        # shape was not iterable
+        pass
+    
+    raise TypeError('shape must be an int, or a tuple of ints')
+
+
 def safe_log(a):
     '''
     Return the element-wise log of an array, checking for negative
