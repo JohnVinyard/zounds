@@ -4,7 +4,6 @@ import numpy as np
 import os.path
 from constants import available_file_formats
 
-
 def ensure_path_exists(filename):
     '''
     Given a filename, ensure that the path to it exists

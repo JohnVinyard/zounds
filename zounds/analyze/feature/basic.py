@@ -1,8 +1,9 @@
 from __future__ import division
 import numpy as np
 from zounds.analyze.extractor import SingleInput
-from zounds.nputil import safe_log,safe_unit_norm as sun
+from zounds.nputil import safe_log,safe_unit_norm as sun,norm_shape
 from scipy.signal import convolve
+from util import flatten2d
 
 class Basic(SingleInput):
     
@@ -12,8 +13,9 @@ class Basic(SingleInput):
         SingleInput.__init__(\
                 self,needs = needs, key = key, nframes = nframes, step = step)
         
-        self._inshape = inshape
-        self._outshape = outshape
+        
+        self._inshape = norm_shape(inshape)
+        self._outshape = norm_shape(outshape)
         self._op = op
         
     def dim(self,env):
@@ -24,9 +26,10 @@ class Basic(SingleInput):
         return np.float32
     
     def _process(self):
-        data = np.array(self.in_data[:self.nframes])
-        data = data.reshape(self._inshape)
-        return [self._op(data)]
+        data = self.in_data
+        l = data.shape[0]
+        data = data.reshape((l,) + self._inshape)
+        return self._op(data).reshape((l,) + self._outshape)
 
 
 
@@ -40,7 +43,9 @@ class Abs(Basic):
                        nframes = nframes, step = step)
 
 class UnitNorm(Basic):
-    
+    '''
+    Return input given unit-norm, example-wise
+    '''
     def __init__(self, inshape = None, needs = None, key = None, 
                  nframes = 1, step = 1):
         
@@ -79,8 +84,7 @@ class SliceX(SingleInput):
         return np.float32
     
     def _process(self):
-        data = np.array(self.in_data[:self.nframes]).ravel()
-        return [data[self._slice]]
+        return flatten2d(self.in_data)[:,self._slice]
 
 
 class Threshold(SingleInput):
@@ -101,8 +105,8 @@ class Threshold(SingleInput):
         return self._dim
     
     def _process(self):
-        data = np.array(self.in_data).ravel()
-        return [(data > self._thresh).astype(self.dtype)]
+        data = flatten2d(self.in_data)
+        return (data > self._thresh).astype(self.dtype)
 
 class Sharpen(SingleInput):
     '''
@@ -119,7 +123,7 @@ class Sharpen(SingleInput):
         
         self._filter = -np.ones(kernel_size)
         self._filter[int(kernel_size / 2)] = sharpness
-        self._inshape = inshape
+        self._inshape = norm_shape(inshape)
     
     def dim(self,env):
         return self._inshape
@@ -129,6 +133,11 @@ class Sharpen(SingleInput):
         return np.float32
     
     def _process(self):
-        d = np.array(self.in_data[:self.nframes]).reshape(self._inshape)
-        return convolve(d,self._filter,mode = 'same')
+        data = self.in_data
+        l = data.shape[0]
+        data = data.reshape((l,) + self._inshape)
+        out = np.zeros(data.shape)
+        for i,d in enumerate(data):
+            out[i] = convolve(d,self._filter,mode = 'same')
+        return out
         
