@@ -138,7 +138,9 @@ class Dummy(Extractor):
         Extractor.__init__(self, key = feature_name, needs = needs)
         self._c = controller
         self._id = _id
-        self.stream = None
+        self._count = 0
+        self._cs = Environment.instance.chunksize_frames
+        self._r = None
     
     def dim(self,env):
         return ()
@@ -147,20 +149,21 @@ class Dummy(Extractor):
     def dtype(self):
         return np.float32
     
-    def _init_stream(self):
-        self.stream = xrange(len(self._c[self._id])).__iter__()
 
     def _process(self):
-        if None is self.stream:
-            self._init_stream()
-        try:
-            return self.stream.next()
-        except StopIteration:
+        if None is self._length:
+            l= len(self._c[self._id])
+            self._r = np.arange(l)
+             
+        
+        stop = self._count + self._cs
+        r = self._r[self._count : self._count + self._cs]
+        if stop > self._r.shape[0]:
             self.out = None
             self.done = True
-            if self.sources:
-                self.sources[0].done = True
-                self.sources[0].out = None
+        else:
+            self._count += self._cs
+        return r
     
     def __hash__(self):
         return hash(\
@@ -177,7 +180,7 @@ class Precomputed(Dummy):
     
     def __init__(self,_id,feature_name,controller,needs = None):
         Dummy.__init__(self,_id,feature_name,controller, needs = needs)
-        
+        self.stream = None
     
     def dim(self,env):
         '''
@@ -204,7 +207,19 @@ class Precomputed(Dummy):
         # get an iterator that will iterate over this feature with 
         # the step size we just discovered
         self.stream = self._c.iter_feature(\
-                                self._id,self.key,step = self.step)
+                                self._id,
+                                self.key,
+                                step = self.step,
+                                chunksize = Environment.instance.chunksize_frames)
+    def _process(self):
+        if None is self.stream:
+            self._init_stream()
+        try:
+            return self.stream.next()
+        except StopIteration:
+            self.done = True
+            self.out = None
+            
 
 # TODO: Write better documentation
 class Address(object):

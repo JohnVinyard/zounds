@@ -81,7 +81,7 @@ class DiskAcquirer(Acquirer):
                 except IOError:
                     print 'ERROR! : data from %s was unreadable' % fn
             else:
-                print 'Skipping %s. It\'s already in the database.' % fn
+                print 'Skipping %s. It\'s already in the database.'  % fn
             
             
             
