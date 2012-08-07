@@ -60,7 +60,7 @@ import numpy as np
 from zounds.model.model import Model
 # KLUDGE: This is temporarily set to point at the experimental, chunk-based
 # analyze2 module
-from zounds.analyze2.feature.rawaudio import AudioFromDisk,AudioFromMemory
+from zounds.analyze.feature.rawaudio import AudioFromDisk,AudioFromMemory
 
 
 class Pattern(Model):

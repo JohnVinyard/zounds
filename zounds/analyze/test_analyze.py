@@ -1,7 +1,7 @@
 from __future__ import division
 import numpy as np
 import unittest
-from zounds.analyze.audiostream import AudioStream,BadStepSizeException
+from zounds.analyze.audiostream import AudioStream
 from scikits.audiolab import Sndfile,Format
 from uuid import uuid4
 from os import remove
@@ -44,11 +44,6 @@ class AudioStreamTests(unittest.TestCase):
         fn = self.filename()
         self.assertRaises(IOError,lambda : AudioStream(fn).__iter__().next())
     
-        
-    def test_badstepsize(self):
-        fn = self.make_sndfile(44101,2048,44100)
-        self.assertRaises(BadStepSizeException,AudioStream,fn,44100,2048,1023)
-        self.remove_sndfile(fn)
         
     def get_frames(self,
                    length,

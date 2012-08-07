@@ -2,6 +2,8 @@ import numpy as np
 from abc import ABCMeta,abstractproperty,abstractmethod
 from zounds.nputil import pad
 from zounds.util import recurse,sort_by_lineage
+from zounds.nputil import windowed
+from zounds.environment import Environment
 
 class CircularDependencyException(BaseException):
     '''
@@ -12,20 +14,15 @@ class CircularDependencyException(BaseException):
         BaseException.__init__(\
             'Circular dependency detected between %s and %s' % (e1,e2))
 
+
 class Extractor(object):
-    '''
-    An extractor collects input from one or more sources until it
-    has enough data to perform some arbitrary calculation.  It then
-    makes this calculation available to other extractors that may
-    depend on it.
-    '''
+    
     __metaclass__ = ABCMeta
     
-    
-    def __init__(self,needs=None,nframes=1,step=1,key=None):
+    def __init__(self, needs = None, nframes = 1, step = 1, key = None):
         
         self.set_sources(needs = needs)
-            
+        
         # the number of frames needed from all sources to
         # do work
         if nframes < 1:
@@ -52,6 +49,7 @@ class Extractor(object):
         # extractor chain containing infinite extractors must be aware of this
         # fact to avoid creating artifically long lists of features
         self.finite = True
+    
     
     @abstractmethod
     def dim(self,env):
@@ -83,6 +81,10 @@ class Extractor(object):
         # a dictionary mapping the extractors on which we depend
         # to the input we'll be collecting from them
         self.input = dict([(src,[]) for src in self.sources])
+        # a dictionary mapping the extractors on which we depend
+        # to the leftover portions of the inputs we'll be collecting from
+        self.leftover = dict([(src,None) for src in self.sources])
+
         
     @property
     def is_root(self):
@@ -140,39 +142,37 @@ class Extractor(object):
         pass
     
     def collect(self):
-        '''
-        Collect data from the extractors on which we depend
-        '''
+        alldone = all([s.done for s in self.sources])
         
         if all([s.out is not None for s in self.sources]):
             for src in self.sources:
-                self.input[src].append(src.out)
+                indata = src.out
+                if self.leftover[src] is None:
+                    self.leftover[src] = np.zeros((0,) + indata.shape[1:])
+                indata = np.concatenate([self.leftover[src],indata])
+                leftover,data = windowed(\
+                                indata,self.nframes,self.step,dopad = alldone)
+                self.input[src].append(data)
+                self.leftover[src] = leftover
         
-        if all([s.done for s in self.sources]):
-            for src in self.sources:
-                if len(self.input[src]):
-                    # maybe have a partial input that needs to be padded
-                    self.input[src] = pad(self.input[src],self.nframes)
-                
-            self.done = True
-        
+        self.done = alldone
     
+    # KLUDGE: I'm assuming that chunksize will always be larger than 
+    # the highest nframes value. 
     def process(self):
-        '''
-        Decide if we have enough data to perform feature extraction. If so,
-        process the data and get rid of any input data we won't be needing 
-        again.
-        '''
-        full = all([len(v) == self.nframes for v in self.input.values()]) 
-        if full:
-            # we have enough info to do some processing
-            self.out = self._process()
-            # remove step size from our inputs
-            for src in self.sources:
-                self.input[src] = self.input[src][self.step:]
-        else:
+        # Ensure that there's enough data to perform processing
+        full = all([len(self.input[src]) for src in self.sources])
+        if not full:
             self.out = None
+            return
+
+        for src in self.sources:            
+            data = np.array(self.input[src][0])    
+            self.input[src] = data
     
+        self.out = self._process()
+        for src in self.sources:
+            self.input[src] = []
     
     @abstractmethod
     def _process(self):
@@ -208,6 +208,8 @@ class Extractor(object):
     def __str__(self):
         return self.__repr__()
 
+
+
 class SingleInput(Extractor):
     '''
     This class addresses the common case in which an extractor
@@ -237,7 +239,7 @@ class SingleInput(Extractor):
     @property
     def dtype(self):
         raise NotImplemented()
-    
+
 class RootlessExtractorChainException(BaseException):
     '''
     Raised when an extractor chain is made up entirely of consumers; there's
@@ -293,6 +295,7 @@ class ExtractorChain(object):
                 c.process()
                 if c.out is not None:
                     yield c.key if c.key else c,c.out
+            
                     
                 
     def collect(self,nframes = None):

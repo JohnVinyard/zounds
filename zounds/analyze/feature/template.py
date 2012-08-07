@@ -6,32 +6,14 @@ from zounds.analyze.extractor import SingleInput
 from zounds.model.pipeline import Pipeline
 from multiprocessing import Pool
 from zounds.nputil import toeplitz2dc
-from scipy.sparse import csr_matrix
-from sklearn.metrics.pairwise import euclidean_distances as ed
 from zounds.util import flatten2d
 from zounds.learn.nnet.nnet import sigmoid
 
 def toeplitz2d2(patch,size,silence_thresh):
     l = toeplitz2dc(patch.astype(np.float32),size)
-    l -= l.min()
     nz = l.sum(1) > silence_thresh
-    return sun(l),np.nonzero(nz)[0]
-
-def toeplitz2d_exp(patch,size,silence_thresh):
-    l = toeplitz2dc(patch.astype(np.float32),size)
-    #nz = (l - l.min()).sum(1) > silence_thresh
-    
-    # exclude any patches that are below the silence threshold, take the
-    # example-wise unit-norm, and reshape into 3 dimensions (examples,x,y)
-    s = l.sum(1)
-    nz = np.where(s > s.mean())[0]
-    l = sun(l[nz])
-    l = l.reshape((l.shape[0],) + size)
-    # take the 2d fft of each example
-    f = np.abs(np.fft.rfft2(l))
-    return flatten2d(f)
-    
-    
+    # take the unit norm of the patches that are above the loudness threshold
+    return sun(l[np.nonzero(nz)[0]])
 
 
 def toeplitz2d(patch,size,silence_thresh):
@@ -82,35 +64,20 @@ def toeplitz2d(patch,size,silence_thresh):
 
 def feature(args):
     patch,size,thresh,codebook,weights,activation,act_thresh = args
-    mat,nz = toeplitz2d2(patch, size, thresh)
-    if not len(nz):
-        return np.zeros(codebook.shape[0])
     
-    mat = mat[nz]
-    if weights is not None:
-        mat *= weights
+    out = np.ndarray((patch.shape[0],codebook.shape[0]))
+    for i in xrange(patch.shape[0]):
+        mat = toeplitz2d2(patch[i], size, thresh)
+        if not mat.shape[0]:
+            return np.zeros(out.shape)
+        
+        if weights is not None:
+            mat *= weights
+        
+        dist = cdist(mat,codebook)
+        out[i] = activation(dist,act_thresh)
     
-    
-    #take the n patches with the best snr ratio
-    #snr = mat.mean(1) / mat.std(1)
-    #srt = np.argsort(snr)
-    #mat = mat[srt[:1200]]
-    
-    dist = cdist(mat,codebook)
-    return activation(dist,act_thresh)
-
-def feature_exp(args):
-    # This is different from feature in that it expects "unimportant" entries
-    # to already be removed from mat.
-    patch,size,thresh,codebook,weights,activation,act_thresh = args
-    mat = toeplitz2d_exp(patch, size, thresh)
-    if not mat.shape[0]:
-        return np.zeros(len(codebook))
-    
-    if weights is not None:
-        mat *= weights
-    dist = cdist(mat,codebook)
-    return activation(dist,act_thresh)
+    return out
 
 
 def _soft_activation(dist,act_thresh):
@@ -118,14 +85,10 @@ def _soft_activation(dist,act_thresh):
     Return 1 / distance, so that templates with the lowest distances
     have the highest values
     '''
-    # variations on the triangle activation function recommended here:
-    # http://robotics.stanford.edu/~ang/papers/nipsdlufl10-AnalysisSingleLayerUnsupervisedFeatureLearning.pdf
-    dist[dist == 0] = 1e-2
-    dist = 1. / dist
-    dist -= dist.mean(1)[:,np.newaxis]
-    dist[dist < 0] = 0
-    return dist.max(0)
-    
+    m = dist.min(0)
+    m[m == 0] = 1e-2
+    return 1. / m
+
 def _hard_activation(dist,act_thresh):
     '''
     Pass the soft activation through a hard thresholding function
@@ -230,12 +193,12 @@ class TemplateMatch(SingleInput):
         
     def _process_multi(self,data):
         pool = Pool(self._nbooks)
-        results = [pool.map(self.feature_func,self._args)]
+        results = pool.map(self.feature_func,self._args)
         pool.close()
         return results
     
     def _process(self):
-        data = np.array(self.in_data[:self.nframes]).reshape(self._inshape)
+        data = self.in_data
         self._update_args(data)
-        return [np.concatenate(self.__process(data)).ravel()]
-              
+        out = self.__process(data)
+        return np.concatenate(out,axis = 1)

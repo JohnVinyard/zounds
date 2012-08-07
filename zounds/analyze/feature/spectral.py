@@ -16,7 +16,7 @@ from zounds.nputil import safe_log,safe_unit_norm as sun
 class FFT(SingleInput):
     
     def __init__(self, needs = None, key = None, inshape = None, 
-                 nframes = 1, step = 1, axis = 0):
+                 nframes = 1, step = 1, axis = -1):
         
         SingleInput.__init__(self, needs = needs, nframes = nframes, 
                              step = step, key = key)
@@ -41,7 +41,7 @@ class FFT(SingleInput):
         
         # create a list of slices to remove the zero-frequency term along
         # whichever axis we're computing the FFT
-        self._slice = [slice(None) for i in xrange(len(self._inshape))]
+        self._slice = [slice(None) for i in xrange(len(self._inshape) + 1)]
         # this slice will remove the zero-frequency term
         self._slice[self._axis] = slice(1,None)
 
@@ -49,12 +49,14 @@ class FFT(SingleInput):
     def dtype(self):
         return np.float32
     
-    def dim(self,env):    
+    def dim(self,env):
         return self._dim
     
     def _process(self):
-        data = np.array(self.in_data[:self.nframes]).reshape(self._inshape)
-        return np.abs(np.fft.rfft(data,axis = self._axis)[self._slice]).ravel()
+        data = self.in_data
+        # return the magnitudes of a real-valued fft along the axis specified,
+        # excluding the zero-frequency term
+        return np.abs(np.fft.rfft(data,axis = self._axis)[self._slice])
     
 class BarkBands(SingleInput):
     
@@ -105,16 +107,16 @@ class BarkBands(SingleInput):
             self._triwins.append(triwin)
     
     def _process(self):
-        cb = np.ndarray(self.nbands,dtype=np.float32)
-        fft_frame = np.array(self.in_data[0]).ravel()
-        for i in xrange(self.nbands):
-            cb[i] = \
-                (fft_frame[self._slices[i]] * self._triwins[i]).sum()
-        
-        return cb
-    
-    
-    
+        fft = self.in_data
+        return bark.bark_bands(self.samplerate, 
+                               self.windowsize, 
+                               self.nbands, 
+                               self.start_freq_hz, 
+                               self.stop_freq_hz, 
+                               fft, 
+                               fft.shape[0],
+                               self._slices,
+                               self._triwins)
 
 class Loudness(SingleInput):
     
@@ -129,8 +131,7 @@ class Loudness(SingleInput):
         return np.float32
         
     def _process(self):
-        return np.sum(self.in_data[:self.nframes])
-
+        return np.sum(self.in_data,axis = -1)
 
 
 class SpectralCentroid(SingleInput):
