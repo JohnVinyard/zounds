@@ -12,7 +12,7 @@ class WindowedAudioSynthesizer(object):
         self.stepsize = stepsize
     
     def __call__(self,frames):
-        output = np.zeros(self.stepsize + len(frames) * self.stepsize)
+        output = np.zeros(self.windowsize + len(frames) * self.stepsize)
         for i,f in enumerate(frames):
             start = i * self.stepsize
             stop = start + self.windowsize
@@ -25,7 +25,7 @@ class WindowedAudioSynthesizer(object):
     
     def playraw(self,audio):
         try:
-            play(np.tile(audio,(2,1)) * .6)
+            play(np.tile(audio,(2,1)) * .2)
         except KeyboardInterrupt:
             pass
 

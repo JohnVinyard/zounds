@@ -1,7 +1,5 @@
 TOOO:
 -------------
-- Ensure that syncing is working
-
 - Standardize "inshape"-type parameter names
 
 - Allow step-sizes that aren't windowsize / 2
