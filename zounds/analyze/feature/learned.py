@@ -5,7 +5,7 @@ from zounds.analyze.extractor import SingleInput
 from zounds.model.pipeline import Pipeline
 from itertools import product
 from zounds.util import flatten2d
-from zounds.nputil import norm_shape
+from zounds.nputil import norm_shape,sliding_window
 
 # TODO: Write tests!
 class Learned(SingleInput):
@@ -90,48 +90,33 @@ class Tile(SingleInput):
         if ravel:
             # flatten the output
             self._dim = \
-                np.product((self._ntiles,np.product(self._out_tile_shape)))
+                (np.product((self._ntiles,np.product(self._out_tile_shape))),)
         else:
             # return an ntiles x out_tile_shape array
             self._dim = \
                 (self._ntiles,) + tuple(np.array(self._out_tile_shape).ravel())
         
         self._dtype = dtype
-        # generate all slices for each dimension
-        self._slices = [[slice(j,j+self._slicedim[i]) \
-                         for j in range(0,self._inshape[i],self._slicedim[i])] \
-                         for i in range(len(self._inshape))]
-        
-        
-        self._slice_prod = list(product(*self._slices))
-        self._nslices = len(self._slice_prod)
 
-    
     def dim(self,env):
         return self._dim
 
     @property
     def dtype(self):
         return self._dtype
-    
-    
+        
     def _process(self):
-        # reshape incoming data as necessary
-        # Get each slice from each example and flatten the list into 2d
-        # pass the entire list to the learning algorithm
-        # reshape the output to be (nexamples,self._dim)
-        
         data = self.in_data
+        # get the number of incoming samples
         l = data.shape[0]
+        # reshape as specified
         data = np.reshape((l,) + self._inshape)
-        all_slices = np.ndarray((l*self._nslices,) + self._slicedim)
-        
-        
-        data = np.reshape(self.in_data[:self.nframes],self._inshape)
-        # activate the pipeline on each slice of the input
-        a = np.array([self.pipeline(data[coords].ravel()) \
-                      for coords in product(*self._slices)]).astype(self._dtype)
-        return a.ravel() if self._ravel else a
+        # Make a list of every slice from every example
+        examples = flatten2d(sliding_window(data,(1,) + self._slicedim))
+        # activate the pipeline on each slice
+        transformed = self.pipeline(examples)
+        # reshape so that the first dimension once again represents examples
+        return transformed.reshape((l,) + self._dim)
         
         
         

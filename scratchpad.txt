@@ -1,12 +1,11 @@
 TOOO:
 -------------
-- Do tile vs tile2 timing tests
 
-- Do tile vs toeplitz2d timing tests 
+- Finish updating tile extractor
 
-- Blog entry explaining tile2 method
+- Tests for new sliding_window function
 
--Finish updating tile extractor
+- Blog entry explaining sliding_window method
 
 - Finish updating extractors
 
@@ -15,6 +14,8 @@ TOOO:
 - update all tests
 
 - Bug processing 15461,9288,32437,1903 Broadcasting error.
+
+- TemplateMatch should use the new sliding_window function
 
 - LSH for conv feature?
 
