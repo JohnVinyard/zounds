@@ -1,6 +1,6 @@
 import numpy as np
 from numpy.lib.stride_tricks import as_strided as ast
-
+from zounds.util import flatten2d
 
 
 def norm_shape(shape):
@@ -28,34 +28,6 @@ def norm_shape(shape):
     raise TypeError('shape must be an int, or a tuple of ints')
 
 
-def tile(a,slices):
-    slices = list(slices)
-    for i in xrange(len(slices)):
-        slices[i] = list(slices[i]) if hasattr(slices[i],'__iter__') else [slices[i]]
-    slicedim = norm_shape(tuple([s.stop - s.start for s in slices[0]]))
-    newlen = a.shape[0]*len(slices)
-    out = np.ndarray((newlen,) + slicedim)
-    t = [a[[slice(None)] + s] for s in slices]
-    for i,q in enumerate(t):
-        out[i::len(t),...] = q
-    return out
-
-def tile2(a,ws,ss = None):
-    if None is ss:
-        ss = ws
-    print a.shape
-    ws = np.array(ws)
-    ss = np.array(ss)
-    shape = np.array(a.shape)
-    newshape = norm_shape(((shape - ws) // ss) + 1)
-    newshape += norm_shape(ws)
-    print newshape
-    newstrides = norm_shape(np.array(a.strides) * ss) + a.strides
-    print newstrides
-    strided = ast(a,shape = newshape,strides = newstrides)
-    meat = len(ws) if ws.shape else 0
-    firstdim = (np.product(newshape[:-meat]),) if ws.shape else ()
-    return strided.reshape(firstdim + newshape[-meat:]).squeeze()
     
 def safe_log(a):
     '''
@@ -192,26 +164,60 @@ def windowed(a,windowsize,stepsize = None,dopad = False):
     return leftover,np.ndarray.__new__(\
             np.ndarray,strides=newstrides,shape=newshape,buffer=a,dtype=a.dtype)
 
-from itertools import product
-if __name__ == '__main__':
+
+    
+def sliding_window(a,ws,ss = None):
     '''
-    a = np.arange(60).reshape((10,6))
-    slices = [slice(0,3),slice(3,6)]
-    print a
-    print tile2(a,(1,3))
+    Return a sliding window over a in any number of dimensions
     
-    a = np.arange(48).reshape((3,4,4))
-    slices = [slice(0,2),slice(2,4)]
-    slices = product(slices,slices)
-    print a
-    print tile2(a,slices)
+    Parameters:
+        a  - an n-dimensional numpy array
+        ws - an int (a is 1D) or tuple (a is 2D or greater) representing the size 
+             of each dimension of the window
+        ss - an int (a is 1D) or tuple (a is 2D or greater) representing the 
+             amount to slide the window in each dimension. If not specified, it
+             defaults to ws.
+    
+    Returns
+        an array containing each n-dimensional window from a
     '''
-    a = np.arange(60).reshape((10,6))
-    print a
-    print tile2(a,(1,3))
     
-    a = np.arange(48).reshape((3,4,4))
-    print a
-    print tile2(a,(1,2,2))
+    if None is ss:
+        # ss was not provided. the windows will not overlap in any direction.
+        ss = ws
     
+    # convert ws, ss, and a.shape to tuples so that we can do math in every 
+    # dimension at once.
+    ws = np.array(ws)
+    ss = np.array(ss)
+    shape = np.array(a.shape)
     
+    # ensure that ws, ss, and a.shape all have the same number of dimensions
+    ls = [len(ws),len(ss),len(shape)]
+    if 1 != len(set(ls)):
+        raise ValueError(\
+        'a.shape, ws and ss must all have the same length. They were %s' % str(ls))
+    
+    # ensure that ws is smaller than a in every dimension
+    if np.any(ws > shape):
+        raise ValueError(\
+        'ws cannot be larger than a in any dimension.\
+ a.shape was %s and ws was %s' % (str(a.shape),str(ws)))
+    
+    # how many slices will there be in each dimension
+    newshape = norm_shape(((shape - ws) // ss) + 1)
+    # the shape of the strided array will be the number of slices in each dimension
+    # plus the shape of the window (tuple addition)
+    newshape += norm_shape(ws)
+    # the strides tuple will be the array's strides multiplied by step size, plus
+    # the array's strides (tuple addition)
+    newstrides = norm_shape(np.array(a.strides) * ss) + a.strides
+    strided = ast(a,shape = newshape,strides = newstrides)
+    # Collapse strided so that it has one more dimension than the window.  I.e.,
+    # the new array is a flat list of slices.
+    meat = len(ws) if ws.shape else 0
+    firstdim = (np.product(newshape[:-meat]),) if ws.shape else ()
+    dim = firstdim + (newshape[-meat:])
+    # remove any dimensions with size 1
+    dim = filter(lambda i : i != 1,dim)
+    return strided.reshape(dim)
