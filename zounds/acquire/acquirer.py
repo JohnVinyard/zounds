@@ -78,8 +78,11 @@ class DiskAcquirer(Acquirer):
                     print 'importing %s, %s, file %i of %i' % \
                              (self.source,fn,i+1,lf)
                     self.framecontroller.append(self.extractor_chain(pattern))
-                except IOError:
-                    print 'ERROR! : data from %s was unreadable' % fn
+                except Exception,e:
+                    # KLUDGE: Do some real logging here
+                    # TODO: How do I recover from an error once some data has
+                    # been written?
+                    print e
             else:
                 print 'Skipping %s. It\'s already in the database.'  % fn
             

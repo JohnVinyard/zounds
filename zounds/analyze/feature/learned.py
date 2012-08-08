@@ -4,6 +4,8 @@ from zounds.environment import Environment
 from zounds.analyze.extractor import SingleInput
 from zounds.model.pipeline import Pipeline
 from itertools import product
+from zounds.util import flatten2d
+from zounds.nputil import norm_shape
 
 # TODO: Write tests!
 class Learned(SingleInput):
@@ -37,11 +39,12 @@ class Learned(SingleInput):
         return self._dtype
     
     def _process(self):
-        data = np.array(self.in_data[:self.nframes])
-        data = data.reshape(np.product(data.shape))
-        return [self.pipeline(data)]
+        return self.pipeline(flatten2d(self.in_data))
     
 # TODO: Generalize this to take any extractor, not just a learned one.
+# I'm being held back by the fact that it's difficult to create extractors
+# outside the context of an extractor chain.  This requires that I create one,
+# and that it live and work in isolation.
 class Tile(SingleInput):
     
     def __init__(self, needs = None, key = None, nframes = 1, step = 1,
@@ -63,8 +66,8 @@ class Tile(SingleInput):
         '''
         SingleInput.__init__(self,needs = needs,nframes = nframes, step = step, key = key)
         self.pipeline = Pipeline[pipeline_id]
-        self._inshape = inshape
-        self._slicedim = slicedim
+        self._inshape = norm_shape(inshape)
+        self._slicedim = norm_shape(slicedim)
         self._ravel = ravel
         # ensure that inshape is evenly divisible by slicedim, element-wise
         if np.any(np.mod(inshape,slicedim)):
@@ -76,10 +79,10 @@ class Tile(SingleInput):
         # the total number of tiles
         self._ntiles = np.product(self._nsteps)
         if None is not out_tile_shape:
-            self._out_tile_shape = out_tile_shape
+            self._out_tile_shape = norm_shape(out_tile_shape)
         else:
             try:
-                self._out_tile_shape = self.pipeline.dim
+                self._out_tile_shape = norm_shape(self.pipeline.dim)
             except NotImplemented:
                 raise ValueError('You must either specify out_tile_shape, \
                                 or use a Pipeline instance that implements the\
@@ -98,6 +101,10 @@ class Tile(SingleInput):
         self._slices = [[slice(j,j+self._slicedim[i]) \
                          for j in range(0,self._inshape[i],self._slicedim[i])] \
                          for i in range(len(self._inshape))]
+        
+        
+        self._slice_prod = list(product(*self._slices))
+        self._nslices = len(self._slice_prod)
 
     
     def dim(self,env):
@@ -109,6 +116,17 @@ class Tile(SingleInput):
     
     
     def _process(self):
+        # reshape incoming data as necessary
+        # Get each slice from each example and flatten the list into 2d
+        # pass the entire list to the learning algorithm
+        # reshape the output to be (nexamples,self._dim)
+        
+        data = self.in_data
+        l = data.shape[0]
+        data = np.reshape((l,) + self._inshape)
+        all_slices = np.ndarray((l*self._nslices,) + self._slicedim)
+        
+        
         data = np.reshape(self.in_data[:self.nframes],self._inshape)
         # activate the pipeline on each slice of the input
         a = np.array([self.pipeline(data[coords].ravel()) \
