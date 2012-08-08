@@ -50,7 +50,14 @@ class Reduce(Basic):
             _inshape.extend(inshape)
         except TypeError:
             _inshape.append(inshape)
-        _op = lambda a : op(a,axis = axis)
+        
+        # all dimensions are given in terms of single examples. In reality,
+        # the operation will happen over multiple examples.  If the axis is
+        # negative, this should still work ok. If the axis is zero or positive,
+        # advance it by one so the reduction happens over the correct axis in 
+        # the _process method 
+        realaxis = axis + 1 if axis >= 0 else axis 
+        _op = lambda a : op(a,axis = realaxis)
         
         sh = list(_inshape)
         sh.pop(axis)

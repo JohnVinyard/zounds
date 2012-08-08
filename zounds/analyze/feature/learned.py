@@ -3,7 +3,6 @@ import numpy as np
 from zounds.environment import Environment
 from zounds.analyze.extractor import SingleInput
 from zounds.model.pipeline import Pipeline
-from itertools import product
 from zounds.util import flatten2d
 from zounds.nputil import norm_shape,sliding_window
 

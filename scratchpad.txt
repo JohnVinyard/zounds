@@ -1,9 +1,8 @@
 TOOO:
 -------------
-
-- Finish updating tile extractor
-
 - Tests for new sliding_window function
+
+- Finish updating reduce extractors
 
 - Blog entry explaining sliding_window method
 

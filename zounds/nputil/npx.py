@@ -165,7 +165,6 @@ def windowed(a,windowsize,stepsize = None,dopad = False):
             np.ndarray,strides=newstrides,shape=newshape,buffer=a,dtype=a.dtype)
 
 
-# TODO: It might be handy to not always flatten the slices
 def sliding_window(a,ws,ss = None,flatten = True):
     '''
     Return a sliding window over a in any number of dimensions
