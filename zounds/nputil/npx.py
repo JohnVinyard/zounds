@@ -165,8 +165,8 @@ def windowed(a,windowsize,stepsize = None,dopad = False):
             np.ndarray,strides=newstrides,shape=newshape,buffer=a,dtype=a.dtype)
 
 
-    
-def sliding_window(a,ws,ss = None):
+# TODO: It might be handy to not always flatten the slices
+def sliding_window(a,ws,ss = None,flatten = True):
     '''
     Return a sliding window over a in any number of dimensions
     
@@ -177,6 +177,8 @@ def sliding_window(a,ws,ss = None):
         ss - an int (a is 1D) or tuple (a is 2D or greater) representing the 
              amount to slide the window in each dimension. If not specified, it
              defaults to ws.
+        flatten - if True, all slices are flattened, otherwise, there is an 
+                  extra dimension for each dimension of the input.
     
     Returns
         an array containing each n-dimensional window from a
@@ -213,6 +215,9 @@ def sliding_window(a,ws,ss = None):
     # the array's strides (tuple addition)
     newstrides = norm_shape(np.array(a.strides) * ss) + a.strides
     strided = ast(a,shape = newshape,strides = newstrides)
+    if not flatten:
+        return strided
+    
     # Collapse strided so that it has one more dimension than the window.  I.e.,
     # the new array is a flat list of slices.
     meat = len(ws) if ws.shape else 0
@@ -220,4 +225,4 @@ def sliding_window(a,ws,ss = None):
     dim = firstdim + (newshape[-meat:])
     # remove any dimensions with size 1
     dim = filter(lambda i : i != 1,dim)
-    return strided.reshape(dim)
+    
