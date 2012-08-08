@@ -18,6 +18,7 @@ def ensure_path_exists(filename):
             # This probably means that the path already exists
             pass
 
+# TODO: Maybe this should go in the acquirer module
 def audio_files(path):
     '''
     Return the name of each sound file that Zounds can process in

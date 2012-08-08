@@ -1,31 +1,41 @@
 import numpy as np
-from zounds.util import downsample,downsampled_shape
+from zounds.util import downsample,downsampled_shape,flatten2d
+from zounds.nputil import sliding_window
 from zounds.analyze.extractor import SingleInput
 from basic import Basic
 
 class Downsample(SingleInput):
+    '''
+    Downsample a 2d input
+    '''
     
-    def __init__(self,size = None,factor = None ,needs = None, 
-                 key = None, step = 1, nframes = 1):
+    def __init__(self,inshape = None,factor = None ,needs = None, key = None, 
+                 step = 1, nframes = 1):
         
         SingleInput.__init__(self,needs = needs,key = key,
                              step = step, nframes = nframes)
-        if 2 != len(size):
+        if 2 != len(inshape):
             raise ValueError('Downsample expects a 2d input')
         
-        self.size = size
-        self.factor = factor
+        self._inshape = inshape 
+        self._dim = np.product(downsampled_shape(self._inshape,factor)) 
         
     def dim(self,env):
-        return np.product(downsampled_shape(self.size,self.factor))
+        return self._dim 
     
     @property
     def dtype(self):
         return np.float32
     
     def _process(self):
-        data = np.array(self.in_data[:self.nframes]).reshape(self.size)
-        return downsample(data,self.factor).ravel()
+        data = self.in_data
+        l = data.shape[0]
+        data = data.reshape((l,) + self._inshape)
+        shape = (1,) + self._dim
+        chunks = sliding_window(data,shape,flatten = False).squeeze()
+        # downsample the chunks by taking their average
+        downsampled = np.apply_over_axes(np.mean, chunks, (-1,-2)).squeeze()
+        return flatten2d(downsampled)
         
 
 
