@@ -1,6 +1,6 @@
 import numpy as np
 from zounds.analyze.extractor import Extractor
-
+from zounds.util import flatten2d
 
 class Composite(Extractor):
     '''
@@ -20,7 +20,7 @@ class Composite(Extractor):
         return np.float32
     
     def _process(self):
-        return np.concatenate([np.array(self.input[source]).ravel() \
-                               for source in self.sources]).ravel()
+        return np.concatenate(\
+            [flatten2d(self.input[source]) for source in self.sources],axis = 1)
     
     

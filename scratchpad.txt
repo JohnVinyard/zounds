@@ -1,10 +1,29 @@
 TOOO:
 -------------
-- Standardize "inshape"-type parameter names
+- Do tile vs tile2 timing tests
+
+- Do tile vs toeplitz2d timing tests 
+
+- Blog entry explaining tile2 method
+
+-Finish updating tile extractor
+
+- Finish updating extractors
+
+- Update Learned features to do chunk-based processing
 
 - update all tests
 
+- Bug processing 15461,9288,32437,1903 Broadcasting error.
+
+- LSH for conv feature?
+
+- Standardize "inshape"-type parameter names
+
 - Faster, chunk-based or all-at-once processing for Extractors
+
+- Is it possible to cache the extractor chain so it doesn't have to be rebuilt for
+  each new incoming pattern. Will this require a flush() or reset() method?
 
 - Add a note in the docs about the source distribution being the preferred route
 
@@ -33,8 +52,6 @@ TODO: Sphinx documentation
 
 TODO: Use the python logging module
 
-TODO: Warning for AIM features when overlapping windows are used.
- 
 TODO: There are still a couple broken test references in
 analyze/feature/test_composite.py
 

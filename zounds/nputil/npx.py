@@ -1,4 +1,7 @@
 import numpy as np
+from numpy.lib.stride_tricks import as_strided as ast
+
+
 
 def norm_shape(shape):
     '''
@@ -25,6 +28,35 @@ def norm_shape(shape):
     raise TypeError('shape must be an int, or a tuple of ints')
 
 
+def tile(a,slices):
+    slices = list(slices)
+    for i in xrange(len(slices)):
+        slices[i] = list(slices[i]) if hasattr(slices[i],'__iter__') else [slices[i]]
+    slicedim = norm_shape(tuple([s.stop - s.start for s in slices[0]]))
+    newlen = a.shape[0]*len(slices)
+    out = np.ndarray((newlen,) + slicedim)
+    t = [a[[slice(None)] + s] for s in slices]
+    for i,q in enumerate(t):
+        out[i::len(t),...] = q
+    return out
+
+def tile2(a,ws,ss = None):
+    if None is ss:
+        ss = ws
+    print a.shape
+    ws = np.array(ws)
+    ss = np.array(ss)
+    shape = np.array(a.shape)
+    newshape = norm_shape(((shape - ws) // ss) + 1)
+    newshape += norm_shape(ws)
+    print newshape
+    newstrides = norm_shape(np.array(a.strides) * ss) + a.strides
+    print newstrides
+    strided = ast(a,shape = newshape,strides = newstrides)
+    meat = len(ws) if ws.shape else 0
+    firstdim = (np.product(newshape[:-meat]),) if ws.shape else ()
+    return strided.reshape(firstdim + newshape[-meat:]).squeeze()
+    
 def safe_log(a):
     '''
     Return the element-wise log of an array, checking for negative
@@ -159,3 +191,27 @@ def windowed(a,windowsize,stepsize = None,dopad = False):
     newstrides = (stepsize*s,s) + a.strides[1:]
     return leftover,np.ndarray.__new__(\
             np.ndarray,strides=newstrides,shape=newshape,buffer=a,dtype=a.dtype)
+
+from itertools import product
+if __name__ == '__main__':
+    '''
+    a = np.arange(60).reshape((10,6))
+    slices = [slice(0,3),slice(3,6)]
+    print a
+    print tile2(a,(1,3))
+    
+    a = np.arange(48).reshape((3,4,4))
+    slices = [slice(0,2),slice(2,4)]
+    slices = product(slices,slices)
+    print a
+    print tile2(a,slices)
+    '''
+    a = np.arange(60).reshape((10,6))
+    print a
+    print tile2(a,(1,3))
+    
+    a = np.arange(48).reshape((3,4,4))
+    print a
+    print tile2(a,(1,2,2))
+    
+    
