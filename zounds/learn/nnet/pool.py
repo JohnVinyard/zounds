@@ -5,10 +5,12 @@ from nnet import NeuralNetwork
 from zounds.learn.learn import Learn
 
 
-
+# BUG: Nested pooled features don't work
+# BUG: This doesn't yet do chunk-based processing
 class Pooling(NeuralNetwork,Learn):
     
     def __init__(self,layer0,layer1,pooling_method = np.max):
+        raise Exception('Need to update to perform chunk-based processing')
         self._layer0 = layer0
         self._layer1 = layer1
         self._pooling_method = pooling_method
@@ -29,11 +31,10 @@ class Pooling(NeuralNetwork,Learn):
     def _aggregate(self,data):
         return self._pooling_method(data,axis = 0)
     
+    # TODO: This can probably make use of the nputil.sliding_window function
     def _pool(self,data):
         ld = len(data) if len(data.shape) > 1 else 1
         # how many blocks are we pooling?
-        # KLUDGE: I shouldn't know about the "learn" property here.  Pipeline
-        # should probably have indim and outdim properties
         if 1 == ld:
             pool_size = data.shape[0] / self._layer0.learn.indim
         else:
