@@ -1,8 +1,9 @@
 from __future__ import division
+
 import numpy as np
-from zounds.learn.learn import Learn
 from scipy.spatial.distance import cdist
 
+from zounds.learn.learn import Learn
 
 class Som(Learn):
     
@@ -225,6 +226,6 @@ class Som(Learn):
     
     
     def __call__(self,data):
-        dist = cdist(np.array([data]),self.codebook)[0]
+        dist = cdist(data,self.codebook)
         dist[dist == 0] = 1e-3
         return 1 / dist

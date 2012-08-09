@@ -33,8 +33,8 @@ class KMeans(Learn):
         self.codebook = codebook
     
     def __call__(self,data):
-        l = self.in_data.shape[0]
-        dist = cdist(self.in_data,self.codebook)
+        l = data.shape[0]
+        dist = cdist(data,self.codebook)
         best = np.argmin(dist,axis = 1)
         feature = np.zeros((l,len(self.codebook)),dtype = np.uint8)
         feature[best] = 1
@@ -95,7 +95,7 @@ class SoftKMeans(KMeans):
         KMeans.__init__(self,n_centroids)
     
     def __call__(self,data):
-        dist = cdist(self.in_data,self.codebook)
+        dist = cdist(data,self.codebook)
         dist[dist == 0] = -1e12
         return 1 / dist
     
@@ -110,7 +110,7 @@ class TopNKMeans(KMeans):
     def __call__(self,data):
         # For a more in-depth explanation of what's going on here, check out:
         # http://stackoverflow.com/questions/6155649/sort-a-numpy-array-by-another-array-along-a-particular-axis
-        dist = cdist(self.in_data,self.codebook)
+        dist = cdist(data,self.codebook)
         # for each example, get the sorted distances from each cluster
         srt = np.argsort(dist,axis = -1)
         # for each example, assign the clsuters with the n lowest distances a 1, 
