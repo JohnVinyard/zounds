@@ -158,7 +158,7 @@ class Extractor(object):
         self.done = alldone
     
     # KLUDGE: I'm assuming that chunksize will always be larger than 
-    # the highest nframes value. 
+    # the largest nframes value. 
     def process(self):
         # Ensure that there's enough data to perform processing
         full = all([len(self.input[src]) for src in self.sources])

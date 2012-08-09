@@ -1,9 +1,11 @@
 from __future__ import division
 import numpy as np
+
+from scipy.signal import convolve
+
+from zounds.util import flatten2d
 from zounds.analyze.extractor import SingleInput
 from zounds.nputil import safe_log,safe_unit_norm as sun,norm_shape
-from scipy.signal import convolve
-from util import flatten2d
 
 class Basic(SingleInput):
     

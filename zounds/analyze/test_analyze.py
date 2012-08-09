@@ -1,20 +1,13 @@
 from __future__ import division
 import unittest
-from uuid import uuid4
 import os
 from math import ceil
-
 import numpy as np
-from scikits.audiolab import Sndfile,Format
-
 from zounds.analyze.audiostream import AudioStream
 from zounds.util import flatten2d
+from zounds.testhelper import make_sndfile,filename
 
-
-
-# TODO: How do I cleanup wave files for failed tests?
-
- ## AudioStreamTests ##########################################################
+## AudioStreamTests ##########################################################
 class AudioStreamTests(unittest.TestCase):
     
     
@@ -25,29 +18,10 @@ class AudioStreamTests(unittest.TestCase):
         for tr in self._to_remove:
             os.remove(tr)
     
-    @classmethod
-    def filename(cls):
-        return '%s.wav' % str(uuid4())
-    
-    @classmethod
-    def make_signal(cls,length,winsize):
-        signal = np.ndarray(int(length))
-        for i,w, in enumerate(xrange(0,int(length),winsize)):
-            signal[w:w+winsize] = i
-        return signal
-    
-    
-    def make_sndfile(self,cls,length,winsize,samplerate,channels=1):
-        signal = cls.make_signal(length, winsize)
-        filename = cls.filename() 
-        sndfile = Sndfile(filename,'w',Format(),channels,samplerate)
-        if channels == 2:
-            signal = np.tile(signal,(2,1)).T
-        sndfile.write_frames(signal)
-        sndfile.close()
-        self._to_remove.append(filename)
-        return filename
-    
+    def make_sndfile(self,length,winsize,samplerate,channels = 1):
+        fn = make_sndfile(length,winsize,samplerate,channels = channels)
+        self._to_remove.append(fn)
+        return fn
     
     def get_frames(self,
                    length,
@@ -70,7 +44,7 @@ class AudioStreamTests(unittest.TestCase):
         
     
     def test_nonexistentfile(self):
-        fn = self.filename()
+        fn = filename()
         self.assertRaises(IOError,lambda : AudioStream(fn).__iter__().next())
         
     def test_lt_windowsize(self):
@@ -120,10 +94,11 @@ from zounds.analyze.extractor import \
     
 class RootExtractor(Extractor):
     
-    def __init__(self,shape=1,totalframes=10,key = None):
+    def __init__(self,shape=1,totalframes=10,chunksize = 5,key = None):
         self.shape = shape
         Extractor.__init__(self,key = key)
         self.framesleft = totalframes
+        self.chunksize = chunksize
     
     
     def dim(self,env):
@@ -134,18 +109,13 @@ class RootExtractor(Extractor):
         return np.int32
     
     def _process(self):
-        self.framesleft -= 1
-        
-        # TODO: Derived classes shouldn't have to know to set done to
-        # True and return None. There should be a simpler way
-        if self.framesleft < 0:
+        out = np.ones(self.chunksize) if self.shape == 1 \
+                else np.ones((self.chunksize,self.shape))
+        self.framesleft -= self.chunksize
+        if self.framesleft <= 0:
             self.done = True
             self.out = None
-            return None
-        
-        if self.shape == 1:
-            return 1
-        return np.ones(self.shape)
+        return out
 
 class SumExtractor(Extractor):
     
@@ -154,14 +124,17 @@ class SumExtractor(Extractor):
         
     
     def dim(self,env):
-        return (1,)
+        return ()
     
     @property
     def dtype(self):
         return np.int32
         
     def _process(self):
-        return np.sum([v for v in self.input.values()]) 
+        # Sum the sums of all inputs, example-wise. This should result in a 1D array
+        src_sums = np.concatenate([np.sum(v,axis = 1) for v in self.input.values()],axis = 1)
+        out = np.sum(src_sums,axis = 1)
+        return out 
     
     
 class NoOpExtractor(Extractor):
@@ -288,7 +261,7 @@ class SingleInputTests(unittest.TestCase):
         si.collect()
         data = np.array(si.in_data)
         self.assertTrue(data is not None)
-        compare = np.array([[1,1]])
+        compare = np.ones((1,re.chunksize,re.shape))
         self.assertEqual(compare.shape,data.shape)
         self.assertTrue(np.all(data == compare))
         
@@ -328,7 +301,7 @@ class ExtractorChainTests(unittest.TestCase):
         self.assertEqual(1,len(d))
         self.assertTrue(d.has_key(re))
         v = d[re]
-        self.assertEqual(10,len(v))
+        self.assertEqual((2,5),v.shape)
         self.assertTrue(all([q == 1 for q in v]))
         
         
@@ -357,8 +330,11 @@ class ExtractorChainTests(unittest.TestCase):
         self.assertTrue(d.has_key(se))
         rev = np.array(d[re])
         sev = np.array(d[se])
-        self.assertEqual((10,10),rev.shape)
-        self.assertEqual((5,),sev.shape)
+        self.assertEqual((2,5,10),rev.shape)
+        # sev is jagged here, and consequently has a dtype of object.  We're
+        # calling concatenate so we can easily find out how many elements sev
+        # contains
+        self.assertEqual(5,np.concatenate(sev).size)
         self.assertTrue(all([s==20 for s in sev]))
         
     def test_no_root(self):
@@ -406,9 +382,9 @@ class ExtractorChainTests(unittest.TestCase):
         ec = ExtractorChain([se,re])
         d = ec.collect()
         inp = np.array(d[re])
-        self.assertEqual((10,),inp.shape)
+        self.assertEqual((2,5),inp.shape)
         output = np.array(d[se])
-        self.assertEqual((10,1),output.shape)
+        self.assertEqual((2,5),output.shape)
         
     def test_noop_multidim(self):
         re = RootExtractor(shape=10)
@@ -416,9 +392,9 @@ class ExtractorChainTests(unittest.TestCase):
         ec = ExtractorChain([se,re])
         d = ec.collect()
         inp = np.array(d[re])
-        self.assertEqual((10,10),inp.shape)
+        self.assertEqual((2,5,10),inp.shape)
         output = np.array(d[se])
-        self.assertEqual((10,1,10),output.shape)
+        self.assertEqual((2,5,10),output.shape)
     
     def test_getitem_int(self):
         re = ShimExtractor(key = 'oh')

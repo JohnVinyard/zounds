@@ -93,7 +93,7 @@ class AudioFromMemory(AudioSamples):
         
         def __init__(self,samples,chunksize,windowsize,stepsize):
             object.__init__(self)
-            self.chunksize = chunksize
+            self._chunksize = chunksize
             self.windowsize = windowsize
             self.stepsize = stepsize
             self.samples = samples

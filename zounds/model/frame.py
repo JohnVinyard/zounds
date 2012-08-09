@@ -141,6 +141,7 @@ class Dummy(Extractor):
         self._count = 0
         self._cs = Environment.instance.chunksize_frames
         self._r = None
+        self._length = None
     
     def dim(self,env):
         return ()
@@ -152,8 +153,8 @@ class Dummy(Extractor):
 
     def _process(self):
         if None is self._length:
-            l= len(self._c[self._id])
-            self._r = np.arange(l)
+            self._length = len(self._c[self._id])
+            self._r = np.arange(self._length)
              
         
         stop = self._count + self._cs
