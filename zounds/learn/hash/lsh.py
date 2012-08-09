@@ -52,7 +52,7 @@ class Lsh(Learn):
             
     
     def __call__(self,data):
-        arr = np.sign(np.dot(self.hashes,data))
+        arr = np.sign(np.dot(self.hashes,data.T).T)
         return arr > 0
 
 
@@ -65,6 +65,10 @@ class BinaryLsh(Lsh):
                   # 64-bit unsigned integer
                   64 : 'Q'
                   }
+    NP_TYPES = {
+                'L' : np.uint32,
+                'Q' : np.uint64
+                }
     
     def __init__(self,size,nhashes = 32):
         keys = BinaryLsh.TYPE_CODES.keys()
@@ -72,6 +76,7 @@ class BinaryLsh(Lsh):
             raise ValueError('nhashes must be in %s' % str(keys))
         Lsh.__init__(self,size,nhashes = nhashes)
         self._type_code = BinaryLsh.TYPE_CODES[nhashes]
+        self._np_type = BinaryLsh.NP_TYPES[self._type_code]
     
     def _check_unique(self,nsamples,hashes,samples):
         results = np.zeros(nsamples)
@@ -80,8 +85,13 @@ class BinaryLsh(Lsh):
         return len(np.unique(results))
     
     def __call__(self,data):
+        l = data.shape[0]
+        # get an l x bits boolean array, representing the coded inputs
         arr = Lsh.__call__(self,data)
+        # create a bit array from the boolean array
         b = bitarray()
-        b.extend(arr)
-        return struct.unpack(self._type_code,b.tobytes())[0]
-    
+        b.extend(arr.ravel())
+        # unpack the results into a 1D numpy array 
+        return np.array(\
+            struct.unpack(self._type_code * l,b.tobytes()),
+            dtype = self._np_type)
