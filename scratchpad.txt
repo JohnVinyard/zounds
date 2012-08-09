@@ -1,7 +1,5 @@
 TOOO:
 -------------
-- Tests for new sliding_window function
-
 - Blog entry explaining sliding_window method
 
 - update all tests
