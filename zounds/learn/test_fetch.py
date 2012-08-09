@@ -3,12 +3,13 @@ from uuid import uuid4
 import os
 import numpy as np
 
-from zounds.analyze.test_analyze import AudioStreamTests
+
 from zounds.analyze.feature.spectral import FFT,Loudness
 from zounds.data.frame import PyTablesFrameController
 from zounds.model.frame import Feature,Frames
 from zounds.model.pattern import FilePattern
 from zounds.environment import Environment
+from zounds.testhelper import make_sndfile
 
 from fetch import PrecomputedFeature
 
@@ -53,7 +54,7 @@ class PrecomputedFeatureTests(unittest.TestCase):
                           {},
                           audio = PrecomputedFeatureTests.AudioConfig)
         
-        msf = AudioStreamTests.make_sndfile
+        msf = make_sndfile
         filenames = [msf(fl,env.windowsize,env.samplerate)\
                       for fl in file_lengths]
         self.to_cleanup.extend(filenames)

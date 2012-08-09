@@ -9,12 +9,12 @@ from zounds.model.frame import Frames,Feature,Precomputed
 from zounds.analyze.extractor import Extractor,SingleInput
 from zounds.analyze.feature.spectral import \
     FFT,Loudness,SpectralCentroid,SpectralFlatness,BarkBands
-from zounds.analyze.feature.basic import UnitNorm
+from zounds.analyze.feature.basic import UnitNorm,Abs
 from zounds.analyze.feature.reduce import Downsample
 from zounds.model.pattern import FilePattern
 from zounds.environment import Environment
 from frame import PyTablesFrameController
-from zounds.analyze.test_analyze import AudioStreamTests
+from zounds.testhelper import make_sndfile
 
 
 class MockExtractor(Extractor):
@@ -59,22 +59,43 @@ class PyTablesFrameControllerTests(unittest.TestCase):
         self.to_cleanup = []
         Environment._test = True
     
+    def remove(self,path):
+        if os.path.isfile(path):
+            try:
+                os.remove(path)
+            except IOError:
+                # the file doesn't exist, or we don't have permission to 
+                # delete it
+                pass
+            return
+        
+        if os.path.isdir(path):
+            try:
+                os.rmdir(path)
+            except OSError:
+                # the directory doesn't exist, or we don't have permission to
+                # delete it
+                pass
+        
+    
     def tearDown(self):
         if self.cleanup:
             self.cleanup()
         
         for c in self.to_cleanup:
-            try:
-                os.remove(c)
-            except IOError:
-                # the file has already been removed
-                pass
+            self.remove(c)
+    
         Environment._test = False
     
+    def cleanup_hdf5_dir(self):
+        self.remove(os.path.join(self.cwd(),self.hdf5_dir,self.hdf5_file))
+        self.remove(os.path.join(self.cwd(),self.hdf5_dir))
+    
+    def cleanup_hdf5_file(self):
+        self.remove(os.path.join(self.cwd(),self.hdf5_file))
+    
     def make_sndfile(self,length_in_samples,env):
-        fn = AudioStreamTests.make_sndfile(length_in_samples,
-                                           env.windowsize,
-                                           env.samplerate)
+        fn = make_sndfile(length_in_samples,env.windowsize,env.samplerate)
         self.to_cleanup.append(fn)
         return fn
     
@@ -84,16 +105,6 @@ class PyTablesFrameControllerTests(unittest.TestCase):
     def unique(self):
         return str(uuid4())
     
-    def cleanup_hdf5_file(self):
-        os.remove(os.path.join(self.cwd(),self.hdf5_file))
-        
-    def cleanup_hdf5_dir(self):
-        os.remove(os.path.join(self.cwd(),
-                               self.hdf5_dir,
-                               self.hdf5_file))
-        os.rmdir(os.path.join(self.cwd(),self.hdf5_dir))
-        
-        
     def hdf5_filename(self):
         self.hdf5_file = '%s.h5' % self.unique()
         self.cleanup = self.cleanup_hdf5_file
@@ -212,11 +223,12 @@ class PyTablesFrameControllerTests(unittest.TestCase):
         fn,FM1 = self.FM()
         c = FM1.controller()
         l = FM1.env().windowsize
+        # create a sndfile that is one windowsize long
         fn = self.make_sndfile(l,FM1.env())
         p = FilePattern('0','test','0',fn)
         ec = FM1.extractor_chain(p)
         c.append(ec)
-        self.assertEqual(2,len(c))
+        self.assertEqual(1,len(c))
     
     def test_nframes_and_step_size_disagree_crosses_buffer_boundary(self):
         fn,FM1 = self.FM(loudness_step = 10,loudness_frames = 20)
@@ -316,10 +328,9 @@ class PyTablesFrameControllerTests(unittest.TestCase):
         for fn in c.iter_feature(p._id,'framen'):
             framens.append(fn)
         
-        self.assertEqual(2,len(c))
-        self.assertEqual(2,len(framens))
+        self.assertEqual(1,len(c))
+        self.assertEqual(1,len(framens))
         self.assertTrue(0 in framens)
-        self.assertTrue(1 in framens)
           
     def test_get_features(self):
         fn,FM1 = self.FM()
@@ -627,12 +638,13 @@ class PyTablesFrameControllerTests(unittest.TestCase):
         
         
     def test_sync_unstored_unchanged_feature_in_lineage(self):
+        
         class FM1(Frames):
             fft = Feature(FFT, needs = None, store = False)
             bark = Feature(BarkBands, needs = fft, store = True, nbands = 100)
             barkun = Feature(UnitNorm, needs = bark, inshape = 100, store = False)
             loud = Feature(Loudness, needs = barkun, store = True)
-            flat = Feature(SpectralFlatness, needs = loud, store = True)
+            abs = Feature(Abs, needs = loud, store = True, inshape = ())
         
         class FM2(Frames):
             fft = Feature(FFT, needs = None, store = False)
@@ -640,7 +652,7 @@ class PyTablesFrameControllerTests(unittest.TestCase):
             barkun = Feature(UnitNorm, needs = bark, inshape = 100, store = False)
             loud = Feature(Loudness, needs = barkun, store = True)
 
-        self.sync_helper(FM1,FM2,lambda old,new : 'flat' not in new)
+        self.sync_helper(FM1,FM2,lambda old,new : 'abs' not in new)
                         
                         
     def test_sync_ancestor_feature_recomputed(self):
