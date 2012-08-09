@@ -1,16 +1,14 @@
 TOOO:
 -------------
-- Tests for new sliding_window function
+- Update Learned-derived classes to do chunk-based processing
 
-- Finish updating reduce extractors
+- Tests for new sliding_window function
 
 - Blog entry explaining sliding_window method
 
-- Finish updating extractors
-
-- Update Learned features to do chunk-based processing
-
 - update all tests
+
+- tests for all extractors
 
 - Bug processing 15461,9288,32437,1903 Broadcasting error.
 
@@ -62,7 +60,9 @@ TODO: README file for setuptools
 Use bfcc flux to do synthesis. Create a new ordering of frames so that flux
  stays close to the same, but different frames are used.
  
-Finish Constant-Q implementation 
+Finish Constant-Q implementation
+
+Finish Scattering implementation
 
 TODO:  Try lowpass filter subtraction method for spectrogram sharpening
 

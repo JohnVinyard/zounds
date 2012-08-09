@@ -158,12 +158,12 @@ class SpectralCentroid(SingleInput):
         return np.float32
     
     def _process(self):
-        spectrum = np.array(self.in_data[0]).squeeze()
+        spectrum = self.in_data
         if self._bins is None:
-            self._bins = np.arange(1,len(spectrum) + 1)
+            self._bins = np.arange(1,spectrum.shape[-1] + 1)
             self._bins_sum = np.sum(self._bins)
-            
-        return np.sum(spectrum*self._bins) / self._bins_sum
+        
+        return (spectrum*self._bins).sum(axis = 1) / self._bins_sum
 
 
 class SpectralFlatness(SingleInput):
@@ -196,10 +196,9 @@ class SpectralFlatness(SingleInput):
         return np.float32
     
     def _process(self):
-        spectrum = np.array(self.in_data[0]).squeeze()
-        avg = np.average(spectrum)
-        # avoid divide-by-zero errors
-        return gmean(spectrum) / avg if avg else 0
+        spectrum = self.in_data
+        m = spectrum.mean(axis = 1)
+        return (gmean(spectrum,axis = 1) / m) if m else 0
 
 class Kurtosis(SingleInput):
     
@@ -214,7 +213,7 @@ class Kurtosis(SingleInput):
         return np.float32
     
     def _process(self):
-        return kurtosis(self.in_data[0])
+        return kurtosis(self.in_data,axis = 1)
     
 class BFCC(SingleInput):
     
@@ -233,46 +232,35 @@ class BFCC(SingleInput):
         return self.ncoeffs
     
     def _process(self):
-        barks = self.in_data[0]
-        return dct(safe_log(barks))[self.exclude: self.exclude + self.ncoeffs]
+        barks = self.in_data
+        
+        return dct(safe_log(barks),axis = 1)[:,self.exclude: self.exclude + self.ncoeffs]
 
 class AutoCorrelation(SingleInput):
-    def __init__(self, needs = None, key = None, size = None):
+    '''
+    Compute the autocorrelation, using the Wiener–Khinchin theorem, detailed
+    here: http://en.wikipedia.org/wiki/Autocorrelation#Efficient_computation.
+    '''
+    def __init__(self, needs = None, key = None, inshape = None):
         SingleInput.__init__(self, needs = needs, key = key)
-        if not size:
+        if not inshape:
             raise ValueError('please specifiy a size')
-        self.size = size
+        self._inshape = inshape
         
     @property
     def dtype(self):
         return np.float32
     
     def dim(self,env):
-        return self.size
+        return self._inshape
     
     def _process(self):
-        data = np.array(self.in_data[0]).reshape(self.size)
-        return np.correlate(data,data,mode = 'full')[self.size - 1:]
+        data = self.in_data
+        f = np.fft.fft(data,axis=-1)
+        f2 = f*f.conjugate()
+        return np.fft.ifft(f2,axis = -1)
 
-class SelfSimilarity(SingleInput):
-    def __init__(self,needs = None, key = None, dim = None):
-        SingleInput.__init__(self,needs = needs, key = key)
-        self._dim = dim
-    
-    @property
-    def dtype(self):
-        return np.float32
 
-    def dim(self,env):
-        return self._dim
-
-    def _process(self):
-        data = np.array(self.in_data[0])
-        data = data.reshape((len(data),1))
-        dist = np.rot90(cdist(data,data))
-        dist += 1e-12
-        return np.diag(dist)[self._dim:]
-        
         
 class Difference(SingleInput):
     def __init__(self, needs = None, key = None, size = None):
@@ -290,7 +278,7 @@ class Difference(SingleInput):
         return self.size
     
     def _process(self):
-        indata = self.in_data[0]
+        indata = self.in_data
         output =  indata - self._memory
         self._memory = indata
         return output
@@ -308,33 +296,5 @@ class Flux(SingleInput):
         return ()
     
     def _process(self):
-        diff = self.in_data[0]
-        return np.linalg.norm(diff)
-    
-    
-class Intervals(SingleInput):
-    
-    def __init__(self,needs = None, key = None, nintervals = None):
-        SingleInput.__init__(self,needs = needs, key = key)
-        self.nintervals = nintervals
-        # we're returning the top diagonals of the comparison matrix. The number
-        # of elements is an arithmetic series.
-        n = self.nintervals - 1
-        self._dim = (n/2) * (n + 1)
-    
-    @property
-    def dtype(self):
-        return np.float32
-    
-    def dim(self,env):
-        return int(self._dim)
-    
-    def _process(self):
-        indata = self.in_data[0]
-        # get the indices of the n most dominant coefficients
-        top = np.argsort(indata)[-self.nintervals:]
-        # get the intervals between each coefficient
-        mat = np.array(np.abs(top - np.matrix(top).T))
-        # return only the top diagonals of the matrix; everything else is
-        # redundant
-        return np.concatenate([np.diag(mat,i) for i in range(1,self.nintervals)])
+        return np.sqrt((self.in_data**2).sum(axis = 1))
+        
