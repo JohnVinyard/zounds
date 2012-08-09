@@ -3,7 +3,6 @@ import numpy as np
 from scipy.cluster.vq import kmeans
 from scipy.spatial.distance import cdist
 from zounds.learn.learn import Learn
-from sklearn.decomposition import PCA as SKPCA
 
 # KLUDGE: I've added indim and hdim so this class can be used 
         # as a NeuralNetwork-derived class
@@ -34,9 +33,10 @@ class KMeans(Learn):
         self.codebook = codebook
     
     def __call__(self,data):
-        dist = cdist(np.array([data]),self.codebook)[0]
-        best = np.argmin(dist)
-        feature = np.zeros(len(self.codebook),dtype = np.uint8)
+        l = self.in_data.shape[0]
+        dist = cdist(self.in_data,self.codebook)
+        best = np.argmin(dist,axis = 1)
+        feature = np.zeros((l,len(self.codebook)),dtype = np.uint8)
         feature[best] = 1
         return feature
 
@@ -95,23 +95,11 @@ class SoftKMeans(KMeans):
         KMeans.__init__(self,n_centroids)
     
     def __call__(self,data):
-        dist = cdist(np.array([data]),self.codebook)[0]
+        dist = cdist(self.in_data,self.codebook)
         dist[dist == 0] = -1e12
         return 1 / dist
     
 
-class ThresholdKMeans(SoftKMeans):
-    def __init__(self,n_centroids,threshold):
-        SoftKMeans.__init__(self,n_centroids)
-        self._threshold = threshold
-
-    def __call__(self,data):
-        if data.sum() < self._threshold:
-            return np.zeros(len(self.codebook))
-
-        dist = cdist(np.array([data]),self.codebook)[0]
-        dist[dist == 0] = -1e12
-        return 1 / dist
 
 class TopNKMeans(KMeans):
     
@@ -120,25 +108,14 @@ class TopNKMeans(KMeans):
         self.topn = topn
     
     def __call__(self,data):
-        dist = cdist(np.array([data]),self.codebook)[0]
-        srt = np.argsort(dist)
-        dist[srt[:self.topn]] = 1
-        dist[srt[self.topn:]] = 0
+        # For a more in-depth explanation of what's going on here, check out:
+        # http://stackoverflow.com/questions/6155649/sort-a-numpy-array-by-another-array-along-a-particular-axis
+        dist = cdist(self.in_data,self.codebook)
+        # for each example, get the sorted distances from each cluster
+        srt = np.argsort(dist,axis = -1)
+        # for each example, assign the clsuters with the n lowest distances a 1, 
+        # and the rest of the clusters a 0. 
+        o = np.ogrid[slice(dist.shape[0]),slice(dist.shape[1])]
+        dist[o[0],srt[:,:self.topn]] = 1
+        dist[o[0],srt[:,self.topn:]] = 0
         return dist
-        
-    
-        
-# KLUDGE: This doesn't belong in the cluster module
-class PCA(Learn):
-    
-    def __init__(self,n_dim):
-        Learn.__init__(self)
-        self.n_dim = n_dim
-        self._pca = None
-    
-    def train(self,data,stopping_condition):
-        self._pca = SKPCA(self.n_dim)
-        self._pca.fit(data)
-    
-    def __call__(self,data):
-        return self._pca.transform(data)
