@@ -8,7 +8,7 @@ from pattern import FilePattern
 from zounds.environment import Environment
 from zounds.analyze.feature.spectral import FFT,Loudness,SpectralCentroid
 from zounds.data.frame import DictFrameController
-
+from zounds.analyze.feature.metadata import MetaDataExtractor
 
 
     
@@ -109,9 +109,10 @@ class FrameModelTests(unittest.TestCase):
         chain = FM2.extractor_chain(self.mock_pattern(), 
                                     transitional = True,
                                     recompute = recompute)
-        # lop of the first item, because the MetaData extractor is never
-        # precomputed
-        self.assertTrue(all([isinstance(e,Precomputed) for e in chain.chain[1:]]))
+        
+        # Remove the metadata extractor, because it's never recomputed
+        chain = filter(lambda e: not isinstance(e,MetaDataExtractor),chain.chain)
+        self.assertTrue(all([isinstance(e,Precomputed) for e in chain]))
         
     def test_unstore(self):
         class FM1(Frames):

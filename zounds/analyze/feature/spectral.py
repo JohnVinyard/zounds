@@ -238,8 +238,8 @@ class BFCC(SingleInput):
 
 class AutoCorrelation(SingleInput):
     '''
-    Compute the autocorrelation, using the Wiener–Khinchin theorem, detailed
-    here: http://en.wikipedia.org/wiki/Autocorrelation#Efficient_computation.
+    Compute the autocorrelation, using the Wiener-Khinchin theorem, detailed
+    here: http://en.wikipedia.org/wiki/Autocorrelation#Efficient_computation
     '''
     def __init__(self, needs = None, key = None, inshape = None):
         SingleInput.__init__(self, needs = needs, key = key)

@@ -82,7 +82,7 @@ class AudioStream(object):
         leftover,w = windowed(frames,ws,ss,dopad = True)
         # we're done with the sound file
         sndfile.close()
-        # set a flag indicating that there are no more samples to b read
+        # set a flag indicating that there are no more samples to be read
         self.done = True
         # yield the final chunk
         yield w

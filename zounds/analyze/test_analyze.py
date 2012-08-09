@@ -1,16 +1,29 @@
 from __future__ import division
-import numpy as np
 import unittest
-from zounds.analyze.audiostream import AudioStream
-from scikits.audiolab import Sndfile,Format
 from uuid import uuid4
-from os import remove
-from math import floor
+import os
+from math import ceil
+
+import numpy as np
+from scikits.audiolab import Sndfile,Format
+
+from zounds.analyze.audiostream import AudioStream
+from zounds.util import flatten2d
+
+
 
 # TODO: How do I cleanup wave files for failed tests?
 
  ## AudioStreamTests ##########################################################
 class AudioStreamTests(unittest.TestCase):
+    
+    
+    def setUp(self):
+        self._to_remove = []
+    
+    def tearDown(self):
+        for tr in self._to_remove:
+            os.remove(tr)
     
     @classmethod
     def filename(cls):
@@ -23,8 +36,8 @@ class AudioStreamTests(unittest.TestCase):
             signal[w:w+winsize] = i
         return signal
     
-    @classmethod
-    def make_sndfile(cls,length,winsize,samplerate,channels=1):
+    
+    def make_sndfile(self,cls,length,winsize,samplerate,channels=1):
         signal = cls.make_signal(length, winsize)
         filename = cls.filename() 
         sndfile = Sndfile(filename,'w',Format(),channels,samplerate)
@@ -32,19 +45,10 @@ class AudioStreamTests(unittest.TestCase):
             signal = np.tile(signal,(2,1)).T
         sndfile.write_frames(signal)
         sndfile.close()
+        self._to_remove.append(filename)
         return filename
-        
-    def remove_sndfile(self,filename):
-        remove(filename)
     
-    def fail(self):
-        self.assertTrue(False)
-        
-    def test_nonexistentfile(self):
-        fn = self.filename()
-        self.assertRaises(IOError,lambda : AudioStream(fn).__iter__().next())
     
-        
     def get_frames(self,
                    length,
                    step = 1024,
@@ -53,57 +57,62 @@ class AudioStreamTests(unittest.TestCase):
                    channels = 1):
         
         fn = self.make_sndfile(length, ws, samplerate, channels)
+        self._to_remove.append(fn)
         a = AudioStream(fn,samplerate,ws,step)
-        l = [w for w in a]
-        # check that all frames are the proper length
-        [self.assertEqual(ws,len(q)) for q in l]
-        # get the expected length, in frames
-        el = floor(length/step)
-        # check that the number of frames is as expected
-        self.assertEqual(el,len(l))
-        n = (ws/step)
-        # do we expect the last frame to be padded?
-        padded = (length/step) % 1
-        for i,q in enumerate(l):
-            qs = set(q)
-            if el > 1 and padded and i >= len(l) - (n-1):
-                self.assertEqual(3,len(qs))
-            elif not i or not i % n:
-                self.assertEqual(1,len(qs))
-            else:
-                self.assertEqual(2,len(qs))
-        self.remove_sndfile(fn)
+        l = np.concatenate([w for w in a])
+        # If the dtype is object, this probably means that the output from
+        # AudioStream was jagged, i.e., not all the windows were the same length
+        self.assertNotEqual(object,l.dtype)
+        l = flatten2d(l)
         
-    def test_fileshorterthanwindowsize(self):
+        b = ceil((max(0,length - ws) / step) + 1)
+        self.assertEqual(b,l.shape[0])
+        
+    
+    def test_nonexistentfile(self):
+        fn = self.filename()
+        self.assertRaises(IOError,lambda : AudioStream(fn).__iter__().next())
+        
+    def test_lt_windowsize(self):
         self.get_frames(2000)
         
-    def test_fileshorterthanstepsize(self):
+    def test_lt_stepsize(self):
         self.get_frames(1000)
-        
-    def test_fileshorterthanchunksize(self):
-        self.get_frames(2048*(AudioStream._windows_in_chunk-1))
-        
-    def test_fileevenlydivisiblebychunksize(self):
-        self.get_frames(2048*(AudioStream._windows_in_chunk*2))
-        
-    def test_filenotevenlydivisiblebychunksize(self):
-        self.get_frames(2048*(AudioStream._windows_in_chunk*1.53))
-            
-    def test_quarterstepsize(self):
-        self.get_frames(2048*(AudioStream._windows_in_chunk*2),step=512)  
     
-    def test_quarterstepsize_notevenlydivisible(self):
-        self.get_frames(2048*(AudioStream._windows_in_chunk*(2.1)),step=512)
-        
-    def test_stereo(self):
-        self.get_frames(2048*(AudioStream._windows_in_chunk*2),channels=2)
+    def test_equal_windowsize(self):
+        self.get_frames(2048)
     
-    def test_stepsize_equals_windowsize_evenly_divisible(self):
-        self.get_frames(2048*(AudioStream._windows_in_chunk*2),step=2048)
-        
-    def test_stepsize_equals_windowsize_not_evenly_divisible(self):
-        self.get_frames(2048*(AudioStream._windows_in_chunk*3.97),step=2048)
-
+    def test_two_frames(self):
+        self.get_frames(2050)
+    
+    def test_three_frames(self):
+        self.get_frames(4096)
+    
+    def test_four_frames(self):
+        self.get_frames(4097)
+    
+    def test_resample(self):
+        # ensure that two sounds with the same length in seconds, but differing
+        # samplerates end up with the same number of windows, if the same
+        # sampling rate is passed to both audio streams
+        seconds = 5
+        sr1 = 44100
+        sr2 = 48e3
+        s1 = sr1 * seconds
+        s2 = sr2 * seconds
+        ws = 2048
+        ss = 1024
+        fn1 = self.make_sndfile(s1, ws, sr1, 1)
+        fn2 = self.make_sndfile(s2, ws, sr2, 1)
+        # note that both audio streams are getting the same sample rate
+        # parameter, since we're testing resampling
+        as1 = AudioStream(fn1,sr1,ws,ss)
+        as2 = AudioStream(fn2,sr1,ws,ss)
+        f1 = np.concatenate([c for c in as1])
+        f2 = np.concatenate([c for c in as2])
+        f1 = flatten2d(f1)
+        f2 = flatten2d(f2)
+        self.assertEqual(f1.shape[0],f2.shape[0])
 
 ## ExtractorTests #############################################################
 from zounds.analyze.extractor import \
