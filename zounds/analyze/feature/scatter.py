@@ -10,6 +10,7 @@ from scipy.fftpack import dct
 # Debugging
 #np.seterr(all = 'raise')
 
+# TODO: Chunk-based processing
 class Scatter(SingleInput):
     
         
