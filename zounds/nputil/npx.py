@@ -186,8 +186,10 @@ def sliding_window(a,ws,ss = None,flatten = True):
     if None is ss:
         # ss was not provided. the windows will not overlap in any direction.
         ss = ws
+    ws = norm_shape(ws)
+    ss = norm_shape(ss)
     
-    # convert ws, ss, and a.shape to tuples so that we can do math in every 
+    # convert ws, ss, and a.shape to numpy arrays so that we can do math in every 
     # dimension at once.
     ws = np.array(ws)
     ss = np.array(ss)
@@ -224,4 +226,5 @@ def sliding_window(a,ws,ss = None,flatten = True):
     dim = firstdim + (newshape[-meat:])
     # remove any dimensions with size 1
     dim = filter(lambda i : i != 1,dim)
+    return strided.reshape(dim)
     

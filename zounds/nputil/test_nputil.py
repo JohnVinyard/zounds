@@ -1,7 +1,7 @@
 import unittest
 from toeplitz import toeplitz2dc as toep2d
 import numpy as np
-from npx import windowed
+from npx import windowed,sliding_window
 
 class NpUtilTest(unittest.TestCase):
     
@@ -11,7 +11,63 @@ class NpUtilTest(unittest.TestCase):
         t = toep2d(a,shape)
         self.assertEqual((30*97,30*3),t.shape)
     
-
+class SlidingWindowTest(unittest.TestCase):
+    
+    def test_mismatched_dims_ws(self):
+        a = np.zeros(10)
+        self.assertRaises(ValueError, lambda : sliding_window(a,(1,2)))
+    
+    def test_mismatched_dims_ss(self):
+        a = np.zeros(10)
+        self.assertRaises(ValueError, lambda : sliding_window(a,3,(1,2)))
+    
+    def test_windowsize_too_large_1D(self):
+        a = np.zeros(10)
+        self.assertRaises(ValueError, lambda : sliding_window(a,11))
+    
+    def test_windowsize_too_large_2D(self):
+        a = np.zeros((10,10))
+        self.assertRaises(ValueError, lambda : sliding_window(a,(3,11)))
+    
+    def test_1D_no_step_specified(self):
+        a = np.arange(10)
+        b = sliding_window(a,3)
+        self.assertEqual((3,3),b.shape)
+        self.assertTrue(np.all(b.ravel() == a[:9]))
+    
+    def test_1D_with_step(self):
+        a = np.arange(10)
+        b = sliding_window(a,3,1)
+        self.assertEqual((8,3),b.shape)
+    
+    def test_1D_flat_nonflat_equivalent(self):
+        a = np.zeros(10)
+        bflat = sliding_window(a,3)
+        bnonflat = sliding_window(a,3,flatten = False)
+        self.assertEqual(bflat.shape,bnonflat.shape)
+        self.assertTrue(np.all(bflat == bnonflat))
+    
+    def test_2D_no_step_specified(self):
+        a = np.arange(64).reshape((8,8))
+        b = sliding_window(a,(4,4))
+        self.assertEqual((4,4,4),b.shape)
+    
+    def test_2D_with_step(self):
+        a = np.zeros((8,8))
+        b = sliding_window(a,(4,4),(1,1))
+        self.assertEqual((25,4,4),b.shape)
+    
+    def test_2D_nonflat_no_step_specified(self):
+        a = np.arange(64).reshape((8,8))
+        b = sliding_window(a,(4,4),flatten = False)
+        self.assertEqual((2,2,4,4),b.shape)
+    
+    def test_2D_nonflat_with_step(self):
+        a = np.zeros((8,8))
+        b = sliding_window(a,(4,4),(1,1),flatten = False)
+        self.assertEqual((5,5,4,4),b.shape)
+        
+    
 class WindowedTest(unittest.TestCase):
     
     def test_windowsize_ltone(self):
