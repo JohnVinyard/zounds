@@ -4,6 +4,8 @@ TOOO:
 
 - update all tests
 
+- Get rid of binary incompatibility warning
+
 - tests for all extractors
 
 - Bug processing 15461,9288,32437,1903 Broadcasting error.
@@ -23,7 +25,6 @@ TOOO:
 - If you're on Ubuntu, you can use the command `xdg-open <html-file>` to open a local file or URL using the default browser.
 
 - Make a note in the documentation about ALSA audio
-
 
 - TODO: Pooled doesn't do chunk-based processing
 

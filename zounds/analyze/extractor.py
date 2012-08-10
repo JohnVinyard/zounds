@@ -127,7 +127,17 @@ class Extractor(object):
         # extractor should tell us how many absolute frames this extractor needs    
         return np.product(nframes)
              
-    
+    def step_abs(self,step = None):
+        if step is None:
+            step = [self.step]
+        
+        if self.sources:
+            step.append(max([e.step for e in self.sources]))
+            for s in self.sources:
+                s.step_abs(step = step)
+        
+        return np.product(step)
+            
     def depends_on(self,e):
         '''
         Returns true if this extractor directly or indirectly depends on e
@@ -149,7 +159,16 @@ class Extractor(object):
                 indata = src.out
                 if self.leftover[src] is None:
                     self.leftover[src] = np.zeros((0,) + indata.shape[1:])
-                indata = np.concatenate([self.leftover[src],indata])
+                try:
+                    indata = np.concatenate([self.leftover[src],indata])
+                except ValueError,e:
+                    print self.key
+                    print src.key
+                    print self.leftover[src]
+                    print self.leftover[src].shape
+                    print indata
+                    print indata.shape
+                    raise e
                 leftover,data = windowed(\
                                 indata,self.nframes,self.step,dopad = alldone)
                 self.input[src].append(data)

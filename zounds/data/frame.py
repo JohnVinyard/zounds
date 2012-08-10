@@ -432,10 +432,6 @@ class PyTablesFrameController(FrameController):
             self.steps[k] = v[2]
             pos += 1
         
-        # Store a two-tuple containing the key and stepsize of the feature with
-        # the largest step value
-        self.largest_step = \
-            sorted(self.steps.items(),lambda a,b : cmp(a[1],b[1]))[-1]
         
         if not os.path.exists(filepath):
             
@@ -538,7 +534,7 @@ class PyTablesFrameController(FrameController):
         bucket = None
         buckets = []
         offsets = dict()
-        
+        abs_steps = dict([(e.key,e.step_abs()) for e in chain])
         for k,v in chain.process():
             if k not in self.steps:
                 continue
@@ -563,7 +559,7 @@ class PyTablesFrameController(FrameController):
             
             # repeat the incoming data by the feature's stepsize, so all features
             # line up
-            hydrated = np.repeat(data,self.steps[k],0)
+            hydrated = np.repeat(data,abs_steps[k],0)
             # choose the lowest of the chunk length or the feature length.  The
             # current chunk may have fewer frames than the stepsize of the
             # current feature.
