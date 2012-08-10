@@ -428,6 +428,11 @@ class Frames(Model):
         '''
         f = Model.__getattribute__(self,k)
         if isinstance(f,Feature):
+            # KLUDGE: Because of the way nputil.windowed behaves, this can return
+            # features with more frames than the frames instance itself has. E.g.,
+            # an unstored FFT feature will sometimes end up with extra frames, 
+            # because of padding.
+            
             # synthesize audio from this list of frames
             audio = self.__class__.env().synth(self.audio)
             p = DataPattern(None,None,None,audio)

@@ -10,9 +10,10 @@ class SourceData(Extractor):
         Extractor.__init__(self, needs = needs, key = key, 
                            nframes = nframes, step = step)
         self.value = value
+        self._dim = np.array(self.value).shape 
     
     def dim(self,env):
-        return np.array(self.value).shape
+        return self._dim
     
     @property
     def dtype(self):
@@ -29,7 +30,10 @@ class SourceData(Extractor):
     
     def _process(self):
         print 'source data'
-        return [self.value]
+        frames = max([self.input[src].shape[0] for src in self.sources])
+        a = np.ndarray((frames,) + self._dim)
+        a[...] = self.value
+        return a
         
 
 class CompositeTests(unittest.TestCase):
@@ -44,7 +48,7 @@ class CompositeTests(unittest.TestCase):
         return c,ec
     
     def extract(self,ec,c):
-        return np.array(ec.collect()[c])
+        return np.concatenate(ec.collect()[c])
         
     def test_both_oned(self):
         c,ec = self.make_chain(1,2)

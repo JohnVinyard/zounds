@@ -1,5 +1,6 @@
-import numpy as np
+import os
 from uuid import uuid4
+import numpy as np
 from scikits.audiolab import Sndfile,Format
 
 def filename():
@@ -27,3 +28,25 @@ def make_sndfile(length,winsize,samplerate,channels = 1):
     sndfile.write_frames(signal)
     sndfile.close()
     return fn
+
+def remove(path):
+    '''
+    Attempt to remove a file or directory. Fail silently if the file doesn't exist,
+    or we don't have proper permissions.
+    '''
+    if os.path.isfile(path):
+        try:
+            os.remove(path)
+        except IOError:
+            # the file doesn't exist, or we don't have permission to 
+            # delete it
+            pass
+        return
+    
+    if os.path.isdir(path):
+        try:
+            os.rmdir(path)
+        except OSError:
+            # the directory doesn't exist, or we don't have permission to
+            # delete it
+            pass

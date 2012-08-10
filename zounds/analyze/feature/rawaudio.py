@@ -74,7 +74,8 @@ class AudioFromDisk(AudioSamples):
                             self.filename,
                             self.samplerate,
                             self.windowsize,
-                            self.stepsize)
+                            self.stepsize,
+                            Environment.instance.chunksize)
             self._init = True
         
         return self._stream
@@ -85,7 +86,7 @@ class AudioFromMemory(AudioSamples):
     
     def __init__(self,samplerate,windowsize,stepsize,samples,needs = None):
         AudioSamples.__init__(self,samplerate,windowsize,stepsize,needs = needs)
-        self._init = False
+        self._stream = None
         self.samples = samples
     
     
@@ -101,7 +102,7 @@ class AudioFromMemory(AudioSamples):
         
         @property
         def chunksize(self):
-            return Environment.instance.chunksize
+            return self._chunksize
         
         def __iter__(self):
             ls = len(self.samples)
@@ -118,11 +119,10 @@ class AudioFromMemory(AudioSamples):
         
     @property
     def stream(self):
-        if not self._init:
+        if not self._stream:
             self._stream = AudioFromMemory.Stream(\
                             self.samples,
                             Environment.instance.chunksize,
                             self.windowsize,self.stepsize)
-            self._init = True
         
         return self._stream

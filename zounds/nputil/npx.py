@@ -87,9 +87,15 @@ def _wpad(l,windowsize,stepsize):
     '''
     if l <= windowsize:
         return  windowsize
-    end = (((l - windowsize) // stepsize) * stepsize) + windowsize
-    leftover = l - end
-    return l + (stepsize - leftover) if leftover else l
+    
+    nsteps = ((l // stepsize) * stepsize)
+    overlap = (windowsize - stepsize)
+    if overlap:
+        return nsteps + overlap
+     
+    diff = (l - nsteps)
+    left = max(0,windowsize - diff)
+    return l + left if diff else l
 
 def _wcut(l,windowsize,stepsize):
     '''
@@ -103,13 +109,13 @@ def _wcut(l,windowsize,stepsize):
     '''
     end = l - windowsize
     if l <= windowsize:
-        return 0
+        return 0,0
     elif end % stepsize:
         l = windowsize + ((end//stepsize)*stepsize)
     
     return l,l - (windowsize - stepsize)
         
-# TODO: Write tests for this! 
+ 
 def windowed(a,windowsize,stepsize = None,dopad = False):
     '''
     Parameters
@@ -121,7 +127,6 @@ def windowed(a,windowsize,stepsize = None,dopad = False):
                      If true, the input array is padded with zeros so that all
                      samples are used. 
     '''
-    
     if windowsize < 1:
         raise ValueError('windowsize must be greater than or equal to one')
     
@@ -144,7 +149,6 @@ def windowed(a,windowsize,stepsize = None,dopad = False):
     
     if dopad:
         p = _wpad(l,windowsize,stepsize)
-        print 'Padding by %i' % p
         # pad the array with enough zeros so that there are no leftover samples
         a = pad(a,p)
         # no leftovers; an empty array

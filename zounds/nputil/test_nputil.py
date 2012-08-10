@@ -93,7 +93,6 @@ class WindowedTest(unittest.TestCase):
     def test_windowsize_two_stepsize_one_cut(self):
         a = np.arange(10)
         l,w = windowed(a,2,1)
-        print w
         self.assertEqual(1,l.shape[0])
         self.assertEqual((9,2),w.shape)
     
@@ -101,7 +100,7 @@ class WindowedTest(unittest.TestCase):
         a = np.arange(10)
         l,w = windowed(a,2,1,True)
         self.assertEqual(0,l.shape[0])
-        self.assertEqual((9,2),w.shape)
+        self.assertEqual((10,2),w.shape)
     
     def test_windowsize_two_stepsize_two_cut(self):
         a = np.arange(10)
@@ -124,7 +123,6 @@ class WindowedTest(unittest.TestCase):
     def test_windowsize_three_stepsize_two_pad(self):
         a = np.arange(10)
         l,w = windowed(a,3,2,dopad = True)
-        print w
         self.assertEqual(0,l.shape[0])
         self.assertEqual((5,3),w.shape)
         self.assertTrue(np.all([0,0] == w[-1,-1]))
@@ -138,7 +136,6 @@ class WindowedTest(unittest.TestCase):
     def test_windowsize_three_stepsize_three_pad(self):
         a = np.arange(10)
         l,w = windowed(a,3,3,dopad = True)
-        print w
         self.assertEqual(0,l.shape[0])
         self.assertEqual((4,3),w.shape)
     

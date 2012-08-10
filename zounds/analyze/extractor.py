@@ -161,7 +161,6 @@ class Extractor(object):
                 indata = np.concatenate([self.leftover[src],indata])
                 leftover,data = windowed(\
                                 indata,self.nframes,self.step,dopad = alldone)
-                print data
                 self.input[src].append(data)
                 self.leftover[src] = leftover
         

@@ -3,7 +3,7 @@ import numpy as np
 from resample import Resample
 from scikits.audiolab import Sndfile
 from zounds.nputil import windowed
-from zounds.environment import Environment
+
 
 def read_frames_mono(sndfile,nframes = None):
     if None is nframes:
@@ -18,16 +18,16 @@ def read_frames_mono(sndfile,nframes = None):
 
 class AudioStream(object):
     
-    def __init__(self,filename,samplerate=44100,windowsize=2048,stepsize=1024):
+    def __init__(self,filename,samplerate=44100,windowsize=2048,
+                 stepsize=1024,chunksize_seconds = 40):
+        
+        
         self.filename = filename
         self.samplerate = samplerate
         self.windowsize = windowsize
         self.stepsize = stepsize
+        self.chunksize = chunksize_seconds * self.samplerate
         self.done = False
-    
-    @property
-    def chunksize(self):
-        return Environment.instance.chunksize
         
     def _read_frames(self,sndfile):
         
