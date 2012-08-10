@@ -33,14 +33,20 @@ class RootExtractor(Extractor):
             return 1
         return np.ones(self.shape)
 
+
 class MockEnvironment(object):
      
-        
     def __init__(self,windowsize):
         self.windowsize = windowsize
 
 
 class FFTTests(unittest.TestCase):
+    
+    def setUp(self):
+        self.orig_env = Environment.instance
+    
+    def tearDown(self):
+        Environment.instance = self.orig_env
     
     def test_no_args_correct_dim(self):
         ws = 2048

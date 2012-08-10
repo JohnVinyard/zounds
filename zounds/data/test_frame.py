@@ -230,10 +230,12 @@ class PyTablesFrameControllerTests(unittest.TestCase):
         c.append(ec)
         self.assertEqual(1,len(c))
     
+    # TODO: The following two tests need to be adapted to concern themselves
+    # with chunksize instead of the old PyTablesFrameController._desired_buffer_size
     def test_nframes_and_step_size_disagree_crosses_buffer_boundary(self):
         fn,FM1 = self.FM(loudness_step = 10,loudness_frames = 20)
         c = FM1.controller()
-        l = c._desired_buffer_size * FM1.env().windowsize * 2
+        l = Environment.instance.chunksize * 2
         fn = self.make_sndfile(l,FM1.env())
         p = FilePattern('0','test','0',fn)
         ec = FM1.extractor_chain(p)
@@ -247,7 +249,7 @@ class PyTablesFrameControllerTests(unittest.TestCase):
             loudness = Feature(Loudness,store=True,needs=fft,
                                step = 10, nframes = 20)
             l2 = Feature(Loudness, store = True, needs = loudness,
-                         step = 10, nframes = 1)
+                         step = 1, nframes = 1)
         
         
         fn = self.hdf5_filename()
@@ -259,7 +261,7 @@ class PyTablesFrameControllerTests(unittest.TestCase):
                     PyTablesFrameControllerTests.AudioConfig)
         
         c = FM.controller()
-        l = c._desired_buffer_size * FM.env().windowsize * 2
+        l = Environment.instance.chunksize * 2
         fn = self.make_sndfile(l,FM.env())
         p = FilePattern('0','test','0',fn)
         ec = FM.extractor_chain(p)

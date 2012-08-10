@@ -38,11 +38,9 @@ class AudioStreamTests(unittest.TestCase):
         # AudioStream was jagged, i.e., not all the windows were the same length
         self.assertNotEqual(object,l.dtype)
         l = flatten2d(l)
-        
         b = ceil((max(0,length - ws) / step) + 1)
         self.assertEqual(b,l.shape[0])
         
-    
     def test_nonexistentfile(self):
         fn = filename()
         self.assertRaises(IOError,lambda : AudioStream(fn).__iter__().next())
