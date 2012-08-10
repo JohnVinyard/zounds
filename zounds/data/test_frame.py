@@ -516,14 +516,14 @@ class PyTablesFrameControllerTests(unittest.TestCase):
         class FM1(Frames):
             fft = Feature(FFT,store=True,needs=None)
             downsample = Feature(Downsample,needs = fft, store = True,
-                                 size = (6,2048), factor = 2, 
+                                 inshape = (6,2048), factor = 2, 
                                  step = 6, nframes = 6)
         
         
         class FM2(Frames):
             fft = Feature(FFT,store=True,needs=None)
             downsample = Feature(Downsample,needs = fft, store = True,
-                                 size = (6,2048), factor = 2, 
+                                 inshape = (6,2048), factor = 2, 
                                  step = 6, nframes = 6)
             centroid = Feature(SpectralCentroid,store = True, needs = fft)
         

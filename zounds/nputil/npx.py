@@ -195,8 +195,9 @@ def sliding_window(a,ws,ss = None,flatten = True):
     ss = np.array(ss)
     shape = np.array(a.shape)
     
+    
     # ensure that ws, ss, and a.shape all have the same number of dimensions
-    ls = [len(ws),len(ss),len(shape)]
+    ls = [len(shape),len(ws),len(ss)]
     if 1 != len(set(ls)):
         raise ValueError(\
         'a.shape, ws and ss must all have the same length. They were %s' % str(ls))

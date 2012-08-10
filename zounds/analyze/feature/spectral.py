@@ -131,7 +131,11 @@ class Loudness(SingleInput):
         return np.float32
         
     def _process(self):
-        return np.sum(self.in_data,axis = -1)
+        print self.in_data.shape
+        r = range(len(self.in_data.shape))
+        out = np.apply_over_axes(np.sum, self.in_data, r[1:]).squeeze()
+        print out.shape
+        return out
 
 
 class SpectralCentroid(SingleInput):
