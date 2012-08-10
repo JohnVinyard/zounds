@@ -1,6 +1,6 @@
 import numpy as np
 from zounds.util import downsample,downsampled_shape,flatten2d
-from zounds.nputil import sliding_window
+from zounds.nputil import sliding_window,norm_shape
 from zounds.analyze.extractor import SingleInput
 from basic import Basic
 
@@ -17,8 +17,10 @@ class Downsample(SingleInput):
         if 2 != len(inshape):
             raise ValueError('Downsample expects a 2d input')
         
-        self._inshape = inshape 
-        self._dim = np.product(downsampled_shape(self._inshape,factor)) 
+        self._inshape = norm_shape(inshape)
+        self._factor = factor 
+        self._dim = np.product(downsampled_shape(self._inshape,factor))
+        self._steps = (self._factor,) * len(self._inshape)
         
     def dim(self,env):
         return self._dim 
@@ -31,7 +33,7 @@ class Downsample(SingleInput):
         data = self.in_data
         l = data.shape[0]
         data = data.reshape((l,) + self._inshape)
-        shape = (1,) + self._dim
+        shape = (1,) + self._steps
         chunks = sliding_window(data,shape,flatten = False).squeeze()
         # downsample the chunks by taking their average
         downsampled = np.apply_over_axes(np.mean, chunks, (-1,-2)).squeeze()
