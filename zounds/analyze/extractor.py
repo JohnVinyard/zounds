@@ -153,24 +153,15 @@ class Extractor(object):
     
     def collect(self):
         alldone = all([s.done for s in self.sources])
-        
         if all([s.out is not None for s in self.sources]):
             for src in self.sources:
                 indata = src.out
                 if self.leftover[src] is None:
                     self.leftover[src] = np.zeros((0,) + indata.shape[1:])
-                try:
-                    indata = np.concatenate([self.leftover[src],indata])
-                except ValueError,e:
-                    print self.key
-                    print src.key
-                    print self.leftover[src]
-                    print self.leftover[src].shape
-                    print indata
-                    print indata.shape
-                    raise e
+                indata = np.concatenate([self.leftover[src],indata])
                 leftover,data = windowed(\
                                 indata,self.nframes,self.step,dopad = alldone)
+                print data
                 self.input[src].append(data)
                 self.leftover[src] = leftover
         
