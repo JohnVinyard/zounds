@@ -105,11 +105,11 @@ def _wcut(l,windowsize,stepsize):
     if l <= windowsize:
         return 0
     elif end % stepsize:
-        return windowsize + ((end//stepsize)*stepsize)
-    else:
-        return l
+        l = windowsize + ((end//stepsize)*stepsize)
+    
+    return l,l - (windowsize - stepsize)
         
-         
+# TODO: Write tests for this! 
 def windowed(a,windowsize,stepsize = None,dopad = False):
     '''
     Parameters
@@ -143,14 +143,16 @@ def windowed(a,windowsize,stepsize = None,dopad = False):
     l = a.shape[0]
     
     if dopad:
+        p = _wpad(l,windowsize,stepsize)
+        print 'Padding by %i' % p
         # pad the array with enough zeros so that there are no leftover samples
-        a = pad(a,_wpad(l,windowsize,stepsize))
+        a = pad(a,p)
         # no leftovers; an empty array
         leftover = np.zeros((0,) + a.shape[1:])
     else:
         # cut the array so that any leftover samples are returned seperately
-        c = _wcut(l,windowsize,stepsize)
-        leftover = a[c:]
+        c,lc = _wcut(l,windowsize,stepsize)
+        leftover = a[lc:]
         a = a[:c]
     
     if 0 == a.shape[0]:

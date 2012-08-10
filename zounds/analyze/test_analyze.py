@@ -131,8 +131,10 @@ class SumExtractor(Extractor):
     def _process(self):
         # Sum the sums of all inputs, example-wise. This should result in a 1D array
         src_sums = np.concatenate([np.sum(v,axis = 1) for v in self.input.values()],axis = 1)
-        out = np.sum(src_sums,axis = 1)
-        return out 
+        if len(src_sums.shape) > 1:
+            np.sum(src_sums,axis = 1)
+        else:
+            return src_sums   
     
     
 class NoOpExtractor(Extractor):
@@ -215,7 +217,6 @@ class ExtractorTests(unittest.TestCase):
     def test_equality_same_class_different_sources(self):
         re = RootExtractor()
         se = SumExtractor(None,1,1)
-        
         d1 = SumExtractor(se,1,1)
         d2 = SumExtractor(re,1,1)
         self.assertNotEqual(d1,d2)
@@ -249,7 +250,8 @@ class SingleInputTests(unittest.TestCase):
         si.collect()
         data = si.in_data
         self.assertTrue(data is not None)
-        self.assertEqual([1],data)
+        expected = np.ones(re.chunksize)
+        self.assertTrue(np.all(expected == data))
     
     def test_in_data_multidim(self):
         re = RootExtractor(shape=2)
@@ -301,8 +303,7 @@ class ExtractorChainTests(unittest.TestCase):
         v = d[re]
         self.assertEqual((2,5),v.shape)
         self.assertTrue(all([q == 1 for q in v]))
-        
-        
+    
     def test_two_extractor_chain_no_step(self):
         re = RootExtractor()
         se = SumExtractor(needs=re,nframes=2,step=1)
@@ -311,10 +312,12 @@ class ExtractorChainTests(unittest.TestCase):
         self.assertEqual(2,len(d))
         self.assertTrue(d.has_key(re))
         self.assertTrue(d.has_key(se))
-        rev = d[re]
-        sev = d[se]
+        rev = np.concatenate(d[re])
+        sev = np.concatenate(d[se])
+        print rev
+        print sev
         self.assertEqual(10,len(rev))
-        self.assertEqual(10,len(sev))
+        self.assertEqual(9,len(sev))
         self.assertTrue(all([q == 1 for q in rev]))
         self.assertTrue(all([q in (1,2) for q in sev]))
         
@@ -332,7 +335,9 @@ class ExtractorChainTests(unittest.TestCase):
         # sev is jagged here, and consequently has a dtype of object.  We're
         # calling concatenate so we can easily find out how many elements sev
         # contains
-        self.assertEqual(5,np.concatenate(sev).size)
+        print sev
+        sev = np.concatenate(sev.tolist())
+        self.assertEqual(5,sev.size)
         self.assertTrue(all([s==20 for s in sev]))
         
     def test_no_root(self):
@@ -365,12 +370,15 @@ class ExtractorChainTests(unittest.TestCase):
         self.assertTrue(d.has_key(re))
         self.assertTrue(d.has_key(se1))
         self.assertTrue(d.has_key(se2))
-        rev = d[re]
-        se1v = d[se1]
-        se2v = d[se2]
+        rev = np.concatenate(d[re])
+        se1v = np.concatenate(d[se1])
+        se2v = np.concatenate(d[se2])
         self.assertEqual(10,len(rev))
+        print rev
+        print se1v
+        print se2v
         self.assertEqual(10,len(se1v))
-        self.assertEqual(9,len(se2v))
+        self.assertEqual(10,len(se2v))
         self.assertTrue(all([s in (1,2) for s in se1v]))
         self.assertTrue(all([s in (3,4) for s in se2v]))
     
