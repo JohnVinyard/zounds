@@ -14,7 +14,7 @@ from zounds.analyze.feature.reduce import Downsample
 from zounds.model.pattern import FilePattern
 from zounds.environment import Environment
 from frame import PyTablesFrameController
-from zounds.testhelper import make_sndfile
+from zounds.testhelper import make_sndfile,remove
 
 
 class MockExtractor(Extractor):
@@ -59,40 +59,22 @@ class PyTablesFrameControllerTests(unittest.TestCase):
         self.to_cleanup = []
         Environment._test = True
     
-    def remove(self,path):
-        if os.path.isfile(path):
-            try:
-                os.remove(path)
-            except IOError:
-                # the file doesn't exist, or we don't have permission to 
-                # delete it
-                pass
-            return
-        
-        if os.path.isdir(path):
-            try:
-                os.rmdir(path)
-            except OSError:
-                # the directory doesn't exist, or we don't have permission to
-                # delete it
-                pass
-        
     
     def tearDown(self):
         if self.cleanup:
             self.cleanup()
         
         for c in self.to_cleanup:
-            self.remove(c)
+            remove(c)
     
         Environment._test = False
     
     def cleanup_hdf5_dir(self):
-        self.remove(os.path.join(self.cwd(),self.hdf5_dir,self.hdf5_file))
-        self.remove(os.path.join(self.cwd(),self.hdf5_dir))
+        remove(os.path.join(self.cwd(),self.hdf5_dir,self.hdf5_file))
+        remove(os.path.join(self.cwd(),self.hdf5_dir))
     
     def cleanup_hdf5_file(self):
-        self.remove(os.path.join(self.cwd(),self.hdf5_file))
+        remove(os.path.join(self.cwd(),self.hdf5_file))
     
     def make_sndfile(self,length_in_samples,env):
         fn = make_sndfile(length_in_samples,env.windowsize,env.samplerate)

@@ -5,7 +5,7 @@ from math import ceil
 import numpy as np
 from zounds.analyze.audiostream import AudioStream
 from zounds.util import flatten2d
-from zounds.testhelper import make_sndfile,filename
+from zounds.testhelper import make_sndfile,filename,remove
 
 ## AudioStreamTests ##########################################################
 class AudioStreamTests(unittest.TestCase):
@@ -16,7 +16,7 @@ class AudioStreamTests(unittest.TestCase):
     
     def tearDown(self):
         for tr in self._to_remove:
-            os.remove(tr)
+            remove(tr)
     
     def make_sndfile(self,length,winsize,samplerate,channels = 1):
         fn = make_sndfile(length,winsize,samplerate,channels = channels)
@@ -127,14 +127,26 @@ class SumExtractor(Extractor):
     @property
     def dtype(self):
         return np.int32
+    
+    def _sum(self,a):
+        return a.sum(axis = 1) if len(a.shape) > 1 else a
+    
+    def _prepare(self,l):
+        # ensure that each sum is at least two dimesnions, so it can be combined
+        # with others along the first axis
+        for i in xrange(len(l)):
+            if len(l[i].shape) == 1:
+                l[i] = l[i].reshape((l[i].size,1))
+        return l
         
     def _process(self):
         # Sum the sums of all inputs, example-wise. This should result in a 1D array
-        src_sums = np.concatenate([np.sum(v,axis = 1) for v in self.input.values()],axis = 1)
-        if len(src_sums.shape) > 1:
-            np.sum(src_sums,axis = 1)
-        else:
-            return src_sums   
+        src_sums = [self._sum(v) for v in self.input.values()]
+        src_sums = self._prepare(src_sums)
+        # Combine all the features for each example
+        combined = np.concatenate(src_sums,axis = 1)
+        # take the sum, example-wise
+        return self._sum(combined)
     
     
 class NoOpExtractor(Extractor):
@@ -300,8 +312,8 @@ class ExtractorChainTests(unittest.TestCase):
         d = ec.collect()
         self.assertEqual(1,len(d))
         self.assertTrue(d.has_key(re))
-        v = d[re]
-        self.assertEqual((2,5),v.shape)
+        v = np.concatenate(d[re])
+        self.assertEqual(10,v.size)
         self.assertTrue(all([q == 1 for q in v]))
     
     def test_two_extractor_chain_no_step(self):
@@ -317,7 +329,7 @@ class ExtractorChainTests(unittest.TestCase):
         print rev
         print sev
         self.assertEqual(10,len(rev))
-        self.assertEqual(9,len(sev))
+        self.assertEqual(10,len(sev))
         self.assertTrue(all([q == 1 for q in rev]))
         self.assertTrue(all([q in (1,2) for q in sev]))
         
@@ -356,7 +368,7 @@ class ExtractorChainTests(unittest.TestCase):
         self.assertTrue(d.has_key(re))
         self.assertTrue(d.has_key(se1))
         self.assertTrue(d.has_key(se2))
-        sev = np.array(d[se2])
+        sev = np.concatenate(d[se2])
         self.assertEqual((10,),sev.shape)
         self.assertTrue(all([s == 2 for s in sev]))
         
@@ -374,13 +386,10 @@ class ExtractorChainTests(unittest.TestCase):
         se1v = np.concatenate(d[se1])
         se2v = np.concatenate(d[se2])
         self.assertEqual(10,len(rev))
-        print rev
-        print se1v
-        print se2v
         self.assertEqual(10,len(se1v))
         self.assertEqual(10,len(se2v))
         self.assertTrue(all([s in (1,2) for s in se1v]))
-        self.assertTrue(all([s in (3,4) for s in se2v]))
+        self.assertTrue(all([s in (3,4,1) for s in se2v]))
     
     def test_noop_singledim(self):
         re = RootExtractor()
