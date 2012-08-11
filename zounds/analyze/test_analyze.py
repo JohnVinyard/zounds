@@ -1,11 +1,12 @@
 from __future__ import division
 import unittest
-import os
 from math import ceil
+
 import numpy as np
+
 from zounds.analyze.audiostream import AudioStream
 from zounds.util import flatten2d
-from zounds.testhelper import make_sndfile,filename,remove
+from zounds.testhelper import make_sndfile,filename,remove,RootExtractor
 
 ## AudioStreamTests ##########################################################
 class AudioStreamTests(unittest.TestCase):
@@ -89,31 +90,7 @@ class AudioStreamTests(unittest.TestCase):
 ## ExtractorTests #############################################################
 from zounds.analyze.extractor import \
     Extractor,SingleInput,ExtractorChain,RootlessExtractorChainException
-    
-class RootExtractor(Extractor):
-    
-    def __init__(self,shape=1,totalframes=10,chunksize = 5,key = None):
-        self.shape = shape
-        Extractor.__init__(self,key = key)
-        self.framesleft = totalframes
-        self.chunksize = chunksize
-    
-    
-    def dim(self,env):
-        return self.shape
-    
-    @property
-    def dtype(self):
-        return np.int32
-    
-    def _process(self):
-        out = np.ones(self.chunksize) if self.shape == 1 \
-                else np.ones((self.chunksize,self.shape))
-        self.framesleft -= self.chunksize
-        if self.framesleft <= 0:
-            self.done = True
-            self.out = None
-        return out
+
 
 class SumExtractor(Extractor):
     
@@ -326,8 +303,6 @@ class ExtractorChainTests(unittest.TestCase):
         self.assertTrue(d.has_key(se))
         rev = np.concatenate(d[re])
         sev = np.concatenate(d[se])
-        print rev
-        print sev
         self.assertEqual(10,len(rev))
         self.assertEqual(10,len(sev))
         self.assertTrue(all([q == 1 for q in rev]))
@@ -347,7 +322,6 @@ class ExtractorChainTests(unittest.TestCase):
         # sev is jagged here, and consequently has a dtype of object.  We're
         # calling concatenate so we can easily find out how many elements sev
         # contains
-        print sev
         sev = np.concatenate(sev.tolist())
         self.assertEqual(5,sev.size)
         self.assertTrue(all([s==20 for s in sev]))

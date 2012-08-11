@@ -20,7 +20,13 @@ class Composite(Extractor):
         return np.float32
     
     def _process(self):
-        return np.concatenate(\
-            [flatten2d(self.input[source]) for source in self.sources],axis = 1)
+        sources = []
+        for source in self.sources:
+            data = self.input[source]
+            l = data.shape[0]
+            dim = len(data.shape)
+            data = data.reshape((l,1)) if 1 == dim else flatten2d(data)
+            sources.append(data)
+        return np.concatenate(sources,axis = 1)
     
     

@@ -10,6 +10,7 @@ from scipy.spatial.distance import cdist
 from zounds.environment import Environment
 from zounds.analyze.extractor import SingleInput
 import zounds.analyze.bark as bark
+from zounds.util import flatten2d
 from zounds.nputil import safe_log,safe_unit_norm as sun
 
 
@@ -20,7 +21,7 @@ class FFT(SingleInput):
         
         SingleInput.__init__(self, needs = needs, nframes = nframes, 
                              step = step, key = key)
-        self._axis = axis
+        self._axis = axis if axis < 0 else axis + 1
         self._dim = None
         self._slice = None
         if None is inshape or isinstance(inshape,tuple):
@@ -54,9 +55,16 @@ class FFT(SingleInput):
     
     def _process(self):
         data = self.in_data
+        print data.shape
+        data = data.reshape((data.shape[0],) + self._inshape)
+        print data.shape
         # return the magnitudes of a real-valued fft along the axis specified,
         # excluding the zero-frequency term
-        return np.abs(np.fft.rfft(data,axis = self._axis)[self._slice])
+        out = np.abs(np.fft.rfft(data,axis = self._axis)[self._slice])
+        print out.shape
+        out = flatten2d(out)
+        print out.shape
+        return out
     
 class BarkBands(SingleInput):
     

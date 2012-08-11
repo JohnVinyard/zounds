@@ -2,7 +2,7 @@ from zounds.analyze.extractor import Extractor,ExtractorChain
 from composite import Composite
 import numpy as np
 import unittest
-from zounds.analyze.test_analyze import RootExtractor
+from zounds.testhelper import RootExtractor
 
 class SourceData(Extractor):
     

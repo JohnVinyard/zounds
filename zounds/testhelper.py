@@ -2,6 +2,32 @@ import os
 from uuid import uuid4
 import numpy as np
 from scikits.audiolab import Sndfile,Format
+from zounds.analyze.extractor import Extractor
+
+class RootExtractor(Extractor):
+    
+    def __init__(self,shape=1,totalframes=10,chunksize = 5,key = None):
+        self.shape = shape
+        Extractor.__init__(self,key = key)
+        self.framesleft = totalframes
+        self.chunksize = chunksize
+    
+    
+    def dim(self,env):
+        return self.shape
+    
+    @property
+    def dtype(self):
+        return np.int32
+    
+    def _process(self):
+        out = np.ones(self.chunksize) if self.shape == 1 \
+                else np.ones((self.chunksize,self.shape))
+        self.framesleft -= self.chunksize
+        if self.framesleft <= 0:
+            self.done = True
+            self.out = None
+        return out
 
 def filename():
     return '%s.wav' % str(uuid4())
