@@ -2,19 +2,19 @@ TOOO:
 -------------
 - Blog entry explaining sliding_window method
 
-- update all tests
+- Ensure that TemplateMatch is still working (no gaps) in the "real world"
+
+- Figure out how to deal with two failing tests.
 
 - Get rid of binary incompatibility warning
 
 - tests for all extractors
 
-- Bug processing 15461,9288,32437,1903 Broadcasting error.
+- Bug processing 15461,9288,32437,1903 Broadcasting error. Test and fix.
 
 - TemplateMatch should use the new sliding_window function
 
 - LSH for conv feature?
-
-- Standardize "inshape"-type parameter names
 
 - Faster, chunk-based or all-at-once processing for Extractors
 
@@ -82,8 +82,6 @@ TODO:  Try lowpass filter subtraction method for spectrogram sharpening
 
 -TODO: Compare results from serial and parallel ExhaustiveSearch implementations,
 		ensuring they're identical
-
-- BUG: Tests are being run multiple times when imported by other tests
 
 - Reread (and understand) 'Encoding Sound Timbre in the Auditory System'
 

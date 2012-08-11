@@ -1,38 +1,9 @@
 import unittest
 import numpy as np
-from zounds.analyze.extractor import Extractor,ExtractorChain
+from zounds.analyze.extractor import ExtractorChain
 from spectral import FFT
 from zounds.environment import Environment
-
-class RootExtractor(Extractor):
-    
-    def __init__(self,shape=1,totalframes=10,key = None):
-        self.shape = shape
-        Extractor.__init__(self,key = key)
-        self.framesleft = totalframes
-    
-    
-    def dim(self,env):
-        return self.shape
-    
-    @property
-    def dtype(self):
-        return np.int32
-    
-    def _process(self):
-        self.framesleft -= 1
-        
-        # TODO: Derived classes shouldn't have to know to set done to
-        # True and return None. There should be a simpler way
-        if self.framesleft < 0:
-            self.done = True
-            self.out = None
-            return None
-        
-        if self.shape == 1:
-            return 1
-        return np.ones(self.shape)
-
+from zounds.testhelper import RootExtractor
 
 class MockEnvironment(object):
      
@@ -69,7 +40,8 @@ class FFTTests(unittest.TestCase):
         fft = FFT(needs = re)
         ec = ExtractorChain([re,fft])
         data = ec.collect()
-        self.assertTrue(np.all([1024 == len(f) for f in data[fft]]))
+        fftdata = np.concatenate(data[fft])
+        self.assertEqual(1024,fftdata.shape[1])
     
     def test_reshape(self):
         re = RootExtractor(shape = 100)
@@ -81,7 +53,8 @@ class FFTTests(unittest.TestCase):
         # (10,10), which is reduced to shape (10,5) by performing an fft over 
         # the first dimension.  Finally, each frame of (10,5) is flattened to 
         # shape (50,)
-        self.assertTrue(np.all([50 == len(f) for f in data[fft]]))
+        fftdata = np.concatenate(data[fft])
+        self.assertEqual(50,fftdata.shape[1])
     
     def test_multiframe(self):
         # This test is nearly identical to test_reshape, except that it gathers
@@ -91,4 +64,6 @@ class FFTTests(unittest.TestCase):
         fft = FFT(needs = re, inshape = (10,10), nframes = 10)
         ec = ExtractorChain([re,fft])
         data = ec.collect()
-        self.assertTrue(np.all([50 == len(f) for f in data[fft]]))
+        fftdata = np.concatenate(data[fft])
+        self.assertEqual((1,50),fftdata.shape)
+        #self.assertTrue(np.all([50 == len(f) for f in data[fft]]))

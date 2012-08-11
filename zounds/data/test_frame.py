@@ -212,18 +212,20 @@ class PyTablesFrameControllerTests(unittest.TestCase):
         c.append(ec)
         self.assertEqual(1,len(c))
     
-    # TODO: The following two tests need to be adapted to concern themselves
-    # with chunksize instead of the old PyTablesFrameController._desired_buffer_size
+    
     def test_nframes_and_step_size_disagree_crosses_buffer_boundary(self):
         fn,FM1 = self.FM(loudness_step = 10,loudness_frames = 20)
         c = FM1.controller()
-        l = Environment.instance.chunksize * 2
+        chunksize = Environment.instance.chunksize 
+        l = chunksize * 2
         fn = self.make_sndfile(l,FM1.env())
         p = FilePattern('0','test','0',fn)
         ec = FM1.extractor_chain(p)
         c.append(ec)
         loudness = c['0']['loudness']
-        self.assertTrue(np.all(loudness > 0))
+        from zounds.visualize.plot import plot
+        plot(loudness,'loudness')
+        self.assertTrue(np.all(loudness[chunksize - 20 : chunksize + 20] > 0))
     
     def test_nframes_and_step_size_disagree_crosses_buffer_boundary_compound_nframes(self):
         class FM(Frames):
@@ -243,13 +245,15 @@ class PyTablesFrameControllerTests(unittest.TestCase):
                     PyTablesFrameControllerTests.AudioConfig)
         
         c = FM.controller()
-        l = Environment.instance.chunksize * 2
+        chunksize = Environment.instance.chunksize 
+        l = chunksize * 2
         fn = self.make_sndfile(l,FM.env())
         p = FilePattern('0','test','0',fn)
         ec = FM.extractor_chain(p)
         c.append(ec)
         l2 = c['0']['l2']
-        self.assertTrue(np.all(l2 > 0))
+        # ensure that values spanning the chunk don't get zeroed
+        self.assertTrue(np.all(l2[chunksize - 20 : chunksize + 20] > 0))
         
         
     
