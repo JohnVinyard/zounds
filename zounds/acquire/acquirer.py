@@ -1,7 +1,9 @@
+from __future__ import division
 from abc import ABCMeta,abstractmethod,abstractproperty
 import os.path
-from zounds.util import audio_files
+from time import time
 
+from zounds.util import audio_files
 from zounds.environment import Environment
 from zounds.model.pattern import FilePattern
 
@@ -66,18 +68,19 @@ class DiskAcquirer(Acquirer):
     def _acquire(self):
         files = audio_files(self.path)
         lf = len(files)
+        frames_processed = 0
+        start_time = time()
         for i,fn in enumerate(files):
             fp = os.path.join(self.path,fn)
             extid = os.path.splitext(fn)[0]
-            pattern = FilePattern(self.env.newid(),
-                                  self.source,
-                                  extid,
-                                  fp)
+            pattern = FilePattern(self.env.newid(),self.source,extid,fp)
             if not self.framecontroller.exists(self.source,extid):
                 try:
                     print 'importing %s, %s, file %i of %i' % \
                              (self.source,fn,i+1,lf)
-                    self.framecontroller.append(self.extractor_chain(pattern))
+                    addr = \
+                        self.framecontroller.append(self.extractor_chain(pattern))
+                    frames_processed += len(addr)
                 except Exception,e:
                     # KLUDGE: Do some real logging here
                     # TODO: How do I recover from an error once some data has
@@ -85,6 +88,12 @@ class DiskAcquirer(Acquirer):
                     print e
             else:
                 print 'Skipping %s. It\'s already in the database.'  % fn
+        
+        seconds_processed = self.env.frames_to_seconds(frames_processed)
+        total_time = time() - start_time
+        print \
+        'Processed %1.4f seconds of audio in %1.4f seconds. %1.4f%% Realtime' % \
+        (seconds_processed,total_time,total_time / seconds_processed)
             
             
             

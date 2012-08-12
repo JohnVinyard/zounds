@@ -206,7 +206,8 @@ class SpectralFlatness(SingleInput):
     def _process(self):
         spectrum = self.in_data
         m = spectrum.mean(axis = 1)
-        return (gmean(spectrum,axis = 1) / m) if m else 0
+        m[m == 0] = -1e5
+        return (gmean(spectrum,axis = 1) / m)
 
 class Kurtosis(SingleInput):
     

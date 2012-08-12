@@ -122,14 +122,15 @@ class FrameSearch(Model):
              (fm.features.has_key(e.key) and fm.features[e.key].store):
                 dtype.append((e.key,e.dtype,e.dim(env)))
         
-        l = len(d['audio'])
-        print l
+        audio = np.concatenate(d['audio'])
+        l = len(audio)
         r = np.recarray(l,dtype=dtype)
         
         for k,v in d.iteritems():
             if 'audio' == k or\
              (fm.features.has_key(k) and fm.features[k].store):
-                rp = np.array(v).repeat(ec[k].step, axis = 0).squeeze()
+                data = np.concatenate(v)
+                rp = data.repeat(ec[k].step, axis = 0).squeeze()
                 padded = pad(rp,l)[:l]
                 try:
                     r[k] = padded

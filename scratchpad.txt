@@ -2,10 +2,6 @@ TOOO:
 -------------
 - Blog entry explaining sliding_window method
 
-- Get rid of analyze2 module.
-
-- Ensure that TemplateMatch is still working (no gaps) in the "real world"
-
 - Figure out how to deal with two failing tests.
 
 - Get rid of binary incompatibility warning
