@@ -1,16 +1,17 @@
+from multiprocessing import Pool
+
 import numpy as np
-from zounds.nputil import safe_unit_norm as sun
 from scipy.spatial.distance import cdist
 
+from zounds.nputil import safe_unit_norm as sun,toeplitz2dc
 from zounds.analyze.extractor import SingleInput
 from zounds.model.pipeline import Pipeline
-from multiprocessing import Pool
-from zounds.nputil import toeplitz2dc
 from zounds.util import flatten2d
 from zounds.learn.nnet.nnet import sigmoid
 
 def toeplitz2d2(patch,size,silence_thresh):
     l = toeplitz2dc(patch.astype(np.float32),size)
+    # decide which patches are loud enough to be worth our attention
     nz = l.sum(1) > silence_thresh
     # take the unit norm of the patches that are above the loudness threshold
     return sun(l[np.nonzero(nz)[0]])
@@ -64,12 +65,12 @@ def toeplitz2d(patch,size,silence_thresh):
 
 def feature(args):
     patch,size,thresh,codebook,weights,activation,act_thresh = args
-    
     out = np.ndarray((patch.shape[0],codebook.shape[0]))
     for i in xrange(patch.shape[0]):
         mat = toeplitz2d2(patch[i], size, thresh)
         if not mat.shape[0]:
-            return np.zeros(out.shape)
+            out[i] = np.zeros(codebook.shape[0])
+            continue
         
         if weights is not None:
             mat *= weights
@@ -144,7 +145,9 @@ class TemplateMatch(SingleInput):
         
         self._weights = weights
         # KLUDGE: I should be passing in numpy arrays directly. This class should
-        # know nothing about the Pipeline class
+        # know nothing about the Pipeline class. This is a problem because numpy
+        # arrays aren't pickleable, and therefore can't be passed as arguments
+        # to Feature.__init__
         self._codebooks = [Pipeline[cb].learn.codebook for cb in codebooks]
         self._inshape = inshape
         self._nbooks = len(codebooks)
@@ -163,9 +166,6 @@ class TemplateMatch(SingleInput):
             self._process_multi if multiprocess else self._process_single
         
         self._args = self._build_args(None)
-        
-        # TODO: Make this an __init__ parameter
-        self.feature_func = feature
     
     @property
     def dtype(self):
@@ -189,11 +189,11 @@ class TemplateMatch(SingleInput):
             self._args[i][0] = data
     
     def _process_single(self,data):
-        return [self.feature_func(arg) for arg in self._args]
+        return [feature(arg) for arg in self._args]
         
     def _process_multi(self,data):
         pool = Pool(self._nbooks)
-        results = pool.map(self.feature_func,self._args)
+        results = pool.map(feature,self._args)
         pool.close()
         return results
     
