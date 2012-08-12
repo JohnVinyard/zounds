@@ -29,7 +29,6 @@ class SourceData(Extractor):
              self.value))
     
     def _process(self):
-        print 'source data'
         frames = max([self.input[src].shape[0] for src in self.sources])
         a = np.ndarray((frames,) + self._dim)
         a[...] = self.value

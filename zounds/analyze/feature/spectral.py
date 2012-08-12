@@ -55,16 +55,11 @@ class FFT(SingleInput):
     
     def _process(self):
         data = self.in_data
-        print data.shape
         data = data.reshape((data.shape[0],) + self._inshape)
-        print data.shape
         # return the magnitudes of a real-valued fft along the axis specified,
         # excluding the zero-frequency term
         out = np.abs(np.fft.rfft(data,axis = self._axis)[self._slice])
-        print out.shape
-        out = flatten2d(out)
-        print out.shape
-        return out
+        return flatten2d(out)
     
 class BarkBands(SingleInput):
     

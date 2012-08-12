@@ -2,6 +2,8 @@ TOOO:
 -------------
 - Blog entry explaining sliding_window method
 
+- Get rid of analyze2 module.
+
 - Ensure that TemplateMatch is still working (no gaps) in the "real world"
 
 - Figure out how to deal with two failing tests.
@@ -16,8 +18,6 @@ TOOO:
 
 - LSH for conv feature?
 
-- Faster, chunk-based or all-at-once processing for Extractors
-
 - Add a note in the docs about the source distribution being the preferred route
 
 - Add a small collection of soundfiles downloadable from the doc site
@@ -25,6 +25,8 @@ TOOO:
 - If you're on Ubuntu, you can use the command `xdg-open <html-file>` to open a local file or URL using the default browser.
 
 - Make a note in the documentation about ALSA audio
+
+- Figure out which tests are leaving a mess behind
 
 - TODO: Pooled doesn't do chunk-based processing
 
