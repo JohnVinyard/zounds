@@ -195,7 +195,52 @@ class ExtractorTests(unittest.TestCase):
         se1 = SumExtractor(re,1,1)
         se2 = SumExtractor(re,1,1)
         self.assertEqual(se1,se2)
-
+    
+    def test_nframes_abs_both_one(self):
+        re = RootExtractor()
+        se = SumExtractor(re,1,1)
+        self.assertEqual(1,re.nframes_abs())
+        self.assertEqual(1,se.nframes_abs())
+        
+    def test_nframes_abs_two(self):
+        re = RootExtractor()
+        se1 = SumExtractor(re,2,1)
+        se2 = SumExtractor(se1,1,1)
+        self.assertEqual(1,re.nframes_abs())
+        self.assertEqual(2,se1.nframes_abs())
+        self.assertEqual(2,se2.nframes_abs())
+    
+    def test_nframes_compound(self):
+        re = RootExtractor()
+        se1 = SumExtractor(re,2,1)
+        se2 = SumExtractor(se1,2,1)
+        self.assertEqual(1,re.nframes_abs())
+        self.assertEqual(2,se1.nframes_abs())
+        self.assertEqual(4,se2.nframes_abs())
+    
+    def test_step_abs_both_one(self):
+        re = RootExtractor()
+        se = SumExtractor(re,1,1)
+        self.assertEqual(1,re.step_abs())
+        self.assertEqual(1,se.step_abs())
+    
+    def test_step_abs_two(self):
+        re = RootExtractor()
+        se1 = SumExtractor(re,1,2)
+        se2 = SumExtractor(se1,1,1)
+        self.assertEqual(1,re.step_abs())
+        self.assertEqual(2,se1.step_abs())
+        self.assertEqual(2,se2.step_abs())
+    
+    def test_step_compound(self):
+        re = RootExtractor()
+        se1 = SumExtractor(re,1,2)
+        se2 = SumExtractor(se1,1,2)
+        self.assertEqual(1,re.step_abs())
+        self.assertEqual(2,se1.step_abs())
+        self.assertEqual(4,se2.step_abs())
+    
+    
 class SingleInputTests(unittest.TestCase):
     
     def test_root(self):

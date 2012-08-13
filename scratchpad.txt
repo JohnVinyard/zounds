@@ -1,7 +1,5 @@
 TOOO:
 -------------
-- Bug processing 15461,9288,32437,1903 Broadcasting error. Test and fix.
-
 - Are there tests for nframes_abs and steps_abs?
 
 - Blog entry explaining sliding_window method
