@@ -371,6 +371,7 @@ class LshSearch(FrameSearch):
         self.step = step
         self.nbits = nbits
         
+        self._idkey = 'i'
         self._addresskey = 'a'
         self._hashkey = 'h'
         self._hashdtype = LshSearch._DTYPE_MAPPING[nbits]
@@ -403,16 +404,19 @@ class LshSearch(FrameSearch):
         fc = env.framecontroller
         l = len(fc)
         index = np.recarray(\
-                l,dtype = [(self._addresskey,np.object),
+                l,dtype = [(self._idkey,np.object),
+                           (self._addresskey,np.object),
                            (self._hashkey,self._hashdtype,(self.nbits))])
         
         for i,f in enumerate(fc.iter_all(step = self.step)):
             address,frame = f
+            index[i][self._idkey] = frame['_id']
             index[i][self._addresskey] = address
             index[i][self._hashkey][:] = self._bit_permute(frame.lsh)
             print index[i][self._hashkey]
         argsort = np.argsort(index[self._hashkey],0)
         self._index = [index,argsort]
+    
     
     @property
     def feature(self):
@@ -448,7 +452,6 @@ class LshSearch(FrameSearch):
         feature = frames[self.feature]
         lf = len(feature)
         env = self.env()
-        fm = env.framemodel
         perms = np.zeros((len(feature),self.nbits))
         
         # Get the permutations of the hash code for every block
@@ -465,13 +468,13 @@ class LshSearch(FrameSearch):
             stops = inserts + rng 
             [l[q].extend(self.argsort[:,i][starts[q] : stops[q]]) for q in range(lf)]
         
-        audio = []
-        add = audio.append if self.step == 1 else audio.extend
+        results = []
         for candidates in l:
-            best = random.choice(Score(candidates).nbest(5))
-            a = fm[self.index[self._addresskey][best]].audio
-            add(a)
-        return np.array(audio)
+            best = random.choice(Score(candidates).nbest(nresults))
+            r = self.index[best]
+            results.append((r[self._idkey],r[self._addresskey]))
+            
+        return results
         
          
         

@@ -1,10 +1,10 @@
 TOOO:
 -------------
-- Are there tests for nframes_abs and steps_abs?
-
-- Blog entry explaining sliding_window method
+- 'NoneType' object is unsubscriptable when doing LSH update
 
 - LSH for conv feature?
+
+- Blog entry explaining sliding_window method
 
 - Figure out how to deal with two failing tests.
 
@@ -57,9 +57,6 @@ TODO: Ensure that all quickstart scripts use argparse.
 
 TODO: README file for setuptools
 
-Use bfcc flux to do synthesis. Create a new ordering of frames so that flux
- stays close to the same, but different frames are used.
- 
 Finish Constant-Q implementation
 
 Finish Scattering implementation
