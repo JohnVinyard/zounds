@@ -29,6 +29,39 @@ class RootExtractor(Extractor):
             self.out = None
         return out
 
+class SumExtractor(Extractor):
+    
+    def __init__(self,needs,nframes,step,key = None):
+        Extractor.__init__(self,needs,nframes,step, key = key)
+        
+    
+    def dim(self,env):
+        return ()
+    
+    @property
+    def dtype(self):
+        return np.int32
+    
+    def _sum(self,a):
+        return a.sum(axis = 1) if len(a.shape) > 1 else a
+    
+    def _prepare(self,l):
+        # ensure that each sum is at least two dimesnions, so it can be combined
+        # with others along the first axis
+        for i in xrange(len(l)):
+            if len(l[i].shape) == 1:
+                l[i] = l[i].reshape((l[i].size,1))
+        return l
+        
+    def _process(self):
+        # Sum the sums of all inputs, example-wise. This should result in a 1D array
+        src_sums = [self._sum(v) for v in self.input.values()]
+        src_sums = self._prepare(src_sums)
+        # Combine all the features for each example
+        combined = np.concatenate(src_sums,axis = 1)
+        # take the sum, example-wise
+        return self._sum(combined)
+
 def filename():
     return '%s.wav' % str(uuid4())
 

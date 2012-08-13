@@ -18,87 +18,6 @@ from zounds.util import ensure_path_exists
 
 
 
-class Bucket(object):
-    '''
-    A convenience class that ensures that features with differing step sizes
-    are all aligned properly, and that features are never lost or zeroed at 
-    chunk boundaries
-    '''
-    def __init__(self,recarray,offsets):
-        '''
-        Parameters
-            recarray - a numpy recarray containing hydrated 
-                      (i.e., repeated stepsize times) feature values
-            offsets  - a dictionary mapping feature names to the difference 
-                       between absolute (audio) frames, and the number of frames
-                       that were computed for this feature for this chunk.
-        '''
-        object.__init__(self)
-        self.recarray = recarray
-        self.offsets = offsets
-    
-    @property
-    def clean(self):
-        '''
-        Returns true if no features have an offset, i.e., every frame in the 
-        chunk was computed for every feature.
-        '''
-        return not any(self.offsets.values())
-    
-    @property
-    def frames(self):
-        '''
-        The number of absolute (audio) frames in the chunk
-        '''
-        return self.recarray.shape[0]
-    
-    @property
-    def largest_offset(self):
-        '''
-        The offset value of the feature with the largest offset, i.e., the largest
-        number of frames that were not computed for this chunk
-        '''
-        return max(self.offsets.values())
-    
-    @property
-    def abbreviated(self):
-        '''
-        Return a slice of the recarray such that no frames are invalid or yet
-        to be computed
-        '''
-        lo = self.largest_offset
-        if not lo:
-            return self.recarray
-    
-        return self.recarray[:-lo]
-    
-
-    def combine(self,other):
-        '''
-        Combine two buckets such that any invalid/uncomputed slots in the self
-        recarray are filled in by values from the other recarray. Self becomes
-        "clean", while other becomes jagged, unless both self and other are
-        already clean.
-        '''
-        if self.clean:
-            return self,other
-        
-        for k,ofs in self.offsets.iteritems():
-            if ofs == 0:
-                # the offset for this feature is currently zero, so there's
-                # no need to shuffle any data around
-                continue
-            # move ofs frames from other to self
-            self.recarray[k][-ofs:] = other.recarray[k][:ofs]
-            # slide other ofs frames into the "past"
-            other.recarray[k] = np.roll(other.recarray[k],-ofs)
-            other.recarray[k][-ofs:] = 0
-            other.offsets[k] += ofs
-        
-        
-        return self,other
-
-
 class FrameController(Controller):
     __metaclass__ = ABCMeta
     
@@ -509,80 +428,69 @@ class PyTablesFrameController(FrameController):
         self.db_write.append(frames)
         self.db_write.flush()
         self._read_mode()
-        
-    def _recarray(self,n):
-        '''
-        Return a numpy recarray with nframes, able to contain all stored features 
-        '''
-        return np.recarray(n,self.recarray_dtype)
     
     def _ensure_lock_and_append(self,record):
         self.acquire_lock()
         self._append(record)
         self.release_lock()
     
+    
+    def _recarray(self,rootkey,data,done = False):
+        if done:
+            # This is the last chunk. Write as many frames as the root feature
+            # has left.
+            l = len(data[rootkey])
+        else:
+            # This is not the last chunk. Write as many frames as the feature
+            # with the fewest frames computed.
+            srt = sorted([len(a) for a in data.itervalues()])
+            l = srt[0]
+        
+        record = np.recarray(l,self.recarray_dtype)
+        
+        for k in data.iterkeys():
+            # Assign the feature data to the recarray, ensuring that it's long
+            # enough by padding with zeros.
+            record[k] = pad(data[k][:l],l)
+            # Chop off the data we've just written
+            data[k] = data[k][l:]
+        
+        return record
+         
     def append(self,chain):
         
-        
-        def combine_buckets(b):
-            b1,b2 = b
-            return b1.combine(b2)
-        
+        def safe_concat(a,b):
+            if None is a:
+                return b
+            return np.concatenate([a,b])
         
         rootkey = 'audio'
         start_row = None
-        bucket = None
-        buckets = []
-        offsets = dict()
         abs_steps = dict([(e.key,e.step_abs()) for e in chain])
+        data = dict([(k,None) for k in self.steps.iterkeys()])
+        chunks_processed = 0
         for k,v in chain.process():
             if k not in self.steps:
                 continue
-            
-            if k == rootkey and bucket is not None:
-                buckets.append(Bucket(bucket,dict(offsets)))
-            
-            if k == rootkey and len(buckets) == 2:
-                b1,b2 = combine_buckets(buckets)
-                if start_row is None:
+    
+            if rootkey == k and chunks_processed > 0:
+                if None is start_row:
                     start_row = self.db_read.__len__()
-                self._ensure_lock_and_append(b1.recarray)
-                buckets = [b2]
+                record = self._recarray(rootkey, data, done = False)
+                self._ensure_lock_and_append(record)
                 
             
-            data = v
-            if k == rootkey:
-                # create a bucket that will hold every frame in this chunk. The
-                # root extractor should have a stepsize of one, so this is the 
-                # length of the current chunk in absolute frames.
-                bucket = self._recarray(data.shape[0])
-            
-            # repeat the incoming data by the feature's stepsize, so all features
-            # line up
-            hydrated = np.repeat(data,abs_steps[k],0)
-            # choose the lowest of the chunk length or the feature length.  The
-            # current chunk may have fewer frames than the stepsize of the
-            # current feature.
-            lh = min(bucket.shape[0],hydrated.shape[0])
-            # assign the "hydrated" data to the feature in the bucket
-            bucket[k][:lh] = hydrated[:lh]
-            offsets[k] = bucket.shape[0] - lh
+            f = np.repeat(v, abs_steps[k], 0)
+            data[k] = safe_concat(data[k],f)
+            if rootkey == k:
+                chunks_processed += 1
         
-        
-        if bucket is not None and not buckets:
-            # the entire pattern was processed in a single chunk
-            b = Bucket(bucket,dict(offsets))
+        if None is start_row:
             start_row = self.db_read.__len__()
-            self._ensure_lock_and_append(b.recarray)
-        elif buckets:
-            if start_row is None:
-                start_row = self.db_read.__len__()
-            buckets.append(Bucket(bucket,dict(offsets)))
-            b1,b2 = combine_buckets(buckets)
-            record = np.concatenate([b1.recarray,b2.abbreviated])
-            self._ensure_lock_and_append(record)
-        
-            
+        record = self._recarray(rootkey, data, done = True)
+        self._ensure_lock_and_append(record)
+    
+
         stop_row = self.db_read.__len__()
         if self._temp_external_ids is None:
             # This is the first time append() has been called since the indexes
@@ -591,12 +499,12 @@ class PyTablesFrameController(FrameController):
                 dict(((t,None) for t in self.list_external_ids()))
         
         
-        source = bucket[0]['source']
-        external_id = bucket[0]['external_id']
+        source = record[0]['source']
+        external_id = record[0]['external_id']
         # update the in-memory hashtable of external ids
         self._temp_external_ids[(source,external_id)] = None
         return PyTablesFrameController.Address(slice(start_row,stop_row))
-    
+        
         
     @property
     def lock_filename(self):

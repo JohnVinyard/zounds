@@ -14,7 +14,7 @@ from zounds.analyze.feature.reduce import Downsample
 from zounds.model.pattern import FilePattern
 from zounds.environment import Environment
 from frame import PyTablesFrameController
-from zounds.testhelper import make_sndfile,remove
+from zounds.testhelper import make_sndfile,remove,SumExtractor
 
 
 class MockExtractor(Extractor):
@@ -131,6 +131,55 @@ class PyTablesFrameControllerTests(unittest.TestCase):
                     {},
                     audio_config)
         return fn,FM
+    
+    
+    def test_two_chunks_feature_with_step_gt_one_ws_4096_ss_2048(self):
+        class AudioConfig:
+            samplerate = 44100
+            windowsize = 4096
+            stepsize = 2048
+            window = None
+        
+        class FM(Frames):
+            fft = Feature(FFT,needs = None)
+            sm = Feature(SumExtractor,needs = fft,nframes = 60,step = 30)
+        
+        dbfn = self.hdf5_filename()
+        Z = Environment('test',FM,PyTablesFrameController,(FM,dbfn),{},
+                        AudioConfig,chunksize_seconds = 45.)
+        sfn = make_sndfile(45.6504 * Z.samplerate,Z.windowsize,Z.samplerate)
+        fp = FilePattern('0','test','0',sfn)
+        ec = FM.extractor_chain(fp)
+        c = FM.controller()
+        try:
+            c.append(ec)
+        except Exception,e:
+            self.fail('PyTablesFrameController.append() raised %s' % str(e))
+        
+    
+    def test_two_chunks_feature_with_step_gt_one_ws_2048_ss_1024(self):
+        class AudioConfig:
+            samplerate = 44100
+            windowsize = 2048
+            stepsize = 1024
+            window = None
+        
+        class FM(Frames):
+            fft = Feature(FFT,needs = None)
+            sm = Feature(SumExtractor,needs = fft,nframes = 60,step = 30)
+        
+        dbfn = self.hdf5_filename()
+        Z = Environment('test',FM,PyTablesFrameController,(FM,dbfn),{},
+                        AudioConfig,chunksize_seconds = 45.)
+        sfn = make_sndfile(45.6504 * Z.samplerate,Z.windowsize,Z.samplerate)
+        fp = FilePattern('0','test','0',sfn)
+        ec = FM.extractor_chain(fp)
+        c = FM.controller()
+        try:
+            c.append(ec)
+        except Exception,e:
+            self.fail('PyTablesFrameController.append() raised %s' % str(e))
+    
     
     def test_file_exists(self):
         fn,FM1 = self.FM()

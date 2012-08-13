@@ -199,6 +199,7 @@ class TemplateMatch(SingleInput):
     
     def _process(self):
         data = self.in_data
+        print 'Template got data of size %i' % data.shape[0]
         self._update_args(data)
         out = self.__process(data)
         return np.concatenate(out,axis = 1)

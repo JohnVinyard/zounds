@@ -32,7 +32,7 @@ class Environment(object):
                  framecontroller_args,
                  data,
                  audio = AudioConfig,
-                 chunk_size_seconds = 45.):
+                 chunksize_seconds = 45.):
         
         object.__init__(self)
         
@@ -40,9 +40,9 @@ class Environment(object):
         # audio settings, samplerate, windowsize and stepsize
         self.audio = audio
         
-        self.chunksize_seconds = chunk_size_seconds
+        self.chunksize_seconds = chunksize_seconds
         # processing chunk size, in samples
-        self.chunksize = chunk_size_seconds * self.samplerate
+        self.chunksize = chunksize_seconds * self.samplerate
         # approximate number of absolute frames in each chunk
         self.chunksize_frames = int(self.chunksize / self.stepsize)
         
