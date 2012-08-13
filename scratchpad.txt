@@ -1,6 +1,12 @@
 TOOO:
 -------------
+- Segfault 28272
+
+- Bug processing 15461,9288,32437,1903 Broadcasting error. Test and fix.
+
 - Blog entry explaining sliding_window method
+
+- LSH for conv feature?
 
 - Figure out how to deal with two failing tests.
 
@@ -8,11 +14,7 @@ TOOO:
 
 - tests for all extractors
 
-- Bug processing 15461,9288,32437,1903 Broadcasting error. Test and fix.
-
-- TemplateMatch should use the new sliding_window function
-
-- LSH for conv feature?
+- TemplateMatch should use the new sliding_window function (Check toeplitz and sw equivalence)
 
 - Add a note in the docs about the source distribution being the preferred route
 

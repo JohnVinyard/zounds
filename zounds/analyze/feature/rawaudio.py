@@ -75,7 +75,7 @@ class AudioFromDisk(AudioSamples):
                             self.samplerate,
                             self.windowsize,
                             self.stepsize,
-                            Environment.instance.chunksize)
+                            Environment.instance.chunksize_seconds)
             self._init = True
         
         return self._stream
