@@ -218,6 +218,13 @@ class ExtractorTests(unittest.TestCase):
         self.assertEqual(2,se1.nframes_abs())
         self.assertEqual(4,se2.nframes_abs())
     
+    def test_nframes_multisource(self):
+        re = RootExtractor()
+        se1 = SumExtractor(re,2,1)
+        se2 = SumExtractor(re,1,1)
+        se3 = SumExtractor([se1,se2],1,1)
+        self.assertEqual(2,se3.nframes_abs())
+    
     def test_step_abs_both_one(self):
         re = RootExtractor()
         se = SumExtractor(re,1,1)
@@ -239,6 +246,13 @@ class ExtractorTests(unittest.TestCase):
         self.assertEqual(1,re.step_abs())
         self.assertEqual(2,se1.step_abs())
         self.assertEqual(4,se2.step_abs())
+    
+    def test_step_multisource(self):
+        re = RootExtractor()
+        se1 = SumExtractor(re,1,2)
+        se2 = SumExtractor(re,1,1)
+        se3 = SumExtractor([se1,se2],1,1)
+        self.assertEqual(2,se3.step_abs())
     
     
 class SingleInputTests(unittest.TestCase):
