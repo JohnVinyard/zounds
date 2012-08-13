@@ -291,6 +291,7 @@ class ExtractorChain(object):
         '''
         return self.chain.__iter__()
     
+    
     def bucket(self):
         return dict([(c.key if c.key else c,[]) for c in self.chain])
     

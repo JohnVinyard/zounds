@@ -26,7 +26,7 @@ class AudioStream(object):
         self.samplerate = samplerate
         self.windowsize = windowsize
         self.stepsize = stepsize
-        self.chunksize = chunksize_seconds * self.samplerate
+        self.chunksize = int(chunksize_seconds * self.samplerate)
         self.done = False
         
     def _read_frames(self,sndfile):

@@ -1,8 +1,8 @@
 TOOO:
 -------------
-- Segfault 28272
-
 - Bug processing 15461,9288,32437,1903 Broadcasting error. Test and fix.
+
+- Are there tests for nframes_abs and steps_abs?
 
 - Blog entry explaining sliding_window method
 
@@ -105,3 +105,5 @@ TODO:  Try lowpass filter subtraction method for spectrogram sharpening
 	to store mp3, ogg vorbis, or some other audio-encoding, instead of just
 	raw audio.  It'd be great if I could store lots of useful features AND
 	compress the data
+
+- Automatically parallelize independent branches of an extractor tree
