@@ -75,18 +75,18 @@ class DiskAcquirer(Acquirer):
             extid = os.path.splitext(fn)[0]
             pattern = FilePattern(self.env.newid(),self.source,extid,fp)
             if not self.framecontroller.exists(self.source,extid):
-                #try:
-                print 'importing %s, %s, file %i of %i' % \
-                         (self.source,fn,i+1,lf)
-                addr = \
-                    self.framecontroller.append(self.extractor_chain(pattern))
-                frames_processed += len(addr)
-                #except Exception,e:
+                try:
+                    print 'importing %s, %s, file %i of %i' % \
+                             (self.source,fn,i+1,lf)
+                    addr = \
+                        self.framecontroller.append(self.extractor_chain(pattern))
+                    frames_processed += len(addr)
+                except Exception,e:
                     # KLUDGE: Do some real logging here
                     # TODO: How do I recover from an error once some data has
                     # been written?
-                #    print e
-                #    raise e
+                    print e
+                    raise e
             else:
                 print 'Skipping %s. It\'s already in the database.'  % fn
         
