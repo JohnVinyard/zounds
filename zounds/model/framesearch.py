@@ -360,7 +360,7 @@ class LshSearch(FrameSearch):
                        32 : 'L',
                        64 : 'Q'
                        }
-    def __init__(self,_id,feature,step,nbits):
+    def __init__(self,_id,feature,step = None,nbits = None):
         k = LshSearch._DTYPE_MAPPING.keys()
         if nbits not in k:
             raise ValueError('nbits must be in %s') % (str(k))
@@ -402,18 +402,26 @@ class LshSearch(FrameSearch):
         '''
         env = self.env()
         fc = env.framecontroller
-        l = len(fc)
+        l = int(len(fc) / self.step)
+        nids = len(fc.list_ids())
         index = np.recarray(\
-                l,dtype = [(self._idkey,np.object),
+                l + nids,dtype = [(self._idkey,np.object),
                            (self._addresskey,np.object),
                            (self._hashkey,self._hashdtype,(self.nbits))])
         
+
         for i,f in enumerate(fc.iter_all(step = self.step)):
             address,frame = f
             index[i][self._idkey] = frame['_id']
             index[i][self._addresskey] = address
-            index[i][self._hashkey][:] = self._bit_permute(frame.lsh)
+            feature = frame[self.feature]
+            try:
+                index[i][self._hashkey][:] = self._bit_permute(feature[0])
+            except IndexError:
+                index[i][self._hashkey][:] = self._bit_permute(feature)
             print index[i][self._hashkey]
+        
+        index = index[:i]
         argsort = np.argsort(index[self._hashkey],0)
         self._index = [index,argsort]
     
@@ -451,7 +459,6 @@ class LshSearch(FrameSearch):
         
         feature = frames[self.feature]
         lf = len(feature)
-        env = self.env()
         perms = np.zeros((len(feature),self.nbits))
         
         # Get the permutations of the hash code for every block
@@ -460,6 +467,7 @@ class LshSearch(FrameSearch):
         rng = 10
         
         l = [[] for i in range(lf)]
+        # TODO: Parallelize the search
         for i in range(self.nbits):
             # get the insertion positions for every block, for this permutation
             inserts = np.searchsorted(self.sorted[:,i],perms[:,i])
@@ -474,7 +482,7 @@ class LshSearch(FrameSearch):
             r = self.index[best]
             results.append((r[self._idkey],r[self._addresskey]))
             
-        return results
+        return results[:nresults]
         
          
         
@@ -648,7 +656,7 @@ class MinHashSearch(FrameSearch):
     def _score_sequences(self,feature,candidates):
         starttime = time.time()
         # a list that will hold four-tuples of (_id,address,score,pos)
-        finalscores = []
+        finalscores = [] and not isinstance()
         query = feature
         querylen = len(query)
         env = self.env()

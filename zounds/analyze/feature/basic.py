@@ -5,7 +5,7 @@ from scipy.signal import convolve
 
 from zounds.util import flatten2d
 from zounds.analyze.extractor import SingleInput
-from zounds.nputil import safe_log,safe_unit_norm as sun,norm_shape
+from zounds.nputil import safe_log,safe_unit_norm as sun,norm_shape,pack
 
 class Basic(SingleInput):
     
@@ -32,7 +32,6 @@ class Basic(SingleInput):
         l = data.shape[0]
         data = data.reshape((l,) + self._inshape)
         return self._op(data).reshape((l,) + self._outshape)
-
 
 
 class Abs(Basic):
@@ -87,6 +86,29 @@ class SliceX(SingleInput):
     
     def _process(self):
         return flatten2d(self.in_data)[:,self._slice]
+
+
+class Pack(SingleInput):
+    
+    def __init__(self, nbits = None,needs = None, key = None, nframes = 1, step = 1):
+        if nbits not in [32,64]:
+            raise ValueError('nbits must be one of (32,64)')
+        
+        self._dim = ()
+        self._dtype = np.uint32 if nbits == 32 else np.uint64
+        SingleInput.__init__(\
+                self,needs = needs, key = key, nframes = nframes, step = step)
+    
+    def dim(self,env):
+        return self._dim
+    
+    @property
+    def dtype(self):
+        return self._dtype
+    
+    def _process(self):
+        return pack(self.in_data)
+        
 
 
 class Threshold(SingleInput):

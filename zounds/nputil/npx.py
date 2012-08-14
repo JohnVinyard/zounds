@@ -1,5 +1,7 @@
+import struct
 import numpy as np
 from numpy.lib.stride_tricks import as_strided as ast
+from bitarray import bitarray
 from zounds.util import flatten2d
 
 
@@ -234,4 +236,31 @@ def sliding_window(a,ws,ss = None,flatten = True):
     # remove any dimensions with size 1
     dim = filter(lambda i : i != 1,dim)
     return strided.reshape(dim)
+
+
+_TYPE_CODES = {
+                  # 32-bit unisgned integer
+                  32 : 'L',
+                  # 64-bit unsigned integer
+                  64 : 'Q'
+                  }
+_NP_TYPES = {
+            'L' : np.uint32,
+            'Q' : np.uint64
+            }
+
+
+
+def pack(a):
+    '''
+    Interpret an NxM numpy array as an N-length list of 32 or 64 bit numbers
+    '''
+    try:
+        tc = _TYPE_CODES[a.shape[1]]
+    except KeyError:
+        raise ValueError('a must have a second dimension with shape 32 or 64')
     
+    b = bitarray()
+    b.extend(a.ravel())
+    l = a.shape[0]
+    return np.array(struct.unpack(tc*l,b.tobytes()),dtype = _NP_TYPES[tc])
