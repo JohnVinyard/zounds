@@ -386,8 +386,13 @@ class PyTablesFrameController(FrameController):
             for k,v in desc.iteritems():
                 col = getattr(self.db_write.cols,k)
                 oned = 1 == len(col.shape)
-                if isinstance(col,StringCol) or oned:
-                    col.createIndex()
+                if (isinstance(col,StringCol) or oned):
+                    try:
+                        col.createIndex()
+                    except NotImplementedError:
+                        # Indexing of unsigned 64 bit columns is not currently
+                        # supported in PyTables 2.3.1
+                        pass
                     
             self.dbfile_write.close()
             

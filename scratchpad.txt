@@ -1,8 +1,16 @@
 TOOO:
 -------------
+- Try semantic hashing
+
+- Try 64 bit LSH hash
+
+- Try minhash
+
 - 'NoneType' object is unsubscriptable when doing LSH update
 
-- LSH for conv feature?
+TODO: Answer the question "How do file system seek times compare to PyTables?"
+
+TODO: Get rid of runtime warning in safe_unit_norm
 
 - Blog entry explaining sliding_window method
 
@@ -33,10 +41,6 @@ TOOO:
 
 - Try writing a simple, realtime JACK-based audio player (check out Alex McLean's SmoothDirt repo)
 
-TODO: Answer the question "How do file system seek times compare to PyTables?"
-
-TODO: Get rid of runtime warning in safe_unit_norm
-
 - BUG: It's possible to add duplicates to the database because of external_id
 	truncation
 
@@ -53,7 +57,7 @@ TODO: Use the python logging module
 TODO: There are still a couple broken test references in
 analyze/feature/test_composite.py
 
-TODO: Ensure that all quickstart scripts use argparse.
+TODO: Ensure that all quickstart scripts use argparse. (Use nargs='?' for single arg scripts)
 
 TODO: README file for setuptools
 

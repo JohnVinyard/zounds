@@ -6,6 +6,7 @@ from scipy.spatial.distance import cdist
 from bitarray import bitarray
 
 from zounds.learn.learn import Learn
+from zounds.nputil import pack
 
 class Lsh(Learn):
     
@@ -64,24 +65,13 @@ class Lsh(Learn):
 
 class BinaryLsh(Lsh):
     
-    TYPE_CODES = {
-                  # 32-bit unisgned integer
-                  32 : 'L',
-                  # 64-bit unsigned integer
-                  64 : 'Q'
-                  }
-    NP_TYPES = {
-                'L' : np.uint32,
-                'Q' : np.uint64
-                }
+    
     
     def __init__(self,size,nhashes = 32):
         keys = BinaryLsh.TYPE_CODES.keys()
         if nhashes not in keys:
             raise ValueError('nhashes must be in %s' % str(keys))
         Lsh.__init__(self,size,nhashes = nhashes)
-        self._type_code = BinaryLsh.TYPE_CODES[nhashes]
-        self._np_type = BinaryLsh.NP_TYPES[self._type_code]
     
     def _check_unique(self,nsamples,hashes,samples):
         results = self(samples)
@@ -91,10 +81,4 @@ class BinaryLsh(Lsh):
         l = data.shape[0]
         # get an l x bits boolean array, representing the coded inputs
         arr = Lsh.__call__(self,data)
-        # create a bit array from the boolean array
-        b = bitarray()
-        b.extend(arr.ravel())
-        # unpack the results into a 1D numpy array 
-        return np.array(\
-            struct.unpack(self._type_code * l,b.tobytes()),
-            dtype = self._np_type)
+        return pack(arr)
