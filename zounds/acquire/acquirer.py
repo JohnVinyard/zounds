@@ -83,10 +83,9 @@ class DiskAcquirer(Acquirer):
                     frames_processed += len(addr)
                 except Exception,e:
                     # KLUDGE: Do some real logging here
-                    # TODO: How do I recover from an error once some data has
+                    # TODO: How do I recover from an error once partial data has
                     # been written?
                     print e
-                    raise e
             else:
                 print 'Skipping %s. It\'s already in the database.'  % fn
         
