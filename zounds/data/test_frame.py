@@ -303,7 +303,37 @@ class PyTablesFrameControllerTests(unittest.TestCase):
         l2 = c['0']['l2']
         # ensure that values spanning the chunk don't get zeroed
         self.assertTrue(np.all(l2[chunksize - 20 : chunksize + 20] > 0))
+    
+    def test_iter_feature_step_greater_pattern_length(self):
+        class AudioConfig:
+            samplerate = 44100
+            windowsize = 2048
+            stepsize = 1024
+            window = None
         
+        class FM(Frames):
+            fft = Feature(FFT,store=True,needs=None)
+            loudness = Feature(Loudness,store=True,needs=fft,
+                               step = 30, nframes = 60)
+        
+        fn = self.hdf5_filename()
+        Environment('test',
+                    FM,
+                    PyTablesFrameController,
+                    (FM,fn),
+                    {},
+                    AudioConfig,
+                    chunksize_seconds = 45.)
+        c = FM.controller()
+        env = FM.env()
+        fn = self.make_sndfile(.35 * AudioConfig.samplerate, env)
+        p = FilePattern('0','test','0',fn)
+        ec = FM.extractor_chain(p)
+        c.append(ec)
+        l = [f for f in c.iter_feature('0',FM.loudness,step = 30,
+                                       chunksize = env.chunksize_frames)]
+        
+        self.assertEqual(1,len(l))
         
     
     def test_list_ids(self):

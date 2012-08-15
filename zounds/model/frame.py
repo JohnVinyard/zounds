@@ -180,6 +180,22 @@ class Precomputed(Dummy):
     
     def __init__(self,_id,feature_name,controller,needs = None):
         Dummy.__init__(self,_id,feature_name,controller, needs = needs)
+        self.stream = None
+    
+    def dim(self,env):
+        '''
+        Ask the datastore about the dimension of this data
+        '''
+        return self._c.get_dim(self.key)
+    
+    @property
+    def dtype(self):
+        '''
+        Ask the datastore about the type of this data
+        '''
+        return self._c.get_dtype(self.key)
+    
+    def _init_stream(self):
         if 'audio' != self.key:
             features = self._c.get_features()
             # get an extractor for this feature
@@ -199,20 +215,6 @@ class Precomputed(Dummy):
                                 self.key,
                                 step = _step_abs,
                                 chunksize = Environment.instance.chunksize_frames)
-    
-    def dim(self,env):
-        '''
-        Ask the datastore about the dimension of this data
-        '''
-        return self._c.get_dim(self.key)
-    
-    @property
-    def dtype(self):
-        '''
-        Ask the datastore about the type of this data
-        '''
-        return self._c.get_dtype(self.key)
-    
     def _process(self):
         if None is self.stream:
             self._init_stream()
@@ -455,7 +457,7 @@ class Frames(Model):
         Return the frames of a random pattern/sound
         '''
         _ids = list(cls.list_ids())
-        return cls[_ids[np.random.randint(0,len(_ids))]]
+        return cls[_ids[np.random.randint(0,len(_ids) - 1)]]
         
     @classmethod
     def list_ids(cls):
