@@ -608,18 +608,8 @@ class PyTablesFrameController(FrameController):
         return aggregate([row[key] for row in self.db_read[::step]],axis = axis)
     
     def iter_feature(self,_id,feature,step = 1,chunksize = 1):
-        
-        # BUG: The following should work, but always raises a
-        # StopIteration exception around 30 - 40 rows. I have
-        # no clue why.
-        #
-        # for row in self.db_read.where('_id == "%s"' % _id):
-        #   yield row[feature]
-        
-        # Here's the less simple workaround
         feature = feature if isinstance(feature,str) else feature.key
         rowns = self.db_read.getWhereList(self._query(_id = _id))[::step]
-        print rowns
         if chunksize == 1:
             for row in self.db_read.itersequence(rowns):
                 yield row[feature]
@@ -627,7 +617,6 @@ class PyTablesFrameController(FrameController):
             # iterate from the first row number to 1 plus the last row number,
             # since the row numbers are inclusive
             for i in xrange(rowns[0],rowns[-1] + 1,chunksize):
-                print i
                 stop = i + chunksize
                 indices = np.where((rowns >= i) & (rowns < stop))[0]
                 yield self.db_read[rowns[indices]][feature]

@@ -7,7 +7,7 @@ from zounds.util import flatten2d
 import pyximport
 pyximport.install()
 from toeplitz import *
-
+from time import time
 
 def norm_shape(shape):
     '''
@@ -46,6 +46,7 @@ def safe_log(a):
     return np.log(a + 1e-12)
 
 
+
 def safe_unit_norm(a):
     '''
     Ensure that the vector or vectors have unit norm
@@ -57,10 +58,14 @@ def safe_unit_norm(a):
         return a
     
     norm = np.sum(np.abs(a)**2,axis=-1)**(1./2)
-    reg = a / norm[:,np.newaxis]
-    reg[np.isnan(reg)] = 0
-    return reg
-    
+    # Dividing by a norm of zero will cause an warning to be issued. Set those
+    # values to another number. It doesn't matter what, since we'll be dividing
+    # a vector of zeros by the number, and 0 / N always equals 0.
+    norm[norm == 0] = -1e12
+    return a / norm[:,np.newaxis]
+
+
+
 def pad(a,desiredlength):
     '''
     Pad an n-dimensional numpy array with zeros along the zero-th dimension
