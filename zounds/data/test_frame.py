@@ -8,7 +8,7 @@ import numpy as np
 from zounds.model.frame import Frames,Feature,Precomputed
 from zounds.analyze.extractor import Extractor,SingleInput
 from zounds.analyze.feature.spectral import \
-    FFT,Loudness,SpectralCentroid,SpectralFlatness,BarkBands
+    FFT,Loudness,SpectralCentroid,BarkBands
 from zounds.analyze.feature.basic import UnitNorm,Abs
 from zounds.analyze.feature.reduce import Downsample
 from zounds.model.pattern import FilePattern

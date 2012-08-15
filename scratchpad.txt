@@ -1,9 +1,5 @@
 TOOO:
 -------------
-- Figure out which tests are leaving a mess behind
-
-- Does iter_feature handle interchunk boundaries properly?
-
 TODO: extractors using multiprocessing hang when updating database
 
 - Try semantic hashing
