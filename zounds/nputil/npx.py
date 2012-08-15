@@ -1,8 +1,12 @@
+from __future__ import division
 import struct
 import numpy as np
 from numpy.lib.stride_tricks import as_strided as ast
 from bitarray import bitarray
 from zounds.util import flatten2d
+import pyximport
+pyximport.install()
+from toeplitz import *
 
 
 def norm_shape(shape):
@@ -239,15 +243,15 @@ def sliding_window(a,ws,ss = None,flatten = True):
 
 
 _TYPE_CODES = {
-                  # 32-bit unisgned integer
-                  32 : 'L',
-                  # 64-bit unsigned integer
-                  64 : 'Q'
-                  }
+              # 32-bit unisgned integer
+              32 : 'L',
+              # 64-bit unsigned integer
+              64 : 'Q'
+}
 _NP_TYPES = {
             'L' : np.uint32,
             'Q' : np.uint64
-            }
+}
 
 
 
@@ -264,3 +268,13 @@ def pack(a):
     b.extend(a.ravel())
     l = a.shape[0]
     return np.array(struct.unpack(tc*l,b.tobytes()),dtype = _NP_TYPES[tc])
+
+def hamming_distance(a,b):
+    # TODO: This could be sped up by writing a cython function that takes
+    # two arrays, and performing the xor and bit counting all at once.
+    return count_bits(a^b)
+
+def jaccard_distance(a,b):
+    intersection = count_bits(a & b)
+    union = count_bits(a | b)
+    return 1 - (intersection / union)

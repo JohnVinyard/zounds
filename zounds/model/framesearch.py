@@ -5,17 +5,18 @@ import struct
 import random
 from bisect import bisect_left
 import os
+from multiprocessing import Pool
 
 import numpy as np
+from scipy.spatial.distance import cdist
 from bitarray import bitarray
 
 from model import Model
 from pattern import DataPattern
-from zounds.nputil import pad,safe_unit_norm as sun
 from zounds.util import flatten2d
-from scipy.spatial.distance import cdist
+from zounds.nputil import hamming_distance,jaccard_distance,pad
 from zounds.environment import Environment
-from multiprocessing import Pool
+
 
 def nbest(query,index,nresults = 10,metric = 'euclidean'):
     dist = cdist(np.array([query]),index,metric)[0]
@@ -94,6 +95,7 @@ class FrameSearch(Model):
     def search(self,query, nresults = 10):
         env = self.env()
         
+        start = time.time()
         if isinstance(query,env.framemodel):
             # The query is a frames instance, so it can be passed to _search
             # directly; the features are already computed
@@ -130,7 +132,7 @@ class FrameSearch(Model):
             if 'audio' == k or\
              (fm.features.has_key(k) and fm.features[k].store):
                 data = np.concatenate(v)
-                rp = data.repeat(ec[k].step, axis = 0).squeeze()
+                rp = data.repeat(ec[k].step_abs(), axis = 0).squeeze()
                 padded = pad(rp,l)[:l]
                 try:
                     r[k] = padded
@@ -140,6 +142,8 @@ class FrameSearch(Model):
         
         # get a frames instance
         frames = fm(data = r)
+        stop = time.time() - start
+        print 'analysis took %1.4f seconds' % stop
         return frames,self._search(frames, nresults = nresults)
     
     
@@ -155,7 +159,8 @@ class Score(object):
         b = np.bincount(self.seq)
         nz = np.nonzero(b)[0]
         asrt = np.argsort(b[nz])
-        return nz[asrt][::-1][:n]
+        # Get the top n occurrences, in descending order of frequency
+        return nz[asrt][-n:][::-1]
     
     
 
@@ -345,7 +350,91 @@ class ExhaustiveSearch(FrameSearch):
         
         return [t[1] for t in best]
     
+
+class ExhaustiveLshSearch(FrameSearch):
+    # TODO: Factor this out
+    _DTYPE_MAPPING = {
+                      8  : np.uint8,
+                      16 : np.uint16,
+                      32 : np.uint32,
+                      64 : np.uint64
+                      }
+    _STRUCT_MAPPING = {
+                       8  : 'B',
+                       16 : 'H',
+                       32 : 'L',
+                       64 : 'Q'
+                       }
+    def __init__(self,_id,feature,step = None,nbits = None):
+        k = LshSearch._DTYPE_MAPPING.keys()
+        if nbits not in k:
+            raise ValueError('nbits must be in %s') % (str(k))
         
+        FrameSearch.__init__(self,_id,feature)
+        self._index = None
+        self._addrs = None
+        self.step = step
+        self.nbits = nbits
+        self._hashdtype = LshSearch._DTYPE_MAPPING[nbits]
+        self._structtype = LshSearch._STRUCT_MAPPING[nbits]
+    
+    @property
+    def feature(self):
+        return self.features[0]
+    
+    def _build_index(self):
+        env = self.env()
+        fc = env.framecontroller
+        l = int(len(fc) / self.step)
+        nids = len(fc.list_ids())
+        self._index = np.ndarray(l+nids,self._hashdtype)
+        self._addrs = np.ndarray(l+nids,object)
+        for i,f in enumerate(fc.iter_all(step = self.step)):
+            address,frame = f
+            _id = frame['_id'][0]
+            self._addrs[i] = (_id,address)
+            try:
+                self._index[i] = frame[self.feature][0]
+            except IndexError:
+                self._index[i] = frame[self.feature]
+        
+        self._index = self._index[:i]
+        self._addrs = self._addrs[:i]
+    
+    def _search(self,frames,nresults):
+        start = time.time()
+        feature = frames[self.feature][::self.step]
+        # Get rid of zeros. This will confuse the results
+        nz = np.nonzero(feature)
+        feature = feature[nz[0]]
+        lf = len(feature)
+        
+        # KLUDGE: Results may not be unique
+        indices = []
+        distances = []
+        for i in range(lf):
+            dist = jaccard_distance(feature[i],self._index)
+            srt = np.argsort(dist)
+            n = nresults * 2
+            indices.extend(srt[:n])
+            distances.extend(dist[srt[:n]])
+        
+        
+        dsrt = np.argsort(distances)
+        indices = np.array(indices)[dsrt[:nresults]]
+        results = [addr for addr in self._addrs[indices]]
+        
+            
+        stop = time.time() - start
+        print 'search took %1.4f seconds' % stop
+        return results
+        
+        
+    
+    
+        
+    
+
 class LshSearch(FrameSearch):
     
     _DTYPE_MAPPING = {
@@ -412,7 +501,7 @@ class LshSearch(FrameSearch):
 
         for i,f in enumerate(fc.iter_all(step = self.step)):
             address,frame = f
-            index[i][self._idkey] = frame['_id']
+            index[i][self._idkey] = frame['_id'][0]
             index[i][self._addresskey] = address
             feature = frame[self.feature]
             try:
@@ -422,9 +511,9 @@ class LshSearch(FrameSearch):
             print index[i][self._hashkey]
         
         index = index[:i]
+        # do an argsort for each permutation
         argsort = np.argsort(index[self._hashkey],0)
         self._index = [index,argsort]
-    
     
     @property
     def feature(self):
@@ -443,8 +532,8 @@ class LshSearch(FrameSearch):
         return self._sorted
         
     def _setup(self):
-        # TODO: Just save the sorted version of the hash codes. The original
-        # version never gets used in the search.
+        # Use self.argsort to get a sorted version of the original block x perm
+        # array
         print 'setting up'
         self._sorted = np.ndarray(\
                     self.index[self._hashkey].shape,dtype = self._hashdtype)
@@ -453,17 +542,26 @@ class LshSearch(FrameSearch):
         print 'done setting up'
         
     
+    # BUG: This does not return sequences of equal length to the query!!
     def _search(self,frames,nresults):
         if None is self._sorted:
             self._setup()
         
-        feature = frames[self.feature]
+        start = time.time()
+        feature = frames[self.feature][::self.step]
+        # Get rid of zeros. This will confuse the results
+        nz = np.nonzero(feature)
+        feature = feature[nz[0]]
+        
+        
         lf = len(feature)
-        perms = np.zeros((len(feature),self.nbits))
+        perms = np.zeros((lf,self.nbits))
         
         # Get the permutations of the hash code for every block
         for i,f in enumerate(feature):
             perms[i] = self._bit_permute(f)
+        
+        # blocks will be rng*2+1 in size
         rng = 10
         
         l = [[] for i in range(lf)]
@@ -471,18 +569,30 @@ class LshSearch(FrameSearch):
         for i in range(self.nbits):
             # get the insertion positions for every block, for this permutation
             inserts = np.searchsorted(self.sorted[:,i],perms[:,i])
+            # get the starting index for every block, for this permutation
             starts = inserts - rng
             starts[starts < 0] = 0
+            # get the stopping index for every block, for this permutation
             stops = inserts + rng 
-            [l[q].extend(self.argsort[:,i][starts[q] : stops[q]]) for q in range(lf)]
-        
-        results = []
-        for candidates in l:
-            best = random.choice(Score(candidates).nbest(nresults))
-            r = self.index[best]
-            results.append((r[self._idkey],r[self._addresskey]))
             
-        return results[:nresults]
+            #[l[q].extend(self.argsort[:,i][starts[q] : stops[q]]) for q in range(lf)]
+            for q in xrange(lf): 
+                l[q].extend(self.argsort[:,i][starts[q] : stops[q]])
+        
+        
+        results = set()
+        for candidates in l:
+            results.update(Score(candidates).nbest(nresults))
+        
+        #results = [(r[self._idkey],r[self._addresskey]) for r in results]
+        finalresults = []
+        for r in results:
+            row = self.index[r]
+            finalresults.append((row[self._idkey],row[self._addresskey]))
+        
+        stop = time.time() - start
+        print '_search took %1.4f seconds' % stop
+        return finalresults[:nresults]
         
          
         
