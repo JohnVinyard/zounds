@@ -180,7 +180,25 @@ class Precomputed(Dummy):
     
     def __init__(self,_id,feature_name,controller,needs = None):
         Dummy.__init__(self,_id,feature_name,controller, needs = needs)
-        self.stream = None
+        if 'audio' != self.key:
+            features = self._c.get_features()
+            # get an extractor for this feature
+            extractor = features[self.key].extractor()
+            # ask the extractor about the stepsize and frame length 
+            # for this feature
+            self.step = extractor.step
+            self.nframes = extractor.nframes
+            _step_abs = extractor.step_abs()
+        else:
+            _step_abs = 1
+            
+        # get an iterator that will iterate over this feature with 
+        # the step size we just discovered
+        self.stream = self._c.iter_feature(\
+                                self._id,
+                                self.key,
+                                step = _step_abs,
+                                chunksize = Environment.instance.chunksize_frames)
     
     def dim(self,env):
         '''
@@ -195,22 +213,6 @@ class Precomputed(Dummy):
         '''
         return self._c.get_dtype(self.key)
     
-    def _init_stream(self):
-        if 'audio' != self.key:
-            features = self._c.get_features()
-            # get an extractor for this feature
-            extractor = features[self.key].extractor()
-            # ask the extractor about the stepsize and frame length 
-            # for this feature
-            self.step = extractor.step
-            self.nframes = extractor.nframes
-        # get an iterator that will iterate over this feature with 
-        # the step size we just discovered
-        self.stream = self._c.iter_feature(\
-                                self._id,
-                                self.key,
-                                step = self.step,
-                                chunksize = Environment.instance.chunksize_frames)
     def _process(self):
         if None is self.stream:
             self._init_stream()
@@ -453,7 +455,7 @@ class Frames(Model):
         Return the frames of a random pattern/sound
         '''
         _ids = list(cls.list_ids())
-        return cls[_ids[np.random.randint(0,len(_ids) - 1)]]
+        return cls[_ids[np.random.randint(0,len(_ids))]]
         
     @classmethod
     def list_ids(cls):
