@@ -471,13 +471,20 @@ class PyTablesFrameController(FrameController):
         
         rootkey = 'audio'
         start_row = None
-        abs_steps = dict([(e.key,e.step_abs()) for e in chain])
+        # Wait to initialize the abs_steps values, since the Precomputed
+        # extractor doesn't know its step until the first call to _process()
+        abs_steps = dict([(e.key,None) for e in chain])
         data = dict([(k,None) for k in self.steps.iterkeys()])
         chunks_processed = 0
         for k,v in chain.process():
             if k not in self.steps:
                 continue
     
+            if None is abs_steps[k]:
+                # The first call to _process has been made, so it's safe to
+                # get the absolute step value for this extractor
+                abs_steps[k] = chain[k].step_abs()
+            
             if rootkey == k and chunks_processed > 0:
                 if None is start_row:
                     start_row = self.db_read.__len__()
@@ -617,6 +624,8 @@ class PyTablesFrameController(FrameController):
             for row in self.db_read.itersequence(rowns):
                 yield row[feature]
         else:
+            # iterate from the first row number to 1 plus the last row number,
+            # since the row numbers are inclusive
             for i in xrange(rowns[0],rowns[-1] + 1,chunksize):
                 print i
                 stop = i + chunksize

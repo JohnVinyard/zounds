@@ -1,12 +1,10 @@
 TOOO:
 -------------
-- Write test for bad iter_feature behavior when only one row will be returned
-
-- Write test demonstrating that features don't get repeated properly when syncing db
-  
-TODO: extractors using multiprocessing hang when updating database
-
 - 'NoneType' object is unsubscriptable when doing LSH update
+
+- Figure out which tests are leaving a mess behind
+
+TODO: extractors using multiprocessing hang when updating database
 
 - Try semantic hashing
 
@@ -34,7 +32,7 @@ TODO: Get rid of runtime warning in safe_unit_norm
 
 - Make a note in the documentation about ALSA audio
 
-- Figure out which tests are leaving a mess behind
+
 
 - TODO: Pooled doesn't do chunk-based processing
 
