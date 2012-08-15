@@ -1,12 +1,16 @@
 TOOO:
 -------------
-- Try semantic hashing
+- Write test for bad iter_feature behavior when only one row will be returned
 
-- Try 64 bit LSH hash
-
-- Try minhash
+- Write test demonstrating that features don't get repeated properly when syncing db
+  
+TODO: extractors using multiprocessing hang when updating database
 
 - 'NoneType' object is unsubscriptable when doing LSH update
+
+- Try semantic hashing
+
+- Try performing PCA on conv feature prior to semantic hash learning
 
 TODO: Answer the question "How do file system seek times compare to PyTables?"
 
@@ -47,8 +51,6 @@ TODO: Get rid of runtime warning in safe_unit_norm
 TODO: Two modes for ExhaustiveSearch
 
 TODO: Do another installation test run and move up a new dist package
-
-TODO: extractors using multiprocessing hang when updating database
 
 TODO: Sphinx documentation
 
