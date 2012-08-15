@@ -1,8 +1,8 @@
 TOOO:
 -------------
-- 'NoneType' object is unsubscriptable when doing LSH update
-
 - Figure out which tests are leaving a mess behind
+
+- Does iter_feature handle interchunk boundaries properly?
 
 TODO: extractors using multiprocessing hang when updating database
 
@@ -31,8 +31,6 @@ TODO: Get rid of runtime warning in safe_unit_norm
 - If you're on Ubuntu, you can use the command `xdg-open <html-file>` to open a local file or URL using the default browser.
 
 - Make a note in the documentation about ALSA audio
-
-
 
 - TODO: Pooled doesn't do chunk-based processing
 

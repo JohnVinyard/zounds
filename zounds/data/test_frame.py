@@ -120,6 +120,7 @@ class PyTablesFrameControllerTests(unittest.TestCase):
         
         if filepath:
             fn = filepath
+            self.to_cleanup.append(fn)
         else:
             fn = self.hdf5_filepath() if indir else self.hdf5_filename()
         
@@ -147,7 +148,7 @@ class PyTablesFrameControllerTests(unittest.TestCase):
         dbfn = self.hdf5_filename()
         Z = Environment('test',FM,PyTablesFrameController,(FM,dbfn),{},
                         AudioConfig,chunksize_seconds = 45.)
-        sfn = make_sndfile(45.6504 * Z.samplerate,Z.windowsize,Z.samplerate)
+        sfn = self.make_sndfile(45.6504 * Z.samplerate,Z)
         fp = FilePattern('0','test','0',sfn)
         ec = FM.extractor_chain(fp)
         c = FM.controller()
@@ -171,7 +172,7 @@ class PyTablesFrameControllerTests(unittest.TestCase):
         dbfn = self.hdf5_filename()
         Z = Environment('test',FM,PyTablesFrameController,(FM,dbfn),{},
                         AudioConfig,chunksize_seconds = 45.)
-        sfn = make_sndfile(45.6504 * Z.samplerate,Z.windowsize,Z.samplerate)
+        sfn = self.make_sndfile(45.6504 * Z.samplerate,Z)
         fp = FilePattern('0','test','0',sfn)
         ec = FM.extractor_chain(fp)
         c = FM.controller()
