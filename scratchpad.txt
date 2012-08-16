@@ -1,14 +1,12 @@
 TOOO:
 -------------
+TODO: Answer the question "How do file system seek times compare to PyTables?"
+
 TODO: extractors using multiprocessing hang when updating database
 
 - Try semantic hashing
 
 - Try performing PCA on conv feature prior to semantic hash learning
-
-TODO: Answer the question "How do file system seek times compare to PyTables?"
-
-TODO: Get rid of runtime warning in safe_unit_norm
 
 - Blog entry explaining sliding_window method
 
@@ -48,9 +46,6 @@ TODO: Sphinx documentation
 
 TODO: Use the python logging module
 
-TODO: There are still a couple broken test references in
-analyze/feature/test_composite.py
-
 TODO: Ensure that all quickstart scripts use argparse. (Use nargs='?' for single arg scripts)
 
 TODO: README file for setuptools
@@ -85,7 +80,7 @@ TODO:  Try lowpass filter subtraction method for spectrogram sharpening
 	
 - FEATURE : Automatic rebuilding of search indices after data is added
 
-- Add mel scale and refactor some code in analyze.bark
+- Add psychoacoustics module.  Add mel scale and refactor some code in analyze.bark
 
 - BUG : Address equivalence bug: [1,4,10] and [1,6,10] are considered equivalent.  This
   is incorrect
