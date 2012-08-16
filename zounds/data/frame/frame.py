@@ -3,7 +3,7 @@ import os.path
 import re
 import time
 import cPickle
-from abc import ABCMeta,abstractmethod
+from abc import ABCMeta,abstractmethod,abstractproperty
 
 from tables import \
     openFile,IsDescription,StringCol,Col,Int8Col
@@ -24,6 +24,22 @@ class FrameController(Controller):
     def __init__(self,framesmodel):
         Controller.__init__(self)
         self.model = framesmodel
+    
+    @abstractproperty
+    def concurrent_reads_ok(self):
+        '''
+        Return True if it's safe for multiple processes to read from the DB at
+        once
+        '''
+        pass
+    
+    @abstractproperty
+    def concurrent_writes_ok(self):
+        '''
+        Return True if it's safe for multiple processes to write to the DB at 
+        once
+        '''
+        pass
         
     @abstractmethod
     def __len__(self):
@@ -148,7 +164,7 @@ class FrameController(Controller):
         '''
         pass
     
-    @abstractmethod
+    @abstractmethodraise NotImplemented()
     def iter_id(self,step = 1):
         '''
         Iterate over the frames from a single id, returning two-tuples of 
@@ -415,6 +431,14 @@ class PyTablesFrameController(FrameController):
         self._temp_external_ids = None
         # update the indexes, if need be
         self.update_index()
+    
+    @property
+    def concurrent_reads_ok(self):
+        return False
+    
+    @property
+    def concurrent_writes_ok(self):
+        return False
         
     def update_index(self):
         '''
@@ -774,6 +798,13 @@ class DictFrameController(FrameController):
     
     def __init__(self,framesmodel):
         FrameController.__init__(self,framesmodel)
+        
+    
+    def concurrent_reads_ok(self):
+        raise NotImplementedError
+    
+    def concurrent_writes_ok(self):
+        raise NotImplementedError
         
     def sync(self,add,update,delete,chain):
         raise NotImplementedError
