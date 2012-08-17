@@ -1,5 +1,6 @@
 from __future__ import division
 import numpy as np
+from zounds.constants import id_key
 from zounds.analyze.extractor import Extractor,SingleInput
 
 
@@ -10,10 +11,14 @@ class MetaDataExtractor(Extractor):
         self.pattern = pattern
         self.store = False
     
+    @property
+    def _id(self):
+        return self.pattern.data()[id_key]
+    
     def dim(self,env):
         return ()
     
-    @property
+    @property   
     def dtype(self):
         raise NotImplementedError()
     

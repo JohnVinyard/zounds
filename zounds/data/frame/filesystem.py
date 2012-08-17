@@ -412,6 +412,7 @@ class FileSystemFrameController(FrameController):
             if rootkey == k and chunks_processed > 0:
                 record = self._recarray(rootkey, data, done = False)
                 # TODO: Write differently
+                raise Exception('Write to a file, dummy!')
                 self._ensure_lock_and_append(record)
                 nframes += len(record)
                 
@@ -424,6 +425,7 @@ class FileSystemFrameController(FrameController):
         
         record = self._recarray(rootkey, data, done = True)
         # TODO: Write differently
+        raise Exception('Write to a file, dummy!')
         self._ensure_lock_and_append(record)
         nframes += len(record)
     
