@@ -2,11 +2,18 @@ TOOO:
 -------------
 TODO: Toeplitz is missing boundaries and causing bugs (I think)
 
+TODO: The idea behind some of the PyTablesFrameController.Address methods is
+	seriously broken
+	
+- BUG : Address equivalence bug: [1,4,10] and [1,6,10] are considered equivalent.  This
+  is incorrect
+
 TODO: Answer the question "How do file system seek times compare to PyTables?"
 
-TODO: extractors using multiprocessing hang when updating database
+TODO: Do weird, "blank" search results occur when drawing queries directly from
+	the database?
 
-- Try semantic hashing
+TODO: extractors using multiprocessing hang when updating database
 
 - Try performing PCA on conv feature prior to semantic hash learning
 
@@ -73,10 +80,6 @@ TODO:  Try lowpass filter subtraction method for spectrogram sharpening
 -TODO: Compare results from serial and parallel ExhaustiveSearch implementations,
 		ensuring they're identical
 
-- Reread (and understand) 'Encoding Sound Timbre in the Auditory System'
-
-- Reread (and understand) 'Multiscale scattering for audio classification'
-
 - Bug: It's possible to load controllers of the wrong type with 
 	PickledController-derived classes
 	
@@ -84,8 +87,6 @@ TODO:  Try lowpass filter subtraction method for spectrogram sharpening
 
 - Add psychoacoustics module.  Add mel scale and refactor some code in analyze.bark
 
-- BUG : Address equivalence bug: [1,4,10] and [1,6,10] are considered equivalent.  This
-  is incorrect
 
 - Write LearnedFeature tests
 

@@ -11,6 +11,7 @@ from tables import \
 import numpy as np
 
 import zounds.model.frame
+from zounds.constants import audio_key,id_key,source_key,external_id_key
 from zounds.data.controller import Controller
 from zounds.model.pattern import Pattern
 from zounds.nputil import pad
@@ -179,10 +180,33 @@ class FrameController(Controller):
         on the backing store.
         '''
         pass
+    
+    
+    def _recarray(self,rootkey,data,done = False):
+        if done:
+            # This is the last chunk. Write as many frames as the root feature
+            # has left.
+            l = len(data[rootkey])
+        else:
+            # This is not the last chunk. Write as many frames as the feature
+            # with the fewest frames computed.
+            srt = sorted([len(a) for a in data.itervalues()])
+            l = srt[0]
+        
+        record = np.recarray(l,self.recarray_dtype)
+        
+        for k in data.iterkeys():
+            # Assign the feature data to the recarray, ensuring that it's long
+            # enough by padding with zeros.
+            record[k] = pad(data[k][:l],l)
+            # Chop off the data we've just written
+            data[k] = data[k][l:]
+        
+        return record
 
-class PyTablesUpdateNotCompleteError(BaseException):
+class UpdateNotCompleteError(BaseException):
     '''
-    Raised when a PyTables update fails
+    Raised when a db update fails
     '''
     def __init__(self):
         BaseException.__init__(self,Exception('The PyTables update failed'))
@@ -464,28 +488,6 @@ class PyTablesFrameController(FrameController):
         self.release_lock()
     
     
-    def _recarray(self,rootkey,data,done = False):
-        if done:
-            # This is the last chunk. Write as many frames as the root feature
-            # has left.
-            l = len(data[rootkey])
-        else:
-            # This is not the last chunk. Write as many frames as the feature
-            # with the fewest frames computed.
-            srt = sorted([len(a) for a in data.itervalues()])
-            l = srt[0]
-        
-        record = np.recarray(l,self.recarray_dtype)
-        
-        for k in data.iterkeys():
-            # Assign the feature data to the recarray, ensuring that it's long
-            # enough by padding with zeros.
-            record[k] = pad(data[k][:l],l)
-            # Chop off the data we've just written
-            data[k] = data[k][l:]
-        
-        return record
-         
     def append(self,chain):
         
         def safe_concat(a,b):
@@ -493,7 +495,7 @@ class PyTablesFrameController(FrameController):
                 return b
             return np.concatenate([a,b])
         
-        rootkey = 'audio'
+        rootkey = audio_key
         start_row = None
         # Wait to initialize the abs_steps values, since the Precomputed
         # extractor doesn't know its step until the first call to _process()
@@ -534,9 +536,9 @@ class PyTablesFrameController(FrameController):
             self._temp_external_ids = \
                 dict(((t,None) for t in self.list_external_ids()))
         
-        
-        source = record[0]['source']
-        external_id = record[0]['external_id']
+        row = record[0]
+        source = row[source_key]
+        external_id = row[external_id_key]
         # update the in-memory hashtable of external ids
         self._temp_external_ids[(source,external_id)] = None
         return PyTablesFrameController.Address(slice(start_row,stop_row))
@@ -598,7 +600,7 @@ class PyTablesFrameController(FrameController):
     
     def list_external_ids(self):
         rows = self.db_read.readWhere(self._query(framen = 0))
-        return zip(rows['source'],rows['external_id'])
+        return zip(rows[source_key],rows[external_id_key])
     
     def exists(self,source,external_id):
         if self._temp_external_ids is not None:
@@ -614,7 +616,8 @@ class PyTablesFrameController(FrameController):
     def external_id(self,_id):
         
         row = self.db_read.readWhere(self._query(_id = _id, framen = 0))
-        return row[0]['source'],row[0]['external_id']
+        r = row[0]
+        return r[source_key],r[external_id_key]
     
     def get_dtype(self,key):
         if isinstance(key,zounds.model.frame.Feature):
@@ -716,7 +719,7 @@ class PyTablesFrameController(FrameController):
         if (len(self) != len(newc)) or _ids != newc.list_ids():
             # Something went wrong. The number of rows or the set of _ids
             # don't match
-            raise PyTablesUpdateNotCompleteError()
+            raise UpdateNotCompleteError()
         
         # close both the new and old files
         newc.close()
