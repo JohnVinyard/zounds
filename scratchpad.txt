@@ -1,5 +1,7 @@
 TOOO:
 -------------
+TODO: Toeplitz is missing boundaries and causing bugs (I think)
+
 TODO: Answer the question "How do file system seek times compare to PyTables?"
 
 TODO: extractors using multiprocessing hang when updating database

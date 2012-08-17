@@ -11,7 +11,7 @@ from tables import \
 import numpy as np
 
 import zounds.model.frame
-from controller import Controller
+from zounds.data.controller import Controller
 from zounds.model.pattern import Pattern
 from zounds.nputil import pad
 from zounds.util import ensure_path_exists
@@ -164,7 +164,7 @@ class FrameController(Controller):
         '''
         pass
     
-    @abstractmethodraise NotImplemented()
+    @abstractmethod
     def iter_id(self,step = 1):
         '''
         Iterate over the frames from a single id, returning two-tuples of 

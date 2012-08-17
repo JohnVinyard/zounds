@@ -397,7 +397,7 @@ class ExhaustiveLshSearch(FrameSearch):
                 self._index[i] = frame[self.feature][0]
             except IndexError:
                 self._index[i] = frame[self.feature]
-        
+            print self._index[i]
         self._index = self._index[:i]
         self._addrs = self._addrs[:i]
     
@@ -412,8 +412,9 @@ class ExhaustiveLshSearch(FrameSearch):
         # KLUDGE: Results may not be unique
         indices = []
         distances = []
+        # TODO: Compute the hamming distances for all blocks at once
         for i in range(lf):
-            dist = jaccard_distance(feature[i],self._index)
+            dist = hamming_distance(feature[i],self._index)
             srt = np.argsort(dist)
             n = nresults * 2
             indices.extend(srt[:n])
