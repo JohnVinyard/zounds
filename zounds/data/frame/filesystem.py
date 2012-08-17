@@ -429,7 +429,6 @@ class FileSystemFrameController(FrameController):
         self._ensure_lock_and_append(record)
         nframes += len(record)
     
-        # TODO: Move these hardcoded values (_id,source,external_id) somewhere more central
         row = record[0]
         _id = row[id_key]
         source = row[source_key]
@@ -439,6 +438,12 @@ class FileSystemFrameController(FrameController):
         self._external_ids[_id] = (source,external_id)
         self._lengths[_id] = nframes
         return FileSystemFrameController.Address((_id,slice(None)))
+    
+    def address(self,_id):
+        '''
+        Return the address for an _id
+        '''
+        raise NotImplemented()
     
     def get(self,key):
         '''

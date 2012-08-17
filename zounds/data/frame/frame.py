@@ -26,6 +26,13 @@ class FrameController(Controller):
         Controller.__init__(self)
         self.model = framesmodel
     
+    @abstractmethod
+    def address(self,_id):
+        '''
+        Return the address for a specific _id
+        '''
+        pass
+    
     @abstractproperty
     def concurrent_reads_ok(self):
         '''
@@ -592,6 +599,10 @@ class PyTablesFrameController(FrameController):
     def __len__(self):
         return self.db_read.__len__()
     
+    def address(self,_id):
+        rowns = self.db_read.getWhereList(self._query(_id = _id))
+        return PyTablesFrameController.Address(slice(rowns[0],rowns[-1] + 1))
+    
     def list_ids(self):
         l = self.db_read.readWhere(self._query(framen = 0))['_id']
         s = set(l)
@@ -858,4 +869,7 @@ class DictFrameController(FrameController):
         pass
         
     def list_external_ids(self):
+        pass
+    
+    def address(self,_id):
         pass
