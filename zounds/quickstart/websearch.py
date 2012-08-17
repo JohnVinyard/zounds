@@ -3,6 +3,7 @@ import web
 import os
 import shutil
 from time import sleep
+from random import choice
 
 import numpy as np
 from scikits.audiolab import oggwrite,Sndfile
@@ -10,14 +11,20 @@ from scipy.misc import imsave
 
 from config import *
 from zounds.data.frame import Address
-
+from zounds.model.framesearch import ExhaustiveLshSearch
 
 media_path = 'media'
 images_path = os.path.join(media_path,'images')
 audio_path = os.path.join(media_path,'audio')
-lock_path = 'lock.dat'
+
+# TODO: Do I need this?
+#lock_path = 'lock.dat'
 
 controller = Z.framecontroller
+# TODO: This needs to be configurable from the command line when the server is
+# started!  None of this (including the search class) should be hard coded!
+search = ExhaustiveLshSearch(\
+                'search/packed',FrameModel.packed,step = 30,nbits = 64)
 _ids = controller.list_ids()
 
 urls = (r'/audio/(?P<addr>\d+_\d+)','audio',
@@ -30,18 +37,18 @@ def decode_address(addr):
 def encode_address(addr):
     return '%s_%s' % (addr.key.start,addr.key.stop)
 
-def acquire_lock():
-    while os.path.exists(lock_path):
-        sleep(0.01)
-    
-    f = open(lock_path,'w')
-    f.close()
+# TODO: Do I need this?
+#def acquire_lock():
+#    while os.path.exists(lock_path):
+#        sleep(0.01)
+#    
+#    f = open(lock_path,'w')
+#    f.close()
+#
+#def release_lock():
+#    os.remove(lock_path)
 
-def release_lock():
-    os.remove(lock_path)
-
-
-
+# TODO: Refactor common code out of audio and image classes
 class audio(object):
     
     def __init__(self):
@@ -102,6 +109,30 @@ class zoundsapp(object):
     
     def __init__(self):
         object.__init__(self)
+    
+    def GET(self):
+        qid = choice(_ids)
+        addr = controller.address(qid)
+        start,stop = addr.key.start,addr.key.stop
+        l = stop - start
+        # TODO: Query lengths should be specified in arguments when the webserver
+        # is started
+        minlength = 60
+        maxlength = 60 * 4
+        qlength = np.random.randint(minlength,maxlength)
+        slack = l - qlength
+        if slack > 0:
+            qstart = np.random.randint(slack) + start
+            qstop = qlength + qstart
+            addr = Address(slice(qstart,qstop))
+        # TODO: nresults should be specified by a command-line arg when the server
+        # is started
+        results = search.search(addr, nresults = 10)
+        # TODO: Render the results to a template
+            
+            
+            
+            
 
 app = web.application(urls, globals())
 
