@@ -2,6 +2,7 @@ from __future__ import division
 from abc import ABCMeta,abstractmethod
 import numpy as np
 
+from zounds.constants import audio_key,id_key,source_key,external_id_key
 from zounds.model.model import Model
 from zounds.model.pattern import FilePattern,DataPattern
 # KLUDGE: These are temporarily set to point at the experimental analyze2 module
@@ -196,7 +197,7 @@ class Precomputed(Dummy):
         return self._c.get_dtype(self.key)
     
     def _init_stream(self):
-        if 'audio' != self.key:
+        if audio_key != self.key:
             features = self._c.get_features()
             # get an extractor for this feature
             extractor = features[self.key].extractor()
@@ -365,7 +366,7 @@ class Frames(Model):
             raise ValueError('address or data must be supplied')
         
         
-        self.audio = self._data['audio'] 
+        self.audio = self._data[audio_key] 
         
         for k,v in self.__class__.stored_features().iteritems():    
             setattr(self,k,self._data[k])
@@ -609,7 +610,7 @@ class Frames(Model):
          
         if transitional:      
             ra = Precomputed(pattern._id,
-                             'audio',
+                             audio_key,
                              cls.controller(),
                              needs = None)
         else:
@@ -644,7 +645,7 @@ class Frames(Model):
                 # Frames class will be using the MetaDataExtractor as a source,
                 # while any features defined on the Frames-derived class will
                 # be using AudioFromDisk. This might not always be the case!!
-                if k in ['audio','source','external_id','framen','_id']:
+                if k in [audio_key,source_key,external_id_key,'framen',id_key]:
                     needs = meta
                 else:
                     needs = ra

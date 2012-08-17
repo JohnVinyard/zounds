@@ -6,5 +6,8 @@ available_file_formats = aff()
 available_file_formats.append('aif')
 
 
-
+audio_key = 'audio'
+id_key = '_id'
+source_key = 'source'
+external_id_key = 'external_id'
 
