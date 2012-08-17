@@ -368,7 +368,7 @@ class Frames(Model):
         
         self.audio = self._data[audio_key] 
         
-        for k,v in self.__class__.stored_features().iteritems():    
+        for k in self.__class__.stored_features().iterkeys():    
             setattr(self,k,self._data[k])
     
     # BUG: What if the frames instance is composed of more than one sound?
