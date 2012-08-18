@@ -1,3 +1,4 @@
+$def with (results)
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -8,11 +9,39 @@
 	<!--[if IE]>
 		<script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
 	<![endif]-->
+	<style type="text/css">
+		.snippet {
+			margin:2px;
+			background-color:#666;
+			padding:2px;
+		}
+	</style>
 </head>
 
-<body id="home">
+<body id="home" style="background-color:#555;">
 
-	<h1>HTML5 boilerplate</h1>
+	<h1>$results.brag</h1>
+	<div class="snippet">
+		$ addr = '%i_%i' % (results.query.key.start,results.query.key.stop)
+		<img src="/image/$addr"/>
+		<br/>
+		<audio controls="controls">
+		  <source src="/audio/$addr" type="audio/ogg" />
+		  Your browser does not support the audio tag.
+		</audio>
+	</div>
+	<hr/>
+	$for r in results.results:
+		<div class="snippet" style="float:left;">
+			$ addr = '%i_%i' % (r.start,r.stop)
+			<img src="/image/$addr"/>
+			<br/>
+			<audio controls="controls">
+			  <source src="/audio/$addr" type="audio/ogg" />
+			  Your browser does not support the audio tag.
+			</audio>
+		</div>
+	
 
 </body>
 </html>

@@ -1,5 +1,7 @@
 TOOO:
 -------------
+Are there duplicates in the current db?
+
 TODO: Toeplitz is missing boundaries and causing bugs (I think)
 
 TODO: The idea behind some of the PyTablesFrameController.Address methods is
