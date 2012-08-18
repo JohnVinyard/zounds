@@ -2,7 +2,7 @@ from __future__ import division
 import web
 import os
 import shutil
-from time import sleep
+from time import sleep,time
 from random import choice
 
 import numpy as np
@@ -23,12 +23,18 @@ audio_path = os.path.join(media_path,'audio')
 controller = Z.framecontroller
 # TODO: This needs to be configurable from the command line when the server is
 # started!  None of this (including the search class) should be hard coded!
-search = ExhaustiveLshSearch(\
-                'search/packed',FrameModel.packed,step = 30,nbits = 64)
-_ids = controller.list_ids()
+search = ExhaustiveLshSearch['search/packed']
+_ids = list(controller.list_ids())
+
+nframes = len(controller)
+minutes = Z.frames_to_seconds(nframes)
+hours = (minutes // 60) / 60
+minutes = minutes % 60
+human_friendly_db_length = '%i hours and %i minutes' % (hours,minutes)
 
 urls = (r'/audio/(?P<addr>\d+_\d+)','audio',
-        r'/image/(?P<addr>\d+_\d+)','image')
+        r'/image/(?P<addr>\d+_\d+)','image',
+        r'/zoundsapp','zoundsapp')
 
 def decode_address(addr):
     start,stop = [int(s) for s in addr.split('_')]
@@ -49,6 +55,29 @@ def encode_address(addr):
 #    os.remove(lock_path)
 
 # TODO: Refactor common code out of audio and image classes
+
+class Result(object):
+    
+    def __init__(self,_id,start,stop):
+        self._id = _id
+        self.start = start
+        self.stop = stop
+    
+    def __hash__(self):
+        return hash((self._id,self.start,self.stop))
+
+class Results(object):
+    
+    def __init__(self,query,results,time):
+        self.query = query
+        self.results = \
+            [Result(_id,addr.key.start,addr.key.stop) for _id,addr in results]
+        self.results = set(self.results)
+
+        self.search_time = time
+        self.brag = 'Searched %s of sound in %1.4f seconds' %\
+             (human_friendly_db_length,self.search_time)
+    
 class audio(object):
     
     def __init__(self):
@@ -127,9 +156,13 @@ class zoundsapp(object):
             addr = Address(slice(qstart,qstop))
         # TODO: nresults should be specified by a command-line arg when the server
         # is started
-        results = search.search(addr, nresults = 10)
+        print addr
+        tic = time()
+        results = search.search(addr, nresults = 30)
+        toc = time() - tic
         # TODO: Render the results to a template
-            
+        render = web.template.render('websearch/templates')
+        return render.zoundsapp(Results(addr,results,toc))
             
             
             
