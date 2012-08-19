@@ -7,7 +7,8 @@ from random import choice
 
 import numpy as np
 from scikits.audiolab import oggwrite,Sndfile
-from scipy.misc import imsave
+from scipy.misc import imsave,imresize
+from matplotlib.cm import hot
 
 from config import *
 from zounds.data.frame import Address
@@ -33,7 +34,7 @@ minutes = minutes % 60
 human_friendly_db_length = '%i hours and %i minutes' % (hours,minutes)
 
 urls = (r'/audio/(?P<addr>\d+_\d+)','audio',
-        r'/image/(?P<addr>\d+_\d+)','image',
+        r'/image/(?P<addr>\d+_\d+)/(?P<feature>[\w]+)','image',
         r'/zoundsapp','zoundsapp')
 
 def decode_address(addr):
@@ -56,23 +57,87 @@ def encode_address(addr):
 
 # TODO: Refactor common code out of audio and image classes
 
+# TODO: I should be using the address class itself here!
 class Result(object):
     
-    def __init__(self,_id,start,stop):
+    def __init__(self,_id,start,stop,score):
         self._id = _id
         self.start = start
         self.stop = stop
+        self.score = score
+        self.blocks = 1
     
+    @property
+    def nframes(self):
+        return self.stop - self.start
+    
+        
     def __hash__(self):
         return hash((self._id,self.start,self.stop))
+    
+    def __eq__(self,other):
+        return self._id == other._id and\
+             self.start == other.start and\
+              self.stop == other.stop
+    
+    def __lt__(self,other):
+        return self.start < other.start
+    
+    def __le__(self,other):
+        return self.start <= other.start
+    
+    def __gt__(self,other):
+        return self.start > other.start
+    
+    def __ge__(self,other):
+        return self.start >= other.start
+    
+    @staticmethod
+    def congeal(results):
+        srt = sorted(results)
+        
+        #return Result(results[0]._id,
+        #              results[0].start,
+        #              results[-1].stop,
+        #              sum([r.score for r in results]))
+        
+        r = Result(srt[0]._id,srt[0].start,srt[0].stop,srt[0].score)
+        out = [r]
+        for i in range(1,len(srt)):
+            if srt[i].start - out[-1].stop > 500:
+                nr = Result(srt[i]._id,srt[i].start,srt[i].stop,srt[i].score)
+                out.append(nr)
+            else:
+                out[-1].stop = srt[i].stop
+                out[-1].score += srt[i].score
+                out[-1].blocks += 1
+        return out
+        
 
 class Results(object):
     
     def __init__(self,query,results,time):
         self.query = query
-        self.results = \
-            [Result(_id,addr.key.start,addr.key.stop) for _id,addr in results]
-        self.results = set(self.results)
+        
+        #self.results = \
+        #    [Result(_id,addr.key.start,addr.key.stop) for _id,addr in results]
+        #self.results = set(self.results)
+        
+        d = dict()
+        score = 0
+        for _id,addr in results:
+            r = Result(_id,addr.key.start,addr.key.stop,score)
+            try:
+                d[_id].add(r)
+            except KeyError:
+                d[_id] = set([r])
+            score += 1
+        
+        self.results = []
+        for v in d.itervalues():
+            self.results.extend(Result.congeal(list(v)))
+        
+        self.results = sorted(self.results,key = lambda a : a.score / a.blocks)
 
         self.search_time = time
         self.brag = 'Searched %s of sound in %1.4f seconds' %\
@@ -113,25 +178,30 @@ class image(object):
     def __init__(self):
         object.__init__(self)
     
-    def filename(self,addr):
-        return os.path.join(images_path,'%s.png' % addr)
+    def filename(self,addr,feature):
+        return os.path.join(images_path,'%s_%s.png' % (addr,feature))
     
-    def make_file(self,fn,addr):
+    def make_file(self,fn,addr,feature):
         addr = decode_address(addr)
         frames = FrameModel[addr]
-        bark = frames.bark
-        imsave(fn,np.rot90(bark))
+        f = getattr(frames,feature)
+        f *= 1./ f.max()
+        f = imresize(f,(f.shape[0] * 2, f.shape[1] * 2))
+        color = hot(f)
+        imsave(fn,np.rot90(color))
     
-    def GET(self,addr = None):
-        fn = self.filename(addr)
+    def GET(self,addr = None,feature = None):
+        print addr
+        fn = self.filename(addr,feature)
         if not os.path.exists(fn):
-            self.make_file(fn, addr)
+            self.make_file(fn, addr,feature)
         
         web.header('Content-Type','image/png')
         with open(fn,'rb') as f:
             data = f.read()
         web.header('Content-Length',len(data))
         return data
+ 
 
 
 class zoundsapp(object):
@@ -158,10 +228,10 @@ class zoundsapp(object):
         # is started
         print addr
         tic = time()
-        results = search.search(addr, nresults = 30)
+        results = search.search(addr, nresults = 50)
         toc = time() - tic
         # TODO: Render the results to a template
-        render = web.template.render('websearch/templates')
+        render = web.template.render('static/templates')
         return render.zoundsapp(Results(addr,results,toc))
             
             
