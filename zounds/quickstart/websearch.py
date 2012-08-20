@@ -109,7 +109,7 @@ class Result(object):
                 out.append(nr)
             else:
                 out[-1].stop = srt[i].stop
-                out[-1].score += srt[i].score
+                #out[-1].score += srt[i].score
                 out[-1].blocks += 1
         return out
         
@@ -137,7 +137,7 @@ class Results(object):
         for v in d.itervalues():
             self.results.extend(Result.congeal(list(v)))
         
-        self.results = sorted(self.results,key = lambda a : a.score / a.blocks)
+        self.results = sorted(self.results,key = lambda a : a.score)
 
         self.search_time = time
         self.brag = 'Searched %s of sound in %1.4f seconds' %\

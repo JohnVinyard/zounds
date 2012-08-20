@@ -1,9 +1,16 @@
 body {
-	background-color:#111;
+	background-color:#bbbbcc;
 }
-
+#playhead {
+	position:absolute;
+	display:none;
+}
 .snippet {
-	margin:2px;
-	background-color:#222;
-	padding:2px;
+	margin:5px;
+	background-color:#cfcfdf;
+	padding:10px;
+}
+.snippet.focus {
+	background-color:#ddddee;
+	border:0;
 }
