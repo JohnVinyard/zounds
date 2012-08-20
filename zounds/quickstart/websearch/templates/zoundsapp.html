@@ -12,25 +12,25 @@ $def with (results)
 	<script type="text/javascript" src="static/js/websearch.js"></script>
 </head>
 
-<body id="home" style="background-color:#111;">
-
+<body id="home">
+	<canvas width="2" height="200" id="playhead"></canvas>
 	<h1>$results.brag</h1>
-	<div class="snippet">
+	<div class="snippet" tabindex="1">
 		$ addr = '%i_%i' % (results.query.key.start,results.query.key.stop)
 		<img src="/image/$addr/bark" style="width:${len(results.query)};"/>
 		<br/>
-		<audio controls="controls">
+		<audio>
 		  <source src="/audio/$addr" type="audio/ogg" />
 		  Your browser does not support the audio tag.
 		</audio>
 	</div>
 	<hr/>
 	$for r in results.results:
-		<div class="snippet" style="float:left;">
+		<div class="snippet" style="float:left;" tabindex="${loop.index + 1}">
 			$ addr = '%i_%i' % (r.start,r.stop)
 			<img src="/image/$addr/bark" style="width:${r.nframes};"/>
 			<br/>
-			<audio controls="controls">
+			<audio>
 			  <source src="/audio/$addr" type="audio/ogg" />
 			  Your browser does not support the audio tag.
 			</audio>
