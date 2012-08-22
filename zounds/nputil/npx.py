@@ -1,9 +1,7 @@
 from __future__ import division
-import struct
 import numpy as np
 from numpy.lib.stride_tricks import as_strided as ast
 from bitarray import bitarray
-from zounds.util import flatten2d
 import pyximport
 pyximport.install()
 from toeplitz import *
@@ -246,16 +244,13 @@ def sliding_window(a,ws,ss = None,flatten = True):
     return strided.reshape(dim)
 
 
-_TYPE_CODES = {
-              # 32-bit unisgned integer
-              32 : 'L',
-              # 64-bit unsigned integer
-              64 : 'Q'
-}
-_NP_TYPES = {
-            'L' : np.uint32,
-            'Q' : np.uint64
-}
+# Map numbers of bits to unsigned integer type codes compatible with the struct
+# module
+_TYPE_CODES = {8  : 'B',16 : 'H',32 : 'L',64 : 'Q'}
+
+# Map unsigned integer type codes compatible with the struct module to numpy 
+# data types 
+_NP_TYPES = {'B' : np.uint8,'H' : np.uint16,'L' : np.uint32,'Q' : np.uint64}
 
 
 
@@ -270,15 +265,101 @@ def pack(a):
     
     b = bitarray()
     b.extend(a.ravel())
-    l = a.shape[0]
-    return np.array(struct.unpack(tc*l,b.tobytes()),dtype = _NP_TYPES[tc])
+    return np.fromstring(b.tobytes(),dtype = _NP_TYPES[tc])
+
+
+class Packer(object):
+    
+    def __init__(self,totalbits,chunkbits = 64):
+        try:
+            self._typecode = _TYPE_CODES[chunkbits]
+        except KeyError:
+            raise ValueError('chunkbits must be one of %s' % \
+                             (str(_TYPE_CODES.keys())))
+        self._nchunks = int(np.ceil(totalbits / chunkbits))
+        self._padding = (self._nchunks*chunkbits) - totalbits
+        self._dtype = _NP_TYPES[self._typecode] 
+    
+    def allocate(self,l):
+        '''
+        Allocate memory for l packed examples
+        '''
+        return np.ndarray((l,self._nchunks),dtype = self._dtype)
+    
+    def __call__(self,a):
+        l = a.shape[0]
+        z = np.zeros((l,self._padding),dtype = a.dtype)
+        padded = np.concatenate([a,z],axis = 1)
+        b = bitarray()
+        b.extend(padded.ravel())
+        return np.fromstring(b.tobytes(),dtype = self._dtype)\
+                .reshape((l,self._nchunks))
+    
 
 def hamming_distance(a,b):
-    # TODO: This could be sped up by writing a cython function that takes
-    # two arrays, and performing the xor and bit counting all at once.
+    '''
+    a - scalar
+    b - array of scalars
+    '''
     return count_bits(a^b)
 
+def packed_hamming_distance(a,b):
+    '''
+    Interpret a as a "packed" scalar, i.e. an n-bit number where n may not be
+    a power of 2. E.g., a 250-bit number would be represented by 4 64-bit integers.
+    
+    Interpret b as an array of "packed" scalars. Its second dimension should be
+    the same length as a.
+    '''
+    xored = a ^ b
+    bitcount = count_bits(xored.ravel())
+    return bitcount.reshape(xored.shape).sum(1)
+
 def jaccard_distance(a,b):
+    '''
+    a - scalar
+    b - array of scalars
+    '''
     intersection = count_bits(a & b)
     union = count_bits(a | b)
     return 1 - (intersection / union)
+
+from time import time
+if __name__ == '__main__':
+    a = np.random.binomial(1,.5,(10,250))
+    b = np.random.binomial(1,.5,(1000,250))
+    
+    start = time()
+    for z in a:
+        np.logical_xor(z,b).sum(1)
+    print 'original took %1.4f seconds' % (time()- start)
+    
+    a = np.random.random_integers(0,2**16,(10,5)).astype(np.uint64)
+    b = np.random.random_integers(0,2**16,(1000,5)).astype(np.uint64)
+    
+    m1 = None
+    m2 = None
+    
+    start = time()
+    for z in a:
+        xored = z ^ b
+        count_packed_bits(xored)
+    print 'cython took %1.4f seconds' % (time()- start)
+    
+    start = time()
+    xored = a[:,np.newaxis] ^ b
+    for x in xored:
+        count_packed_bits(x)
+    print 'xor outside loop took %1.4f seconds' % (time()- start)
+    
+    start = time()
+    out = np.ndarray((10,1000))
+    for i,z in enumerate(a):
+        xored = z ^ b
+        shape = xored.shape
+        bc = count_bits(xored.ravel())
+        out[i] = bc.reshape(shape).sum(1)
+    
+    print 'flat bit count loop took %1.4f seconds' % (time()- start)
+    
+    

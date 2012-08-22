@@ -2,7 +2,6 @@ from __future__ import division
 from abc import ABCMeta,abstractmethod
 import time
 import struct
-import random
 from bisect import bisect_left
 import os
 from multiprocessing import Pool
@@ -14,7 +13,7 @@ from bitarray import bitarray
 from model import Model
 from pattern import DataPattern
 from zounds.util import flatten2d
-from zounds.nputil import hamming_distance,jaccard_distance,pad
+from zounds.nputil import hamming_distance,pad,Packer,packed_hamming_distance
 from zounds.environment import Environment
 
 
@@ -365,50 +364,103 @@ class ExhaustiveLshSearch(FrameSearch):
                        32 : 'L',
                        64 : 'Q'
                        }
-    def __init__(self,_id,feature,step = None,nbits = None):
+    def __init__(self,_id,feature,step = None,nbits = None,
+                 fine_feature = None,ignore = None):
+        
+        # 76561193665298448
+        # 100010000000000000000000000000000000000000000000000010000
+        '''
+        _id - the key used to fetch this search from the database, once it's 
+              been built
+        feature - The name of a 32 or 64 bit scalar feature
+        step - The step size of the feature
+        nbits - The number of bits in the scalar feature
+        fine_feature - A finer detail feature. It should have the same stepsize
+                       as feature, and have a boolean data type
+        ignore - an iterable of codes that should be ignored when performing a 
+                query, usually because they represent silence.
+        '''
         k = LshSearch._DTYPE_MAPPING.keys()
         if nbits not in k:
             raise ValueError('nbits must be in %s') % (str(k))
         
         FrameSearch.__init__(self,_id,feature)
         self._index = None
+        self._fine_feature = fine_feature
+        self._fine_index = None
         self._addrs = None
+        # blocks in queries with any of the values in self._filter will be
+        # ignored when performing the search
+        self._filter = [0]
+        if None is not ignore:
+            try:
+                self._filter.extend(ignore)
+            except TypeError:
+                self._filter.append(ignore)
         self.step = step
         self.nbits = nbits
         self._hashdtype = LshSearch._DTYPE_MAPPING[nbits]
         self._structtype = LshSearch._STRUCT_MAPPING[nbits]
+        
     
     @property
     def feature(self):
         return self.features[0]
+    
+    def _feature_value(self,frame,feature):
+        try:
+            return frame[feature][0]
+        except IndexError:
+            return frame[feature]
     
     def _build_index(self):
         env = self.env()
         fc = env.framecontroller
         l = int(len(fc) / self.step)
         nids = len(fc.list_ids())
+        # An index that will hold the primary binary feature
         self._index = np.ndarray(l+nids,self._hashdtype)
+        if self._fine_feature:
+            dim = fc.get_dim(self._fine_feature)
+            self._packer = Packer(dim[0])
+            self._fine_index = self._packer.allocate(l + nids)
+        
         self._addrs = np.ndarray(l+nids,object)
         for i,f in enumerate(fc.iter_all(step = self.step)):
             address,frame = f
             _id = frame['_id'][0]
             self._addrs[i] = (_id,address)
-            try:
-                self._index[i] = frame[self.feature][0]
-            except IndexError:
-                self._index[i] = frame[self.feature]
+            self._index[i] = self._feature_value(frame,self.feature)
+            if self._fine_feature:
+                fv = self._feature_value(frame, self._fine_feature)
+                if not fv.shape:
+                    self._fine_index[i] = 0
+                else:
+                    self._fine_index[i] = self._packer(fv[np.newaxis,...])
             print self._index[i]
+        
+        if self._fine_feature:
+            self._fine_index = self._fine_index[:i]
         self._index = self._index[:i]
         self._addrs = self._addrs[:i]
+    
+    def _valid_indices(self,features):
+        s = np.sum([(features == q) for q in self._filter],0)
+        return s == 0 
+        
     
     def _search(self,frames,nresults):
         start = time.time()
         feature = frames[self.feature][::self.step]
-        # Get rid of zeros. This will confuse the results
-        nz = np.nonzero(feature)
-        feature = feature[nz[0]]
-        lf = len(feature)
+        valid = self._valid_indices(feature)
+        # BUG: What if none of the frames are valid?
+        feature = feature[valid]
+        if self._fine_feature:
+            ff = frames[self._fine_feature][::self.step]
+            ff = ff[valid]
+            ff = self._packer(ff)
         
+        lf = len(feature)
         # KLUDGE: Results may not be unique
         indices = []
         distances = []
@@ -416,9 +468,21 @@ class ExhaustiveLshSearch(FrameSearch):
         for i in range(lf):
             dist = hamming_distance(feature[i],self._index)
             srt = np.argsort(dist)
-            n = nresults * 2
-            indices.extend(srt[:n])
-            distances.extend(dist[srt[:n]])
+            # TODO: Make this size configurable
+            n = nresults * 20
+            if self._fine_feature:
+                finer = packed_hamming_distance(ff[i],self._fine_index[srt[:n]])
+                fsrt = np.argsort(finer)
+                srt = srt[:n][fsrt]
+                dist = dist[srt]
+                indices.extend(srt)
+                distances.extend(finer[fsrt])
+            else:
+                indices.extend(srt[:n])
+                distances.extend(dist[srt[:n]])
+        
+        
+            
         
         
         dsrt = np.argsort(distances)
