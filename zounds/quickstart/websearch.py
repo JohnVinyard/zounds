@@ -128,11 +128,12 @@ def encode_address(addr):
 class Result(object):
     
     def __init__(self,_id,start,stop,score):
-        self._id = _id
+        self.id = _id
         self.start = start
         self.stop = stop
         self.score = score
         self.blocks = 1
+        self.scores = [self.score]
     
     @property
     def nframes(self):
@@ -140,10 +141,10 @@ class Result(object):
     
         
     def __hash__(self):
-        return hash((self._id,self.start,self.stop))
+        return hash((self.id,self.start,self.stop))
     
     def __eq__(self,other):
-        return self._id == other._id and\
+        return self.id == other.id and\
              self.start == other.start and\
               self.stop == other.stop
     
@@ -168,15 +169,15 @@ class Result(object):
         #              results[-1].stop,
         #              sum([r.score for r in results]))
         
-        r = Result(srt[0]._id,srt[0].start,srt[0].stop,srt[0].score)
+        r = Result(srt[0].id,srt[0].start,srt[0].stop,srt[0].score)
         out = [r]
         for i in range(1,len(srt)):
             if srt[i].start - out[-1].stop > 500:
-                nr = Result(srt[i]._id,srt[i].start,srt[i].stop,srt[i].score)
+                nr = Result(srt[i].id,srt[i].start,srt[i].stop,srt[i].score)
                 out.append(nr)
             else:
                 out[-1].stop = srt[i].stop
-                #out[-1].score += srt[i].score
+                out[-1].scores.append(srt[i].score)
                 out[-1].blocks += 1
         return out
         
@@ -186,26 +187,26 @@ class Results(object):
     def __init__(self,query,results,tic):
         self.query = query
         
-        self.results = \
-            [Result(_id,addr.key.start,addr.key.stop,0) for _id,addr in results]
-        self.results = list(OrderedSet(self.results))
+        #self.results = \
+        #    [Result(_id,addr.key.start,addr.key.stop,0) for _id,addr in results]
+        #self.results = list(OrderedSet(self.results))
         
-#        d = dict()
-#        score = 0
-#        for _id,addr in results:
-#            r = Result(_id,addr.key.start,addr.key.stop,score)
-#            try:
-#                d[_id].add(r)
-#            except KeyError:
-#                d[_id] = set([r])
-#            score += 1
-#        
-#        self.results = []
-#        for v in d.itervalues():
-#            self.results.extend(Result.congeal(list(v)))
-#        
-#        self.results = sorted(self.results,key = lambda a : a.score)
-#
+        d = dict()
+        score = 0
+        for _id,addr in results:
+            r = Result(_id,addr.key.start,addr.key.stop,score)
+            try:
+                d[_id].add(r)
+            except KeyError:
+                d[_id] = set([r])
+            score += 1
+        
+        self.results = []
+        for v in d.itervalues():
+            self.results.extend(Result.congeal(list(v)))
+        
+        self.results = sorted(self.results,key = lambda a : min(a.scores))
+
         self.search_time = time() - tic
         self.brag = 'Searched %s of sound in %1.4f seconds' %\
              (human_friendly_db_length,self.search_time)
@@ -220,11 +221,15 @@ class audio(object):
     
     def make_file(self,fn,addr):
         addr = decode_address(addr)
+        print addr
         frames = FrameModel[addr]
         raw = Z.synth(frames.audio)
+        print 'starting oggwrite'
         oggwrite(raw,fn)
+        print 'finished oggwrite'
     
     def GET(self,addr = None):
+        print 'making audio'
         fn = self.filename(addr)
         if not os.path.exists(fn):
             self.make_file(fn,addr)
@@ -238,6 +243,7 @@ class audio(object):
         with open(fn,'rb') as f:
             data = f.read()
         web.header('Content-Length',len(data))
+        print 'done making audio'
         return data
 
 class image(object):
@@ -258,6 +264,7 @@ class image(object):
         imsave(fn,np.rot90(color))
     
     def GET(self,addr = None,feature = None):
+        print 'making image'
         print addr
         fn = self.filename(addr,feature)
         if not os.path.exists(fn):
@@ -267,6 +274,7 @@ class image(object):
         with open(fn,'rb') as f:
             data = f.read()
         web.header('Content-Length',len(data))
+        print 'done making image'
         return data
  
 
@@ -295,7 +303,7 @@ class zoundsapp(object):
         # is started
         print addr
         tic = time()
-        results = search.search(addr, nresults = 50)
+        results = search.search(addr, nresults = 75)
         r = Results(addr,results,tic)
         # TODO: Render the results to a template
         render = web.template.render('static/templates')

@@ -453,23 +453,24 @@ class ExhaustiveLshSearch(FrameSearch):
         start = time.time()
         feature = frames[self.feature][::self.step]
         valid = self._valid_indices(feature)
-        # BUG: What if none of the frames are valid?
-        feature = feature[valid]
+        some_valid = np.any(valid)
+        # If any of the frames are valid, remove invalid frames, otherwise,
+        # we have no choice but to use everything.
+        feature = feature[valid] if some_valid else feature
         if self._fine_feature:
             ff = frames[self._fine_feature][::self.step]
-            ff = ff[valid]
+            ff = ff[valid] if some_valid else ff
             ff = self._packer(ff)
         
         lf = len(feature)
         # KLUDGE: Results may not be unique
         indices = []
         distances = []
-        # TODO: Compute the hamming distances for all blocks at once
         for i in range(lf):
             dist = hamming_distance(feature[i],self._index)
             srt = np.argsort(dist)
             # TODO: Make this size configurable
-            n = nresults * 20
+            n = nresults * 10
             if self._fine_feature:
                 finer = packed_hamming_distance(ff[i],self._fine_index[srt[:n]])
                 fsrt = np.argsort(finer)
