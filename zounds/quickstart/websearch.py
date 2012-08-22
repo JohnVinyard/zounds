@@ -14,6 +14,73 @@ from config import *
 from zounds.data.frame import Address
 from zounds.model.framesearch import ExhaustiveLshSearch
 
+import collections
+
+KEY, PREV, NEXT = range(3)
+
+class OrderedSet(collections.MutableSet):
+
+    def __init__(self, iterable=None):
+        self.end = end = [] 
+        end += [None, end, end]         # sentinel node for doubly linked list
+        self.map = {}                   # key --> [key, prev, next]
+        if iterable is not None:
+            self |= iterable
+
+    def __len__(self):
+        return len(self.map)
+
+    def __contains__(self, key):
+        return key in self.map
+
+    def add(self, key):
+        if key not in self.map:
+            end = self.end
+            curr = end[PREV]
+            curr[NEXT] = end[PREV] = self.map[key] = [key, curr, end]
+
+    def discard(self, key):
+        if key in self.map:        
+            key, prev, next = self.map.pop(key)
+            prev[NEXT] = next
+            next[PREV] = prev
+
+    def __iter__(self):
+        end = self.end
+        curr = end[NEXT]
+        while curr is not end:
+            yield curr[KEY]
+            curr = curr[NEXT]
+
+    def __reversed__(self):
+        end = self.end
+        curr = end[PREV]
+        while curr is not end:
+            yield curr[KEY]
+            curr = curr[PREV]
+
+    def pop(self, last=True):
+        if not self:
+            raise KeyError('set is empty')
+        key = next(reversed(self)) if last else next(iter(self))
+        self.discard(key)
+        return key
+
+    def __repr__(self):
+        if not self:
+            return '%s()' % (self.__class__.__name__,)
+        return '%s(%r)' % (self.__class__.__name__, list(self))
+
+    def __eq__(self, other):
+        if isinstance(other, OrderedSet):
+            return len(self) == len(other) and list(self) == list(other)
+        return set(self) == set(other)
+
+    def __del__(self):
+        self.clear()                    # remove circular references
+
+
+
 media_path = 'media'
 images_path = os.path.join(media_path,'images')
 audio_path = os.path.join(media_path,'audio')
@@ -116,30 +183,30 @@ class Result(object):
 
 class Results(object):
     
-    def __init__(self,query,results,time):
+    def __init__(self,query,results,tic):
         self.query = query
         
-        #self.results = \
-        #    [Result(_id,addr.key.start,addr.key.stop) for _id,addr in results]
-        #self.results = set(self.results)
+        self.results = \
+            [Result(_id,addr.key.start,addr.key.stop,0) for _id,addr in results]
+        self.results = list(OrderedSet(self.results))
         
-        d = dict()
-        score = 0
-        for _id,addr in results:
-            r = Result(_id,addr.key.start,addr.key.stop,score)
-            try:
-                d[_id].add(r)
-            except KeyError:
-                d[_id] = set([r])
-            score += 1
-        
-        self.results = []
-        for v in d.itervalues():
-            self.results.extend(Result.congeal(list(v)))
-        
-        self.results = sorted(self.results,key = lambda a : a.score)
-
-        self.search_time = time
+#        d = dict()
+#        score = 0
+#        for _id,addr in results:
+#            r = Result(_id,addr.key.start,addr.key.stop,score)
+#            try:
+#                d[_id].add(r)
+#            except KeyError:
+#                d[_id] = set([r])
+#            score += 1
+#        
+#        self.results = []
+#        for v in d.itervalues():
+#            self.results.extend(Result.congeal(list(v)))
+#        
+#        self.results = sorted(self.results,key = lambda a : a.score)
+#
+        self.search_time = time() - tic
         self.brag = 'Searched %s of sound in %1.4f seconds' %\
              (human_friendly_db_length,self.search_time)
     
@@ -229,10 +296,10 @@ class zoundsapp(object):
         print addr
         tic = time()
         results = search.search(addr, nresults = 50)
-        toc = time() - tic
+        r = Results(addr,results,tic)
         # TODO: Render the results to a template
         render = web.template.render('static/templates')
-        return render.zoundsapp(Results(addr,results,toc))
+        return render.zoundsapp(r)
             
             
             
