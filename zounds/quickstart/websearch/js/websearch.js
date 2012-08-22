@@ -25,17 +25,22 @@ function audio_spacebar(e) {
 		position_playhead(playhead,snippet);
 	},false);
 	
+	audio.addEventListener('timeupdate',function() {
+		position_playhead(playhead,snippet);
+	},false);
+	
 	if(32 == e.keyCode) {
 		if(audio.paused) {
 			position_playhead(playhead,snippet);
-			var ratio =  audio.currentTime / audio.duration;
-			playhead.animate({
-				left : img.offset().left + img.width()
-			},(audio.duration - audio.currentTime) * 1000,'linear');
+			//var ratio =  audio.currentTime / audio.duration;
+			//playhead.animate({
+			//	left : img.offset().left + img.width()
+			//},(audio.duration - audio.currentTime) * 1000,'linear');
 			audio.play();
 		}else {
 			audio.pause();
 			playhead.stop();
+			audio.removeEventListener('timeupdate');
 		}
 	}
 }
@@ -60,6 +65,8 @@ $(function() {
 	});
 	
 	$('.snippet').blur(function() {
+		$(this).find('audio')[0].pause();
+		playhead.stop();
 		$(this)
 			.removeClass('focus')
 			.unbind('keyup');
