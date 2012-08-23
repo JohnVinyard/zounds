@@ -1,7 +1,5 @@
 TOOO:
 -------------
-Segfault
-
 FileSystemFrameController
 
 Are there duplicates in the current db?

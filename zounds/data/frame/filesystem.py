@@ -24,7 +24,35 @@ DBNAME
         ...
 '''
 
-
+class DataFile(object):
+    
+    def __init__(self):
+        self._file = None
+        self._id = None
+        self._source = None
+        self._external_id = None
+        
+    
+    def write(self,_id,source,external_id,data):
+        if None is self._file:
+            self._id = _id
+            self._source = source
+            self._external_id = external_id
+            fsfc = FileSystemFrameController
+            self._file = open(fsfc.data_filename(_id),'wb')
+            source = np.array(source,dtype = 'a%i' % fsfc._source_chars)
+            external_id = np.array(source,dtype = 'a%i' % fsfc._extid_chars)
+            self._file.write(source)
+            self._file.write(external_id)
+        
+        self._file.write(data.tostring())
+        return len(data)
+    
+    def close(self):
+        self._file.close()
+        
+        
+            
 class FileSystemFrameController(FrameController):
     
     # KLUDGE: As it is, this class isn't able to handle addresses that contain
@@ -172,8 +200,10 @@ class FileSystemFrameController(FrameController):
             os.path.join(self._rootdir,FileSystemFrameController.lengths_fn)
         self._sync_path = \
             os.path.join(self._rootdir,FileSystemFrameController.sync_fn)
-        self._dtype = [(k,v[1],v[0]) for k,v in \
-                        self.model.dimensions().iteritems()]
+        
+        # Get the keys and shapes of all stored features
+        dims = self.model.dimensions
+        self._dtype = [(k,v[1],v[0]) for k,v in dims.iteritems()]
         self._np_dtype = np.dtype(self._dtype)
         self._store_features()
         
@@ -185,7 +215,40 @@ class FileSystemFrameController(FrameController):
                     (self._build_ids_index,         self._ids_path)
         ])
     
-        
+        # Features that are redundant (i.e., the same for every frame), and
+        # won't be stored on disk as part of the recarray
+        self._excluded_metadata = [id_key,source_key,external_id_key]
+        # Only the feature keys that will be stored, and aren't redundant metadata
+        self._skinny_features = filter(\
+            lambda a : a not in self._excluded_metadata,dims.iterkeys())
+        # The dtype of the recarrays that will be stored on disk
+        self._skinny_dtype = filter(\
+            lambda a : a[0] in self._skinny_features,self._np_dtype)
+    
+    @classmethod
+    def data_filename(cls,_id):
+        return '%s%s' % (_id,cls.file_extension)
+    
+    def _to_skinny(self,record):
+        # return only the fields of the record that will be stored on disk
+        return record[self._skinny_features]
+    
+    def _from_skinny(self,_id,source,external_id,skinny_record):
+        r = np.recarray(len(skinny_record),self._np_dtype)
+        r[id_key] = _id
+        r[source_key] = source
+        r[external_id_key] = external_id
+        for sf in self._skinny_features:
+            r[sf] = skinny_record[sf]
+        return r
+
+    def _recarray(self,rootkey,data,done = False):
+        meta,record = FrameController._recarray(\
+                self, rootkey, data, done = done, 
+                dtype = self._skinny_dtype, meta = self._excluded_metadata)
+        _id,source,external_id = meta
+        return _id,source,external_id,record
+    
     
     def _pattern_path(self,_id):
         return os.path.join(self._datadir,
@@ -393,6 +456,7 @@ class FileSystemFrameController(FrameController):
         def safe_concat(a,b):
             return b if None is a else np.concatenate([a,b])
         
+        
         rootkey = audio_key
         # Wait to initialize the abs_steps values, since the Precomputed
         # extractor doesn't know its step until the first call to _process()
@@ -400,6 +464,7 @@ class FileSystemFrameController(FrameController):
         data = dict([(k,None) for k in self.steps.iterkeys()])
         chunks_processed = 0
         nframes = 0
+        datafile = DataFile()
         for k,v in chain.process():
             if k not in self.steps:
                 continue
@@ -410,11 +475,9 @@ class FileSystemFrameController(FrameController):
                 abs_steps[k] = chain[k].step_abs()
             
             if rootkey == k and chunks_processed > 0:
-                record = self._recarray(rootkey, data, done = False)
-                # TODO: Write differently
-                raise Exception('Write to a file, dummy!')
-                self._ensure_lock_and_append(record)
-                nframes += len(record)
+                frames = datafile.write(\
+                            *self._recarray(rootkey, data, done = False))
+                nframes += frames
                 
             
             f = np.repeat(v, abs_steps[k], 0)
@@ -423,19 +486,16 @@ class FileSystemFrameController(FrameController):
                 chunks_processed += 1
         
         
-        record = self._recarray(rootkey, data, done = True)
-        # TODO: Write differently
-        raise Exception('Write to a file, dummy!')
-        self._ensure_lock_and_append(record)
-        nframes += len(record)
-    
-        row = record[0]
-        _id = row[id_key]
-        source = row[source_key]
-        external_id = row[external_id_key]
+        
+        frames = datafile.write(*self._recarray(rootkey, data, done = True))
+        nframes += frames
+        
+        _id = datafile._id
+        ext_id = (datafile._source,datafile._external_id)
+        datafile.close()
         # update indexes
-        self._ids[(source,external_id)] = _id
-        self._external_ids[_id] = (source,external_id)
+        self._ids[ext_id] = _id
+        self._external_ids[_id] = ext_id
         self._lengths[_id] = nframes
         return FileSystemFrameController.Address((_id,slice(None)))
     
@@ -443,7 +503,7 @@ class FileSystemFrameController(FrameController):
         '''
         Return the address for an _id
         '''
-        raise NotImplemented()
+        return FileSystemFrameController.Address((_id,slice(None)))
     
     def get(self,key):
         '''
@@ -461,7 +521,7 @@ class FileSystemFrameController(FrameController):
         '''
         Streaming, multiprocess min,max,sum,mean,std implementations.
         
-        Store the results for each file in a companion file.
+        Store the results for each pattern in a companion file.
         
         Store the final result in a file.
         

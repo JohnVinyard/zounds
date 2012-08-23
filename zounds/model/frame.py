@@ -474,7 +474,7 @@ class Frames(Model):
     @classmethod
     def dimensions(cls,chain = None):
         '''
-        Return a dictionary mapping feature keys to three-tuples of 
+        Return a dictionary mapping only *stored* feature keys to three-tuples of 
         (shape,dtype,stepsize)
         '''
         # KLUDGE: I have to pass a pattern to build an extractor chain,
