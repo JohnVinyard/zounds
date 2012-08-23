@@ -85,8 +85,7 @@ media_path = 'media'
 images_path = os.path.join(media_path,'images')
 audio_path = os.path.join(media_path,'audio')
 
-# TODO: Do I need this?
-#lock_path = 'lock.dat'
+
 
 controller = Z.framecontroller
 # TODO: This needs to be configurable from the command line when the server is
@@ -111,35 +110,68 @@ def decode_address(addr):
 def encode_address(addr):
     return '%s_%s' % (addr.key.start,addr.key.stop)
 
-# TODO: Do I need this?
-#def acquire_lock():
-#    while os.path.exists(lock_path):
-#        sleep(0.01)
-#    
-#    f = open(lock_path,'w')
-#    f.close()
-#
-#def release_lock():
-#    os.remove(lock_path)
 
-# TODO: Refactor common code out of audio and image classes
+class Tile(object):
+    
+    def __init__(self,start,stop,start_offset = 0,stop_offset = 0):
+        self.start = start
+        self.stop = stop
+        self.start_offset = start_offset
+        self.stop_offset = stop_offset
+        self.tilescale = 2
+        
+    @property
+    def width(self):
+        return ((self.stop - self.start) - self.start_offset - self.stop_offset)\
+                 * self.tilescale
+    
+    def __repr__(self):
+        return '''background-image : url('image/%s_%s/bark'); background-position : -%ipx 0px; width : %ipx;''' % \
+                 (self.start,
+                  self.stop,
+                  self.start_offset * self.tilescale,
+                  self.width)
+    
+    def __str__(self):
+        return self.__repr__()
 
 # TODO: I should be using the address class itself here!
 class Result(object):
     
     def __init__(self,_id,start,stop,score):
+        
         self.id = _id
         self.start = start
         self.stop = stop
         self.score = score
         self.blocks = 1
         self.scores = [self.score]
+        
+    
+    def compute_tiles(self):
+        # TODO: Should this be a part of the Tile class?
+        self.tilesize = 30
+        tilestart = int(np.floor(self.start / self.tilesize) * self.tilesize)
+        tilestop = int(np.ceil(self.stop / self.tilesize) * self.tilesize)
+        start_offset = self.start - tilestart
+        stop_offset = tilestop - self.stop
+        t = range(tilestart,tilestop,self.tilesize)
+        self.tiles = []
+        if 1 == len(t):
+            self.tiles = [Tile(tilestart,tilestop,start_offset,stop_offset)]
+        else:
+            count = 0
+            for i in t:
+                stop = i + self.tilesize
+                so = start_offset if count == 0 else 0
+                eo = stop_offset if count == len(t) - 1 else 0
+                self.tiles.append(Tile(i,stop,so,eo))
+                count += 1
     
     @property
     def nframes(self):
         return self.stop - self.start
     
-        
     def __hash__(self):
         return hash((self.id,self.start,self.stop))
     
@@ -163,12 +195,6 @@ class Result(object):
     @staticmethod
     def congeal(results):
         srt = sorted(results)
-        
-        #return Result(results[0]._id,
-        #              results[0].start,
-        #              results[-1].stop,
-        #              sum([r.score for r in results]))
-        
         r = Result(srt[0].id,srt[0].start,srt[0].stop,srt[0].score)
         out = [r]
         for i in range(1,len(srt)):
@@ -179,6 +205,7 @@ class Result(object):
                 out[-1].stop = srt[i].stop
                 out[-1].scores.append(srt[i].score)
                 out[-1].blocks += 1
+        [o.compute_tiles() for o in out]
         return out
         
 
@@ -186,11 +213,7 @@ class Results(object):
     
     def __init__(self,query,results,tic):
         self.query = query
-        
-        #self.results = \
-        #    [Result(_id,addr.key.start,addr.key.stop,0) for _id,addr in results]
-        #self.results = list(OrderedSet(self.results))
-        
+        self.querytile = Tile(query.key.start,query.key.stop)
         d = dict()
         score = 0
         for _id,addr in results:
@@ -210,7 +233,8 @@ class Results(object):
         self.search_time = time() - tic
         self.brag = 'Searched %s of sound in %1.4f seconds' %\
              (human_friendly_db_length,self.search_time)
-    
+
+# TODO: Refactor common code out of audio and image classes
 class audio(object):
     
     def __init__(self):

@@ -1,8 +1,16 @@
 TOOO:
 -------------
+
+DONE Animation
+DONE position playhead
+tile server
+styling
+------------------
 Are there duplicates in the current db?
 
 TODO: Toeplitz is missing boundaries and causing bugs (I think)
+
+- TemplateMatch should use the new sliding_window function (Check toeplitz and sw equivalence)
 
 TODO: The idea behind some of the PyTablesFrameController.Address methods is
 	seriously broken
@@ -26,8 +34,6 @@ TODO: extractors using multiprocessing hang when updating database
 - Get rid of binary incompatibility warning
 
 - tests for all extractors
-
-- TemplateMatch should use the new sliding_window function (Check toeplitz and sw equivalence)
 
 - Add a note in the docs about the source distribution being the preferred route
 
