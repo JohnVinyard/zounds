@@ -1,16 +1,40 @@
-body {
+body {	
 	background-color:#bbbbcc;
+	font-family:Helvetica,arial;
+	color:#444;
 }
 #playhead {
 	position:absolute;
 	display:none;
 }
 .snippet {
-	margin:5px;
+	margin:10px;
 	background-color:#cfcfdf;
-	padding:10px;
+	padding:12px;
+	float:left;
+	-moz-border-radius: 5px;
+	border-radius: 5px;
+	-moz-box-shadow:    3px 3px 5px 6px #aaa;
+  	-webkit-box-shadow: 3px 3px 5px 6px #aaa;
+  	box-shadow:         3px 3px 5px 6px #aaa;
+  	outline:none;
 }
 .snippet.focus {
 	background-color:#ddddee;
 	border:0;
+	-moz-box-shadow:    4px 4px 6px 7px #999;
+  	-webkit-box-shadow: 4px 4px 6px 7px #999;
+  	box-shadow:         4px 4px 6px 7px #999;
+}
+.spectrogram {
+	display:inline-block;
+}
+.tile {
+	height:200px;
+	margin:0px;
+	padding:0px;
+	border:0px;
+	background-color:#555555;
+	background-repeat:no-repeat;
+	float:left;
 }
