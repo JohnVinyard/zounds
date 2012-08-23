@@ -1,11 +1,9 @@
 TOOO:
 -------------
+Segfault
 
-DONE Animation
-DONE position playhead
-tile server
-styling
-------------------
+FileSystemFrameController
+
 Are there duplicates in the current db?
 
 TODO: Toeplitz is missing boundaries and causing bugs (I think)
