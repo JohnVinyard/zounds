@@ -6,7 +6,7 @@ from time import sleep,time
 from random import choice
 
 import numpy as np
-from scikits.audiolab import oggwrite,Sndfile
+from scikits.audiolab import Sndfile,Format
 from scipy.misc import imsave,imresize
 from matplotlib.cm import hot
 
@@ -245,15 +245,15 @@ class audio(object):
     
     def make_file(self,fn,addr):
         addr = decode_address(addr)
-        print addr
         frames = FrameModel[addr]
-        raw = Z.synth(frames.audio)
-        print 'starting oggwrite'
-        oggwrite(raw,fn)
-        print 'finished oggwrite'
+        fmt = Format('ogg','vorbis')
+        sndfile = Sndfile(fn,'w',fmt,1,Z.samplerate)
+        print 'starting oggwrite of %s' % addr
+        Z.synth(frames.audio,sndfile)
+        sndfile.close()
+            
     
     def GET(self,addr = None):
-        print 'making audio'
         fn = self.filename(addr)
         if not os.path.exists(fn):
             self.make_file(fn,addr)
@@ -267,7 +267,6 @@ class audio(object):
         with open(fn,'rb') as f:
             data = f.read()
         web.header('Content-Length',len(data))
-        print 'done making audio'
         return data
 
 class image(object):
@@ -288,8 +287,6 @@ class image(object):
         imsave(fn,np.rot90(color))
     
     def GET(self,addr = None,feature = None):
-        print 'making image'
-        print addr
         fn = self.filename(addr,feature)
         if not os.path.exists(fn):
             self.make_file(fn, addr,feature)
@@ -298,7 +295,6 @@ class image(object):
         with open(fn,'rb') as f:
             data = f.read()
         web.header('Content-Length',len(data))
-        print 'done making image'
         return data
  
 
@@ -325,7 +321,6 @@ class zoundsapp(object):
             addr = Address(slice(qstart,qstop))
         # TODO: nresults should be specified by a command-line arg when the server
         # is started
-        print addr
         tic = time()
         results = search.search(addr, nresults = 75)
         r = Results(addr,results,tic)

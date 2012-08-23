@@ -1,5 +1,6 @@
 var interval = null;
 
+// We want the spacebar to play sounds. Keep it from paging down.
 window.onkeydown=function(e){
   if(e.keyCode==32){
    return false;
