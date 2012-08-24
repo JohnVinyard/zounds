@@ -5,11 +5,11 @@ import numpy as np
 
 
 from zounds.analyze.feature.spectral import FFT,Loudness
-from zounds.data.frame import PyTablesFrameController
+from zounds.data.frame import PyTablesFrameController,FileSystemFrameController
 from zounds.model.frame import Feature,Frames
 from zounds.model.pattern import FilePattern
 from zounds.environment import Environment
-from zounds.testhelper import make_sndfile
+from zounds.testhelper import make_sndfile,remove
 
 from fetch import PrecomputedFeature
 
@@ -18,17 +18,16 @@ class PrecomputedFeatureTests(unittest.TestCase):
     
     def setUp(self):
         pytables_fn = '%s.h5' % uuid4().hex
-        self.implementations = [(PyTablesFrameController,(pytables_fn,))]
+        filesystem_dir = uuid4().hex
+        self.implementations = [(PyTablesFrameController,(pytables_fn,)),
+                                (FileSystemFrameController,(filesystem_dir))]
         self.to_cleanup = [pytables_fn]
         Environment._test = True
 
     
     def tearDown(self):
         for tc in self.to_cleanup:
-            try:
-                os.remove(tc)
-            except OSError:
-                pass
+            remove(tc)
         Environment._test = False
     
     class FrameModel(Frames):
