@@ -2,6 +2,8 @@ TOOO:
 -------------
 FileSystemFrameController tests and FrameController test refactoring
 
+FileSystem multiprocess index update logic and tests
+
 Cut down on search time by *excluding* ignored codes from the index
 
 TODO: Answer the question "How do file system seek times compare to PyTables?"
@@ -22,7 +24,8 @@ TODO: The idea behind some of the PyTablesFrameController.Address methods is
 - BUG : Address equivalence bug: [1,4,10] and [1,6,10] are considered equivalent.  This
   is incorrect
 
-TODO: extractors using multiprocessing hang when updating database
+TODO: extractors using multiprocessing hang when updating database 
+	(Is this the case with FileSystemFrameController?)
 
 - Try performing PCA on conv feature prior to semantic hash learning
 

@@ -27,11 +27,12 @@ DBNAME
 
 class DataFile(object):
     
-    def __init__(self):
+    def __init__(self,controller):
         self._file = None
         self._id = None
         self._source = None
         self._external_id = None
+        self._c = controller
         
     
     def write(self,_id,source,external_id,data):
@@ -39,10 +40,9 @@ class DataFile(object):
             self._id = _id
             self._source = source
             self._external_id = external_id
-            fsfc = FileSystemFrameController
-            self._file = open(fsfc._pattern_path(_id),'wb')
-            source = np.array(source,dtype = 'a%i' % fsfc._source_chars)
-            external_id = np.array(source,dtype = 'a%i' % fsfc._extid_chars)
+            self._file = open(self._c._pattern_path(_id),'wb')
+            source = np.array(source,dtype = 'a%i' % self._c._source_chars)
+            external_id = np.array(source,dtype = 'a%i' % self._c._extid_chars)
             self._file.write(source)
             self._file.write(external_id)
         
@@ -68,25 +68,31 @@ class FileSystemFrameController(FrameController):
         def __init__(self,key):
             zounds.model.frame.Address.__init__(self,key)
             self._id,self._index = self.key
+            print self._index
             try:
+                # try to treat index as an iterable of ints
                 self._len = len(self._index)
                 self._index = np.array(self._index)
                 self.min = self._index.min()
                 self.max = self._index.max()
+                return
             except TypeError:
                 pass
             
             try:
+                # try to treat index as a slice
                 self._len = self._index.stop - self._index.start
-                if key.step not in [None,1]:
+                if self._index.step not in [None,1]:
                     raise ValueError(\
                     'When using a slice as an address key, it must have a step of 1')
                 self.min = self._index.start
                 self.max = self._index.stop - 1
+                return
             except AttributeError:
                 pass
             
             if isinstance(self._index,int):
+                # The index must be a single int
                 self._len = 1
                 self.min = self._index
                 self.max = self._index
@@ -94,7 +100,10 @@ class FileSystemFrameController(FrameController):
                 raise ValueError(\
                     'key must be a two-tuple of (_id,int, iterable of ints, or slice)')
             
-            self._span = self.max - self.min
+        
+        @property
+        def _span(self):
+            return self.max - self.min
 
         def __str__(self):
             return '%s - %s' % (self.__class__,self.key)
@@ -192,9 +201,8 @@ class FileSystemFrameController(FrameController):
         # TODO: Refactor this!
         self._datadir = \
             os.path.join(self._rootdir,FileSystemFrameController.data_dn)
-        print self._datadir
+        
         ensure_path_exists(self._datadir)
-        print os.path.exists(self._datadir)
         self._feature_path = \
             os.path.join(self._rootdir,FileSystemFrameController.features_fn)
         self._external_ids_path = \
@@ -223,17 +231,15 @@ class FileSystemFrameController(FrameController):
         # The dtype of the recarrays that will be stored on disk
         self._skinny_dtype = np.dtype(filter(\
             lambda a : a[0] in self._skinny_features,
-            self._np_dtype.fields.iteritems()))
+            self._dtype))
     
     
     def _reindex_if_necessary(self):
         # TODO: Perhaps these should be loaded lazily
-        self._external_ids,self._lengths,self._ids = self._load_indexes(*[
-                                                               
+        self._external_ids,self._lengths,self._ids = self._load_indexes(*[           
                     (self._build_external_id_index, self._external_ids_path),
                     (self._build_lengths_index,     self._lengths_path),
-                    (self._build_id_index,         self._ids_path)
-        ])
+                    (self._build_id_index,         self._ids_path) ])
     
     def _fsfc_address(self,key):
         return FileSystemFrameController.Address(key)
@@ -335,7 +341,7 @@ class FileSystemFrameController(FrameController):
         current, or rebuilding them.  If an index is rebuilt, the old index
         will be overwritten by the new one.
          
-        paths should be a list of tuples of (function_to_build_index,index_file_name)
+        paths should be a list of tuples of (index_builder_function,index_file_name)
         '''
         lp = len(paths)
         indexes = [None] * lp
@@ -350,7 +356,7 @@ class FileSystemFrameController(FrameController):
                     indexes[i] = cPickle.load(f)
             else:
                 # Mark this index to be rebuilt
-                builders.append((i,builder,path))
+                builders.append((i,builder,dict()))
         
         if builders:
             # Some indexes need to be rebuilt. Pass them along to a function
@@ -391,7 +397,7 @@ class FileSystemFrameController(FrameController):
                     source = metadata[:self._source_chars]
                     external_id = metadata[self._source_chars:]
                     func(f,_id,source,external_id,path,index)
-        return [(i,index) for i,index in index_builders]
+        return [(i,index) for i,builder,index in index_builders]
     
     @property
     def concurrent_reads_ok(self):
@@ -520,12 +526,13 @@ class FileSystemFrameController(FrameController):
         # Wait to initialize the abs_steps values, since the Precomputed
         # extractor doesn't know its step until the first call to _process()
         abs_steps = dict([(e.key,None) for e in chain])
-        data = dict([(k,None) for k in self.steps.iterkeys()])
+        data = dict([(k,None) for k in self.get_features().iterkeys()])
+        data[audio_key] = None
         chunks_processed = 0
         nframes = 0
-        datafile = DataFile()
+        datafile = DataFile(self)
         for k,v in chain.process():
-            if k not in self.steps:
+            if k not in data:
                 continue
     
             if None is abs_steps[k]:
@@ -556,7 +563,7 @@ class FileSystemFrameController(FrameController):
         self._ids[ext_id] = _id
         self._external_ids[_id] = ext_id
         self._lengths[_id] = nframes
-        return self._fsfc_address((_id,slice(None)))
+        return self._fsfc_address((_id,slice(0,nframes)))
     
     def address(self,_id):
         '''

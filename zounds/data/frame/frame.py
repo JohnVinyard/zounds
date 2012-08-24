@@ -199,7 +199,10 @@ class FrameController(Controller):
             srt = sorted([len(a) for a in data.itervalues()])
             l = srt[0]
         
+        
         dtype = np.dtype(self.recarray_dtype) if dtype is None else dtype
+        print l
+        print dtype
         record = np.recarray(l,dtype)
         
         for k in dtype.names:

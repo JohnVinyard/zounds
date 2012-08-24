@@ -1,15 +1,35 @@
 import numpy as np
+import os
 import unittest
+from zounds.util import ensure_path_exists
 from zounds.nputil import pad
+from zounds.testhelper import remove
 from random import shuffle
 
 class EnsurePathExistsTests(unittest.TestCase):
     
+    def setUp(self):
+        self.to_cleanup = []
+    
+    def tearDown(self):
+        for tc in self.to_cleanup:
+            remove(tc)
+    
+    def test_nothing(self):
+        self.assertRaises(ValueError, lambda : ensure_path_exists(''))
+    
     def test_filepath(self):
-        self.fail()
+        path = 'path/to/'
+        filename = 'file.dat'
+        self.to_cleanup.append(path)
+        ensure_path_exists(os.path.join(path,filename))
+        self.assertTrue(os.path.exists(path))
     
     def test_directory(self):
-        self.fail()
+        path = 'path/to'
+        self.to_cleanup.append(path)
+        ensure_path_exists(path)
+        self.assertTrue(os.path.exists(path))
 
 class PadTests(unittest.TestCase):
     

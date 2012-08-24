@@ -104,7 +104,7 @@ class FrameControllerTests(object):
             c.append(ec)
         l1 = len(c)
         old_features = c.get_features()
-        if close_db:
+        if close_db and hasattr(c,'close'):
             c.close()
         return fn,l1,old_features
     
