@@ -3,6 +3,14 @@ import unittest
 from zounds.nputil import pad
 from random import shuffle
 
+class EnsurePathExistsTests(unittest.TestCase):
+    
+    def test_filepath(self):
+        self.fail()
+    
+    def test_directory(self):
+        self.fail()
+
 class PadTests(unittest.TestCase):
     
     def test_pad_onedim_desired(self):

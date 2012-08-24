@@ -1,8 +1,10 @@
 TOOO:
 -------------
-Update all PyTablesFrameController imports / ensure tests are passing and memerror app works
+FileSystemFrameController tests and FrameController test refactoring
 
 Cut down on search time by *excluding* ignored codes from the index
+
+TODO: Answer the question "How do file system seek times compare to PyTables?"
 
 tf/idf on all codes
 
@@ -19,8 +21,6 @@ TODO: The idea behind some of the PyTablesFrameController.Address methods is
 	
 - BUG : Address equivalence bug: [1,4,10] and [1,6,10] are considered equivalent.  This
   is incorrect
-
-TODO: Answer the question "How do file system seek times compare to PyTables?"
 
 TODO: extractors using multiprocessing hang when updating database
 
@@ -94,7 +94,6 @@ TODO:  Try lowpass filter subtraction method for spectrogram sharpening
 
 - Add psychoacoustics module.  Add mel scale and refactor some code in analyze.bark
 
-
 - Write LearnedFeature tests
 
 - mp3 -> wav conversion by acquirers
@@ -102,6 +101,7 @@ TODO:  Try lowpass filter subtraction method for spectrogram sharpening
 - Configurable encoder and decoder for the "audio" feature, making it possible
 	to store mp3, ogg vorbis, or some other audio-encoding, instead of just
 	raw audio.  It'd be great if I could store lots of useful features AND
-	compress the data
+	compress the data. It'd be even better if the encoding and the root feature
+	were the same thing!
 
 - Automatically parallelize independent branches of an extractor tree

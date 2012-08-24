@@ -58,7 +58,8 @@ class AudioStreamTests(unittest.TestCase):
     
     def test_two_frames(self):
         self.get_frames(2050)
-    
+
+        
     def test_three_frames(self):
         self.get_frames(4096)
     
