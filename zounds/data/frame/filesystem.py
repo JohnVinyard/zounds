@@ -3,6 +3,7 @@ import os
 import shutil
 import cPickle
 import struct
+from itertools import repeat
 import numpy as np
 
 import zounds.model.frame
@@ -39,7 +40,7 @@ class DataFile(object):
             self._source = source
             self._external_id = external_id
             fsfc = FileSystemFrameController
-            self._file = open(fsfc.data_filename(_id),'wb')
+            self._file = open(fsfc._pattern_path(_id),'wb')
             source = np.array(source,dtype = 'a%i' % fsfc._source_chars)
             external_id = np.array(source,dtype = 'a%i' % fsfc._extid_chars)
             self._file.write(source)
@@ -187,6 +188,8 @@ class FileSystemFrameController(FrameController):
     
     def _load(self,filepath):
         self._rootdir = filepath
+        
+        # TODO: Refactor this!
         self._datadir = \
             os.path.join(self._rootdir,FileSystemFrameController.data_dn)
         ensure_path_exists(self._datadir)
@@ -222,12 +225,10 @@ class FileSystemFrameController(FrameController):
         self._skinny_features = filter(\
             lambda a : a not in self._excluded_metadata,dims.iterkeys())
         # The dtype of the recarrays that will be stored on disk
-        self._skinny_dtype = filter(\
-            lambda a : a[0] in self._skinny_features,self._np_dtype)
+        self._skinny_dtype = np.dtype(filter(\
+            lambda a : a[0] in self._skinny_features,
+            self._np_dtype.fields.iteritems()))
     
-    @classmethod
-    def data_filename(cls,_id):
-        return '%s%s' % (_id,cls.file_extension)
     
     def _to_skinny(self,record):
         # return only the fields of the record that will be stored on disk
@@ -249,6 +250,39 @@ class FileSystemFrameController(FrameController):
         _id,source,external_id = meta
         return _id,source,external_id,record
     
+    def _get_memmap(self,addr):
+        _id = addr._id
+        slce = addr._index
+        # path to the file containing data at addr
+        fn = self._pattern_path(_id)
+        # the size of the file, in bytes
+        fs = os.path.getsize(fn)
+        # the size of each record, in bytes
+        size = self._skinny_dtype.itemsize
+        # the total number of rows in the file
+        nrecords = (fs - self._metadata_chars) / size
+        # the start index, in rows
+        start_index = 0 if None is slce.start else slce.start
+        # the stop index, in rows
+        stop_index = nrecords if None is slce.stop else slce.stop
+        step = 1 if None is slce.step else slce.step
+        # the number of rows to read
+        to_read = stop_index - start_index
+        with open(fn,'rb') as f:
+            # read the metadata from the file
+            meta = f.read(self._metadata_chars)
+            source = np.fromstring(meta[:self._source_chars])
+            extid = np.fromstring(meta[self._source_chars:])
+            # get the offset, in bytes, where we'll start reading
+            start_bytes = start_index * size 
+            data = np.memmap(\
+                    f,dtype = self._skinny_dtype, mode = 'r', 
+                    offset = start_bytes + self._metadata_chars)
+        return _id,source,extid,data[:to_read:step]
+    
+    def _get_hydrated(self,addr):
+        return self._from_skinny(*self._get_memmap(addr))
+        
     
     def _pattern_path(self,_id):
         return os.path.join(self._datadir,
@@ -352,6 +386,8 @@ class FileSystemFrameController(FrameController):
     def concurrent_writes_ok(self):
         return True
     
+    # TODO: Detect directory changes (from another process or thread) and update
+    # index if necessary
     def __len__(self):
         '''
         Keep nframes in the file metadata. On startup, count the frames. Keep
@@ -365,6 +401,8 @@ class FileSystemFrameController(FrameController):
         '''
         return np.sum(self._lengths.values())
     
+    # TODO: Detect directory changes (from another process or thread) and update
+    # index if necessary
     def list_ids(self):
         '''
         Read files from the directory where data is stored. Keep it in memory. Update
@@ -372,6 +410,8 @@ class FileSystemFrameController(FrameController):
         '''
         return set(self._lengths.keys())
     
+    # TODO: Detect directory changes (from another process or thread) and update
+    # index if necessary
     def list_external_ids(self):
         '''
         External ids (source,external_id), will be stored in file metadata, just
@@ -391,12 +431,16 @@ class FileSystemFrameController(FrameController):
         '''
         return self._external_ids.keys()
     
+    # TODO: Detect directory changes (from another process or thread) and update
+    # index if necessary
     def external_id(self,_id):
         '''
         Read the external_id from the file's metadata and cache it.
         '''
         return self._ids[_id]
     
+    # TODO: Detect directory changes (from another process or thread) and update
+    # index if necessary
     def exists(self,source,external_id):
         '''
         Return true if the source,external_id pair is in the in-memory 
@@ -515,7 +559,26 @@ class FileSystemFrameController(FrameController):
         Address (Zounds ID,Offset,Length) - Open a memmapped version of the file,
         Read only the frames specified
         '''
-        raise NotImplemented()
+        
+        _id = None
+        addrcls = FileSystemFrameController.Address
+        if isinstance(key,str):
+            # the key is a zounds id
+            addr = addrcls((key,slice(None)))
+        elif isinstance(key,tuple) \
+            and 2 == len(key) \
+            and all([isinstance(k,str) for k in key]):
+            # the key is a (source, external id) pair
+            _id = self._external_ids[key]
+            addr = addrcls((_id,slice(None)))
+        elif isinstance(key,addrcls):
+            addr = key
+        else:
+            raise ValueError('key must be a zounds id, a (source,external_id) pair,\
+                            or a FileSystemFrameController.Address instance')
+        
+        return self._get_hydrated(addr)
+        
     
     def stat(self,feature,aggregate,axis = 0,step = 1):
         '''
@@ -535,25 +598,55 @@ class FileSystemFrameController(FrameController):
         For file with Zounds ID, iterate over the feature in the manner specified.
         TODO: What does the underlying implementation of memmap[::step] do?
         '''
-        raise NotImplemented()
+        # for metadata, return an iterator that outputs the correct value as
+        # many times as necessary
+        
+        # for non-metdata, iterate over a memmapped file.
+        feature = feature if isinstance(feature,str) else feature.key
+        _id,source,external_id,mmp = self._get_memmap(\
+                FileSystemFrameController.Address((_id,slice(None,None,step))))
+        
+        meta = feature in self._excluded_metadata
+        if meta:
+            return repeat(locals[feature],len(mmp))
+        else:
+            if 1 == chunksize:
+                for row in mmp:
+                    yield row[feature]
+            else:
+                chunks_per_step = int(chunksize / step)
+                for i in range(0,len(mmp),chunks_per_step):
+                    yield mmp[i : i + chunks_per_step]
+        
     
     def get_features(self):
         '''
         Return a dictionary mapping Feature Key -> Feature for the current FrameModel
         '''
-        raise NotImplemented()
+        with open(self._feature_path,'r') as f:
+            return cPickle.load(f)
     
     def get_dtype(self,key):
         '''
         Return the numpy datatype of the feature with key
         '''
-        raise NotImplemented()
+        key = self._feature_as_string(key)
+        dtype = self._np_dtype[key]
+        try:
+            return dtype.subdtype[0]
+        except TypeError:
+            return dtype
     
     def get_dim(self,key):
         '''
         Return the dimension of the feature with key
         '''
-        raise NotImplemented()
+        key = self._feature_as_string(key)
+        dtype = self._np_dtype[key]
+        try:
+            return dtype.subdtype[1]
+        except TypeError:
+            return ()
     
     def iter_all(self,step = 1):
         '''
