@@ -414,12 +414,8 @@ class Frames(Model):
                 # set. Treat this as a KeyError
                 raise KeyError(key)
         elif isinstance(key,int):
-            # TODO: Should this return a numpy.recarray or another 
-            # Frames instance?
             return self.__class__(data = self._data[key:key+1])
         elif isinstance(key,slice):
-            # TODO: Should this return a numpy.recarray or another 
-            # Frames instance?
             return self.__class__(data = self._data[key])
         elif isinstance(key,list) or isinstance(key,np.ndarray):
             return self.__class__(data = self._data[key])

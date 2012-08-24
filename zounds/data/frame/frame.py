@@ -1,5 +1,6 @@
 from abc import ABCMeta,abstractmethod,abstractproperty
 import numpy as np
+import zounds
 from zounds.data.controller import Controller
 from zounds.nputil import pad
 
@@ -172,6 +173,10 @@ class FrameController(Controller):
         '''
         pass
     
+    @property
+    def address_class(self):
+        return self.__class__.Address
+        
     def _feature_as_string(self,key):
         if isinstance(key,zounds.model.frame.Feature):
             return key.key

@@ -178,7 +178,7 @@ class FileSystemFrameController(FrameController):
     data_dn = 'data'
     
     def __init__(self,framesmodel,filepath):
-        FrameController.__init__(self.framesmodel)
+        FrameController.__init__(self,framesmodel)
         self._source_chars = 32
         self._extid_chars = 32
         self._metadata_chars = self._source_chars + self._extid_chars
@@ -192,7 +192,9 @@ class FileSystemFrameController(FrameController):
         # TODO: Refactor this!
         self._datadir = \
             os.path.join(self._rootdir,FileSystemFrameController.data_dn)
+        print self._datadir
         ensure_path_exists(self._datadir)
+        print os.path.exists(self._datadir)
         self._feature_path = \
             os.path.join(self._rootdir,FileSystemFrameController.features_fn)
         self._external_ids_path = \
@@ -205,18 +207,12 @@ class FileSystemFrameController(FrameController):
             os.path.join(self._rootdir,FileSystemFrameController.sync_fn)
         
         # Get the keys and shapes of all stored features
-        dims = self.model.dimensions
+        dims = self.model.dimensions()
         self._dtype = [(k,v[1],v[0]) for k,v in dims.iteritems()]
         self._np_dtype = np.dtype(self._dtype)
-        self._store_features()
+        self._load_features()
         
-        # TODO: Perhaps these should be loaded lazily
-        self._external_ids,self._lengths,self._ids = self._load_indexes(*[
-                                                               
-                    (self._build_external_id_index, self._external_ids_path),
-                    (self._build_lengths_index,     self._lengths_path),
-                    (self._build_ids_index,         self._ids_path)
-        ])
+        self._reindex_if_necessary()
     
         # Features that are redundant (i.e., the same for every frame), and
         # won't be stored on disk as part of the recarray
@@ -230,10 +226,29 @@ class FileSystemFrameController(FrameController):
             self._np_dtype.fields.iteritems()))
     
     
+    def _reindex_if_necessary(self):
+        # TODO: Perhaps these should be loaded lazily
+        self._external_ids,self._lengths,self._ids = self._load_indexes(*[
+                                                               
+                    (self._build_external_id_index, self._external_ids_path),
+                    (self._build_lengths_index,     self._lengths_path),
+                    (self._build_id_index,         self._ids_path)
+        ])
+    
+    def _fsfc_address(self,key):
+        return FileSystemFrameController.Address(key)
+    
+    
     def _to_skinny(self,record):
         # return only the fields of the record that will be stored on disk
         return record[self._skinny_features]
     
+    # TODO: It would be much more efficient to write a wrapper around recarray
+    # whose constructor takes literal fields. 
+    # record[0]['literal'] would always return the same value
+    # record['literal'] would return an array of the literal value the same length
+    # as the "real" recarray. I'm not exactly sure how this would work with
+    # multi-id addresses, however.
     def _from_skinny(self,_id,source,external_id,skinny_record):
         r = np.recarray(len(skinny_record),self._np_dtype)
         r[id_key] = _id
@@ -541,13 +556,13 @@ class FileSystemFrameController(FrameController):
         self._ids[ext_id] = _id
         self._external_ids[_id] = ext_id
         self._lengths[_id] = nframes
-        return FileSystemFrameController.Address((_id,slice(None)))
+        return self._fsfc_address((_id,slice(None)))
     
     def address(self,_id):
         '''
         Return the address for an _id
         '''
-        return FileSystemFrameController.Address((_id,slice(None)))
+        return self._fsfc_address((_id,slice(None)))
     
     def get(self,key):
         '''
@@ -561,17 +576,16 @@ class FileSystemFrameController(FrameController):
         '''
         
         _id = None
-        addrcls = FileSystemFrameController.Address
         if isinstance(key,str):
             # the key is a zounds id
-            addr = addrcls((key,slice(None)))
+            addr = self._fsfc_address((key,slice(None)))
         elif isinstance(key,tuple) \
             and 2 == len(key) \
             and all([isinstance(k,str) for k in key]):
             # the key is a (source, external id) pair
             _id = self._external_ids[key]
-            addr = addrcls((_id,slice(None)))
-        elif isinstance(key,addrcls):
+            addr = self._fsfc_address((_id,slice(None)))
+        elif isinstance(key,self.address_class):
             addr = key
         else:
             raise ValueError('key must be a zounds id, a (source,external_id) pair,\
@@ -592,31 +606,6 @@ class FileSystemFrameController(FrameController):
         date, recompute by using companion files or computing for new files.
         '''
         raise NotImplemented()
-    
-    def iter_feature(self,_id,feature,step = 1, chunksize = 1):
-        '''
-        For file with Zounds ID, iterate over the feature in the manner specified.
-        TODO: What does the underlying implementation of memmap[::step] do?
-        '''
-        # for metadata, return an iterator that outputs the correct value as
-        # many times as necessary
-        
-        # for non-metdata, iterate over a memmapped file.
-        feature = feature if isinstance(feature,str) else feature.key
-        _id,source,external_id,mmp = self._get_memmap(\
-                FileSystemFrameController.Address((_id,slice(None,None,step))))
-        
-        meta = feature in self._excluded_metadata
-        if meta:
-            return repeat(locals[feature],len(mmp))
-        else:
-            if 1 == chunksize:
-                for row in mmp:
-                    yield row[feature]
-            else:
-                chunks_per_step = int(chunksize / step)
-                for i in range(0,len(mmp),chunks_per_step):
-                    yield mmp[i : i + chunks_per_step]
         
     
     def get_features(self):
@@ -652,19 +641,65 @@ class FileSystemFrameController(FrameController):
         '''
         Iterate over all patterns, returning two-tuples of (Address,frames)
         '''
-        raise NotImplemented()
+        _ids = self.list_ids()
+        for _id in _ids:
+            _id,source,external_id,mmp = self._get_memmap(\
+                FileSystemFrameController.Address((_id,slice(None))))
+            lmmp = len(mmp)
+            for i in xrange(0,lmmp,step):
+                key = i if step == 1 else slice(i,min(i + step,lmmp))
+                addr = self._fsfc_address((_id,key))
+                data = self._from_skinny(_id, source, external_id, mmp[key])
+                return addr,self.model(data = data)
+
+    def iter_feature(self,_id,feature,step = 1, chunksize = 1):
+        '''
+        For file with Zounds ID, iterate over the feature in the manner specified.
+        TODO: What does the underlying implementation of memmap[::step] do?
+        '''
+        # for metadata, return an iterator that outputs the correct value as
+        # many times as necessary
+        
+        # for non-metdata, iterate over a memmapped file.
+        feature = self._feature_as_string(feature)
+        _id,source,external_id,mmp = self._get_memmap(\
+                FileSystemFrameController.Address((_id,slice(None,None,step))))
+        
+        meta = feature in self._excluded_metadata
+        if meta:
+            rp = repeat(locals[feature],len(mmp))
+            for r in rp:
+                yield r 
+        else:
+            if 1 == chunksize:
+                for row in mmp:
+                    yield row[feature]
+            else:
+                chunks_per_step = int(chunksize / step)
+                for i in range(0,len(mmp),chunks_per_step):
+                    yield mmp[i : i + chunks_per_step]
     
-    def iter_id(self,step = 1):
+    def iter_id(self,_id,chunksize,step = 1):
         '''
         Iterate over the frames of a single pattern, returning two-tuples of
         (Address,Frames)
         '''
-        raise NotImplemented()
+        _id,source,external_id,mmp = self._get_memmap(\
+                FileSystemFrameController.Address((_id,slice(None))))
+        lmmp = len(mmp)
+        for i in xrange(0,lmmp,chunksize):
+            data = self._from_skinny(\
+                    _id, source, external_id, mmp[i : i + chunksize : step])
+            key = i if 1 == step else slice(i,min(i + step,lmmp))
+            addr = self._fsfc_address((_id,key))
+            yield addr,self.model(data = data)
+                                      
+        
     
     def update_index(self):
         '''
         Force updates on all indexes. Not sure if this should do anything.
         '''
-        raise NotImplemented()
+        self._reindex_if_necessary()
     
     
