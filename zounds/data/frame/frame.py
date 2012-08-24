@@ -172,6 +172,16 @@ class FrameController(Controller):
         '''
         pass
     
+    def _feature_as_string(self,key):
+        if isinstance(key,zounds.model.frame.Feature):
+            return key.key
+        
+        if isinstance(key,str):
+            return key
+        
+        raise ValueError(\
+            'key must be a zounds.model.frame.Feature instance, or a string')
+            
     
     def _recarray(self,rootkey,data,done = False,dtype = None,meta = None):
         if done:
@@ -184,7 +194,7 @@ class FrameController(Controller):
             srt = sorted([len(a) for a in data.itervalues()])
             l = srt[0]
         
-        dtype = self.recarray_dtype if dtype is None else dtype
+        dtype = np.dtype(self.recarray_dtype) if dtype is None else dtype
         record = np.recarray(l,dtype)
         
         for k in dtype.names:

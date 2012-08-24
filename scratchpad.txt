@@ -1,5 +1,11 @@
 TOOO:
 -------------
+Update all PyTablesFrameController imports / ensure tests are passing and memerror app works
+
+Cut down on search time by *excluding* ignored codes from the index
+
+tf/idf on all codes
+
 FileSystemFrameController
 
 Are there duplicates in the current db?
@@ -15,9 +21,6 @@ TODO: The idea behind some of the PyTablesFrameController.Address methods is
   is incorrect
 
 TODO: Answer the question "How do file system seek times compare to PyTables?"
-
-TODO: Do weird, "blank" search results occur when drawing queries directly from
-	the database?
 
 TODO: extractors using multiprocessing hang when updating database
 

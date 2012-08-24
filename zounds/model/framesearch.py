@@ -377,7 +377,7 @@ class ExhaustiveLshSearch(FrameSearch):
         nbits - The number of bits in the scalar feature
         fine_feature - A finer detail feature. It should have the same stepsize
                        as feature, and have a boolean data type
-        ignore - an iterable of codes that should be ignored when performing a 
+        ignore - a code, or an iterable of codes that should be ignored when performing a 
                 query, usually because they represent silence.
         '''
         k = LshSearch._DTYPE_MAPPING.keys()

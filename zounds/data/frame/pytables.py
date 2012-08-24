@@ -425,13 +425,11 @@ class PyTablesFrameController(FrameController):
         return r[source_key],r[external_id_key]
     
     def get_dtype(self,key):
-        if isinstance(key,zounds.model.frame.Feature):
-            key = key.key
+        key = self._feature_as_string(key)
         return getattr(self.db_read.cols,key).dtype
     
     def get_dim(self,key):
-        if isinstance(key,zounds.model.frame.Feature):
-            key = key.key
+        key = self._feature_as_string(key)
         return getattr(self.db_read.cols,key).shape[1:]
     
     
@@ -587,9 +585,7 @@ class PyTablesFrameController(FrameController):
     def __del__(self):
         self.close()
         
-    
 
-    
 # Crazy Bad KLUDGE: I rely on FrameController-derived classes to define a back-end
 # specific Address class as a nested class. This makes those classes impossible
 # to pickle, however.  This is a baaad solution, but I'd like to keep moving
