@@ -20,7 +20,7 @@ class PrecomputedFeatureTests(unittest.TestCase):
         pytables_fn = '%s.h5' % uuid4().hex
         filesystem_dir = uuid4().hex
         self.implementations = [(PyTablesFrameController,(pytables_fn,)),
-                                (FileSystemFrameController,(filesystem_dir))]
+                                (FileSystemFrameController,(filesystem_dir,))]
         self.to_cleanup = [pytables_fn]
         Environment._test = True
 

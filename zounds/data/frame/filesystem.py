@@ -42,7 +42,7 @@ class DataFile(object):
             self._external_id = external_id
             self._file = open(self._c._pattern_path(_id),'wb')
             source = np.array(source,dtype = 'a%i' % self._c._source_chars)
-            external_id = np.array(source,dtype = 'a%i' % self._c._extid_chars)
+            external_id = np.array(external_id,dtype = 'a%i' % self._c._extid_chars)
             self._file.write(source)
             self._file.write(external_id)
         
@@ -68,7 +68,6 @@ class FileSystemFrameController(FrameController):
         def __init__(self,key):
             zounds.model.frame.Address.__init__(self,key)
             self._id,self._index = self.key
-            print self._index
             try:
                 # try to treat index as an iterable of ints
                 self._len = len(self._index)
@@ -82,9 +81,6 @@ class FileSystemFrameController(FrameController):
             try:
                 # try to treat index as a slice
                 self._len = self._index.stop - self._index.start
-                if self._index.step not in [None,1]:
-                    raise ValueError(\
-                    'When using a slice as an address key, it must have a step of 1')
                 self.min = self._index.start
                 self.max = self._index.stop - 1
                 return
@@ -203,25 +199,22 @@ class FileSystemFrameController(FrameController):
             os.path.join(self._rootdir,FileSystemFrameController.data_dn)
         
         ensure_path_exists(self._datadir)
-        self._feature_path = \
-            os.path.join(self._rootdir,FileSystemFrameController.features_fn)
-        self._external_ids_path = \
-            os.path.join(self._rootdir,FileSystemFrameController.external_ids_fn)
-        self._ids_path = \
-            os.path.join(self._rootdir,FileSystemFrameController.ids_fn)
-        self._lengths_path = \
-            os.path.join(self._rootdir,FileSystemFrameController.lengths_fn)
-        self._sync_path = \
-            os.path.join(self._rootdir,FileSystemFrameController.sync_fn)
+        fsfc = FileSystemFrameController
+        self._feature_path = os.path.join(self._rootdir,fsfc.features_fn)
+        self._external_ids_path = os.path.join(self._rootdir,fsfc.external_ids_fn)
+        self._ids_path = os.path.join(self._rootdir,fsfc.ids_fn)
+        self._lengths_path = os.path.join(self._rootdir,fsfc.lengths_fn)
+        self._sync_path = os.path.join(self._rootdir,fsfc.sync_fn)
         
-        # Get the keys and shapes of all stored features
-        dims = self.model.dimensions()
-        self._dtype = [(k,v[1],v[0]) for k,v in dims.iteritems()]
-        self._np_dtype = np.dtype(self._dtype)
+        
         self._load_features()
         
-        self._reindex_if_necessary()
-    
+        # Get the keys and shapes of all stored features
+        dims = self._dimensions
+        self._dtype = [(k,v[1],v[0]) for k,v in dims.iteritems()]
+        self._np_dtype = np.dtype(self._dtype)
+        
+        
         # Features that are redundant (i.e., the same for every frame), and
         # won't be stored on disk as part of the recarray
         self._excluded_metadata = [id_key,source_key,external_id_key]
@@ -232,6 +225,8 @@ class FileSystemFrameController(FrameController):
         self._skinny_dtype = np.dtype(filter(\
             lambda a : a[0] in self._skinny_features,
             self._dtype))
+        
+        self._reindex_if_necessary()
     
     
     def _reindex_if_necessary(self):
@@ -256,7 +251,7 @@ class FileSystemFrameController(FrameController):
     # as the "real" recarray. I'm not exactly sure how this would work with
     # multi-id addresses, however.
     def _from_skinny(self,_id,source,external_id,skinny_record):
-        r = np.recarray(len(skinny_record),self._np_dtype)
+        r = np.recarray(skinny_record.shape,self._np_dtype)
         r[id_key] = _id
         r[source_key] = source
         r[external_id_key] = external_id
@@ -270,6 +265,9 @@ class FileSystemFrameController(FrameController):
                 dtype = self._skinny_dtype, meta = self._excluded_metadata)
         _id,source,external_id = meta
         return _id,source,external_id,record
+    
+    def _str_dtype(self,nchars):
+        return 'a%i' % nchars
     
     def _get_memmap(self,addr):
         _id = addr._id
@@ -291,15 +289,21 @@ class FileSystemFrameController(FrameController):
         to_read = stop_index - start_index
         with open(fn,'rb') as f:
             # read the metadata from the file
-            meta = f.read(self._metadata_chars)
-            source = np.fromstring(meta[:self._source_chars])
-            extid = np.fromstring(meta[self._source_chars:])
+            source,extid = self._get_source_and_external_id(f)
             # get the offset, in bytes, where we'll start reading
             start_bytes = start_index * size 
+            offset = start_bytes + self._metadata_chars
             data = np.memmap(\
-                    f,dtype = self._skinny_dtype, mode = 'r', 
-                    offset = start_bytes + self._metadata_chars)
+                    f,dtype = self._skinny_dtype, mode = 'r',offset = offset)
         return _id,source,extid,data[:to_read:step]
+    
+    def _get_source_and_external_id(self,f):
+        meta = f.read(self._metadata_chars)
+        source = np.fromstring(meta[:self._source_chars],
+                                   dtype = self._str_dtype(self._source_chars))[0]
+        extid = np.fromstring(meta[self._source_chars:],
+                                  dtype = self._str_dtype(self._extid_chars))[0]
+        return source,extid
     
     def _get_hydrated(self,addr):
         return self._from_skinny(*self._get_memmap(addr))
@@ -308,10 +312,6 @@ class FileSystemFrameController(FrameController):
     def _pattern_path(self,_id):
         return os.path.join(self._datadir,
                             _id + FileSystemFrameController.file_extension)
-    
-    @property
-    def record_size(self):
-        return self._np_dtype.itemsize
     
     def _file_is_stale(self,path):
         '''
@@ -325,14 +325,14 @@ class FileSystemFrameController(FrameController):
         '''
         Ensure that the features of the current FrameModel are stored on disk
         '''
-        self._features = self.model.features
-        
-        if os.path.exists(self._feature_path):
-            return
-        
-        with open(self._feature_path,'w') as f:
-            cPickle.dump(self._features,f)
-        
+        try:
+            with open(self._feature_path,'r') as f:
+                self._features,self._dimensions = cPickle.load(f)
+        except IOError:
+            self._features = self.model.features
+            self._dimensions = self.model.dimensions()
+            with open(self._feature_path,'w') as f:
+                cPickle.dump((self._features,self._dimensions),f)        
         
     
     def _load_indexes(self,*paths):
@@ -382,7 +382,7 @@ class FileSystemFrameController(FrameController):
     
     def _build_lengths_index(self,f,_id,source,external_id,path,index):
         fs = os.path.getsize(path)
-        nframes = (fs - self._metadata_chars) / self.record_size
+        nframes = (fs - self._metadata_chars) / self._skinny_dtype.itemsize
         index[_id] = nframes
         
     def _iter_patterns(self,*index_builders):
@@ -392,10 +392,7 @@ class FileSystemFrameController(FrameController):
             path = os.path.join(self._datadir,f)
             for i,func,index in index_builders:
                 with open(path,'r') as of:
-                    metadata = struct.unpack(\
-                            self._metadata_fmt,of.read(self._metadata_chars))
-                    source = metadata[:self._source_chars]
-                    external_id = metadata[self._source_chars:]
+                    source,external_id = self._get_source_and_external_id(of)
                     func(f,_id,source,external_id,path,index)
         return [(i,index) for i,builder,index in index_builders]
     
@@ -551,8 +548,6 @@ class FileSystemFrameController(FrameController):
             if rootkey == k:
                 chunks_processed += 1
         
-        
-        
         frames = datafile.write(*self._recarray(rootkey, data, done = True))
         nframes += frames
         
@@ -560,8 +555,9 @@ class FileSystemFrameController(FrameController):
         ext_id = (datafile._source,datafile._external_id)
         datafile.close()
         # update indexes
-        self._ids[ext_id] = _id
-        self._external_ids[_id] = ext_id
+        # TODO: Shouldn't these also be persisted to disk?
+        self._ids[_id] = ext_id
+        self._external_ids[ext_id] = _id
         self._lengths[_id] = nframes
         return self._fsfc_address((_id,slice(0,nframes)))
     
@@ -569,7 +565,7 @@ class FileSystemFrameController(FrameController):
         '''
         Return the address for an _id
         '''
-        return self._fsfc_address((_id,slice(None)))
+        return self._fsfc_address((_id,slice(0,self._lengths[_id])))
     
     def get(self,key):
         '''
@@ -585,13 +581,13 @@ class FileSystemFrameController(FrameController):
         _id = None
         if isinstance(key,str):
             # the key is a zounds id
-            addr = self._fsfc_address((key,slice(None)))
+            addr = self.address(key)
         elif isinstance(key,tuple) \
             and 2 == len(key) \
             and all([isinstance(k,str) for k in key]):
             # the key is a (source, external id) pair
             _id = self._external_ids[key]
-            addr = self._fsfc_address((_id,slice(None)))
+            addr = self.address(_id)
         elif isinstance(key,self.address_class):
             addr = key
         else:
@@ -619,8 +615,7 @@ class FileSystemFrameController(FrameController):
         '''
         Return a dictionary mapping Feature Key -> Feature for the current FrameModel
         '''
-        with open(self._feature_path,'r') as f:
-            return cPickle.load(f)
+        return self._features
     
     def get_dtype(self,key):
         '''
@@ -650,14 +645,13 @@ class FileSystemFrameController(FrameController):
         '''
         _ids = self.list_ids()
         for _id in _ids:
-            _id,source,external_id,mmp = self._get_memmap(\
-                FileSystemFrameController.Address((_id,slice(None))))
+            _id,source,external_id,mmp = self._get_memmap(self.address(_id))
             lmmp = len(mmp)
             for i in xrange(0,lmmp,step):
                 key = i if step == 1 else slice(i,min(i + step,lmmp))
                 addr = self._fsfc_address((_id,key))
                 data = self._from_skinny(_id, source, external_id, mmp[key])
-                return addr,self.model(data = data)
+                yield addr,self.model(data = data)
 
     def iter_feature(self,_id,feature,step = 1, chunksize = 1):
         '''
@@ -669,12 +663,13 @@ class FileSystemFrameController(FrameController):
         
         # for non-metdata, iterate over a memmapped file.
         feature = self._feature_as_string(feature)
+        l = self._lengths[_id]
         _id,source,external_id,mmp = self._get_memmap(\
-                FileSystemFrameController.Address((_id,slice(None,None,step))))
+                self._fsfc_address((_id,slice(0,l,step))))
         
         meta = feature in self._excluded_metadata
         if meta:
-            rp = repeat(locals[feature],len(mmp))
+            rp = repeat(locals()[feature],len(mmp))
             for r in rp:
                 yield r 
         else:
@@ -684,15 +679,14 @@ class FileSystemFrameController(FrameController):
             else:
                 chunks_per_step = int(chunksize / step)
                 for i in range(0,len(mmp),chunks_per_step):
-                    yield mmp[i : i + chunks_per_step]
+                    yield mmp[i : i + chunks_per_step][feature]
     
     def iter_id(self,_id,chunksize,step = 1):
         '''
         Iterate over the frames of a single pattern, returning two-tuples of
         (Address,Frames)
         '''
-        _id,source,external_id,mmp = self._get_memmap(\
-                FileSystemFrameController.Address((_id,slice(None))))
+        _id,source,external_id,mmp = self._get_memmap(self.address(_id))
         lmmp = len(mmp)
         for i in xrange(0,lmmp,chunksize):
             data = self._from_skinny(\
