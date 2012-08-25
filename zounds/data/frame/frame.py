@@ -178,6 +178,14 @@ class FrameController(Controller):
         return self.__class__.Address
         
     def _feature_as_string(self,key):
+        '''
+        Allows interchangeable use of Feature instances and their keys
+        
+        Parameters
+            key : A zounds.model.frame.Feature instance, or a Feature key
+        Returns
+            key, if key is a string, or Feature.key, if key is a Feature.
+        '''
         if isinstance(key,zounds.model.frame.Feature):
             return key.key
         
@@ -201,8 +209,6 @@ class FrameController(Controller):
         
         
         dtype = np.dtype(self.recarray_dtype) if dtype is None else dtype
-        print l
-        print dtype
         record = np.recarray(l,dtype)
         
         for k in dtype.names:

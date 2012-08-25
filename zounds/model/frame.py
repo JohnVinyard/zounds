@@ -368,8 +368,18 @@ class Frames(Model):
         
         self.audio = self._data[audio_key] 
         
-        for k in self.__class__.stored_features().iterkeys():    
-            setattr(self,k,self._data[k])
+        for k in self.__class__.stored_features().iterkeys():
+            # KLUDGE: In the special case of 0-d recarrays (i.e.,
+            # self._data = a single frame), PyTables and FileSystem frame
+            # controllers return data a bit differently. PT returns an array
+            # of type np.void, and accessing rec['_id'], e.g., returns a string,
+            # as expected.  FS, on the other hand, returns a 0D np.recarray.
+            # rec['_id'] returns another recarray. Doing rec['_id'][()] gets
+            # at the actual value.  I shouldn't have to know about these details
+            # here, but I'm not quite sure how to standardize the behavior
+            v = self._data[k]
+            v = v[()] if isinstance(v,np.recarray) else v
+            setattr(self,k,v)
     
     # BUG: What if the frames instance is composed of more than one sound?
     def __str__(self):

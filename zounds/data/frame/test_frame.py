@@ -327,6 +327,12 @@ class FrameControllerTests(object):
         fftsize = FM1.env().windowsize / 2
         self.assertEqual((fftsize,),c.get_dim(FM1.fft))
     
+    def test_cols_col_shape(self):
+        fn,FM1 = self.FM()
+        c = FM1.controller()
+        self.assertEqual((2048,),c.get_dim('fft'))
+        self.assertEqual((),c.get_dim('loudness'))
+    
     def test_iter_feature(self):
         fn,FM1 = self.FM()
         c = FM1.controller()
@@ -547,7 +553,11 @@ class FrameControllerTests(object):
         fn,l1,old_features = self.build_with_model(FM1,close_db = False)
         _id = list(FM1.list_ids())[0]
         orig_count = FM1[_id].count
-        FM1.controller().close()
+        try:
+            FM1.controller().close()
+        except AttributeError:
+            # this implementation has no close method
+            pass
         
         # make sure to use the same file
         fn,FM2 = self.FM(framemodel = FM2,filepath = fn)
@@ -713,7 +723,7 @@ class FrameControllerTests(object):
         
         self.assertTrue(all([isinstance(frm,FM) for a,frm in f]))
         self.assertEqual(total_length,len(f))
-        self.assertEqual(2,len(set([_id for _id in _ids])))
+        self.assertEqual(2,len(set(_ids)))
     
     def test_iter_all_step_size_2(self):
         
@@ -746,7 +756,7 @@ class FrameControllerTests(object):
             _ids.extend(frames._id)
         
         self.assertTrue(all([isinstance(frm,FM) for a,frm in f]))
-        self.assertEqual(2,len(set([_id for _id in _ids])))
+        self.assertEqual(2,len(set(_ids)))
         self.assertNotEqual(total_length,len(f))
         # Not all of the slices will have length two, because of odd frame
         # counts.  Just make sure one of them does.
@@ -857,19 +867,12 @@ class FileSystemFrameControllerTests(unittest.TestCase,FrameControllerTests):
     
     def test_file_exists_with_path(self):
         fn,FM1 = self.FM(indir = True)
-        self.assertTrue(os.path.exists(fn))
-        FM1.controller().close()
+        self.assertTrue(os.path.exists(fn)) 
         
     def test_correct_num_columns(self):
         fn,FM1 = self.FM()
         c = FM1.controller()
         self.assertTrue(len(c._np_dtype) > 3)
-    
-    def test_cols_col_shape(self):
-        fn,FM1 = self.FM()
-        c = FM1.controller()
-        self.assertEqual((0,2048),c.get_dim('fft'))
-        self.assertEqual((0,),c.get_dim('loudness'))
     
     def test_cols_dtype(self):
         
@@ -895,4 +898,193 @@ class FileSystemFrameControllerTests(unittest.TestCase,FrameControllerTests):
         fn,FM1 = self.FM()
         c = FM1.controller()
         self.assertTrue(isinstance(c._np_dtype['audio'],np.dtype))
+
+
+# KLUDGE: I've excluded int -> int comparisons    
+class PyTablesFrameControllerAddressTests(unittest.TestCase):
+    
+    def setUp(self):
+        self.Address = PyTablesFrameController.Address
+    
+    def a(self,key):
+        return self.Address(key)
+    
+    def test_eq_non_contiguous(self):
+        a1 = self.a([1,4,10])
+        a2 = self.a([1,6,10])
+        self.assertNotEqual(a1,a2)
+    
+    def test_eq_list_list(self):
+        a1 = self.a([1,2,3])
+        a2 = self.a(np.array([1,2,3]))
+        self.assertEqual(a1,a2)
+    
+    def test_ne_list_list(self):
+        a1 = self.a([1,2,3,4])
+        a2 = self.a(np.array([1,2,3]))
+        self.assertNotEqual(a1,a2)
+    
+    def test_lt_list_list(self):
+        a1 = self.a([1,2,3])
+        a2 = self.a([2,3,4])
+        self.assertTrue(a1 < a2)
+    
+    def test_le_list_list(self):
+        a1 = self.a([1,2,3])
+        a2 = self.a([1,2,3])
+        a3 = self.a([2,3,4])
+        self.assertTrue(a1 <= a2)
+        self.assertTrue(a1 <= a3)
+    
+    def test_gt_list_list(self):
+        a1 = self.a([1,2,3])
+        a2 = self.a([2,3,4])
+        self.assertTrue(a2 > a1)
+    
+    def test_ge_list_list(self):
+        a1 = self.a([1,2,3])
+        a2 = self.a([1,2,3])
+        a3 = self.a([2,3,4])
+        self.assertTrue(a1 >= a2)
+        self.assertTrue(a3 >= a1)
+    
+    def test_eq_list_slice(self):
+        a1 = self.a([1,2,3])
+        a2 = self.a(slice(1,4))
+        self.assertEqual(a1,a2)
+    
+    def test_ne_list_slice(self):
+        a1 = self.a([1,2,3])
+        a2 = self.a(slice(2,5))
+        self.assertNotEqual(a1,a2)
+        
+    def test_gt_list_slice(self):
+        a1 = self.a([1,2,3])
+        a2 = self.a(slice(2,5))
+        self.assertTrue(a2 > a1)
+    
+    def test_ge_list_slice(self):
+        a1 = self.a([1,2,3])
+        a2 = self.a(slice(1,4))
+        a3 = self.a(slice(2,5))
+        self.assertTrue(a2 >= a1)
+        self.assertTrue(a3 >= a1)
+    
+    def test_lt_list_slice(self):
+        a1 = self.a([1,2,3])
+        a2 = self.a(slice(2,10))
+        self.assertTrue(a1 < a2)
+    
+    def test_le_list_slice(self):
+        a1 = self.a([1,2,3])
+        a2 = self.a(slice(1,4))
+        a3 = self.a(slice(20,30))
+        self.assertTrue(a2 >= a1)
+        self.assertTrue(a3 >= a1)
+    
+    def test_eq_list_int(self):
+        a1 = self.a([1])
+        a2 = self.a(1)
+        self.assertEqual(a1,a2)
+    
+    def test_ne_list_int(self):
+        a1 = self.a([1,2,3])
+        a2 = self.a(1)
+        self.assertNotEqual(a1,a2)
+    
+    def test_lt_list_int(self):
+        a1 = self.a([1,2,3])
+        a2 = self.a(4)
+        self.assertTrue(a1 < a2)
+    
+    def test_le_list_int(self):
+        a1 = self.a([2])
+        a2 = self.a([1,2,3])
+        a3 = self.a(2)
+        self.assertTrue(a1 <= a3)
+        self.assertTrue(a2 <= a3)
+    
+    def test_gt_list_int(self):
+        a1 = self.a(4)
+        a2 = self.a([1,2,3])
+        self.assertTrue(a1 > a2)
+    
+    def test_ge_list_int(self):
+        a1 = self.a(4)
+        a2 = self.a([4])
+        a3 = self.a([3,4,5])
+        self.assertTrue(a1 >= a2)
+        self.assertTrue(a1 >= a3)
+    
+    def test_slice_bad_step(self):
+        self.assertRaises(ValueError,lambda : self.a(slice(1,10,2)))
+    
+    def test_eq_slice_slice(self):
+        a1 = self.a(slice(1,10))
+        a2 = self.a(slice(1,10))
+        self.assertEqual(a1,a2)
+        
+    def test_ne_slice_slice(self):
+        a1 = self.a(slice(1,10))
+        a2 = self.a(slice(1,11))
+        self.assertNotEqual(a1,a2)
+    
+    def test_gt_slice_slice(self):
+        a1 = self.a(slice(10,20))
+        a2 = self.a(slice(21,31))
+        self.assertTrue(a2 > a1)
+    
+    def test_ge_slice_slice(self):
+        a1 = self.a(slice(10,20))
+        a2 = self.a(slice(10,20))
+        a3 = self.a(slice(11,21))
+        self.assertTrue(a2 >= a1)
+        self.assertTrue(a3 >= a1)
+    
+    def test_lt_slice_slice(self):
+        a1 = self.a(slice(10,20))
+        a2 = self.a(slice(11,20))
+        self.assertTrue(a1 < a2)
+    
+    def test_le_slice_slice(self):
+        a1 = self.a(slice(10,20))
+        a2 = self.a(slice(10,20))
+        a3 = self.a(slice(11,21))
+        self.assertTrue(a2 <= a1)
+        self.assertTrue(a1 <= a3)
+    
+    def test_eq_slice_int(self):
+        a1 = self.a(slice(1,2))
+        a2 = self.a(1)
+        self.assertEqual(a1,a2)
+    
+    def test_ne_slice_int(self):
+        a1 = self.a(slice(1,3))
+        a2 = self.a(1)
+        self.assertNotEqual(a1,a2)
+    
+    def test_lt_slice_int(self):
+        a1 = self.a(slice(1,3))
+        a2 = self.a(3)
+        self.assertTrue(a1 < a2)
+    
+    def test_le_slice_int(self):
+        a1 = self.a(slice(2,3))
+        a2 = self.a(slice(1,3))
+        a3 = self.a(2)
+        self.assertTrue(a1 <= a3)
+        self.assertTrue(a2 <= a3)
+    
+    def test_gt_slice_int(self):
+        a1 = self.a(slice(2,3))
+        a2 = self.a(4)
+        self.assertTrue(a2 > a1)
+    
+    def test_ge_slice_int(self):
+        a1 = self.a(slice(3,4))
+        a2 = self.a(slice(2,4))
+        a3 = self.a(3)
+        self.assertTrue(a3 >= a1)
+        self.assertTrue(a3 >= a2)
+
     
