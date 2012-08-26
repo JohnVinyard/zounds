@@ -65,7 +65,7 @@ class ConcurrentIndex(object):
         self._datadir = datadir
         self._iterator = iterator
         self._in_mem_timestamp = None
-        self._data = None
+        self._data = dict([(k,dict()) for k in self._keys])
         self.startup()
     
     def __getitem__(self,k):
@@ -145,8 +145,7 @@ class ConcurrentIndex(object):
             cPickle.dump(self._data,f)
     
     def reindex(self):
-        self._data = dict([(k,dict()) for k in self._keys])
-        for metadata in self._iterator():
+        for metadata in self._iterator(self._data['_id']):
             for index_key in self._keys:
                 builder = self._builders[index_key]
                 k,v = builder(*metadata)
@@ -488,10 +487,12 @@ class FileSystemFrameController(FrameController):
         nframes = (fs - self._metadata_chars) / self._skinny_dtype.itemsize
         return _id,nframes
         
-    def _iter_patterns(self):
+    def _iter_patterns(self,d):
         files = os.listdir(self._datadir)
         for f in files:
             _id = f.split('.')[0]
+            if _id in d:
+                continue
             path = os.path.join(self._datadir,f)
             with open(path,'r') as of:
                 source,external_id = self._get_source_and_external_id(of)
