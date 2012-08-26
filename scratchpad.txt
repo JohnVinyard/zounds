@@ -1,7 +1,12 @@
 TOOO:
 -------------
 FileSystem multiprocess index update logic and tests
-Ensure that updates to indexes in append() are persisted to disk
+
+DiskAcquirer multiprocess version
+
+Is rebuilding the index after each append() call really smart?
+
+Are on-disk features updated after a sync?
 
 Fetch tests should be structured the same way as FrameController (and derived) tests
 
@@ -9,9 +14,11 @@ Why aren't tests cleaning up after themselves?
 
 Documentation pass
 
-Get rid of old test_frame.py
-
 FileSystemFrameController
+
+Quickstart - ensure that websearch is copied and setup correctly
+
+PyTables.stat() array is too big bug.
 
 PrecomputedFeature with filter tests
 

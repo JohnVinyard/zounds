@@ -82,19 +82,19 @@ class Feature(object):
         return Environment.instance.framecontroller.stat(\
                                             self,aggregate,step = s, axis = axis)
     
-    def mean(self,step = None,axis = 0):
+    def mean(self,step = 1,axis = 0):
         return self._stat(np.mean,step = step, axis = axis)
     
-    def sum(self,step = None, axis = 0):
+    def sum(self,step = 1, axis = 0):
         return self._stat(np.sum,step = step, axis = axis)
     
-    def std(self,step = None, axis = 0):
+    def std(self,step = 1, axis = 0):
         return self._stat(np.std, step = step, axis = axis)
     
-    def max(self,step = None, axis = 0):
+    def max(self,step = 1, axis = 0):
         return self._stat(np.max, step = step, axis = axis)
     
-    def min(self,step = None, axis = 0):
+    def min(self,step = 1, axis = 0):
         return self._stat(np.min, step = step, axis = axis)
     
     # TODO: Write tests
