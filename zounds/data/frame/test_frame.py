@@ -13,7 +13,6 @@ from zounds.analyze.feature.basic import UnitNorm,Abs
 from zounds.analyze.feature.reduce import Downsample
 from zounds.model.pattern import FilePattern
 from zounds.environment import Environment
-from frame import FrameController
 from pytables import PyTablesFrameController
 from filesystem import FileSystemFrameController
 from zounds.testhelper import make_sndfile,remove,SumExtractor

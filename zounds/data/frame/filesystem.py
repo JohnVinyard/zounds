@@ -2,7 +2,6 @@ from __future__ import division
 import os
 import shutil
 import cPickle
-import struct
 from itertools import repeat
 import numpy as np
 
@@ -11,6 +10,7 @@ from zounds.constants import audio_key,id_key,source_key,external_id_key
 from frame import FrameController,UpdateNotCompleteError
 from zounds.model.pattern import Pattern
 from zounds.util import ensure_path_exists
+from time import time,sleep
 
 '''
 Directory Structure
@@ -25,6 +25,7 @@ DBNAME
         ...
 '''
 
+# TODO: Consider adding some read methods as well
 class DataFile(object):
     
     def __init__(self,controller):
@@ -42,7 +43,8 @@ class DataFile(object):
             self._external_id = external_id
             self._file = open(self._c._pattern_path(_id),'wb')
             source = np.array(source,dtype = 'a%i' % self._c._source_chars)
-            external_id = np.array(external_id,dtype = 'a%i' % self._c._extid_chars)
+            external_id = np.array(\
+                            external_id,dtype = 'a%i' % self._c._extid_chars)
             self._file.write(source)
             self._file.write(external_id)
         
@@ -51,9 +53,153 @@ class DataFile(object):
     
     def close(self):
         self._file.close()
+
+class ConcurrentIndex(object):
+    
+    def __init__(self,builders,indexpath,datadir,iterator):
+        object.__init__(self)
+        self._keys = ['_id','external_id','length']
+        self._builders = builders
+        self._path = os.path.join(indexpath,'index.dat')
+        self._lock_filename = os.path.join(indexpath,'lock.dat')
+        self._datadir = datadir
+        self._iterator = iterator
+        self._in_mem_timestamp = None
+        self._data = None
+        self.startup()
+    
+    def __getitem__(self,k):
+        # Check if memory is stale, if not, return. if so:
+        # Check if file is stale, if not, load and return, if so:
+        # reindex, save, and return
+        if not self.memory_is_stale():
+            # The in-memory index is up-to-date
+            return self._data[k]
         
+        if not self.file_is_stale():
+            # The in-memory index was stale, but the file on disk is current.
+            # Just load it up and return the value
+            self.wait_for_unlock()
+            self._data = self.from_disk()
+            self._in_mem_timestamp = time()
+            return self._data[k]
         
-            
+        # Both the in-memory and on-disk indexes are stale, rebuild the index,
+        # persist it to disk, and return the requested value.
+        self.acquire_lock()
+        self.reindex()
+        self.to_disk()
+        self.release_lock()
+        self._in_mem_timestamp = time()
+        return self._data[k]
+    
+    def startup(self):
+        if self.ensure_condition(self.file_is_stale):
+            self.reindex()
+            self.to_disk()
+            self._in_mem_timestamp = time()
+            self.release_lock()
+        else:
+            self.wait_for_unlock()
+            self._data = self.from_disk()
+            self._in_mem_timestamp = time()
+    
+    def append(self,_id,source,external_id,length):
+        self.acquire_lock()
+        if self.memory_is_stale():
+            # another controller has updated the disk index. Our in-memory
+            # version is out-of-date. Merge the disk version with our version
+            # before doing anything else.
+            fresh = self.from_disk()
+            for k in fresh.iterkeys():
+                self._data[k].update(fresh[k])
+        
+        self._data['_id'][_id] = (source,external_id)
+        self._data['external_id'][(source,external_id)] = _id
+        self._data['length'][_id] = length
+        self.to_disk()
+        self._in_mem_timestamp = time()
+        self.release_lock()
+    
+    def ensure_condition(self,c):
+        '''
+        Parameters
+            c - a callable, taking no parameters, that returns a boolean value
+        Returns
+            True if the callable returns true both before and after acquiring a
+            lock, otherwise False.
+        '''
+        b = c()
+        if not b:
+            return False
+        self.acquire_lock()
+        return c()
+        
+    
+    def from_disk(self):
+        with open(self._path,'r') as f:
+            return cPickle.load(f)
+    
+    def to_disk(self):
+        with open(self._path,'w') as f:
+            cPickle.dump(self._data,f)
+    
+    def reindex(self):
+        self._data = dict([(k,dict()) for k in self._keys])
+        for metadata in self._iterator():
+            for index_key in self._keys:
+                builder = self._builders[index_key]
+                k,v = builder(*metadata)
+                self._data[index_key][k] = v
+
+    
+    def id_from_external_id(self,extid):
+        return self._data['external_id'][extid]
+    
+    def external_id_from_id(self,_id):
+        return self._data['_id'][_id]
+    
+    def pattern_length(self,_id):
+        return self._data['length'][_id]
+    
+    @property
+    def is_locked(self):
+        return os.path.exists(self._lock_filename)
+    
+    def make_lock(self):
+        f = open(self._lock_filename,'w')
+        f.close()
+    
+    def acquire_lock(self):
+        self.wait_for_unlock()
+        self.make_lock()
+    
+    def release_lock(self):
+        os.remove(self._lock_filename)
+    
+    def wait_for_unlock(self):
+        while self.is_locked:
+            sleep(0.05)
+    
+    
+    def file_is_stale(self):
+        '''
+        Returns true if pattern data has been added to the data directory more
+        recently than the index file has been updated
+        '''
+        return (not os.path.exists(self._path)) or \
+                (os.path.getmtime(self._datadir) > os.path.getmtime(self._path))
+    
+    
+    def memory_is_stale(self):
+        '''
+        Returns true if another ConcurrentIndex instance has updated the persistent
+        index.  Our in-memory version needs to be refreshed.
+        '''
+        return os.path.getmtime(self._path) > self._in_mem_timestamp
+    
+        
+
 class FileSystemFrameController(FrameController):
     
     # KLUDGE: As it is, this class isn't able to handle addresses that contain
@@ -144,7 +290,8 @@ class FileSystemFrameController(FrameController):
         
         def _check(self,other):
             if not self.__ideq__(other):
-                raise ValueError('Comparisons are meaningless for addresses with different ids')
+                raise ValueError(\
+                'Comparisons are meaningless for addresses with different ids')
         
         def __lt__(self,other):
             self._check(other)
@@ -172,14 +319,10 @@ class FileSystemFrameController(FrameController):
             srt = sorted(addresses)
             return cls((srt[0]._id,slice(srt[0].min,srt[-1].max)))
         
-        
     
     file_extension = '.dat'
     features_fn = 'features' + file_extension
-    external_ids_fn = 'external_ids' + file_extension
-    ids_fn = '_ids' + file_extension
     sync_fn = 'sync' + file_extension
-    lengths_fn = 'lengths' + file_extension
     data_dn = 'data'
     
     def __init__(self,framesmodel,filepath):
@@ -194,19 +337,14 @@ class FileSystemFrameController(FrameController):
     def _load(self,filepath):
         self._rootdir = filepath
         
-        # TODO: Refactor this!
         self._datadir = \
             os.path.join(self._rootdir,FileSystemFrameController.data_dn)
         
         ensure_path_exists(self._datadir)
         fsfc = FileSystemFrameController
         self._feature_path = os.path.join(self._rootdir,fsfc.features_fn)
-        self._external_ids_path = os.path.join(self._rootdir,fsfc.external_ids_fn)
-        self._ids_path = os.path.join(self._rootdir,fsfc.ids_fn)
-        self._lengths_path = os.path.join(self._rootdir,fsfc.lengths_fn)
+        
         self._sync_path = os.path.join(self._rootdir,fsfc.sync_fn)
-        
-        
         self._load_features()
         
         # Get the keys and shapes of all stored features
@@ -230,16 +368,17 @@ class FileSystemFrameController(FrameController):
     
     
     def _reindex_if_necessary(self):
-        # TODO: Perhaps these should be loaded lazily
-        self._external_ids,self._lengths,self._ids = self._load_indexes(*[           
-                    (self._build_external_id_index, self._external_ids_path),
-                    (self._build_lengths_index,     self._lengths_path),
-                    (self._build_id_index,         self._ids_path) ])
+        builders = {'_id' : self._build_id_index,
+                    'external_id' : self._build_external_id_index,
+                    'length' : self._build_lengths_index}
+        self._index = ConcurrentIndex(\
+                    builders,self._rootdir,self._datadir,self._iter_patterns)
     
     def _fsfc_address(self,key):
         return FileSystemFrameController.Address(key)
     
     
+    # TODO: Try np.lib.recfunctions.drop_fields
     def _to_skinny(self,record):
         # return only the fields of the record that will be stored on disk
         return record[self._skinny_features]
@@ -250,6 +389,9 @@ class FileSystemFrameController(FrameController):
     # record['literal'] would return an array of the literal value the same length
     # as the "real" recarray. I'm not exactly sure how this would work with
     # multi-id addresses, however.
+    #
+    #
+    # TODO: Try np.lib.recfunctions.append_fields
     def _from_skinny(self,_id,source,external_id,skinny_record):
         r = np.recarray(skinny_record.shape,self._np_dtype)
         r[id_key] = _id
@@ -334,67 +476,26 @@ class FileSystemFrameController(FrameController):
             with open(self._feature_path,'w') as f:
                 cPickle.dump((self._features,self._dimensions),f)        
         
-    
-    def _load_indexes(self,*paths):
-        '''
-        Load indexes into memory by either reading them from disk, if they're
-        current, or rebuilding them.  If an index is rebuilt, the old index
-        will be overwritten by the new one.
-         
-        paths should be a list of tuples of (index_builder_function,index_file_name)
-        '''
-        lp = len(paths)
-        indexes = [None] * lp
-        builders = []
         
-        for i,p in enumerate(paths):
-            builder,path = p
-            if os.path.exists(path) and not self._file_is_stale(path):
-                # The index is already built, and is current. Just read it from
-                # disk.
-                with open(path,'r') as f:
-                    indexes[i] = cPickle.load(f)
-            else:
-                # Mark this index to be rebuilt
-                builders.append((i,builder,dict()))
-        
-        if builders:
-            # Some indexes need to be rebuilt. Pass them along to a function
-            # which will iterate over all data files once, passing necessary
-            # data to each index builder.
-            built = self._iter_patterns(*builders)
-            for i,index in built:
-                # assign the newly built index to the correct position in the
-                # output list
-                indexes[i] = index
-                builder,path = paths[i]
-                # write the newly built index to disk
-                with open(path,'w') as f:
-                    cPickle.dump(index,f)
+    def _build_id_index(self,_id,source,external_id,f):
+        return _id,(source,external_id)
     
-        return indexes
+    def _build_external_id_index(self,_id,source,external_id,f):
+        return (source,external_id),_id    
     
-    def _build_id_index(self,f,_id,source,external_id,path,index):
-        index[_id] = (source,external_id)
-    
-    def _build_external_id_index(self,f,_id,source,external_id,path,index):    
-        index[(source,external_id)] = _id
-    
-    def _build_lengths_index(self,f,_id,source,external_id,path,index):
-        fs = os.path.getsize(path)
+    def _build_lengths_index(self,_id,source,external_id,f):
+        fs = os.path.getsize(os.path.abspath(f.name))
         nframes = (fs - self._metadata_chars) / self._skinny_dtype.itemsize
-        index[_id] = nframes
+        return _id,nframes
         
-    def _iter_patterns(self,*index_builders):
+    def _iter_patterns(self):
         files = os.listdir(self._datadir)
         for f in files:
             _id = f.split('.')[0]
             path = os.path.join(self._datadir,f)
-            for i,func,index in index_builders:
-                with open(path,'r') as of:
-                    source,external_id = self._get_source_and_external_id(of)
-                    func(f,_id,source,external_id,path,index)
-        return [(i,index) for i,builder,index in index_builders]
+            with open(path,'r') as of:
+                source,external_id = self._get_source_and_external_id(of)
+                yield _id,source,external_id,of
     
     @property
     def concurrent_reads_ok(self):
@@ -403,6 +504,18 @@ class FileSystemFrameController(FrameController):
     @property
     def concurrent_writes_ok(self):
         return True
+    
+    @property
+    def _ids(self):
+        return self._index['_id']
+    
+    @property
+    def _external_ids(self):
+        return self._index['external_id']
+    
+    @property
+    def _lengths(self):
+        return self._index['length']
     
     # TODO: Detect directory changes (from another process or thread) and update
     # index if necessary
@@ -426,7 +539,7 @@ class FileSystemFrameController(FrameController):
         Read files from the directory where data is stored. Keep it in memory. Update
         the in-memory list as append() is called
         '''
-        return set(self._lengths.keys())
+        return set(self._ids.keys())
     
     # TODO: Detect directory changes (from another process or thread) and update
     # index if necessary
@@ -551,15 +664,11 @@ class FileSystemFrameController(FrameController):
         frames = datafile.write(*self._recarray(rootkey, data, done = True))
         nframes += frames
         
-        _id = datafile._id
-        ext_id = (datafile._source,datafile._external_id)
-        datafile.close()
         # update indexes
-        # TODO: Shouldn't these also be persisted to disk?
-        self._ids[_id] = ext_id
-        self._external_ids[ext_id] = _id
-        self._lengths[_id] = nframes
-        return self._fsfc_address((_id,slice(0,nframes)))
+        self._index.append(datafile._id, datafile._source, datafile._external_id, nframes)
+        addr = self._fsfc_address((datafile._id,slice(0,nframes)))
+        datafile.close()
+        return addr
     
     def address(self,_id):
         '''

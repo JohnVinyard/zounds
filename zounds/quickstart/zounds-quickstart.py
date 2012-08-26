@@ -31,8 +31,9 @@ if __name__ == '__main__':
     zp = os.path.join(zounds.__path__[0],'quickstart')
     # copy the files to the new app directory
     for fn in os.listdir(zp):
-        if fn != os.path.split(__file__)[1]:
-            shutil.copy(os.path.join(zp,fn),os.path.join(dr,fn))
+        path = os.path.join(zp,fn)
+        if fn != os.path.split(__file__)[1] and os.path.isfile(path):
+            shutil.copy(path,os.path.join(dr,fn))
     
     # Read the contents of the config file template
     configfile = os.path.join(dr,'config.py')
