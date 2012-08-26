@@ -2,6 +2,7 @@ from __future__ import division
 from abc import ABCMeta,abstractmethod,abstractproperty
 import os.path
 from time import time
+from multiprocessing import Pool
 
 from zounds.util import audio_files
 from zounds.environment import Environment
@@ -53,6 +54,21 @@ class Acquirer(object):
         self._acquire()
         # update indexes, if applicable for this data store
         self.framecontroller.update_index()
+
+
+def acquire_multi(args):
+    source,fm,controller,c_args,audio_config,path,files = args
+    Z = Environment(source,fm,controller,c_args,{},audio_config)
+    for i,fn in enumerate(files):
+        fp = os.path.join(path,fn)
+        extid = os.path.splitext(fn)[0]
+        pattern = FilePattern(Z.newid(),source,extid,fp)
+        if not Z.framecontroller.exists(source,extid):
+            try:
+                print 'importing %s' % fn
+                Z.framecontroller.append(fm.extractor_chain(pattern))
+            except Exception,e:
+                print e
     
 class DiskAcquirer(Acquirer):
     
@@ -66,6 +82,29 @@ class DiskAcquirer(Acquirer):
         return self._source
     
     def _acquire(self):
+        if self.framecontroller.concurrent_writes_ok:
+            self._acquire_multi()
+        else:
+            self._acquire_single()
+    
+    
+    def _acquire_multi(self):
+        files = audio_files(self.path)
+        args = []
+        for i in range(0,len(files),20):
+            args.append((self.source,
+                         self.framemodel,
+                         self.framecontroller.__class__,
+                         self.env._framecontroller_args,
+                         self.env.audio,
+                         self.path,
+                         files[i : i + 20]))
+        start = time()
+        p = Pool(3)
+        p.map(acquire_multi,args)
+        print 'took %1.4f seconds' % (time() - start)
+    
+    def _acquire_single(self):
         files = audio_files(self.path)
         lf = len(files)
         frames_processed = 0

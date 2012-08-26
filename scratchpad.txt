@@ -2,9 +2,9 @@ TOOO:
 -------------
 FileSystem multiprocess index update logic and tests
 
-DiskAcquirer multiprocess version
+FSFC creates fucked up audio
 
-Is rebuilding the index after each append() call really smart?
+DiskAcquirer multiprocess version
 
 Are on-disk features updated after a sync?
 
@@ -16,9 +16,13 @@ Documentation pass
 
 FileSystemFrameController
 
+----------------------------------------------------------------------
+
 Quickstart - ensure that websearch is copied and setup correctly
 
 PyTables.stat() array is too big bug.
+
+FileSystemFrameController.stat() implementation
 
 PrecomputedFeature with filter tests
 
