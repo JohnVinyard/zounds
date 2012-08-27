@@ -1,15 +1,18 @@
 TOOO:
 -------------
-Check that bark bands look ok for multiprocess filesystem app
-
-Are on-disk features updated after a sync?
+FileSystemFrameController multi-process update
 
 Fetch tests should be structured the same way as FrameController (and derived) tests
 
 Documentation pass
 
+Check time improvement vs memory usage when doing TemplateMatch
+
+Check PrecomputedFeature/Patch speed
+
 FileSystemFrameController
 
+Environment.frames_to_seconds reports an incorrect value for zero frames
 ----------------------------------------------------------------------
 
 Quickstart - ensure that websearch is copied and setup correctly
@@ -27,8 +30,6 @@ Cut down on search time by *excluding* ignored codes from the index
 TODO: Answer the question "How do file system seek times compare to PyTables?"
 
 tf/idf on all codes
-
-Are there duplicates in the current db?
 
 TODO: Toeplitz is missing boundaries and causing bugs (I think)
 

@@ -29,6 +29,7 @@ DBNAME
 class DataFile(object):
     
     def __init__(self,controller):
+        object.__init__(self)
         self._file = None
         self._id = None
         self._source = None
@@ -48,7 +49,8 @@ class DataFile(object):
             self._file.write(source)
             self._file.write(external_id)
         
-        self._file.write(data.tostring())
+        #self._file.write(data.tostring())
+        data.tofile(self._file)
         return len(data)
     
     def close(self):
@@ -69,9 +71,7 @@ class ConcurrentIndex(object):
         self.startup()
     
     def __getitem__(self,k):
-        # Check if memory is stale, if not, return. if so:
-        # Check if file is stale, if not, load and return, if so:
-        # reindex, save, and return
+        
         if not self.memory_is_stale():
             # The in-memory index is up-to-date
             return self._data[k]
@@ -346,24 +346,31 @@ class FileSystemFrameController(FrameController):
         self._sync_path = os.path.join(self._rootdir,fsfc.sync_fn)
         self._load_features()
         
-        # Get the keys and shapes of all stored features
-        dims = self._dimensions
-        self._dtype = [(k,v[1],v[0]) for k,v in dims.iteritems()]
-        self._np_dtype = np.dtype(self._dtype)
-        
-        
         # Features that are redundant (i.e., the same for every frame), and
         # won't be stored on disk as part of the recarray
         self._excluded_metadata = [id_key,source_key,external_id_key]
-        # Only the feature keys that will be stored, and aren't redundant metadata
-        self._skinny_features = filter(\
-            lambda a : a not in self._excluded_metadata,dims.iterkeys())
-        # The dtype of the recarrays that will be stored on disk
-        self._skinny_dtype = np.dtype(filter(\
-            lambda a : a[0] in self._skinny_features,
-            self._dtype))
         
+        # sort the tuples of (key,(shape,dtype,step)), so that they're always
+        # in the same order
+        dims = sorted(self._dimensions.items())
+        self._dtype = []
+        self._skinny_features = []
+        for k,v in dims:
+            shape,dtype,step = v
+            # append everything th _dtype. This is the data type of the fully
+            # fleshed out record array, i.e., the one that contains columns
+            # for _id, source, and external_id
+            self._dtype.append((k,dtype,shape))
+            if k not in self._excluded_metadata:
+                # leave out features that would be redundant to store for each
+                # frame of audio
+                self._skinny_features.append((k,dtype,shape))
+        
+        
+        self._np_dtype = np.dtype(self._dtype)
+        self._skinny_dtype = np.dtype(self._skinny_features)
         self._reindex_if_necessary()
+    
     
     
     def _reindex_if_necessary(self):
@@ -397,7 +404,8 @@ class FileSystemFrameController(FrameController):
         r[source_key] = source
         r[external_id_key] = external_id
         for sf in self._skinny_features:
-            r[sf] = skinny_record[sf]
+            name,dtype,shape = sf
+            r[name] = skinny_record[name]
         return r
 
     def _recarray(self,rootkey,data,done = False):
@@ -666,8 +674,11 @@ class FileSystemFrameController(FrameController):
         nframes += frames
         
         # update indexes
-        self._index.append(datafile._id, datafile._source, datafile._external_id, nframes)
-        addr = self._fsfc_address((datafile._id,slice(0,nframes)))
+        _id = datafile._id
+        source = datafile._source
+        external_id = datafile._external_id
+        self._index.append(_id, source, external_id, nframes)
+        addr = self._fsfc_address((_id,slice(0,nframes)))
         datafile.close()
         return addr
     
