@@ -11,7 +11,7 @@ from zounds.model.pipeline import Pipeline
 from zounds.model.frame import Frames
  
 from zounds.model.test_pipeline import MockFetch,AddPreprocess,MockLearn
-
+from zounds.testhelper import remove
 
 class PickledLearningControllerTests(unittest.TestCase):
     
@@ -30,10 +30,7 @@ class PickledLearningControllerTests(unittest.TestCase):
     
     def tearDown(self):
         for tc in self.to_cleanup:
-            parts = os.path.split(tc)
-            os.remove(tc)
-            if parts[0]:
-                shutil.rmtree(parts[0])
+            remove(tc)
             
         
     def test_store(self):
@@ -59,7 +56,7 @@ class PickledLearningControllerTests(unittest.TestCase):
                      AddPreprocess(),
                      MockLearn())
         p.train(100,lambda : True)
-        self.to_cleanup.append(realpath)
+        self.to_cleanup.append(dir)
         self.assertTrue(os.path.exists(realpath))
         
     

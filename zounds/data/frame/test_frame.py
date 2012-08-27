@@ -772,10 +772,12 @@ class PyTablesFrameControllerTests(unittest.TestCase,FrameControllerTests):
     def _db_filepath(self,indir):
         if indir:
             self.hdf5_dir = self.unique()
+            self.to_cleanup.append(self.hdf5_dir)
             self.hdf5_file = '%s.h5' % self.unique()
             self._path = '%s/%s' % (self.hdf5_dir,self.hdf5_file)
         else:
             self.hdf5_file = '%s.h5' % self.unique()
+            self.to_cleanup.append(self.hdf5_file)
             self._path = self.hdf5_file
         return self._path
     
@@ -851,9 +853,13 @@ class FileSystemFrameControllerTests(unittest.TestCase,FrameControllerTests):
     
     def _db_filepath(self,indir):
         if indir:
-            self._path = '%s/%s' % (self.unique(),self.unique())
+            dr = self.unique()
+            fn = self.unique()
+            self._path = '%s/%s' % (dr,fn)
+            self.to_cleanup.append(dr)
         else:
             self._path = self.unique()
+            self.to_cleanup.append(self._path)
         
         return self._path
     @property

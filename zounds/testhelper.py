@@ -1,4 +1,5 @@
 import os
+import shutil
 from uuid import uuid4
 import numpy as np
 from scikits.audiolab import Sndfile,Format
@@ -104,8 +105,10 @@ def remove(path):
     
     if os.path.isdir(path):
         try:
-            os.rmdir(path)
+            shutil.rmtree(path)
         except OSError:
             # the directory doesn't exist, or we don't have permission to
             # delete it
             pass
+        
+        
