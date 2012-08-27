@@ -13,17 +13,17 @@ from zounds.testhelper import make_sndfile,remove
 
 from fetch import PrecomputedFeature
 
-class PrecomputedFeatureTests(unittest.TestCase):
+class PrecomputedFeatureTests(object):
     
     
-    def setUp(self):
-        pytables_fn = '%s.h5' % uuid4().hex
-        filesystem_dir = uuid4().hex
-        self.implementations = [(PyTablesFrameController,(pytables_fn,)),
-                                (FileSystemFrameController,(filesystem_dir,))]
-        self.to_cleanup = [filesystem_dir,pytables_fn]
+    def set_up(self):
+        self.to_cleanup = []
         Environment._test = True
-
+    
+    def tear_down(self):
+        for c in self.to_cleanup:
+            remove(c)
+        Environment._test = False
     
     def tearDown(self):
         for tc in self.to_cleanup:
@@ -65,64 +65,112 @@ class PrecomputedFeatureTests(unittest.TestCase):
         
         return env,framemodel,filenames
     
+    @property
+    def framecontroller(self):
+        raise NotImplemented()
+    
+    @property
+    def framecontroller_args(self):
+        raise NotImplemented()
+
     def test_data_proper_shape_oned(self):
-        for i in self.implementations:
-            env,framemodel,filenames = self.append_files(i[0], i[1])
-            pc = PrecomputedFeature(1,
-                                    PrecomputedFeatureTests.FrameModel.loudness)
-            data = pc(nexamples = 10)
-            self.assertEqual((10,),data.shape)
+        env,framemodel,filenames = self.append_files(\
+                            self.framecontroller, self.framecontroller_args)
+        pc = PrecomputedFeature(1,
+                                PrecomputedFeatureTests.FrameModel.loudness)
+        data = pc(nexamples = 10)
+        self.assertEqual((10,),data.shape)
     
     def test_data_proper_shape_oned_nframes_2(self):
-        for i in self.implementations:
-            env,framemodel,filenames = self.append_files(i[0], i[1])
-            pc = PrecomputedFeature(2,
-                                    PrecomputedFeatureTests.FrameModel.loudness)
-            data = pc(nexamples = 10)
-            self.assertEqual((10,2),data.shape)
+        env,framemodel,filenames = self.append_files(\
+                            self.framecontroller, self.framecontroller_args)
+        pc = PrecomputedFeature(2,
+                                PrecomputedFeatureTests.FrameModel.loudness)
+        data = pc(nexamples = 10)
+        self.assertEqual((10,2),data.shape)
             
     def test_data_proper_shape_twod(self):              
-        for i in self.implementations:
-            env,framemodel,filenames = self.append_files(i[0], i[1])
-            pc = PrecomputedFeature(1,
-                                    PrecomputedFeatureTests.FrameModel.fft)
-            data = pc(nexamples = 11)
-            expected_axis1 = PrecomputedFeatureTests.AudioConfig.windowsize / 2
-            self.assertEqual((11,expected_axis1),data.shape)
+        env,framemodel,filenames = self.append_files(\
+                            self.framecontroller, self.framecontroller_args)
+        pc = PrecomputedFeature(1,
+                                PrecomputedFeatureTests.FrameModel.fft)
+        data = pc(nexamples = 11)
+        expected_axis1 = PrecomputedFeatureTests.AudioConfig.windowsize / 2
+        self.assertEqual((11,expected_axis1),data.shape)
     
     def test_data_proper_shape_twod_nframes_2(self):
-        for i in self.implementations:
-            env,framemodel,filenames = self.append_files(i[0], i[1])
-            pc = PrecomputedFeature(2,
-                                    PrecomputedFeatureTests.FrameModel.fft)
-            data = pc(nexamples = 11)
-            expected_axis1 = PrecomputedFeatureTests.AudioConfig.windowsize / 2
-            self.assertEqual((11,expected_axis1*2),data.shape)
+        env,framemodel,filenames = self.append_files(\
+                            self.framecontroller, self.framecontroller_args)
+        pc = PrecomputedFeature(2,
+                                PrecomputedFeatureTests.FrameModel.fft)
+        data = pc(nexamples = 11)
+        expected_axis1 = PrecomputedFeatureTests.AudioConfig.windowsize / 2
+        self.assertEqual((11,expected_axis1*2),data.shape)
             
     def test_pattern_shorter_than_nframes(self):
-        for i in self.implementations:
-            env,framemodel,filenames = \
-                self.append_files(i[0], i[1],file_lengths = [2048,44100])
-            pc = PrecomputedFeature(3,
-                                    PrecomputedFeatureTests.FrameModel.fft)
-            data = pc(nexamples = 20)
-            expected_axis1 = PrecomputedFeatureTests.AudioConfig.windowsize / 2
-            self.assertEqual((20,expected_axis1*3), data.shape)
+        env,framemodel,filenames = self.append_files(\
+            self.framecontroller, 
+            self.framecontroller_args,
+            file_lengths = [2048,44100])
+        pc = PrecomputedFeature(3,
+                                PrecomputedFeatureTests.FrameModel.fft)
+        data = pc(nexamples = 20)
+        expected_axis1 = PrecomputedFeatureTests.AudioConfig.windowsize / 2
+        self.assertEqual((20,expected_axis1*3), data.shape)
     
     def test_pattern_too_many_frames(self):
-        for i in self.implementations:
-            env,framemodel,filenames = \
-                  self.append_files(i[0], i[1],file_lengths = [2048,44100])
-            pc = PrecomputedFeature(3,
-                                  PrecomputedFeatureTests.FrameModel.fft)
-            self.assertRaises(ValueError,lambda : pc(nexamples = 2000000))
+        env,framemodel,filenames = self.append_files(\
+            self.framecontroller,
+             self.framecontroller_args,
+             file_lengths = [2048,44100])
+        pc = PrecomputedFeature(3,
+                              PrecomputedFeatureTests.FrameModel.fft)
+        self.assertRaises(ValueError,lambda : pc(nexamples = 2000000))
             
     def test_with_reduction(self):
-        for i in self.implementations:
-            env,framemodel,filenames = \
-                  self.append_files(i[0], i[1])
-            pc = PrecomputedFeature(\
-                        3,PrecomputedFeatureTests.FrameModel.fft,reduction = np.max)
-            samples = pc(10)
-            self.assertEqual((10,1024),samples.shape)
+        env,framemodel,filenames = \
+              self.append_files(self.framecontroller, self.framecontroller_args)
+        pc = PrecomputedFeature(\
+                    3,PrecomputedFeatureTests.FrameModel.fft,reduction = np.max)
+        samples = pc(10)
+        self.assertEqual((10,1024),samples.shape)
+    
+
+
+class PyTablesPrecomputedFeatureTests(unittest.TestCase,PrecomputedFeatureTests):
+    
+    def setUp(self):
+        PrecomputedFeatureTests.set_up(self)
+        self.pytables_fn = '%s.h5' % uuid4().hex
+        self.to_cleanup.append(self.pytables_fn)
+    
+    def tearDown(self):
+        PrecomputedFeatureTests.tear_down(self)
+    
+    @property
+    def framecontroller(self):
+        return PyTablesFrameController
+
+    @property
+    def framecontroller_args(self):
+        return (self.pytables_fn,)
+
+class FileSystemPrecomputedFeatureTests(unittest.TestCase,PrecomputedFeatureTests):
+    
+    def setUp(self):
+        PrecomputedFeatureTests.set_up(self)
+        self.filesystem_dir = uuid4().hex
+        self.to_cleanup.append(self.filesystem_dir)
+    
+    def tearDown(self):
+        PrecomputedFeatureTests.tear_down(self)
+    
+    @property
+    def framecontroller(self):
+        return FileSystemFrameController
+    
+    @property
+    def framecontroller_args(self):
+        return (self.filesystem_dir,)
+        
     
