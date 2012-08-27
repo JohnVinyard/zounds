@@ -298,6 +298,34 @@ class FrameModelTests(unittest.TestCase):
         frames = FM['some_id']
         self.assertEqual(1,frames.fft)
         self.assertEqual(2,frames.loudness)
+    
+    def test_random(self):
+        class FM(Frames):
+            fft = Feature(FFT,store = True, needs = None)
+            loudness = Feature(Loudness, store = True, need = fft)
+            
+        class Controller(DictFrameController):
+            
+            def list_ids(self):
+                return set([1])
+        
+            
+            def get(self,address):
+                return {'_id' : 1,
+                        'audio' : 1,
+                        'source' : 'test',
+                        'external_id' : '0',
+                        'framen' : 0,
+                        'fft' : 1, 
+                        'loudness' : 2}
+            
+        Environment('test',
+                    FM,
+                    Controller,
+                    (FM,),
+                    {})
+        frames = FM.random()
+        self.assertEqual(1,frames._id)
         
     def test_get_unstored_feature(self):
         '''

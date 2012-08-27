@@ -325,7 +325,6 @@ class MetaFrame(type):
     def iterfeatures(self):
         return self.features.iteritems()
     
-        
     
     def __getitem__(self,address):
         '''
@@ -464,7 +463,7 @@ class Frames(Model):
         Return the frames of a random pattern/sound
         '''
         _ids = list(cls.list_ids())
-        return cls[_ids[np.random.randint(0,len(_ids) - 1)]]
+        return cls[_ids[np.random.randint(0,len(_ids))]]
         
     @classmethod
     def list_ids(cls):

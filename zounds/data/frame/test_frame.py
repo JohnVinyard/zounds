@@ -920,7 +920,15 @@ class FileSystemFrameControllerTests(unittest.TestCase,FrameControllerTests):
         c2.append(ec2)
         self.assertEqual(len(c1.list_ids()),len(c2.list_ids()))
         self.assertEqual(len(c1),len(c2))
-        
+    
+    def test_dtype_same_before_and_after_persistence(self):
+        fn,FM1 = self.FM()
+        env = FM1.env()
+        c1 = env.unique_controller()
+        fn,FM1 = self.FM()
+        env = FM1.env()
+        c2 = env.unique_controller()
+        self.assertEqual(c1._skinny_dtype,c2._skinny_dtype)
 
 # KLUDGE: I've excluded int -> int comparisons    
 class PyTablesFrameControllerAddressTests(unittest.TestCase):

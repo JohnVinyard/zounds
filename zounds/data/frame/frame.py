@@ -221,6 +221,7 @@ class FrameController(Controller):
         if None is meta:
             return record
         
+
         return [data[k][0] for k in meta],record
 
 class UpdateNotCompleteError(BaseException):
