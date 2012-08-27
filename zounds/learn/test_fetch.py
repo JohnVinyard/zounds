@@ -21,7 +21,7 @@ class PrecomputedFeatureTests(unittest.TestCase):
         filesystem_dir = uuid4().hex
         self.implementations = [(PyTablesFrameController,(pytables_fn,)),
                                 (FileSystemFrameController,(filesystem_dir,))]
-        self.to_cleanup = [pytables_fn]
+        self.to_cleanup = [filesystem_dir,pytables_fn]
         Environment._test = True
 
     

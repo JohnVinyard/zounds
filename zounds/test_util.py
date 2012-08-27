@@ -5,6 +5,7 @@ from zounds.util import ensure_path_exists
 from zounds.nputil import pad
 from zounds.testhelper import remove
 from random import shuffle
+from uuid import uuid4
 
 class EnsurePathExistsTests(unittest.TestCase):
     
@@ -18,16 +19,23 @@ class EnsurePathExistsTests(unittest.TestCase):
     def test_nothing(self):
         self.assertRaises(ValueError, lambda : ensure_path_exists(''))
     
-    def test_filepath(self):
-        path = 'path/to/'
+    def root(self):
+        return uuid4().hex
+    
+    def test_filepath(self): 
+        root = self.root()
+        path = '%s/to/' % root
         filename = 'file.dat'
-        self.to_cleanup.append(path)
-        ensure_path_exists(os.path.join(path,filename))
+        self.to_cleanup.append(root)
+        fullpath = os.path.join(path,filename)
+        ensure_path_exists(fullpath)
         self.assertTrue(os.path.exists(path))
+        self.assertFalse(os.path.exists(fullpath))
     
     def test_directory(self):
-        path = 'path/to'
-        self.to_cleanup.append(path)
+        root = self.root()
+        path = '%s/to' % root
+        self.to_cleanup.append(root)
         ensure_path_exists(path)
         self.assertTrue(os.path.exists(path))
 

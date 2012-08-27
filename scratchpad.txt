@@ -1,6 +1,6 @@
 TOOO:
 -------------
-Why aren't tests cleaning up after themselves? (I think ensure_path_exists is fucked up)
+Check that bark bands look ok for multiprocess filesystem app
 
 Are on-disk features updated after a sync?
 
