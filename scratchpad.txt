@@ -1,7 +1,5 @@
 TOOO:
 -------------
-Fetch tests should be structured the same way as FrameController (and derived) tests
-
 Documentation pass
 
 Check time improvement vs memory usage when doing TemplateMatch
