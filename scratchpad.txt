@@ -1,7 +1,5 @@
 TOOO:
 -------------
-FileSystemFrameController multi-process update
-
 Fetch tests should be structured the same way as FrameController (and derived) tests
 
 Documentation pass
@@ -13,7 +11,9 @@ Check PrecomputedFeature/Patch speed
 FileSystemFrameController
 
 Environment.frames_to_seconds reports an incorrect value for zero frames
+
 ----------------------------------------------------------------------
+FileSystemFrameController multi-process update
 
 Quickstart - ensure that websearch is copied and setup correctly
 
