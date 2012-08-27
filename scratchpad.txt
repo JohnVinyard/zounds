@@ -1,16 +1,16 @@
 TOOO:
 -------------
-FileSystem multiprocess index update logic and tests
+FileSystem multiprocess index update tests
 
 FSFC creates fucked up audio
 
-DiskAcquirer multiprocess version
+DiskAcquirer multiprocess version should look and act just like single process
+
+Why aren't tests cleaning up after themselves?
 
 Are on-disk features updated after a sync?
 
 Fetch tests should be structured the same way as FrameController (and derived) tests
-
-Why aren't tests cleaning up after themselves?
 
 Documentation pass
 
