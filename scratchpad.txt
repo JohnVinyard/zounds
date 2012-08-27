@@ -1,12 +1,6 @@
 TOOO:
 -------------
-FileSystem multiprocess index update tests
-
-FSFC creates fucked up audio
-
-DiskAcquirer multiprocess version should look and act just like single process
-
-Why aren't tests cleaning up after themselves?
+Why aren't tests cleaning up after themselves? (I think ensure_path_exists is fucked up)
 
 Are on-disk features updated after a sync?
 

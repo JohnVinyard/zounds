@@ -57,18 +57,27 @@ class Acquirer(object):
 
 
 def acquire_multi(args):
-    source,fm,controller,c_args,audio_config,path,files = args
+    source,fm,controller,c_args,audio_config,path,files,filen,total_files = args
     Z = Environment(source,fm,controller,c_args,{},audio_config)
+    total_frames = 0
     for i,fn in enumerate(files):
         fp = os.path.join(path,fn)
         extid = os.path.splitext(fn)[0]
         pattern = FilePattern(Z.newid(),source,extid,fp)
         if not Z.framecontroller.exists(source,extid):
             try:
-                print 'importing %s' % fn
-                Z.framecontroller.append(fm.extractor_chain(pattern))
+                print DiskAcquirer.processing_message(\
+                                            source, fn, filen + i, total_files)
+                addr = Z.framecontroller.append(fm.extractor_chain(pattern))
+                total_frames += len(addr)
             except Exception,e:
+                # KLUDGE: Do some real logging here
+                # TODO: How do I recover from an error once partial data has
+                # been written?
                 print e
+        else:
+            print DiskAcquirer.skip_message(source, fn)
+    return total_frames
     
 class DiskAcquirer(Acquirer):
     
@@ -76,21 +85,40 @@ class DiskAcquirer(Acquirer):
         Acquirer.__init__(self)
         self.path = os.path.normpath(path)
         self._source = source if source else os.path.split(self.path)[1]
-    
+        self.__acquire = \
+            self._acquire_multi if self.framecontroller.concurrent_writes_ok \
+            else self._acquire_single
+        
     @property
     def source(self):
         return self._source
     
+    @staticmethod
+    def processing_message(source,external_id,filen,total_files):
+        return 'importing %s, %s, file %i of %i' % \
+                (source,external_id,filen + 1,total_files)
+    
+    @staticmethod
+    def skip_message(source,external_id):
+        return 'skipping %s, %s. It\'s already in the database.' % \
+                (source,external_id)
+    
+    @staticmethod
+    def complete_message(total_seconds,seconds_spent_working):
+        return 'Processed %1.4f seconds of audio in %1.4f seconds. %1.4f%% realtime.' % \
+            (total_seconds,seconds_spent_working,seconds_spent_working / total_seconds)
+    
     def _acquire(self):
-        if self.framecontroller.concurrent_writes_ok:
-            self._acquire_multi()
-        else:
-            self._acquire_single()
-    
-    
-    def _acquire_multi(self):
         files = audio_files(self.path)
+        start = time()
+        seconds_processed = self.__acquire(files)
+        elapsed = time() - start
+        print DiskAcquirer.complete_message(seconds_processed, elapsed)    
+    
+    def _acquire_multi(self,files):
+        lf = len(files)
         args = []
+        total_frames = 0
         for i in range(0,len(files),20):
             args.append((self.source,
                          self.framemodel,
@@ -98,25 +126,24 @@ class DiskAcquirer(Acquirer):
                          self.env._framecontroller_args,
                          self.env.audio,
                          self.path,
-                         files[i : i + 20]))
-        start = time()
+                         files[i : i + 20],
+                         i,
+                         lf))
         p = Pool(3)
-        p.map(acquire_multi,args)
-        print 'took %1.4f seconds' % (time() - start)
-    
-    def _acquire_single(self):
-        files = audio_files(self.path)
+        total_frames += sum(p.map(acquire_multi,args))
+        return self.env.frames_to_seconds(total_frames)
+        
+        
+    def _acquire_single(self,files):
         lf = len(files)
         frames_processed = 0
-        start_time = time()
         for i,fn in enumerate(files):
             fp = os.path.join(self.path,fn)
             extid = os.path.splitext(fn)[0]
             pattern = FilePattern(self.env.newid(),self.source,extid,fp)
             if not self.framecontroller.exists(self.source,extid):
                 try:
-                    print 'importing %s, %s, file %i of %i' % \
-                             (self.source,fn,i+1,lf)
+                    print DiskAcquirer.processing_message(self.source, fn, i, lf)
                     addr = \
                         self.framecontroller.append(self.extractor_chain(pattern))
                     frames_processed += len(addr)
@@ -126,13 +153,9 @@ class DiskAcquirer(Acquirer):
                     # been written?
                     print e
             else:
-                print 'Skipping %s. It\'s already in the database.'  % fn
+                print DiskAcquirer.skip_message(self.source, fn)
         
-        seconds_processed = self.env.frames_to_seconds(frames_processed)
-        total_time = time() - start_time
-        print \
-        'Processed %1.4f seconds of audio in %1.4f seconds. %1.4f%% Realtime' % \
-        (seconds_processed,total_time,total_time / seconds_processed)
+        return self.env.frames_to_seconds(frames_processed)
             
             
             
