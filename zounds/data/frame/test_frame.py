@@ -897,7 +897,24 @@ class FileSystemFrameControllerTests(unittest.TestCase,FrameControllerTests):
         fn,FM1 = self.FM()
         c = FM1.controller()
         self.assertTrue(isinstance(c._np_dtype['audio'],np.dtype))
-
+    
+    def test_multiple_controller_instances(self):
+        fn,FM1 = self.FM()
+        env = FM1.env()
+        c1 = env.unique_controller()
+        c2 = env.unique_controller()
+        self.assertFalse(c1 is c2)
+        lengths = [44100,44100*2]
+        patterns = self.get_patterns(FM1,lengths)
+        ec1 = FM1.extractor_chain(patterns[0])
+        c1.append(ec1)
+        self.assertEqual(len(c1.list_ids()),len(c2.list_ids()))
+        self.assertEqual(len(c1),len(c2))
+        ec2 = FM1.extractor_chain(patterns[1])
+        c2.append(ec2)
+        self.assertEqual(len(c1.list_ids()),len(c2.list_ids()))
+        self.assertEqual(len(c1),len(c2))
+        
 
 # KLUDGE: I've excluded int -> int comparisons    
 class PyTablesFrameControllerAddressTests(unittest.TestCase):
