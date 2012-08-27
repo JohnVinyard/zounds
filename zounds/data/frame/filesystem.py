@@ -12,23 +12,18 @@ from zounds.model.pattern import Pattern
 from zounds.util import ensure_path_exists
 from time import time,sleep
 
-'''
-Directory Structure
 
-DBNAME
-    - features.dat
-    - external_ids.dat
-    - lengths.dat
-    - sync.dat?
-    /DATA
-        - ZoundsId.dat
-        ...
-'''
-
-# TODO: Consider adding some read methods as well
 class DataFile(object):
+    '''
+    A convenience class, for internal use only, that handles the details of
+    writing binary meta and feature data to a file.
+    '''
     
     def __init__(self,controller):
+        '''
+        Parameters
+            controller - A FrameController-derived instance
+        '''
         object.__init__(self)
         self._file = None
         self._id = None
@@ -38,40 +33,77 @@ class DataFile(object):
         
     
     def write(self,_id,source,external_id,data):
+        '''
+        Write data (a numpy.recarray instance) as binary data to a file. Prepend
+        metadata (_id, source, and external_id) to the file if this is the first
+        call to write().
+        '''
         if None is self._file:
             self._id = _id
             self._source = source
             self._external_id = external_id
             self._file = open(self._c._pattern_path(_id),'wb')
+            # write the metadata, exlcuding the zounds id, which is stored as
+            # the file's name
             source = np.array(source,dtype = 'a%i' % self._c._source_chars)
             external_id = np.array(\
                             external_id,dtype = 'a%i' % self._c._extid_chars)
             self._file.write(source)
             self._file.write(external_id)
         
-        #self._file.write(data.tostring())
+        # write data ( a numpy record array ), to the file 
         data.tofile(self._file)
+        # return the number of frames written to the file
         return len(data)
     
     def close(self):
         self._file.close()
 
 class ConcurrentIndex(object):
+    '''
+    A convenience class, for internal use only, which handles the details of
+    maintaining (hopefully) thread and process safe indexes over the data.  This
+    is my first try at implementing "shared" data like this, so I'm sure there
+    are some awful bugs.
+    '''
     
     def __init__(self,builders,indexpath,datadir,iterator):
+        '''
+        Parameters
+            builders - A callable for each index, which takes 
+                      (_id,source,external_id,open_file) as parameters, and
+                      returns a key and value which will be added to the 
+                      corresponding index.
+            indexpath - The folder in which the index will be persisted to disk
+            datadir   - The folder in which pattern data files live. The modified
+                        time on this folder is used to determine whether the 
+                        on-disk version of the index has gone stale.
+            iterator  - A callable which iterates over all  existing patterns, 
+                        returning one set of arguments for the builder functions
+                        from each file/pattern.
+        '''
         object.__init__(self)
         self._keys = ['_id','external_id','length']
         self._builders = builders
+        # the path to the on-disk index
         self._path = os.path.join(indexpath,'index.dat')
+        # the path to a lock file which exists when one instance is re-writing
+        # the on-disk index.  It indicates that it's neither safe to write or
+        # read.
         self._lock_filename = os.path.join(indexpath,'lock.dat')
         self._datadir = datadir
         self._iterator = iterator
+        # the time at which the in-memory index was last refreshed from disk. 
+        # Used to determine whether the in-memory version is less current than
+        # the on-disk version, as a result of another instance updating it.
         self._in_mem_timestamp = None
         self._data = dict([(k,dict()) for k in self._keys])
         self.startup()
     
     def __getitem__(self,k):
-        
+        '''
+        Get the most current version of the index with key k
+        '''
         if not self.memory_is_stale():
             # The in-memory index is up-to-date
             return self._data[k]
@@ -81,15 +113,19 @@ class ConcurrentIndex(object):
             # Just load it up and return the value
             self.wait_for_unlock()
             self._data = self.from_disk()
+            # the in-memory index is fresh as of right now
             self._in_mem_timestamp = time()
             return self._data[k]
         
         # Both the in-memory and on-disk indexes are stale, rebuild the index,
         # persist it to disk, and return the requested value.
         self.acquire_lock()
+        # rebuild the index
         self.reindex()
+        # save it to disk
         self.to_disk()
         self.release_lock()
+        # the in-memory idnex is fresh as of right now
         self._in_mem_timestamp = time()
         return self._data[k]
     
