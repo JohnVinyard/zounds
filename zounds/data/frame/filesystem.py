@@ -130,17 +130,32 @@ class ConcurrentIndex(object):
         return self._data[k]
     
     def startup(self):
+        '''
+        Called by __init__ only. Acquire the freshest index possible, either
+        by reading it from disk, or building it your damn self.
+        '''
         if self.ensure_condition(self.file_is_stale):
+            # the on-disk index is stale. Rebuild it for the benefit of self
+            # and others
             self.reindex()
             self.to_disk()
             self._in_mem_timestamp = time()
             self.release_lock()
         else:
+            # the on-disk index is up-to-date
             self.wait_for_unlock()
             self._data = self.from_disk()
             self._in_mem_timestamp = time()
     
     def append(self,_id,source,external_id,length):
+        '''
+        Add a new pattern to the index
+        Parameters
+            _id         - a zounds id
+            source      - the source of the pattern (e.g. FreeSound or MySoundFolder)
+            external_id - the identifier assigned to the pattern by source
+            length      - the length, in frames, of the pattern 
+        '''
         self.acquire_lock()
         if self.memory_is_stale():
             # another controller has updated the disk index. Our in-memory
@@ -150,6 +165,7 @@ class ConcurrentIndex(object):
             for k in fresh.iterkeys():
                 self._data[k].update(fresh[k])
         
+        # Add the new pattern to all relevant indexes and persist them to disk
         self._data['_id'][_id] = (source,external_id)
         self._data['external_id'][(source,external_id)] = _id
         self._data['length'][_id] = length
@@ -173,14 +189,24 @@ class ConcurrentIndex(object):
         
     
     def from_disk(self):
+        '''
+        Read the index from disk
+        '''
         with open(self._path,'r') as f:
             return cPickle.load(f)
     
     def to_disk(self):
+        '''
+        Persist the in-memory index to disk
+        '''
         with open(self._path,'w') as f:
             cPickle.dump(self._data,f)
     
     def reindex(self):
+        '''
+        Iterate over all existing patterns, recording any metadata required
+        by the index
+        '''
         for metadata in self._iterator(self._data['_id']):
             for index_key in self._keys:
                 builder = self._builders[index_key]
@@ -189,31 +215,67 @@ class ConcurrentIndex(object):
 
     
     def id_from_external_id(self,extid):
+        '''
+        Paramters
+            extid - a two tuple of (source,external_id)
+        Returns
+            the zounds id that corresponds to the (source,external_id) pair
+        '''
         return self._data['external_id'][extid]
     
     def external_id_from_id(self,_id):
+        '''
+        Parameters
+            _id - a zounds id
+        Returns
+            the (source,external_id) pair corresponding to the zounds id
+        '''
         return self._data['_id'][_id]
     
     def pattern_length(self,_id):
+        '''
+        Paramters
+            _id - a zounds id
+        Returns
+            the length of the pattern with zounds id, in frames
+        '''
         return self._data['length'][_id]
     
     @property
     def is_locked(self):
+        '''
+        Is the index file locked for writing?
+        '''
         return os.path.exists(self._lock_filename)
     
     def make_lock(self):
+        '''
+        Create a file indicating that the index file is locked
+        '''
         f = open(self._lock_filename,'w')
         f.close()
     
     def acquire_lock(self):
+        '''
+        Acquire the lock on the index file, waiting in line behind any other 
+        writers
+        '''
         self.wait_for_unlock()
         self.make_lock()
     
     def release_lock(self):
+        '''
+        Remove the lock, indicating that others may read and write to the on-disk
+        index
+        '''
         os.remove(self._lock_filename)
     
     def wait_for_unlock(self):
+        '''
+        Wait until the lock no longer exists
+        '''
         while self.is_locked:
+            # KLUDGE: I have no idea what a reasonable time span is for this
             sleep(0.05)
     
     
@@ -233,9 +295,33 @@ class ConcurrentIndex(object):
         '''
         return os.path.getmtime(self._path) > self._in_mem_timestamp
     
-        
+
 
 class FileSystemFrameController(FrameController):
+    '''
+    A backing store that persists patterns as a simple collection of binary
+    files, and mantains necessary indexes over that data as pickled python
+    dictionaries.
+    
+    The structure of the directory is as follows:
+    
+    /path/to/data
+        data
+            35b412ad41f74c1f9d56f2ae6f757393.dat
+            4331530721d9454b89db30713801b053.dat
+        feature.dat
+        index.dat
+    
+    Where
+        - data is a directory containing binary feature data for each pattern
+        - feature.dat is a file containing the pickled set of current features
+        - index.dat contains pickled dictionaries which serve as indexes into the
+          data. 
+              - _ids - maps zounds ids -> (source,external_id) pairs
+              - _external_ids - maps (source,external_id) pairs to zounds ids
+              - lengths - maps zounds ids to their lenghts in frames
+        
+    '''
     
     # KLUDGE: As it is, this class isn't able to handle addresses that contain
     # frames from multiple patterns. An address *should* be able to address any
@@ -361,25 +447,44 @@ class FileSystemFrameController(FrameController):
     data_dn = 'data'
     
     def __init__(self,framesmodel,filepath):
+        '''
+        Parameters
+            framesmodel - a zounds.model.frame.Frames-derived class that defines
+                          the features that should be computed and stored for
+                          each pattern
+            filepath    - a path to the directory that should contain all data 
+                          files. It's ok if this directory doesn't yet exist.
+        '''
         FrameController.__init__(self,framesmodel)
+        # The number of bytes to reserve at the beginning of each file for the
+        # source's name
         self._source_chars = 32
+        # The number of bytes to reserve at the begninning of each file for the
+        # external_id
         self._extid_chars = 32
+        # The total number of bytes needed at the beginning of each file for
+        # metadata
         self._metadata_chars = self._source_chars + self._extid_chars
-        self._metadata_fmt = '%ic' % self._metadata_chars
         self._load(filepath)
         
     
     def _load(self,filepath):
         self._rootdir = filepath
         
+        # build the path to the directory which will house pattern files
         self._datadir = \
             os.path.join(self._rootdir,FileSystemFrameController.data_dn)
-        
+        # build the path on disk
         ensure_path_exists(self._datadir)
-        fsfc = FileSystemFrameController
-        self._feature_path = os.path.join(self._rootdir,fsfc.features_fn)
         
+        fsfc = FileSystemFrameController
+        
+        # build the path to the features file
+        self._feature_path = os.path.join(self._rootdir,fsfc.features_fn)
+        # build the path to a special file whose existence indicates that an
+        # update is in progress
         self._sync_path = os.path.join(self._rootdir,fsfc.sync_fn)
+        # load the features from disk
         self._load_features()
         
         # Features that are redundant (i.e., the same for every frame), and
@@ -410,19 +515,19 @@ class FileSystemFrameController(FrameController):
     
     
     def _reindex_if_necessary(self):
+        # create an index instance, which will get us the most up-to-date
+        # information, in the most efficient way possible
         builders = {'_id' : self._build_id_index,
                     'external_id' : self._build_external_id_index,
                     'length' : self._build_lengths_index}
         self._index = ConcurrentIndex(\
                     builders,self._rootdir,self._datadir,self._iter_patterns)
     
-    def _fsfc_address(self,key):
-        return FileSystemFrameController.Address(key)
     
-    
-    # TODO: Try np.lib.recfunctions.drop_fields
     def _to_skinny(self,record):
-        # return only the fields of the record that will be stored on disk
+        '''
+        Return only the fields of the record that will be stored on disk
+        '''
         return record[self._skinny_features]
     
     # TODO: It would be much more efficient to write a wrapper around recarray
@@ -431,10 +536,11 @@ class FileSystemFrameController(FrameController):
     # record['literal'] would return an array of the literal value the same length
     # as the "real" recarray. I'm not exactly sure how this would work with
     # multi-id addresses, however.
-    #
-    #
-    # TODO: Try np.lib.recfunctions.append_fields
     def _from_skinny(self,_id,source,external_id,skinny_record):
+        '''
+        "Hydrate" the data, by adding columns for metadata, namely, _id, source,
+        and external_id.
+        '''
         r = np.recarray(skinny_record.shape,self._np_dtype)
         r[id_key] = _id
         r[source_key] = source
@@ -445,6 +551,9 @@ class FileSystemFrameController(FrameController):
         return r
 
     def _recarray(self,rootkey,data,done = False):
+        '''
+        Build a "skinny" record array, i.e., one that excludes metadata columns
+        '''
         meta,record = FrameController._recarray(\
                 self, rootkey, data, done = done, 
                 dtype = self._skinny_dtype, meta = self._excluded_metadata)
@@ -455,6 +564,10 @@ class FileSystemFrameController(FrameController):
         return 'a%i' % nchars
     
     def _get_memmap(self,addr):
+        '''
+        Get a memory mapped view into a pattern file, accounting for leading
+        bytes dedicated to metadata, and any frame offset indicated by addr.
+        '''
         _id = addr._id
         slce = addr._index
         # path to the file containing data at addr
@@ -483,6 +596,12 @@ class FileSystemFrameController(FrameController):
         return _id,source,extid,data[:to_read:step]
     
     def _get_source_and_external_id(self,f):
+        '''
+        Parameters
+            f - an open file instance, containing pattern data
+        Returns
+            source,extid - the metadata from the beginning of the file
+        '''
         meta = f.read(self._metadata_chars)
         source = np.fromstring(meta[:self._source_chars],
                                    dtype = self._str_dtype(self._source_chars))[0]
@@ -491,29 +610,39 @@ class FileSystemFrameController(FrameController):
         return source,extid
     
     def _get_hydrated(self,addr):
+        '''
+        Paramters
+            addr - A FileSystemFrameController.Address instance
+        Returns
+            rec - A fully "hydrated" recarray instance, which contains columns
+                  for metadata
+        '''
         return self._from_skinny(*self._get_memmap(addr))
         
     
     def _pattern_path(self,_id):
+        '''
+        Parameters
+            _id - a zounds id
+        Returns
+            path - the path to the binary file containing feature data for the
+                   pattern with id
+        '''
         return os.path.join(self._datadir,
                             _id + FileSystemFrameController.file_extension)
     
-    def _file_is_stale(self,path):
-        '''
-        Compare an index file with the modified time of the data directory.  
-        Return True if the data directory has been modified more recently than
-        the index file.
-        '''
-        return os.path.getmtime(path) < os.path.getmtime(self._datadir)
     
     def _load_features(self):
         '''
         Ensure that the features of the current FrameModel are stored on disk
         '''
         try:
+            # The current feature set has already been persisted to disk. Simply
+            # load it in to memory
             with open(self._feature_path,'r') as f:
                 self._features,self._dimensions = cPickle.load(f)
         except IOError:
+            # The current feature set must be persisted to disk
             self._features = self.model.features
             self._dimensions = self.model.dimensions()
             with open(self._feature_path,'w') as f:
@@ -521,17 +650,34 @@ class FileSystemFrameController(FrameController):
         
         
     def _build_id_index(self,_id,source,external_id,f):
+        '''
+        A function, to be passed to a ConcurrentIndex instance as part of the
+        builders parameter, which maps zounds ids to (source,external_id) pairs.
+        '''
         return _id,(source,external_id)
     
     def _build_external_id_index(self,_id,source,external_id,f):
+        '''
+        A function, to be passed to a ConcurrentIndex instance as part of the
+        builders parameter, which maps (source,external_id) pairs to zounds ids.
+        '''
         return (source,external_id),_id    
     
     def _build_lengths_index(self,_id,source,external_id,f):
+        '''
+        A function, to be passed to a ConcurrentIndex instance as part of the
+        builders parameter, which maps zounds ids to their respective lenght
+        in frames
+        '''
         fs = os.path.getsize(os.path.abspath(f.name))
         nframes = (fs - self._metadata_chars) / self._skinny_dtype.itemsize
         return _id,nframes
         
     def _iter_patterns(self,d):
+        '''
+        A function, to be passed to a ConcurrentIndex instance as the iterator
+        parameter, which iterates over all existing patterns.
+        '''
         files = os.listdir(self._datadir)
         for f in files:
             _id = f.split('.')[0]
@@ -552,76 +698,38 @@ class FileSystemFrameController(FrameController):
     
     @property
     def _ids(self):
+        '''
+        A convenience property to access the id -> (source,external_id) index
+        '''
         return self._index['_id']
     
     @property
     def _external_ids(self):
+        '''
+        A convenience property to access the (source,external_id) -> id index
+        '''
         return self._index['external_id']
     
     @property
     def _lengths(self):
+        '''
+        A convenience property to access the id -> length-in-frames index
+        '''
         return self._index['length']
     
-    # TODO: Detect directory changes (from another process or thread) and update
-    # index if necessary
     def __len__(self):
-        '''
-        Keep nframes in the file metadata. On startup, count the frames. Keep
-        track of frames in-memory as append() is called
-        
-        OR
-        
-        A mapreduce kinda-thing, which gets triggered to update when new files
-        are added. This means that we avoid the startup cost, but have some
-        extra complexity. The total length is stored in its own file.
-        '''
         return np.sum(self._lengths.values())
     
-    # TODO: Detect directory changes (from another process or thread) and update
-    # index if necessary
     def list_ids(self):
-        '''
-        Read files from the directory where data is stored. Keep it in memory. Update
-        the in-memory list as append() is called
-        '''
         return set(self._ids.keys())
     
-    # TODO: Detect directory changes (from another process or thread) and update
-    # index if necessary
     def list_external_ids(self):
-        '''
-        External ids (source,external_id), will be stored in file metadata, just
-        like frame lengths, so
-        
-        On startup, get a list of external_ids. Keep track of new ones as append()
-        is called
-        
-        OR
-        
-        A mapreduce kinda-thing, which gets triggered when new files are added.
-        The list of external_ids is stored in its own file.
-        
-        OR
-        
-        I may need to keep an in-memory external_id -> _id mapping
-        '''
         return self._external_ids.keys()
     
-    # TODO: Detect directory changes (from another process or thread) and update
-    # index if necessary
     def external_id(self,_id):
-        '''
-        Read the external_id from the file's metadata and cache it.
-        '''
         return self._ids[_id]
     
-    # TODO: Detect directory changes (from another process or thread) and update
-    # index if necessary
     def exists(self,source,external_id):
-        '''
-        Return true if the source,external_id pair is in the in-memory 
-        external_id -> _id mapping
-        '''
         return (source,external_id) in self._external_ids
     
     @property
@@ -633,9 +741,6 @@ class FileSystemFrameController(FrameController):
     
     # TODO: A lot of this code is identical to what's in PyTablesFrameController.sync()
     def sync(self,add,update,delete,recompute):
-        '''
-        Create a new directory with a temporary name
-        '''
         newc = FileSystemFrameController(self.model,self._temp_path)
         new_ids = newc.list_ids()
         _ids = self.list_ids()
@@ -670,9 +775,6 @@ class FileSystemFrameController(FrameController):
     # TODO: A lot of this code is identical to PyTablesFrameController.sync().
     # Refactor!
     def append(self,chain):
-        '''
-        Create a new file. Add meta and real data
-        '''
         def safe_concat(a,b):
             return b if None is a else np.concatenate([a,b])
         
@@ -714,27 +816,14 @@ class FileSystemFrameController(FrameController):
         source = datafile._source
         external_id = datafile._external_id
         self._index.append(_id, source, external_id, nframes)
-        addr = self._fsfc_address((_id,slice(0,nframes)))
+        addr = self.address_class((_id,slice(0,nframes)))
         datafile.close()
         return addr
     
     def address(self,_id):
-        '''
-        Return the address for an _id
-        '''
-        return self._fsfc_address((_id,slice(0,self._lengths[_id])))
+        return self.address_class((_id,slice(0,self._lengths[_id])))
     
     def get(self,key):
-        '''
-        Zounds ID - Fetch all the data from the file with name ID
-        
-        (Source,External Id) Lookup the Zounds ID from the in-memory hashtable.
-          Load the file.
-          
-        Address (Zounds ID,Offset,Length) - Open a memmapped version of the file,
-        Read only the frames specified
-        '''
-        
         _id = None
         if isinstance(key,str):
             # the key is a zounds id
@@ -769,15 +858,9 @@ class FileSystemFrameController(FrameController):
         
     
     def get_features(self):
-        '''
-        Return a dictionary mapping Feature Key -> Feature for the current FrameModel
-        '''
         return self._features
     
     def get_dtype(self,key):
-        '''
-        Return the numpy datatype of the feature with key
-        '''
         key = self._feature_as_string(key)
         dtype = self._np_dtype[key]
         try:
@@ -786,9 +869,6 @@ class FileSystemFrameController(FrameController):
             return dtype
     
     def get_dim(self,key):
-        '''
-        Return the dimension of the feature with key
-        '''
         key = self._feature_as_string(key)
         dtype = self._np_dtype[key]
         try:
@@ -797,24 +877,17 @@ class FileSystemFrameController(FrameController):
             return ()
     
     def iter_all(self,step = 1):
-        '''
-        Iterate over all patterns, returning two-tuples of (Address,frames)
-        '''
         _ids = self.list_ids()
         for _id in _ids:
             _id,source,external_id,mmp = self._get_memmap(self.address(_id))
             lmmp = len(mmp)
             for i in xrange(0,lmmp,step):
                 key = i if step == 1 else slice(i,min(i + step,lmmp))
-                addr = self._fsfc_address((_id,key))
+                addr = self.address_class((_id,key))
                 data = self._from_skinny(_id, source, external_id, mmp[key])
                 yield addr,self.model(data = data)
 
     def iter_feature(self,_id,feature,step = 1, chunksize = 1):
-        '''
-        For file with Zounds ID, iterate over the feature in the manner specified.
-        TODO: What does the underlying implementation of memmap[::step] do?
-        '''
         # for metadata, return an iterator that outputs the correct value as
         # many times as necessary
         
@@ -822,7 +895,7 @@ class FileSystemFrameController(FrameController):
         feature = self._feature_as_string(feature)
         l = self._lengths[_id]
         _id,source,external_id,mmp = self._get_memmap(\
-                self._fsfc_address((_id,slice(0,l,step))))
+                self.address_class((_id,slice(0,l,step))))
         
         meta = feature in self._excluded_metadata
         if meta:
@@ -839,25 +912,18 @@ class FileSystemFrameController(FrameController):
                     yield mmp[i : i + chunks_per_step][feature]
     
     def iter_id(self,_id,chunksize,step = 1):
-        '''
-        Iterate over the frames of a single pattern, returning two-tuples of
-        (Address,Frames)
-        '''
         _id,source,external_id,mmp = self._get_memmap(self.address(_id))
         lmmp = len(mmp)
         for i in xrange(0,lmmp,chunksize):
             data = self._from_skinny(\
                     _id, source, external_id, mmp[i : i + chunksize : step])
             key = i if 1 == step else slice(i,min(i + step,lmmp))
-            addr = self._fsfc_address((_id,key))
+            addr = self.address_class((_id,key))
             yield addr,self.model(data = data)
                                       
         
     
     def update_index(self):
-        '''
-        Force updates on all indexes. Not sure if this should do anything.
-        '''
         self._reindex_if_necessary()
     
     
