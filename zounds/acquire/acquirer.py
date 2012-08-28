@@ -3,12 +3,12 @@ from abc import ABCMeta,abstractmethod,abstractproperty
 import os.path
 from time import time
 from multiprocessing import Pool
+import traceback
 
 from zounds.util import audio_files
 from zounds.environment import Environment
 from zounds.model.pattern import FilePattern
-
-
+from zounds.data.frame.frame import FrameController
 
 class Acquirer(object):
     '''
@@ -57,26 +57,25 @@ class Acquirer(object):
 
 
 def acquire_multi(args):
-    source,fm,controller,c_args,audio_config,path,files,filen,total_files = args
-    Z = Environment(source,fm,controller,c_args,{},audio_config)
+    Z,path,files,filen,total_files = args
     total_frames = 0
     for i,fn in enumerate(files):
         fp = os.path.join(path,fn)
         extid = os.path.splitext(fn)[0]
-        pattern = FilePattern(Z.newid(),source,extid,fp)
-        if not Z.framecontroller.exists(source,extid):
+        pattern = FilePattern(Z.newid(),Z.source,extid,fp)
+        if not Z.framecontroller.exists(Z.source,extid):
             try:
                 print DiskAcquirer.processing_message(\
-                                            source, fn, filen + i, total_files)
-                addr = Z.framecontroller.append(fm.extractor_chain(pattern))
+                                            Z.source, fn, filen + i, total_files)
+                addr = Z.framecontroller.append(Z.framemodel.extractor_chain(pattern))
                 total_frames += len(addr)
-            except Exception,e:
+            except:
                 # KLUDGE: Do some real logging here
                 # TODO: How do I recover from an error once partial data has
-                # been written?
-                print e
+                # been written? 
+                print traceback.format_exc()
         else:
-            print DiskAcquirer.skip_message(source, fn)
+            print DiskAcquirer.skip_message(Z.source, fn)
     return total_frames
     
 class DiskAcquirer(Acquirer):
@@ -119,17 +118,10 @@ class DiskAcquirer(Acquirer):
         lf = len(files)
         args = []
         total_frames = 0
-        for i in range(0,len(files),20):
-            args.append((self.source,
-                         self.framemodel,
-                         self.framecontroller.__class__,
-                         self.env._framecontroller_args,
-                         self.env.audio,
-                         self.path,
-                         files[i : i + 20],
-                         i,
-                         lf))
-        p = Pool(3)
+        chunksize = 10
+        for i in range(0,len(files),chunksize):
+            args.append((self.env,self.path,files[i : i + chunksize],i,lf))
+        p = Pool(4)
         total_frames += sum(p.map(acquire_multi,args))
         return self.env.frames_to_seconds(total_frames)
         
@@ -147,11 +139,11 @@ class DiskAcquirer(Acquirer):
                     addr = \
                         self.framecontroller.append(self.extractor_chain(pattern))
                     frames_processed += len(addr)
-                except Exception,e:
+                except:
                     # KLUDGE: Do some real logging here
                     # TODO: How do I recover from an error once partial data has
                     # been written?
-                    print e
+                    print traceback.format_exc()
             else:
                 print DiskAcquirer.skip_message(self.source, fn)
         

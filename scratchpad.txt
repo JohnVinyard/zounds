@@ -1,10 +1,8 @@
 TOOO:
 -------------
-Documentation pass
-
-Check time improvement vs memory usage when doing TemplateMatch
-
 Check PrecomputedFeature/Patch speed
+
+Problems with lock file?
 
 FileSystemFrameController
 
