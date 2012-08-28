@@ -10,6 +10,8 @@ FileSystemFrameController
 
 Environment.frames_to_seconds reports an incorrect value for zero frames
 
+Configurable setup.py depending on choice of backing store
+
 ----------------------------------------------------------------------
 FileSystemFrameController multi-process update
 

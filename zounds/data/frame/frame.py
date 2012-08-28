@@ -14,7 +14,7 @@ class FrameController(Controller):
     @abstractmethod
     def address(self,_id):
         '''
-        Return the address for a specific _id
+        Return the back-end specific address for a zounds id
         '''
         pass
     
@@ -37,14 +37,14 @@ class FrameController(Controller):
     @abstractmethod
     def __len__(self):
         '''
-        Return the total number of rows
+        Return the total number of frames in the database
         '''
         pass
     
     @abstractmethod
     def list_ids(self):
         '''
-        List all pattern ids
+        List zounds ids for all existing patterns
         '''
         pass
     
@@ -58,7 +58,10 @@ class FrameController(Controller):
     @abstractmethod
     def external_id(self,_id):
         '''
-        Return a two-tuple of source,external_id for this _id
+        Parameters
+            _id - a zounds id
+        Returns
+            source,external_id - the source,external_id pair corresponding to id
         '''
         pass
     
@@ -66,8 +69,12 @@ class FrameController(Controller):
     @abstractmethod
     def exists(self,source,external_id):
         '''
-        Return true if a pattern with source and external_id already exists in
-        the datastore
+        Parameters
+            source      - the source of the pattern, e.g. FreeSound, or MySoundDir
+            external_id - the identifier assigned to the pattern by the source 
+        Returns
+            exists - a boolean indicating whether that source,external_id pair
+                     exists in the data store
         '''
         pass
      
@@ -81,16 +88,6 @@ class FrameController(Controller):
         This might be a long running process, so we should be able to save state
         and resume in case of an error
         '''
-        
-        # BUG: This will start to break as the size of the data grows, or
-        # if an exception occurs!  I can get around this by creating a task
-        # queue:
-        # 1) Create a new db
-        # 2) Process all sounds
-        # 3) Store new representation in new database
-        # 4) Delete old database
-        # 5) Rename new database
-        
         pass
     
     @abstractmethod
@@ -103,24 +100,66 @@ class FrameController(Controller):
     @abstractmethod
     def get(self,key):
         '''
-        Gets rows, and optionally specific features from those rows.
-        Indices may be a single index, a list of indices, or a slice.
-        features may be a single feature or a list of them.
+        Get row from the database
+        
+        Parameters
+            key - key may be a zounds id, a (source,external_id) pair, or a 
+                  backing-store-specific Address instance
+        Returns
+            rows - If key is an id or a (source,external_id) pair, all rows for
+                   the corresponding pattern will be returned. If key is a 
+                   backing-store-specific address, all rows specified by the address
+                   will be returned
         '''
         pass
     
     @abstractmethod
     def stat(self,feature,aggregate,axis = 0,step = 1):
+        '''
+        Compute aggregate statistics over all features in the data store
+        
+        Parameters
+            feature   - the feature key or instance for which the statistics will
+                        be computed
+            aggregate - an aggregate function, e.g., np.sum or np.mean
+            axis      - the axis over which the aggregate function will be computed
+            step      - the step between collected rows. If the feature's absolute
+                        step size is greater than one, redundant data is stored,
+                        so it's ok to only sample every n frames.
+        Returns
+            stat - a numpy array representing the aggregate statistic
+        '''
         pass
     
     
     def __getitem__(self,key):
+        '''
+        Get row from the database
+        
+        Parameters
+            key - key may be a zounds id, a (source,external_id) pair, or a 
+                  backing-store-specific Address instance
+        Returns
+            rows - If key is an id or a (source,external_id) pair, all rows for
+                   the corresponding pattern will be returned. If key is a 
+                   backing-store-specific address, all rows specified by the address
+                   will be returned
+        '''
         return self.get(key)
     
     @abstractmethod
     def iter_feature(self,_id,feature,step = 1,chunksize=1):
         '''
         Return an iterator over a single feature from pattern _id
+        
+        Parameters
+            _id       - a zounds id
+            feature   - a feature key or instance
+            step      - the frequency at which samples should be drawn from frames
+            chunksize - if greater than one, chunks of feature values are returned.
+                        E.g., if step is 1 and chunksize is 10, chunks of 10 frames
+                        will be returned. If step is 2 and chunksize is 10, chunks
+                        of 5 frames will be returned.  
         '''
         pass
   
@@ -158,7 +197,7 @@ class FrameController(Controller):
         pass
     
     @abstractmethod
-    def iter_id(self,step = 1):
+    def iter_id(self,_id,chunksize,step = 1):
         '''
         Iterate over the frames from a single id, returning two-tuples of 
         (address,frames)
