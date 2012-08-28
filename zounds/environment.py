@@ -22,21 +22,12 @@ class Environment(object):
         
         return cls.instance
         
-        
- 
     
-    def __init__(self,
-                 source,
-                 framemodel,
-                 framecontroller,
-                 framecontroller_args,
-                 data,
-                 audio = AudioConfig,
-                 chunksize_seconds = 45.):
+    def __init__(self,source,framemodel,framecontroller,framecontroller_args,
+                data,audio = AudioConfig,chunksize_seconds = 45.):
+        
         
         object.__init__(self)
-        
-        
         # audio settings, samplerate, windowsize and stepsize
         self.audio = audio
         
@@ -66,15 +57,15 @@ class Environment(object):
         self.framecontroller_class = framecontroller
         self._framecontroller_args = framecontroller_args
         
-        # a dictionary-like object mapping classes to data backends
+        self._data = dict([(k,v.__class__) for k,v in data.iteritems()])
+        # a dictionary-like object mapping classes to data-backends instances
         self.data = data
         
         self.framecontroller = framecontroller(*framecontroller_args)
         self.data[framemodel] = self.framecontroller
         if not Environment._test:
             self.framemodel.sync()
-        
-        
+    
     
     def play(self,audio):
         self.synth.play(audio)
@@ -138,5 +129,30 @@ class Environment(object):
 
     def __str__(self):
         return self.__repr__()
+    
+    def __getstate__(self):
+        source = self.source
+        framemodel = self.framemodel
+        framecontroller = self.framecontroller_class
+        framecontroller_args = self._framecontroller_args
+        data = self._data
+        audio = self.audio
+        chunksize_seconds = self.chunksize_seconds
+        return locals()
+    
+    def __setstate__(self,d):
+        data = d['data']
+        for k,v in data.iteritems():
+            # KLUDGE: This assumes that controllers will always have zero-arg
+            # constructors
+            data[k] = v()
+
+        return Environment(d['source'],
+                           d['framemodel'],
+                           d['framecontroller'],
+                           d['framecontroller_args'],
+                           data,
+                           d['audio'],
+                           d['chunksize_seconds'])
     
     
