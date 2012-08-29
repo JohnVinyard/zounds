@@ -1,10 +1,22 @@
 TOOO:
 -------------
-Environment.frames_to_seconds reports an incorrect value for zero frames
+tf/idf on all codes
 
-Configurable setup.py depending on choice of backing store
+2d fft performance?
 
-----------------------------------------------------------------------
+Replace typecodes defined in ExhaustiveLshSearch with those defined in nputil
+
+Cut down on search time by *excluding* ignored codes from the index
+
+TODO: Toeplitz is missing boundaries and causing bugs (I think)
+
+- TemplateMatch should use the new sliding_window function (Check toeplitz and sw equivalence)
+
+- Try more shapes and fewer means, maybe (2,45),(4,22),(22,4),(45,2) or
+(2,45),(6,15),(15,6),(45,2)
+
+- Try performing PCA on conv feature prior to semantic hash learning
+
 - Try writing a simple, realtime JACK-based audio player (check out Alex McLean's SmoothDirt repo)
 
 - RBM/Autoencoder-based audio encoding?
@@ -17,19 +29,9 @@ PyTables.stat() array is too big bug.
 
 FileSystemFrameController.stat() implementation
 
-PrecomputedFeature with filter tests
+PrecomputedFeature with filter (e.g. sum() > n) tests
 
 PrecomputedPatch tests
-
-Cut down on search time by *excluding* ignored codes from the index
-
-TODO: Answer the question "How do file system seek times compare to PyTables?"
-
-tf/idf on all codes
-
-TODO: Toeplitz is missing boundaries and causing bugs (I think)
-
-- TemplateMatch should use the new sliding_window function (Check toeplitz and sw equivalence)
 
 TODO: The idea behind some of the PyTablesFrameController.Address methods is
 	seriously broken
@@ -40,8 +42,6 @@ TODO: The idea behind some of the PyTablesFrameController.Address methods is
 TODO: extractors using multiprocessing hang when updating database 
 	(Is this the case with FileSystemFrameController?)
 
-- Try performing PCA on conv feature prior to semantic hash learning
-
 - Blog entry explaining sliding_window method
 
 - Figure out how to deal with two failing tests.
@@ -49,6 +49,8 @@ TODO: extractors using multiprocessing hang when updating database
 - Get rid of binary incompatibility warning
 
 - tests for all extractors
+
+- Configurable setup.py depending on choice of backing store
 
 - Add a note in the docs about the source distribution being the preferred route
 

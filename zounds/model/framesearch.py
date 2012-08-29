@@ -13,7 +13,7 @@ from bitarray import bitarray
 from model import Model
 from pattern import DataPattern
 from zounds.util import flatten2d
-from zounds.nputil import hamming_distance,pad,Packer,packed_hamming_distance
+from zounds.nputil import hamming_distance,pad,Packer,packed_hamming_distance,TypeCodes
 from zounds.environment import Environment
 
 
@@ -348,22 +348,28 @@ class ExhaustiveSearch(FrameSearch):
                         skip = 0
         
         return [t[1] for t in best]
+
+
+class Frequency(object):
     
+    def __init__(self):
+        object.__init__(self)
+        self._freq = dict()
+    
+    def count(self,v):
+        try:
+            self._freq[v] += 1
+        except KeyError:
+            self._freq[v] = 1
+    
+    def weights(self,arr):
+        w = np.ndarray(arr.shape)
+        for i,a in enumerate(arr):
+            w[i] = self._freq[a]
+        return w / len(arr)
 
 class ExhaustiveLshSearch(FrameSearch):
-    # TODO: Factor this out
-    _DTYPE_MAPPING = {
-                      8  : np.uint8,
-                      16 : np.uint16,
-                      32 : np.uint32,
-                      64 : np.uint64
-                      }
-    _STRUCT_MAPPING = {
-                       8  : 'B',
-                       16 : 'H',
-                       32 : 'L',
-                       64 : 'Q'
-                       }
+    
     def __init__(self,_id,feature,step = None,nbits = None,
                  fine_feature = None,ignore = None):
         
@@ -380,9 +386,9 @@ class ExhaustiveLshSearch(FrameSearch):
         ignore - a code, or an iterable of codes that should be ignored when performing a 
                 query, usually because they represent silence.
         '''
-        k = LshSearch._DTYPE_MAPPING.keys()
+        k = TypeCodes._bits
         if nbits not in k:
-            raise ValueError('nbits must be in %s') % (str(k))
+            raise ValueError('nbits must be in %s' % (str(k)))
         
         FrameSearch.__init__(self,_id,feature)
         self._index = None
@@ -399,8 +405,8 @@ class ExhaustiveLshSearch(FrameSearch):
                 self._filter.append(ignore)
         self.step = step
         self.nbits = nbits
-        self._hashdtype = LshSearch._DTYPE_MAPPING[nbits]
-        self._structtype = LshSearch._STRUCT_MAPPING[nbits]
+        self._hashdtype = TypeCodes.np_dtype(nbits)
+        self._structtype = TypeCodes.type_code(nbits)
         
     
     @property
@@ -417,10 +423,13 @@ class ExhaustiveLshSearch(FrameSearch):
         env = self.env()
         fc = env.framecontroller
         l = int(len(fc) / self.step)
+        freq = Frequency()
         nids = len(fc.list_ids())
         # An index that will hold the primary binary feature
         self._index = np.ndarray(l+nids,self._hashdtype)
         if self._fine_feature:
+            # allocate enough memory to "pack" the boolean numpy array that
+            # represents the fine feature into bits
             dim = fc.get_dim(self._fine_feature)
             self._packer = Packer(dim[0])
             self._fine_index = self._packer.allocate(l + nids)
@@ -429,8 +438,13 @@ class ExhaustiveLshSearch(FrameSearch):
         for i,f in enumerate(fc.iter_all(step = self.step)):
             address,frame = f
             _id = frame['_id'][0]
+            # TODO: Consider excluding codes contained in self._filter from 
+            # the index entirely. This could significantly cut down on search
+            # time.
             self._addrs[i] = (_id,address)
-            self._index[i] = self._feature_value(frame,self.feature)
+            fv = self._feature_value(frame,self.feature)
+            freq.count(fv)
+            self._index[i] = fv
             if self._fine_feature:
                 fv = self._feature_value(frame, self._fine_feature)
                 if not fv.shape:
@@ -439,10 +453,14 @@ class ExhaustiveLshSearch(FrameSearch):
                     self._fine_index[i] = self._packer(fv[np.newaxis,...])
             print self._index[i]
         
+        # lop off any unused indices
         if self._fine_feature:
             self._fine_index = self._fine_index[:i]
         self._index = self._index[:i]
         self._addrs = self._addrs[:i]
+        
+        # TODO: tf/idf on features
+        self._weights = freq.weights(self._index)
     
     def _valid_indices(self,features):
         s = np.sum([(features == q) for q in self._filter],0)
@@ -467,7 +485,7 @@ class ExhaustiveLshSearch(FrameSearch):
         indices = []
         distances = []
         for i in range(lf):
-            dist = hamming_distance(feature[i],self._index)
+            dist = hamming_distance(feature[i],self._index) * self._weights
             srt = np.argsort(dist)
             # TODO: Make this size configurable
             n = nresults * 10
@@ -481,9 +499,6 @@ class ExhaustiveLshSearch(FrameSearch):
             else:
                 indices.extend(srt[:n])
                 distances.extend(dist[srt[:n]])
-        
-        
-            
         
         
         dsrt = np.argsort(distances)
