@@ -244,41 +244,67 @@ def sliding_window(a,ws,ss = None,flatten = True):
     return strided.reshape(dim)
 
 
-# Map numbers of bits to unsigned integer type codes compatible with the struct
-# module
-_TYPE_CODES = {8  : 'B',16 : 'H',32 : 'L',64 : 'Q'}
+class TypeCodes(object):
+    _bits = [8,16,32,64]
+    _np_types = [np.uint8,np.uint16,np.uint32,np.uint64]
+    _type_codes = ['B','H','L','Q']
+    
+    @classmethod
+    def _fromto(cls,f,t,v):
+        return t[f.index(v)]
 
-# Map unsigned integer type codes compatible with the struct module to numpy 
-# data types 
-_NP_TYPES = {'B' : np.uint8,'H' : np.uint16,'L' : np.uint32,'Q' : np.uint64}
-
-
+    @classmethod
+    def _whichlist(cls,v):
+        if isinstance(v,int):
+            return cls._bits
+        
+        if isinstance(v,str):
+            return cls._type_codes
+        
+        if isinstance(v,type):
+            return cls._np_types
+        
+        raise ValueError('%s is not a valid key' % v)
+    
+    @classmethod
+    def bits(cls,v):
+        return cls._fromto(cls._whichlist(v), cls._bits, v)
+    
+    @classmethod
+    def np_dtype(cls,v):
+        return cls._fromto(cls._whichlist(v), cls._np_types, v)
+    
+    @classmethod
+    def type_code(cls,v):
+        return cls._fromto(cls._whichlist(v), cls._type_codes, v)
+        
+    
 
 def pack(a):
     '''
     Interpret an NxM numpy array as an N-length list of 32 or 64 bit numbers
     '''
     try:
-        tc = _TYPE_CODES[a.shape[1]]
+        tc = TypeCodes.type_code(a.shape[1])
     except KeyError:
         raise ValueError('a must have a second dimension with shape 32 or 64')
     
     b = bitarray()
     b.extend(a.ravel())
-    return np.fromstring(b.tobytes(),dtype = _NP_TYPES[tc])
+    return np.fromstring(b.tobytes(),dtype = TypeCodes.np_dtype(tc))
 
 
 class Packer(object):
     
     def __init__(self,totalbits,chunkbits = 64):
         try:
-            self._typecode = _TYPE_CODES[chunkbits]
+            self._typecode = TypeCodes.type_code(chunkbits)
         except KeyError:
             raise ValueError('chunkbits must be one of %s' % \
-                             (str(_TYPE_CODES.keys())))
+                             (str(TypeCodes._type_codes)))
         self._nchunks = int(np.ceil(totalbits / chunkbits))
         self._padding = (self._nchunks*chunkbits) - totalbits
-        self._dtype = _NP_TYPES[self._typecode] 
+        self._dtype = TypeCodes.np_dtype(self._typecode) 
     
     def allocate(self,l):
         '''
