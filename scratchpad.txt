@@ -1,16 +1,14 @@
 TOOO:
 -------------
-Check PrecomputedFeature/Patch speed
-
-Problems with lock file?
-
-FileSystemFrameController
-
 Environment.frames_to_seconds reports an incorrect value for zero frames
 
 Configurable setup.py depending on choice of backing store
 
 ----------------------------------------------------------------------
+- Try writing a simple, realtime JACK-based audio player (check out Alex McLean's SmoothDirt repo)
+
+- RBM/Autoencoder-based audio encoding?
+
 FileSystemFrameController multi-process update
 
 Quickstart - ensure that websearch is copied and setup correctly
@@ -67,8 +65,6 @@ TODO: extractors using multiprocessing hang when updating database
 - Is it possible to cache the extractor chain so it doesn't have to be rebuilt for
   each new incoming pattern. Will this require a flush() or reset() method?
 
-- Try writing a simple, realtime JACK-based audio player (check out Alex McLean's SmoothDirt repo)
-
 - BUG: It's possible to add duplicates to the database because of external_id
 	truncation
 
@@ -100,17 +96,18 @@ TODO:  Try lowpass filter subtraction method for spectrogram sharpening
 
 - TODO: Ensure that quickstart/ab.py works with a few different algorithms
 
-- BUG: Step sizes of > 1 seem to screw up parallelized ExhaustiveSearch
-
--TODO: Compare results from serial and parallel ExhaustiveSearch implementations,
-		ensuring they're identical
-
 - Bug: It's possible to load controllers of the wrong type with 
 	PickledController-derived classes
 	
-- FEATURE : Automatic rebuilding of search indices after data is added
-
 - Add psychoacoustics module.  Add mel scale and refactor some code in analyze.bark
+
+
+
+After job-hunt
+========================================================================
+- FileSystemFrameController index locking mechanism is broken. Also, I believe
+  that proceses are spending more time waiting to read/write than they are 
+  actually extracting features
 
 - Write LearnedFeature tests
 
@@ -123,3 +120,5 @@ TODO:  Try lowpass filter subtraction method for spectrogram sharpening
 	were the same thing!
 
 - Automatically parallelize independent branches of an extractor tree
+
+- FEATURE : Automatic rebuilding of search indices after data is added
