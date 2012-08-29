@@ -3,6 +3,7 @@ import os
 import shutil
 import cPickle
 from itertools import repeat
+from multiprocessing import Lock
 import numpy as np
 
 import zounds.model.frame
@@ -11,7 +12,7 @@ from frame import FrameController,UpdateNotCompleteError
 from zounds.model.pattern import Pattern
 from zounds.util import ensure_path_exists
 from time import time,sleep
-
+import fcntl
 
 class DataFile(object):
     '''
@@ -59,6 +60,20 @@ class DataFile(object):
     def close(self):
         self._file.close()
 
+class DummyLock(object):
+    def __init__(self):
+        object.__init__(self)
+    
+    def acquire(self):
+        pass
+    
+    def release(self):
+        pass
+
+# BUG: The locking mechanism here is broken.  It results in a lot of strange
+# cPickle errors when unpickling, presumably because multiple processes are
+# writing garbled/shuffled data to index.dat, despite my efforts to keep that
+# from occurring.
 class ConcurrentIndex(object):
     '''
     A convenience class, for internal use only, which handles the details of
@@ -67,7 +82,7 @@ class ConcurrentIndex(object):
     are some awful bugs.
     '''
     
-    def __init__(self,builders,indexpath,datadir,iterator):
+    def __init__(self,builders,indexpath,datadir,iterator,lock = None):
         '''
         Parameters
             builders - A callable for each index, which takes 
@@ -83,6 +98,7 @@ class ConcurrentIndex(object):
                         from each file/pattern.
         '''
         object.__init__(self)
+        self._lock = lock if lock else DummyLock()
         self._keys = ['_id','external_id','length']
         self._builders = builders
         # the path to the on-disk index
@@ -111,22 +127,15 @@ class ConcurrentIndex(object):
         if not self.file_is_stale():
             # The in-memory index was stale, but the file on disk is current.
             # Just load it up and return the value
-            self.wait_for_unlock()
             self._data = self.from_disk()
-            # the in-memory index is fresh as of right now
-            self._in_mem_timestamp = time()
             return self._data[k]
         
         # Both the in-memory and on-disk indexes are stale, rebuild the index,
         # persist it to disk, and return the requested value.
-        self.acquire_lock()
         # rebuild the index
         self.reindex()
         # save it to disk
         self.to_disk()
-        self.release_lock()
-        # the in-memory idnex is fresh as of right now
-        self._in_mem_timestamp = time()
         return self._data[k]
     
     def startup(self):
@@ -134,18 +143,14 @@ class ConcurrentIndex(object):
         Called by __init__ only. Acquire the freshest index possible, either
         by reading it from disk, or building it your damn self.
         '''
-        if self.ensure_condition(self.file_is_stale):
+        if self.file_is_stale():
             # the on-disk index is stale. Rebuild it for the benefit of self
             # and others
             self.reindex()
             self.to_disk()
-            self._in_mem_timestamp = time()
-            self.release_lock()
         else:
             # the on-disk index is up-to-date
-            self.wait_for_unlock()
             self._data = self.from_disk()
-            self._in_mem_timestamp = time()
     
     def append(self,_id,source,external_id,length):
         '''
@@ -156,7 +161,6 @@ class ConcurrentIndex(object):
             external_id - the identifier assigned to the pattern by source
             length      - the length, in frames, of the pattern 
         '''
-        self.acquire_lock()
         if self.memory_is_stale():
             # another controller has updated the disk index. Our in-memory
             # version is out-of-date. Merge the disk version with our version
@@ -171,36 +175,30 @@ class ConcurrentIndex(object):
         self._data['length'][_id] = length
         self.to_disk()
         self._in_mem_timestamp = time()
-        self.release_lock()
     
-    def ensure_condition(self,c):
-        '''
-        Parameters
-            c - a callable, taking no parameters, that returns a boolean value
-        Returns
-            True if the callable returns true both before and after acquiring a
-            lock, otherwise False.
-        '''
-        b = c()
-        if not b:
-            return False
-        self.acquire_lock()
-        return c()
-        
     
     def from_disk(self):
         '''
         Read the index from disk
         '''
-        with open(self._path,'r') as f:
-            return cPickle.load(f)
+        self._lock.acquire()
+        with open(self._path,'rb') as f:
+            index = cPickle.load(f)
+        self._lock.release()
+        self._in_mem_timestamp = time()
+        return index
     
     def to_disk(self):
         '''
         Persist the in-memory index to disk
-        '''
-        with open(self._path,'w') as f:
-            cPickle.dump(self._data,f)
+        ''' 
+        self._lock.acquire()
+        mode = 'wb' if not os.path.exists(self._path) else 'rw+b'
+        with open(self._path,mode) as f:
+            cPickle.dump(self._data,f,cPickle.HIGHEST_PROTOCOL)
+        self._in_mem_timestamp = time()
+        self._lock.release()
+        
     
     def reindex(self):
         '''
@@ -240,43 +238,6 @@ class ConcurrentIndex(object):
             the length of the pattern with zounds id, in frames
         '''
         return self._data['length'][_id]
-    
-    @property
-    def is_locked(self):
-        '''
-        Is the index file locked for writing?
-        '''
-        return os.path.exists(self._lock_filename)
-    
-    def make_lock(self):
-        '''
-        Create a file indicating that the index file is locked
-        '''
-        f = open(self._lock_filename,'w')
-        f.close()
-    
-    def acquire_lock(self):
-        '''
-        Acquire the lock on the index file, waiting in line behind any other 
-        writers
-        '''
-        self.wait_for_unlock()
-        self.make_lock()
-    
-    def release_lock(self):
-        '''
-        Remove the lock, indicating that others may read and write to the on-disk
-        index
-        '''
-        os.remove(self._lock_filename)
-    
-    def wait_for_unlock(self):
-        '''
-        Wait until the lock no longer exists
-        '''
-        while self.is_locked:
-            # KLUDGE: I have no idea what a reasonable time span is for this
-            sleep(0.05)
     
     
     def file_is_stale(self):
@@ -446,7 +407,7 @@ class FileSystemFrameController(FrameController):
     sync_fn = 'sync' + file_extension
     data_dn = 'data'
     
-    def __init__(self,framesmodel,filepath):
+    def __init__(self,framesmodel,filepath,lock = None):
         '''
         Parameters
             framesmodel - a zounds.model.frame.Frames-derived class that defines
@@ -456,6 +417,7 @@ class FileSystemFrameController(FrameController):
                           files. It's ok if this directory doesn't yet exist.
         '''
         FrameController.__init__(self,framesmodel)
+        self.lock = lock
         # The number of bytes to reserve at the beginning of each file for the
         # source's name
         self._source_chars = 32
@@ -521,7 +483,7 @@ class FileSystemFrameController(FrameController):
                     'external_id' : self._build_external_id_index,
                     'length' : self._build_lengths_index}
         self._index = ConcurrentIndex(\
-                    builders,self._rootdir,self._datadir,self._iter_patterns)
+                    builders,self._rootdir,self._datadir,self._iter_patterns,lock = self.lock)
     
     
     def _to_skinny(self,record):

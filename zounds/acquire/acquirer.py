@@ -2,7 +2,7 @@ from __future__ import division
 from abc import ABCMeta,abstractmethod,abstractproperty
 import os.path
 from time import time
-from multiprocessing import Pool
+from multiprocessing import Manager,Pool,Lock
 import traceback
 
 from zounds.util import audio_files
@@ -57,16 +57,17 @@ class Acquirer(object):
 
 
 def acquire_multi(args):
-    Z,path,files,filen,total_files = args
+    Z,path,source,files,filen,total_files,lock = args
+    Z.framecontroller._index._lock = lock
     total_frames = 0
     for i,fn in enumerate(files):
         fp = os.path.join(path,fn)
         extid = os.path.splitext(fn)[0]
-        pattern = FilePattern(Z.newid(),Z.source,extid,fp)
-        if not Z.framecontroller.exists(Z.source,extid):
+        pattern = FilePattern(Z.newid(),source,extid,fp)
+        if not Z.framecontroller.exists(source,extid):
             try:
                 print DiskAcquirer.processing_message(\
-                                            Z.source, fn, filen + i, total_files)
+                                            source, fn, filen + i, total_files)
                 addr = Z.framecontroller.append(Z.framemodel.extractor_chain(pattern))
                 total_frames += len(addr)
             except:
@@ -115,12 +116,15 @@ class DiskAcquirer(Acquirer):
         print DiskAcquirer.complete_message(seconds_processed, elapsed)    
     
     def _acquire_multi(self,files):
+        mgr = Manager()
+        lock = mgr.Lock()
         lf = len(files)
         args = []
         total_frames = 0
-        chunksize = 10
+        chunksize = 15
         for i in range(0,len(files),chunksize):
-            args.append((self.env,self.path,files[i : i + chunksize],i,lf))
+            args.append((self.env,self.path,self._source,
+                         files[i : i + chunksize],i,lf,lock))
         p = Pool(4)
         total_frames += sum(p.map(acquire_multi,args))
         return self.env.frames_to_seconds(total_frames)
