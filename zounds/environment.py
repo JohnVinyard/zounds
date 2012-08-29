@@ -94,6 +94,9 @@ class Environment(object):
         return int((secs * self.samplerate) / self.stepsize)
     
     def frames_to_seconds(self,nframes):
+        if not nframes:
+            return 0
+        
         overlap = self.windowsize - self.stepsize
         return (nframes * (self.stepsize / self.samplerate)) +\
                  (overlap / self.samplerate)
