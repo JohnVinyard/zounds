@@ -3,8 +3,8 @@ from itertools import product
 import numpy as np
 import os.path
 from constants import available_file_formats
-
-
+from zounds.nputil import sliding_window
+from time import time
 
 def ensure_path_exists(filename_or_directory):
     '''
@@ -64,21 +64,12 @@ def downsampled_shape(shape,factor):
     return tuple((np.array(shape) / factor).astype(np.int32))
 
 # TODO: Should this go into the nputil module as well?
-def downsample(arr,factor,method = 'mean'):
-    if method == 'mean':
-        m = lambda a : np.mean(a)
-    elif method == 'max':
-        m = lambda a : np.mean(a)
-    else:
-        raise ValueError('method must be one of ("mean","max")')
-    newshape = downsampled_shape(arr.shape,factor)
-    newarr = np.zeros(newshape)
-    prod = product(*[range(0,shape) for shape in newshape])
-    for coord in prod:
-        sl = [slice(x*factor,x*factor+factor) for x in coord]
-        newarr[coord] = m(arr[sl])
-    return newarr
-
+def downsample(arr,factor,method = np.max):
+    window_size = (factor,) * arr.ndim
+    axes = -np.arange(1,arr.ndim + 1)
+    windowed = sliding_window(arr,window_size,flatten = False)
+    return np.apply_over_axes(method, windowed, axes).squeeze()
+    
 # TODO: This should go into a new "synthesize" module
 def testsignal(hz,seconds=5.,sr=44100.):
     '''
@@ -185,4 +176,4 @@ def sort_by_lineage(class_method):
         # of dependencies
         return 0
     
-    return _sort        
+    return _sort

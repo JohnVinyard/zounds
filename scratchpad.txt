@@ -1,10 +1,10 @@
 TOOO:
 -------------
+Anyplace where I'm using len(a.shape), I should be using ndim
+
 tf/idf on all codes
 
 2d fft performance?
-
-Replace typecodes defined in ExhaustiveLshSearch with those defined in nputil
 
 Cut down on search time by *excluding* ignored codes from the index
 
@@ -107,6 +107,11 @@ TODO:  Try lowpass filter subtraction method for spectrogram sharpening
 
 After job-hunt
 ========================================================================
+- Allow features to "expand", so that an extractor with nframes = 60 and step = 60
+  can be written to the database like a feature with nframes = stepsize = 1
+  
+- Fetch class to gather samples from non-stored features
+
 - FileSystemFrameController index locking mechanism is broken. Also, I believe
   that proceses are spending more time waiting to read/write than they are 
   actually extracting features
