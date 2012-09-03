@@ -1,6 +1,6 @@
 from __future__ import division
 from abc import ABCMeta,abstractmethod
-import time
+from time import time
 import struct
 from bisect import bisect_left
 import os
@@ -94,7 +94,7 @@ class FrameSearch(Model):
     def search(self,query, nresults = 10):
         env = self.env()
         
-        start = time.time()
+        start = time()
         if isinstance(query,env.framemodel):
             # The query is a frames instance, so it can be passed to _search
             # directly; the features are already computed
@@ -141,7 +141,7 @@ class FrameSearch(Model):
         
         # get a frames instance
         frames = fm(data = r)
-        stop = time.time() - start
+        stop = time() - start
         print 'analysis took %1.4f seconds' % stop
         return frames,self._search(frames, nresults = nresults)
     
@@ -423,7 +423,6 @@ class ExhaustiveLshSearch(FrameSearch):
         env = self.env()
         fc = env.framecontroller
         l = int(len(fc) / self.step)
-        freq = Frequency()
         nids = len(fc.list_ids())
         # An index that will hold the primary binary feature
         self._index = np.ndarray(l+nids,self._hashdtype)
@@ -435,32 +434,31 @@ class ExhaustiveLshSearch(FrameSearch):
             self._fine_index = self._packer.allocate(l + nids)
         
         self._addrs = np.ndarray(l+nids,object)
-        for i,f in enumerate(fc.iter_all(step = self.step)):
-            address,frame = f
-            _id = frame['_id'][0]
-            # TODO: Consider excluding codes contained in self._filter from 
-            # the index entirely. This could significantly cut down on search
-            # time.
-            self._addrs[i] = (_id,address)
+        index = 0
+        for address,frame in fc.iter_all(step = self.step):
             fv = self._feature_value(frame,self.feature)
-            freq.count(fv)
-            self._index[i] = fv
-            if self._fine_feature:
-                fv = self._feature_value(frame, self._fine_feature)
-                if not fv.shape:
-                    self._fine_index[i] = 0
-                else:
-                    self._fine_index[i] = self._packer(fv[np.newaxis,...])
-            print self._index[i]
+            if fv not in self._filter:
+                _id = frame['_id'][0]
+                # TODO: Consider excluding codes contained in self._filter from 
+                # the index entirely. This could significantly cut down on search
+                # time.
+                self._addrs[index] = (_id,address)
+                self._index[index] = fv
+                if self._fine_feature:
+                    fv = self._feature_value(frame, self._fine_feature)
+                    if not fv.shape:
+                        self._fine_index[index] = 0
+                    else:
+                        self._fine_index[index] = self._packer(fv[np.newaxis,...])
+                print self._index[index]
+                index += 1
         
         # lop off any unused indices
         if self._fine_feature:
-            self._fine_index = self._fine_index[:i]
-        self._index = self._index[:i]
-        self._addrs = self._addrs[:i]
+            self._fine_index = self._fine_index[:index + 1]
+        self._index = self._index[:index + 1]
+        self._addrs = self._addrs[:index + 1]
         
-        # TODO: tf/idf on features
-        self._weights = freq.weights(self._index)
     
     def _valid_indices(self,features):
         s = np.sum([(features == q) for q in self._filter],0)
@@ -468,7 +466,7 @@ class ExhaustiveLshSearch(FrameSearch):
         
     
     def _search(self,frames,nresults):
-        start = time.time()
+        start = time()
         feature = frames[self.feature][::self.step]
         valid = self._valid_indices(feature)
         some_valid = np.any(valid)
@@ -485,7 +483,7 @@ class ExhaustiveLshSearch(FrameSearch):
         indices = []
         distances = []
         for i in range(lf):
-            dist = hamming_distance(feature[i],self._index) * self._weights
+            dist = hamming_distance(feature[i],self._index)
             srt = np.argsort(dist)
             # TODO: Make this size configurable
             n = nresults * 10
@@ -506,7 +504,7 @@ class ExhaustiveLshSearch(FrameSearch):
         results = [addr for addr in self._addrs[indices]]
         
             
-        stop = time.time() - start
+        stop = time() - start
         print 'search took %1.4f seconds' % stop
         return results
         
@@ -628,7 +626,7 @@ class LshSearch(FrameSearch):
         if None is self._sorted:
             self._setup()
         
-        start = time.time()
+        start = time()
         feature = frames[self.feature][::self.step]
         # Get rid of zeros. This will confuse the results
         nz = np.nonzero(feature)
@@ -671,7 +669,7 @@ class LshSearch(FrameSearch):
             row = self.index[r]
             finalresults.append((row[self._idkey],row[self._addresskey]))
         
-        stop = time.time() - start
+        stop = time() - start
         print '_search took %1.4f seconds' % stop
         return finalresults[:nresults]
         
@@ -814,7 +812,7 @@ class MinHashSearch(FrameSearch):
     
     
     def _candidate_sequences(self,feature, candidates_per_block = 50):
-        starttime = time.time()
+        starttime = time()
         d = {}
         
         addresses = self.address
@@ -841,11 +839,11 @@ class MinHashSearch(FrameSearch):
         env = self.env()
         AC = env.address_class
         candidates = [(_id,AC.congeal(list(addrs))) for _id,addrs in d.iteritems()]
-        print '_candidate_sequences took %1.4f' % (time.time() - starttime)
+        print '_candidate_sequences took %1.4f' % (time() - starttime)
         return candidates
     
     def _score_sequences(self,feature,candidates):
-        starttime = time.time()
+        starttime = time()
         # a list that will hold four-tuples of (_id,address,score,pos)
         finalscores = [] and not isinstance()
         query = feature
@@ -860,11 +858,11 @@ class MinHashSearch(FrameSearch):
             [finalscores.append((_id,addr,s,i)) for i,s in enumerate(scores)]
         
         finalscores.sort(key = lambda fs : fs[2], reverse = True)
-        print '_score_sequences took %1.4f' % (time.time() - starttime)
+        print '_score_sequences took %1.4f' % (time() - starttime)
         return finalscores
     
     def _avoid_overlap(self,nresults,finalscores,querylen):
-        starttime = time.time()
+        starttime = time()
         tolerance = querylen * .85
         AC = self.env().address_class
         finalresults = []
@@ -885,7 +883,7 @@ class MinHashSearch(FrameSearch):
                 allstarts.append(start)
             count += 1
         
-        print '_avoid_overlap took %1.4f' % (time.time() - starttime)
+        print '_avoid_overlap took %1.4f' % (time() - starttime)
         return finalresults
     
     def _search(self,frames, nresults):

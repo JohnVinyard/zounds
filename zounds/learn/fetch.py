@@ -266,6 +266,21 @@ class PrecomputedPatch(PrecomputedFeature):
         
         return self._patch._slice()
     
+    def filter_data(self,data):
+        
+        if None is self._filter:
+            # No filter is defined. Return the data as-is
+            return data
+        
+        if callable(self._filter):
+            # filter is a callable that returns indices from data to keep
+            return data[self._filter(data)]
+        
+        # Assume that self._filter is a number
+        axes = -np.arange(1,data.ndim)
+        indices = np.nonzero(np.apply_over_axes(np.sum, data, axes) > self._filter)[0]
+        return data[indices]
+    
     
     def __call__(self, nexamples = None):
         FM,c,l = self._get_env()
@@ -296,8 +311,7 @@ class PrecomputedPatch(PrecomputedFeature):
                 # means we're done collecting data.
                 break
         print '-----------------------------------------------------------'
-        if self._filter is not None:
-            data = data[self._filter(data)]
+        data = self.filter_data(data)
         return data[np.random.permutation(len(data))]
 
 class StaticPrecomputedFeature(Fetch):
