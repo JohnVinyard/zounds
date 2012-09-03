@@ -76,7 +76,7 @@ def acquire_multi(args):
                 # been written? 
                 print traceback.format_exc()
         else:
-            print DiskAcquirer.skip_message(Z.source, fn)
+            print DiskAcquirer.skip_message(source, fn)
     return total_frames
     
 class DiskAcquirer(Acquirer):

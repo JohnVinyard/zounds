@@ -1,10 +1,8 @@
 from __future__ import division
-from itertools import product
 import numpy as np
 import os.path
 from constants import available_file_formats
 from zounds.nputil import sliding_window
-from time import time
 
 def ensure_path_exists(filename_or_directory):
     '''

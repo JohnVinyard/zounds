@@ -4,7 +4,9 @@ import shutil
 import cPickle
 from itertools import repeat
 from multiprocessing import Lock
+import traceback
 import numpy as np
+
 
 import zounds.model.frame
 from zounds.constants import audio_key,id_key,source_key,external_id_key
@@ -777,7 +779,15 @@ class FileSystemFrameController(FrameController):
         _id = datafile._id
         source = datafile._source
         external_id = datafile._external_id
-        self._index.append(_id, source, external_id, nframes)
+        # KLUDGE: I'm still experiencing some transient cPickle errors from
+        # ConcurrentIndex. They're nothing serious; the worst thing that could
+        # happen is a duplicate or two getting inserted into the db because
+        # two processes didn't have external_id indexes in sync.  For now, I'm
+        # going to yell about it, but nothing else.
+        try:
+            self._index.append(_id, source, external_id, nframes)
+        except:
+            print traceback.format_exc()
         addr = self.address_class((_id,slice(0,nframes)))
         datafile.close()
         return addr

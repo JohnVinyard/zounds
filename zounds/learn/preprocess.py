@@ -3,7 +3,8 @@ from abc import ABCMeta,abstractmethod
 
 import numpy as np
 
-from zounds.nputil import safe_unit_norm as sun
+from zounds.util import downsample,flatten2d
+from zounds.nputil import safe_unit_norm as sun,norm_shape
 
 
 class Preprocess(object):
@@ -174,6 +175,17 @@ class Whiten(Preprocess):
         
         return data * self._weights
         
-
+class Downsample(Preprocess):
+    
+    def __init__(self,shape,factor,method = np.mean):
+        Preprocess.__init__(self)
+        self._shape = norm_shape(shape)
+        self._factor = factor
+        self._method = method
+    
+    def _preprocess(self,data):
+        realshape = (data.shape[0],) + self._shape 
+        return flatten2d(downsample(\
+                data.reshape(realshape),self._factor,method = self._method))
     
     

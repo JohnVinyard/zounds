@@ -3,11 +3,10 @@ from multiprocessing import Pool
 import numpy as np
 from scipy.spatial.distance import cdist
 
-from zounds.nputil import safe_unit_norm as sun,toeplitz2dc
+from zounds.nputil import safe_unit_norm as sun,toeplitz2dc,sliding_window
 from zounds.analyze.extractor import SingleInput
 from zounds.model.pipeline import Pipeline
 from zounds.util import flatten2d
-from zounds.learn.nnet.nnet import sigmoid
 
 def toeplitz2d2(patch,size,silence_thresh):
     l = toeplitz2dc(patch.astype(np.float32),size)
@@ -16,6 +15,11 @@ def toeplitz2d2(patch,size,silence_thresh):
     # take the unit norm of the patches that are above the loudness threshold
     return sun(l[np.nonzero(nz)[0]])
 
+
+def get_subpatches(patch,size,silence_thresh):
+    l = flatten2d(sliding_window(patch,size,(1,) * len(size)))
+    nz = l.sum(1) > silence_thresh
+    return sun(l[np.nonzero(nz)[0]])
 
 def toeplitz2d(patch,size,silence_thresh):
     '''
@@ -66,8 +70,11 @@ def toeplitz2d(patch,size,silence_thresh):
 def feature(args):
     patch,size,thresh,codebook,weights,activation,act_thresh = args
     out = np.ndarray((patch.shape[0],codebook.shape[0]))
+    # TODO: Would it make sense to chunk patches and do the distance calculation
+    # all-at-once? 
     for i in xrange(patch.shape[0]):
-        mat = toeplitz2d2(patch[i], size, thresh)
+        #mat = toeplitz2d2(patch[i], size, thresh)
+        mat = get_subpatches(patch[i],size,thresh)
         if not mat.shape[0]:
             out[i] = np.zeros(codebook.shape[0])
             continue
