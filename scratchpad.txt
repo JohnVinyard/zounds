@@ -1,12 +1,14 @@
 TOOO:
 -------------
+FileSystemFrameController.stat() implementation
+
+- Try RBM and autoencoder for learning clusters
+
  - bug with 9228
  
- - memory errors
-
-- Larger, downsampled patches, plus original patch sizes
-
-- Why is extractor_chain so slow?
+ - Why does FileSystemFrameController *always* miss files?
+ 
+ - Why is extractor_chain so slow?
 
 - Blog entry explaining sliding_window method
 
@@ -30,8 +32,6 @@ FileSystemFrameController multi-process update
 Quickstart - ensure that websearch is copied and setup correctly
 
 PyTables.stat() array is too big bug.
-
-FileSystemFrameController.stat() implementation
 
 PrecomputedFeature with filter (e.g. sum() > n) tests
 
@@ -107,6 +107,12 @@ TODO:  Try lowpass filter subtraction method for spectrogram sharpening
 
 After job-hunt
 ========================================================================
+- FileSystemFrameController.stat implementation sucks (see TODO notes)
+
+- Multiscale kmeans
+
+- Expectation-Maximization clustering
+
 - Precomputed Feature and PrecomputedPatch are slow, because they read the entire
  frame instance into memory before sampling
 

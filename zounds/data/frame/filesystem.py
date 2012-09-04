@@ -3,7 +3,6 @@ import os
 import shutil
 import cPickle
 from itertools import repeat
-from multiprocessing import Lock
 import traceback
 import numpy as np
 
@@ -13,8 +12,84 @@ from zounds.constants import audio_key,id_key,source_key,external_id_key
 from frame import FrameController,UpdateNotCompleteError
 from zounds.model.pattern import Pattern
 from zounds.util import ensure_path_exists
-from time import time,sleep
-import fcntl
+from zounds.nputil import norm_shape
+from time import time
+
+
+# TODO: This class really sucks in the case where one, or a few new patterns
+# are added to the database.  In that case, it's necessary to go back and pick
+# up each small file to recomputed the database-wide stat.
+# A couple options
+# 1) store all pattern stats in one file. This should make things a lot faster
+#
+# 2) store only the data necessary. max, min, and sum are easy. mean requires
+#    us to store the mean and the number of items used to compute it.  This approach
+#    is very efficient, but makes it more difficult to differnentiate between
+#    a database update and the addition of a a few patterns. 
+class Stats(object):
+    
+    def __init__(self,controller,datadir):
+        object.__init__(self)
+        self._path = controller.stat_dn
+        self._c = controller
+        self._datadir = datadir
+    
+    def _pattern_stat_filename(self,_id,feature_name,stat_name):
+        fn = '%s_%s_%s.dat' % (_id,feature_name,stat_name)
+        return os.path.join(self._path,fn)
+        
+    
+    def _db_stat_filename(self,feature_name,stat_name):
+        fn = '%s_%s.dat' % (feature_name,stat_name)
+        return os.path.join(self._path,fn)
+    
+    def _get_db_stat(self,feature,op):
+        dbsfn = self._db_stat_filename(feature.key,op.__name__)
+        if not self._db_feature_file_is_stale(feature.key,op):
+            return np.fromfile(dbsfn,dtype = feature.dtype).reshape(feature.dim)
+        
+        _ids = self._c.list_ids()
+        n_ids = len(_ids)
+        data = np.ndarray((n_ids,) + norm_shape(feature.dim),dtype = feature.dtype)
+        for i,_id in enumerate(_ids):
+            data[i] = self._get_pattern_stat(_id, feature,op)
+        
+        reduced = op(data,axis = 0)
+        reduced.tofile(dbsfn)
+        return reduced
+    
+    def _get_pattern_stat(self,_id,feature,op):
+        psfn = self._pattern_stat_filename(_id, feature.key, op.__name__)
+        
+        # TODO: Check if pattern file is fresher than stat file
+        if os.path.exists(psfn):
+            return np.fromfile(psfn, dtype = feature.dtype).reshape(feature.dim)
+        
+        feature = self._c[_id][feature.key]
+        reduced = op(feature,axis = 0)
+        reduced.tofile(psfn)
+        return reduced
+        
+    
+    def _db_feature_file_is_stale(self,feature_name,op):
+        dbsfn = self._db_stat_filename(feature_name,op.__name__)
+        return not os.path.exists(dbsfn) or \
+                (os.path.getmtime(dbsfn) < os.path.getmtime(self._datadir))
+    
+    def _mean_of_squares(self,a):
+        return (a**2).mean(0)
+    
+    def __call__(self,feature,op):
+        if op == np.std:
+            mean_of_squares = self._get_db_stat(feature, self._mean_of_squares)
+            squared_mean = self._get_db_stat(feature,np.mean)**2
+            return np.sqrt(mean_of_squares - squared_mean)
+            
+        
+        return self._get_db_stat(feature,op)
+    
+    
+
 
 class DataFile(object):
     '''
@@ -408,6 +483,7 @@ class FileSystemFrameController(FrameController):
     features_fn = 'features' + file_extension
     sync_fn = 'sync' + file_extension
     data_dn = 'data'
+    stat_dn = 'stat'
     
     def __init__(self,framesmodel,filepath,lock = None):
         '''
@@ -441,7 +517,11 @@ class FileSystemFrameController(FrameController):
         # build the path on disk
         ensure_path_exists(self._datadir)
         
+        ensure_path_exists(FileSystemFrameController.stat_dn)
+        
         fsfc = FileSystemFrameController
+        
+        self._stats = Stats(self,self._datadir)
         
         # build the path to the features file
         self._feature_path = os.path.join(self._rootdir,fsfc.features_fn)
@@ -815,6 +895,7 @@ class FileSystemFrameController(FrameController):
         return self._get_hydrated(addr)
         
     
+    
     def stat(self,feature,aggregate,axis = 0,step = 1):
         '''
         Streaming, multiprocess min,max,sum,mean,std implementations.
@@ -826,7 +907,15 @@ class FileSystemFrameController(FrameController):
         If the data directory's modified date is greater than the total modified
         date, recompute by using companion files or computing for new files.
         '''
-        raise NotImplemented()
+        if axis > 0:
+            # for now, I'm only implementing feature-wise stats
+            raise NotImplemented
+        
+        if step > 1:
+            # for now, I'm only implementing step sizes of one
+            raise NotImplemented
+        
+        return self._stats(feature,aggregate)
         
     
     def get_features(self):
