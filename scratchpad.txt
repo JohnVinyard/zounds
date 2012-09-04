@@ -1,12 +1,10 @@
 TOOO:
 -------------
-- Get rid of all things toeplitz
+- Larger, downsampled patches, plus original patch sizes
 
 - Blog entry explaining sliding_window method
 
 - KMeans++ implementation
-
-- Larger, downsampled patches, plus original patch sizes
 
 TEST : Cut down on search time by *excluding* ignored codes from the index
 

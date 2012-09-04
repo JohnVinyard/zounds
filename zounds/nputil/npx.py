@@ -4,7 +4,7 @@ from numpy.lib.stride_tricks import as_strided as ast
 from bitarray import bitarray
 import pyximport
 pyximport.install()
-from toeplitz import *
+from countbits import *
 
 
 def norm_shape(shape):
@@ -51,12 +51,6 @@ def downsampled_shape(shape,factor):
     '''
     return tuple((np.array(shape) / factor).astype(np.int32))
 
-
-#def downsample(arr,factor,method = np.max, axes = None):
-#    window_size = (factor,) * arr.ndim
-#    axes = -np.arange(1,arr.ndim + 1)
-#    windowed = sliding_window(arr,window_size,flatten = False)
-#    return np.apply_over_axes(method, windowed, axes).squeeze()
 
 def downsample(arr,factor,method = np.max):
     '''
