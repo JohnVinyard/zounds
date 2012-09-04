@@ -15,10 +15,6 @@ ctypedef unsigned long ULong
 
 cimport cython
 
-
-
-# TODO: This doesn't belong in the toeplitz file, in fact, the toeplitz file
-# will be gone soon
 @cython.boundscheck(False)
 def count_bits(np.ndarray[UINT64_DTYPE_t,ndim = 1] n):
     cdef np.ndarray[INT_DTYPE_t,ndim = 1] out = \
@@ -37,8 +33,7 @@ def count_bits(np.ndarray[UINT64_DTYPE_t,ndim = 1] n):
         out[i] = ((z + (z >> 4)) & c) * d >> 56
     return out
 
-# TODO: This doesn't belong in the toeplitz file, in fact, the toeplitz file
-# will be gone soon
+
 def count_packed_bits(np.ndarray[UINT64_DTYPE_t,ndim = 2] n):
     cdef int ns = n.shape[0]
     cdef int ns2 = n.shape[1]
