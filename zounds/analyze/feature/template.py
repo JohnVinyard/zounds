@@ -6,7 +6,7 @@ from scipy.spatial.distance import cdist
 from zounds.nputil import safe_unit_norm as sun,sliding_window
 from zounds.analyze.extractor import SingleInput
 from zounds.model.pipeline import Pipeline
-from zounds.util import flatten2d
+from zounds.nputil import flatten2d
 
 
 def get_subpatches(patch,size,silence_thresh):
@@ -157,6 +157,10 @@ class TemplateMatch(SingleInput):
     
     def _process(self):
         data = self.in_data
+        if data.shape == self._inshape:
+            data = data.reshape((1,) + self._inshape)
+        else:
+            data = data.reshape((data.shape[0],) + self._inshape)
         self._update_args(data)
         out = self.__process(data)
         return np.concatenate(out,axis = 1)

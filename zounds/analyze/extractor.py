@@ -99,7 +99,13 @@ class Extractor(object):
     def _deep_sources(self):
         return self.sources
     
-    
+    # KLUDGE: For multisource extractors, it is tacitly assumed that each source
+    # extractor will have the same absolute nframes value.  The branch to which 
+    # each source extractor belongs may differ in how the final product was arrived
+    # at, but the products must all agree by the time they're fed to the dependent
+    # extractor.  The simplest (but not the safest) way to calculate nframes_abs
+    # for multisource extractors is to assume this to be true, and to only follow
+    # a single path back to the root.
     def nframes_abs(self, nframes = None):
         '''
         Since nframes is expressed in terms of the extractors upon which this 
@@ -113,15 +119,8 @@ class Extractor(object):
             nframes = [self.nframes]
         
         if self.sources:
-            # KLUDGE: We're choosing the max number of frames from all extractors
-            # on which we depend. Hopefully, there will either be only a single
-            # requisite extractor, OR, the multiple sources will have the same
-            # nframes values.  I can't really imagine a situation in which 
-            # neither would be true at the moment, but such a situation would
-            # break this method.
-            nframes.append(max([e.nframes for e in self.sources]))
-            for s in self.sources:
-                s.nframes_abs(nframes = nframes)
+            nframes.append(self.sources[0].nframes)
+            self.sources[0].nframes_abs(nframes = nframes)
                 
         # the product of the "path" of nframes values leading back to the root
         # extractor should tell us how many absolute frames this extractor needs    
@@ -132,9 +131,8 @@ class Extractor(object):
             step = [self.step]
         
         if self.sources:
-            step.append(max([e.step for e in self.sources]))
-            for s in self.sources:
-                s.step_abs(step = step)
+            step.append(self.sources[0].step)
+            self.sources[0].step_abs(step = step)
         
         return np.product(step)
             

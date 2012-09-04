@@ -12,8 +12,8 @@ from bitarray import bitarray
 
 from model import Model
 from pattern import DataPattern
-from zounds.util import flatten2d
-from zounds.nputil import hamming_distance,pad,Packer,packed_hamming_distance,TypeCodes
+from zounds.nputil import \
+    hamming_distance,pad,Packer,packed_hamming_distance,TypeCodes,flatten2d
 from zounds.environment import Environment
 
 

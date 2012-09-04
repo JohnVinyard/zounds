@@ -3,6 +3,7 @@ import numpy as np
 from scipy.cluster.vq import kmeans
 from scipy.spatial.distance import cdist
 from zounds.learn.learn import Learn
+from zounds.nputil import flatten2d
 
 # KLUDGE: I've added indim and hdim so this class can be used 
         # as a NeuralNetwork-derived class
@@ -42,7 +43,6 @@ class KMeans(Learn):
         feature[best] = 1
         return feature
 
-from zounds.util import flatten2d
 
 # BUG: The problem with this method is that the exemplars are taken from the
 # database, so there will be very large activations for these.  Ideally, we'd

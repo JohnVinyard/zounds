@@ -226,6 +226,29 @@ class ExtractorTests(unittest.TestCase):
         se3 = SumExtractor([se1,se2],1,1)
         self.assertEqual(2,se3.nframes_abs())
     
+    def test_frames_abs_multi_source_differing_relative_nframes(self):
+        '''
+            1
+           / \
+          60 60
+          |  |
+          \  1
+           \/
+           1
+           
+        My previous nframes_abs algorithm reported the absolute nframes value
+        of the termintating node to be 3600, because ancestor nodes were
+        arranged like so:
+        1 x 60 x 60 x 1
+        '''
+        re = RootExtractor()
+        se1 = SumExtractor(re,60,1)
+        se2 = SumExtractor(re,60,1)
+        se3 = SumExtractor(se2,1,1)
+        se4 = SumExtractor([se1,se3],1,1)
+        self.assertEqual(60,se4.nframes_abs())
+        
+    
     def test_step_abs_both_one(self):
         re = RootExtractor()
         se = SumExtractor(re,1,1)
@@ -254,6 +277,28 @@ class ExtractorTests(unittest.TestCase):
         se2 = SumExtractor(re,1,1)
         se3 = SumExtractor([se1,se2],1,1)
         self.assertEqual(2,se3.step_abs())
+    
+    def test_step_abs_multi_source_differing_relative_nframes(self):
+        '''
+            1
+           / \
+          60 60
+          |  |
+          \  1
+           \/
+           1
+           
+        My previous step_abs algorithm reported the absolute nframes value
+        of the termintating node to be 3600, because ancestor nodes were
+        arranged like so:
+        1 x 60 x 60 x 1
+        '''
+        re = RootExtractor()
+        se1 = SumExtractor(re,1,60)
+        se2 = SumExtractor(re,1,60)
+        se3 = SumExtractor(se2,1,1)
+        se4 = SumExtractor([se1,se3],1,1)
+        self.assertEqual(60,se4.step_abs())
     
     
 class SingleInputTests(unittest.TestCase):

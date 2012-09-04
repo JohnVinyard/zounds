@@ -1,6 +1,12 @@
 TOOO:
 -------------
+ - bug with 9228
+ 
+ - memory errors
+
 - Larger, downsampled patches, plus original patch sizes
+
+- Why is extractor_chain so slow?
 
 - Blog entry explaining sliding_window method
 
@@ -33,9 +39,10 @@ PrecomputedPatch tests
 
 preprocess.Downsample tests
 
+command-line args for websearch.py
+
 TODO: extractors using multiprocessing hang when updating database 
 	(Is this the case with FileSystemFrameController?)
-
 
 - Get rid of binary incompatibility warning
 
@@ -100,6 +107,9 @@ TODO:  Try lowpass filter subtraction method for spectrogram sharpening
 
 After job-hunt
 ========================================================================
+- Precomputed Feature and PrecomputedPatch are slow, because they read the entire
+ frame instance into memory before sampling
+
 TODO: The idea behind some of the PyTablesFrameController.Address methods is
 	seriously broken
 	
