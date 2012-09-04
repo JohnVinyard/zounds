@@ -1,8 +1,7 @@
 from __future__ import division
 import numpy as np
 import os.path
-from constants import available_file_formats
-from zounds.nputil import sliding_window
+
 
 def ensure_path_exists(filename_or_directory):
     '''
@@ -30,44 +29,7 @@ def ensure_path_exists(filename_or_directory):
             # This probably means that the path already exists
             pass
 
-# TODO: Maybe this should go in the acquirer module
-def audio_files(path):
-    '''
-    Return the name of each sound file that Zounds can process in
-    the given directory
-    '''
-    # list all files in the directory
-    allfiles = os.listdir(path) 
-    return filter(\
-        lambda f : os.path.splitext(f)[1][1:] in available_file_formats,
-        allfiles)
 
-
-# TODO: Should this go into the nputil module as well?
-def flatten2d(arr):
-    ls = len(arr.shape)
-    if 1 == ls:
-        raise ValueError('Cannot turn 1d array into 2d array')
-    elif 2 == ls:
-        return arr
-    else:
-        return arr.reshape((arr.shape[0],np.product(arr.shape[1:])))
-
-# TODO: Should this go into the nputil module as well?
-def downsampled_shape(shape,factor):
-    '''
-    Return the new shape of an array with shape, once downsampled
-    by factor.
-    '''
-    return tuple((np.array(shape) / factor).astype(np.int32))
-
-# TODO: Should this go into the nputil module as well?
-def downsample(arr,factor,method = np.max):
-    window_size = (factor,) * arr.ndim
-    axes = -np.arange(1,arr.ndim + 1)
-    windowed = sliding_window(arr,window_size,flatten = False)
-    return np.apply_over_axes(method, windowed, axes).squeeze()
-    
 # TODO: This should go into a new "synthesize" module
 def testsignal(hz,seconds=5.,sr=44100.):
     '''

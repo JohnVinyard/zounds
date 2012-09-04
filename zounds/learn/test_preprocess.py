@@ -1,10 +1,11 @@
 import numpy as np
 import unittest
-from preprocess import NoOp, MeanStd
+from preprocess import NoOp, MeanStd,Downsample
+
 
 class NoOpTests(unittest.TestCase):
     
-    def noop_test(self):
+    def test_noop(self):
         a = np.random.random_sample(100)
         p = NoOp()
         b = p(a)
@@ -12,7 +13,7 @@ class NoOpTests(unittest.TestCase):
         
 class MeanStdTests(unittest.TestCase):
     
-    def mean_std_test(self):
+    def test_mean_std(self):
         # KLUDGE: This feels like kind of a stupid test, since the behavior 
         # of MeanStd is so simple.  I'm basically re-implementing its behavior
         # here, and making sure that it does, well, that.
@@ -37,7 +38,7 @@ class MeanStdTests(unittest.TestCase):
         self.assertTrue(np.all(expected == d))
         
     
-    def mean_std_different_shape_test(self):
+    def test_mean_std_different_shape(self):
         # ensure that data of a different shape cannot be passed in
         # once the preprocessor has been initialized
         a = np.random.random_sample((100,100))
@@ -47,5 +48,10 @@ class MeanStdTests(unittest.TestCase):
         c = np.random.random_sample((100,11))
         self.assertRaises(ValueError, lambda : p(c))
         
-        
-        
+class DownsampleTests(unittest.TestCase):
+    
+    def test_downsample(self):
+        d = Downsample((10,10),2)
+        a = np.zeros((100,100))
+        ds = d(a)
+        self.assertEqual((100,25),ds.shape)

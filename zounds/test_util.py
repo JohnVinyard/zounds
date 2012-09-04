@@ -7,6 +7,7 @@ from zounds.testhelper import remove
 from random import shuffle
 from uuid import uuid4
 
+
 class EnsurePathExistsTests(unittest.TestCase):
     
     def setUp(self):

@@ -6,6 +6,7 @@ import pyximport
 pyximport.install()
 from toeplitz import *
 
+
 def norm_shape(shape):
     '''
     Normalize numpy array shapes so they're always expressed as a tuple, 
@@ -33,7 +34,70 @@ def norm_shape(shape):
     
     raise TypeError('shape must be an int, or a tuple of ints')
 
+def flatten2d(arr):
+    ls = len(arr.shape)
+    if 1 == ls:
+        raise ValueError('Cannot turn 1d array into 2d array')
+    elif 2 == ls:
+        return arr
+    else:
+        return arr.reshape((arr.shape[0],np.product(arr.shape[1:])))
 
+
+def downsampled_shape(shape,factor):
+    '''
+    Return the new shape of an array with shape, once downsampled
+    by factor.
+    '''
+    return tuple((np.array(shape) / factor).astype(np.int32))
+
+
+#def downsample(arr,factor,method = np.max, axes = None):
+#    window_size = (factor,) * arr.ndim
+#    axes = -np.arange(1,arr.ndim + 1)
+#    windowed = sliding_window(arr,window_size,flatten = False)
+#    return np.apply_over_axes(method, windowed, axes).squeeze()
+
+def downsample(arr,factor,method = np.max):
+    '''
+    Downsample an n-dimensional array
+    
+    Parameters
+        arr    - the array to be downsampled
+        factor - the downsampling factor. If factor is an integer, it is assumed
+                 that the array will be downsampled by a constant factor in every
+                 dimension. If factor is a tuple, the array will be downsampled
+                 by different factors in each dimension. If factor is a tuple 
+                 whose size is less than the number of dimensions in arr, it
+                 is assumed that the downsampling will only be applied to the
+                 last len(factor) dimensions of arr.
+        method - the method used to combine chunks into single values, e.g.
+                 mean, or max.
+    '''
+    if isinstance(factor,int):
+        # factor is an integer, so we'll downsample by a constant factor over
+        # all dimensions of the input array
+        factor = (factor,) * arr.ndim
+        lf = arr.ndim
+    else:
+        # factor is a tuple, so we'll downsample over the last n dimensions of
+        # arr by the factors specified
+        factor = norm_shape(factor)
+        lf = len(factor)
+        if lf > arr.ndim:
+            raise ValueError(\
+            'The number of factors must be less than or equal to the number of dimensions in arr')
+    
+    # the axes over which to apply the reduction
+    axes = -np.arange(1,lf + 1)
+    # the window size in each dimension of arr
+    window_size = ((1,) * (arr.ndim - lf)) + factor
+    # get non-overlapping windows whose dimensions are specified by factor
+    windowed = sliding_window(arr,window_size,flatten = False)
+    # apply the reduction and remove any extraneous dimensions
+    return np.apply_over_axes(method, windowed, axes).squeeze()
+    
+    
     
 def safe_log(a):
     '''

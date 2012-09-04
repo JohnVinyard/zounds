@@ -5,13 +5,11 @@ from scipy.stats.mstats import gmean
 from scipy.stats import kurtosis
 from scipy.signal import triang
 from scipy.fftpack import dct
-from scipy.spatial.distance import cdist
 
 from zounds.environment import Environment
 from zounds.analyze.extractor import SingleInput
 import zounds.analyze.bark as bark
-from zounds.util import flatten2d
-from zounds.nputil import safe_log,safe_unit_norm as sun
+from zounds.nputil import safe_log,flatten2d
 
 
 class FFT(SingleInput):
