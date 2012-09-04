@@ -30,11 +30,13 @@ class Downsample(SingleInput):
     
     def _process(self):
         data = self.in_data
+        print data.shape
         l = data.shape[0]
         data = data.reshape((l,) + self._inshape)
         factor = (self._factor,) * len(self._inshape)
         ds = downsample(data,factor,method = np.max)
         
+        print ds.shape
         if ds.ndim == 1:
             return ds
         
