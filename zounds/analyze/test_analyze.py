@@ -5,7 +5,7 @@ from math import ceil
 import numpy as np
 
 from zounds.analyze.audiostream import AudioStream
-from zounds.util import flatten2d
+from zounds.nputil import flatten2d
 from zounds.testhelper import \
     make_sndfile,filename,remove,RootExtractor,SumExtractor
 

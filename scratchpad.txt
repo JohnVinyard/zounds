@@ -1,15 +1,12 @@
 TOOO:
 -------------
+- Get rid of all things toeplitz
 
 - Blog entry explaining sliding_window method
 
- - Downsample preprocessor
+- KMeans++ implementation
 
-TODO: Toeplitz is missing boundaries and causing bugs (I think)
-
-- TemplateMatch should use the new sliding_window function (Check toeplitz and sw equivalence)
-
-- Try performing PCA on conv feature prior to semantic hash learning
+- Larger, downsampled patches, plus original patch sizes
 
 TEST : Cut down on search time by *excluding* ignored codes from the index
 
@@ -36,11 +33,7 @@ PrecomputedFeature with filter (e.g. sum() > n) tests
 
 PrecomputedPatch tests
 
-TODO: The idea behind some of the PyTablesFrameController.Address methods is
-	seriously broken
-	
-- BUG : Address equivalence bug: [1,4,10] and [1,6,10] are considered equivalent.  This
-  is incorrect
+preprocess.Downsample tests
 
 TODO: extractors using multiprocessing hang when updating database 
 	(Is this the case with FileSystemFrameController?)
@@ -109,6 +102,12 @@ TODO:  Try lowpass filter subtraction method for spectrogram sharpening
 
 After job-hunt
 ========================================================================
+TODO: The idea behind some of the PyTablesFrameController.Address methods is
+	seriously broken
+	
+- BUG : Address equivalence bug: [1,4,10] and [1,6,10] are considered equivalent.  This
+  is incorrect
+ 
 - Figure out how to deal with two failing tests.
 
 - Allow features to "expand", so that an extractor with nframes = 60 and step = 60

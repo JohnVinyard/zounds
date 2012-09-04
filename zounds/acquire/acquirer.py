@@ -5,10 +5,23 @@ from time import time
 from multiprocessing import Manager,Pool,Lock
 import traceback
 
-from zounds.util import audio_files
+from zounds.constants import available_file_formats
 from zounds.environment import Environment
 from zounds.model.pattern import FilePattern
 from zounds.data.frame.frame import FrameController
+
+# TODO: Maybe this should go in the acquirer module
+def audio_files(path):
+    '''
+    Return the name of each sound file that Zounds can process in
+    the given directory
+    '''
+    # list all files in the directory
+    allfiles = os.listdir(path) 
+    return filter(\
+        lambda f : os.path.splitext(f)[1][1:] in available_file_formats,
+        allfiles)
+
 
 class Acquirer(object):
     '''

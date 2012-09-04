@@ -3,9 +3,8 @@ import numpy as np
 
 from scipy.signal import convolve
 
-from zounds.util import flatten2d
 from zounds.analyze.extractor import SingleInput
-from zounds.nputil import safe_log,safe_unit_norm as sun,norm_shape,pack
+from zounds.nputil import safe_log,safe_unit_norm as sun,norm_shape,pack,flatten2d
 
 class Basic(SingleInput):
     

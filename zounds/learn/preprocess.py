@@ -3,8 +3,8 @@ from abc import ABCMeta,abstractmethod
 
 import numpy as np
 
-from zounds.util import downsample,flatten2d
-from zounds.nputil import safe_unit_norm as sun,norm_shape
+
+from zounds.nputil import safe_unit_norm as sun,norm_shape,downsample,flatten2d
 
 
 class Preprocess(object):
@@ -178,14 +178,25 @@ class Whiten(Preprocess):
 class Downsample(Preprocess):
     
     def __init__(self,shape,factor,method = np.mean):
+        if not isinstance(factor,int):
+            raise ValueError('factor must be an int')
+    
+        
         Preprocess.__init__(self)
         self._shape = norm_shape(shape)
         self._factor = factor
         self._method = method
     
     def _preprocess(self,data):
-        realshape = (data.shape[0],) + self._shape 
-        return flatten2d(downsample(\
-                data.reshape(realshape),self._factor,method = self._method))
+        # the shape the data should be in prior to downsampling
+        realshape = (data.shape[0],) + self._shape
+        # the factor tuple, which will cause downsampling in all but the first
+        # (example-wise) dimension
+        factor = (self._factor,) * len(self._shape)
+        ds = downsample(data.reshape(realshape),factor, method = self._method)
+        if ds.ndim == 1:
+            return ds
+        
+        return flatten2d(ds)
     
     

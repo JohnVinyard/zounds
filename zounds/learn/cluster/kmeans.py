@@ -8,10 +8,11 @@ from zounds.learn.learn import Learn
         # as a NeuralNetwork-derived class
 class KMeans(Learn):
     
-    def __init__(self,n_centroids):
+    def __init__(self,n_centroids,guess = None):
         Learn.__init__(self)
         self.n_centroids = n_centroids
         self.codebook = None
+        self.guess = guess
         
     
     @property
@@ -28,7 +29,8 @@ class KMeans(Learn):
     
     def train(self,data,stopping_condition):
         self._indim = data.shape[1]
-        codebook,distortion = kmeans(data,self.n_centroids)
+        centroids = self.guess if None is not self.guess else self.n_centroids
+        codebook,distortion = kmeans(data,centroids)
         self._hdim = len(codebook)
         self.codebook = codebook
     
@@ -119,3 +121,31 @@ class TopNKMeans(KMeans):
         dist[o[0],srt[:,:self.topn]] = 1
         dist[o[0],srt[:,self.topn:]] = 0
         return dist
+
+class KMeansPP(SoftKMeans):
+    '''
+    A simpler KMeans++ variant that simply maximizes the distance from all
+    existing centroids when choosing the next centroid, instead of choosing
+    randomly after assigning weighted probabilities.
+    '''
+    def __init__(self,n_centroids):
+        KMeans.__init__(self,n_centroids)
+    
+    def train(self,data,stopping_condition):
+        self._indim = data.shape[1]
+        dl = data.shape[0]
+        codebook = np.zeros((self.n_centroids,self._indim))
+        seed = np.random.randint(dl)
+        codebook[0] = data[seed]
+        for i in range(1,self.n_centroids):
+            dist = cdist(codebook[:i],data)
+            # pick the example that maximizes the distance from *all* codes
+            # picked thus far
+            nc = np.argmax(dist.sum(0))
+            print nc
+            codebook[i] = data[nc]
+        
+        self._hdim = len(codebook)
+        self.codebook = codebook
+            
+    

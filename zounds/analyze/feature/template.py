@@ -3,68 +3,20 @@ from multiprocessing import Pool
 import numpy as np
 from scipy.spatial.distance import cdist
 
-from zounds.nputil import safe_unit_norm as sun,toeplitz2dc,sliding_window
+from zounds.nputil import safe_unit_norm as sun,sliding_window
 from zounds.analyze.extractor import SingleInput
 from zounds.model.pipeline import Pipeline
 from zounds.util import flatten2d
 
-def toeplitz2d2(patch,size,silence_thresh):
-    l = toeplitz2dc(patch.astype(np.float32),size)
-    # decide which patches are loud enough to be worth our attention
-    nz = l.sum(1) > silence_thresh
-    # take the unit norm of the patches that are above the loudness threshold
-    return sun(l[np.nonzero(nz)[0]])
-
 
 def get_subpatches(patch,size,silence_thresh):
+    # get subpatches from patch, with a stride of one in each direction
     l = flatten2d(sliding_window(patch,size,(1,) * len(size)))
+    # find out which patches are above the loudness threshold
     nz = l.sum(1) > silence_thresh
+    # only return those patches that are above the loudness threshold, giving
+    # them all unit norm
     return sun(l[np.nonzero(nz)[0]])
-
-def toeplitz2d(patch,size,silence_thresh):
-    '''
-    Construct a matrix that makes convolution possible via a matrix-vector
-    operation, similar to constructing a toeplitz matrix for 1d signals
-    '''
-    # width of the patch
-    pw = patch.shape[0]
-    # total size of the patch
-    patchsize = patch.size
-    # width of the kernel
-    kw = size[0]
-    # height of the kernel
-    kh = size[1]
-    # size of the kernel
-    ksize = np.product(size)
-    
-    # the patch width, without boundaries
-    w = patch.shape[0] - kw
-    # the patch height, without boundaries
-    h = patch.shape[1] - kh
-    # the total number of positions to visit
-    totalsize = w * h
-    # this will hold each section of the patch
-    l = np.zeros((totalsize,ksize))
-    c = 0
-
-    # Make sure the entire patch has minimum of zero, since we're going
-    # to be determining if sub-patches are louder than the silence threshold
-    # by summing them.
-    pzeroed = patch - patch.min()
-    for s in range(patchsize):
-        j = int(s / pw)
-        i = s % pw
-        if i < w and j < h:
-            l[c] = pzeroed[i : i + kw, j : j + kh].ravel()
-            c += 1
-
-    # get the positions which contain "valid" sub-patches, i.e., the
-    # sub-patches are louder than the silence threshold
-    nz = l.sum(1) > silence_thresh
-    # Give each sub-patch unit-norm. Return the unit-normed sub-patches 
-    # and the "valid" indices
-    return sun(l),np.nonzero(nz)[0]
-
 
 
 def feature(args):
@@ -73,7 +25,6 @@ def feature(args):
     # TODO: Would it make sense to chunk patches and do the distance calculation
     # all-at-once? 
     for i in xrange(patch.shape[0]):
-        #mat = toeplitz2d2(patch[i], size, thresh)
         mat = get_subpatches(patch[i],size,thresh)
         if not mat.shape[0]:
             out[i] = np.zeros(codebook.shape[0])

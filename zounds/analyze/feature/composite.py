@@ -1,6 +1,6 @@
 import numpy as np
 from zounds.analyze.extractor import Extractor
-from zounds.util import flatten2d
+from zounds.nputil import flatten2d
 
 class Composite(Extractor):
     '''
