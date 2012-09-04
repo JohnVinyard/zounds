@@ -330,6 +330,7 @@ class ExhaustiveSearch(FrameSearch):
                 #dist = np.linalg.norm(feat.ravel() - seq)
                 
                 # TODO: This is what I'm using for the template search
+                feat /= self._std
                 feat = feat.max(0)
                 seq2 = seq.max(0)
                 dist = np.linalg.norm(feat - seq2)
