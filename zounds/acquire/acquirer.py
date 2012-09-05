@@ -97,9 +97,10 @@ class DiskAcquirer(Acquirer):
         Acquirer.__init__(self)
         self.path = os.path.normpath(path)
         self._source = source if source else os.path.split(self.path)[1]
+        parallel = \
+            Environment.parallel() and self.framecontroller.concurrent_writes_ok
         self.__acquire = \
-            self._acquire_multi if self.framecontroller.concurrent_writes_ok \
-            else self._acquire_single
+            self._acquire_multi if parallel else self._acquire_single
         
     @property
     def source(self):
@@ -135,11 +136,11 @@ class DiskAcquirer(Acquirer):
         args = []
         total_frames = 0
         chunksize = 15
+        env_args = self.env.__getstate__(lock = lock)
         for i in range(0,len(files),chunksize):
             filechunk = files[i : i + chunksize]
-            env_args = self.env.__getstate__(lock = lock)
             args.append((env_args,self.path,self._source,filechunk,i,lf))
-        p = Pool(4)
+        p = Pool(Environment.n_cores)
         total_frames += sum(p.map(acquire_multi,args))
         return self.env.frames_to_seconds(total_frames)
         

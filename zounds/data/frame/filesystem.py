@@ -814,10 +814,9 @@ class FileSystemFrameController(FrameController):
         return '%s_sync' % self._rootdir
     
     def sync(self,add,update,delete,recompute):
-        if not Environment._test and \
+        if Environment.parallel() and \
            self.concurrent_reads_ok and \
-           self.concurrent_writes_ok:
-            
+           self.concurrent_writes_ok: 
             self._sync_multi(add, update, delete, recompute)
         else:
             self._sync_single(add, update, delete, recompute)
@@ -875,8 +874,8 @@ class FileSystemFrameController(FrameController):
             chunk_ids = difference[i : i + chunksize]
             args.append((chunk_ids,newc_args,env_args,recompute,lock))
         
-        processes = 4
-        PoolX(processes).map(update_chunk,args)
+
+        PoolX(Environment.n_cores).map(update_chunk,args)
         
         self._index.force()
         newc._index.force()
