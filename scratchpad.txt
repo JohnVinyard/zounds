@@ -1,15 +1,30 @@
 TOOO:
 -------------
+- Why does FileSystemFrameController *always* miss files?
+
+- lock.__enter__ and __exit__ methods?
+
+- Wrap up fake pool into a class
 
 TEST : FileSystemFrameController multi-process update
+
+- Conv screwing up on updates?
+
+- Disable multiprocess update for tests
+
+- Way to configure number of cores for multiprocessing stuff
+
+- FloatDivision error when ingest is used and all files have been processed
+
+- Bug on line 73 of Acquirer
+
+- FileSystemFrameController.stat implementation sucks (see TODO notes)
 
 - Try RBM and autoencoder for learning clusters
 
  - bug with 9228
  
- - Why does FileSystemFrameController *always* miss files?
- 
- - Blog entry explaining sliding_window method
+- Blog entry explaining sliding_window method
 
 - KMeans++ implementation
 
@@ -72,10 +87,6 @@ TODO: "TODO" and "KLUDGE" sweep for low-hanging fruit
 
 Finish Constant-Q implementation
 
-Finish Scattering implementation
-
-TODO:  Try lowpass filter subtraction method for spectrogram sharpening
-
 - TODO: Nice printing for Extractor, FrameModel, Preprocess, Learn, Environment, etc...
 
 - TODO: Pass an id or a (source,external_id) argument to search.py as the query 
@@ -100,8 +111,6 @@ PrecomputedFeature with filter (e.g. sum() > n) tests
 - RBM/Autoencoder-based audio encoding?
 
 - Why is FrameModel.extractor_chain() so slow?
-
-- FileSystemFrameController.stat implementation sucks (see TODO notes)
 
 - Multiscale kmeans
 
@@ -143,3 +152,7 @@ TODO: The idea behind some of the PyTablesFrameController.Address methods is
 - FEATURE : Automatic rebuilding of search indices after data is added
 
 - Is storing features in row major order the best way?
+
+TODO:  Try lowpass filter subtraction method for spectrogram sharpening
+
+Finish Scattering implementation

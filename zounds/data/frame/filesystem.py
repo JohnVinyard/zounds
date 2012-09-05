@@ -5,7 +5,8 @@ import cPickle
 from itertools import repeat
 import traceback
 import numpy as np
-from multiprocessing import Manager,Pool,Lock
+from multiprocessing import Manager,Pool,Lock,Process
+from cPickle import UnpicklingError
 
 import zounds.model.frame
 from zounds.constants import audio_key,id_key,source_key,external_id_key
@@ -17,20 +18,20 @@ from zounds.environment import Environment
 from time import time
 
 
-def update(args):
-    chunk_ids,newc_args,env_args,recompute,lock = args
-    Z = Environment(*env_args)
-    Z.framecontroller._index._lock = lock
+def update_chunk(chunk_ids,newc_args,env_args,recompute,lock):
+    Z = Environment.__new__(Environment)
+    Z = Z.__setstate__(env_args)
     newc = FileSystemFrameController(*newc_args)
+    newc._index._lock = lock
     c = Z.framecontroller
     processed = []
+    
     for _id in chunk_ids:
         p = Pattern(_id,*c.external_id(_id))
         ec = c.model.extractor_chain(\
                                 p,transitional = True, recompute = recompute)
         print 'updating %s - %s' % (p.source,p.external_id)
         newc.append(ec)
-        os.remove(c._pattern_path(_id))
         processed.append(_id)
     return processed
     
@@ -224,15 +225,19 @@ class ConcurrentIndex(object):
         if not self.file_is_stale():
             # The in-memory index was stale, but the file on disk is current.
             # Just load it up and return the value
+            self._lock.acquire()
             self._data = self.from_disk()
+            self._lock.release()
             return self._data[k]
         
+        self._lock.acquire()
         # Both the in-memory and on-disk indexes are stale, rebuild the index,
         # persist it to disk, and return the requested value.
         # rebuild the index
         self.reindex()
         # save it to disk
         self.to_disk()
+        self._lock.release()
         return self._data[k]
     
     def startup(self):
@@ -240,6 +245,7 @@ class ConcurrentIndex(object):
         Called by __init__ only. Acquire the freshest index possible, either
         by reading it from disk, or building it your damn self.
         '''
+        self._lock.acquire()
         if self.file_is_stale():
             # the on-disk index is stale. Rebuild it for the benefit of self
             # and others
@@ -247,7 +253,15 @@ class ConcurrentIndex(object):
             self.to_disk()
         else:
             # the on-disk index is up-to-date
-            self._data = self.from_disk()
+            try:
+                self._data = self.from_disk()
+            except:
+                # KLUDGE: something was wrong with the on-disk index. Rebuild it from
+                # scratch
+                print '****** REBUILDING ******'
+                self.force()
+                self._data = self.from_disk()
+        self._lock.release()
     
     def append(self,_id,source,external_id,length):
         '''
@@ -258,6 +272,7 @@ class ConcurrentIndex(object):
             external_id - the identifier assigned to the pattern by source
             length      - the length, in frames, of the pattern 
         '''
+        self._lock.acquire()
         if self.memory_is_stale():
             # another controller has updated the disk index. Our in-memory
             # version is out-of-date. Merge the disk version with our version
@@ -272,16 +287,17 @@ class ConcurrentIndex(object):
         self._data['length'][_id] = length
         self.to_disk()
         self._in_mem_timestamp = time()
+        self._lock.release()
     
     
     def from_disk(self):
         '''
         Read the index from disk
         '''
-        self._lock.acquire()
+        #self._lock.acquire()
         with open(self._path,'rb') as f:
             index = cPickle.load(f)
-        self._lock.release()
+        #self._lock.release()
         self._in_mem_timestamp = time()
         return index
     
@@ -289,12 +305,12 @@ class ConcurrentIndex(object):
         '''
         Persist the in-memory index to disk
         ''' 
-        self._lock.acquire()
+        #self._lock.acquire()
         mode = 'wb' if not os.path.exists(self._path) else 'rw+b'
         with open(self._path,mode) as f:
             cPickle.dump(self._data,f,cPickle.HIGHEST_PROTOCOL)
         self._in_mem_timestamp = time()
-        self._lock.release()
+        #self._lock.release()
         
     
     def reindex(self):
@@ -307,6 +323,12 @@ class ConcurrentIndex(object):
                 builder = self._builders[index_key]
                 k,v = builder(*metadata)
                 self._data[index_key][k] = v
+    
+    def force(self):
+        self._lock.acquire()
+        self.reindex()
+        self.to_disk()
+        self._lock.release()
 
     
     def id_from_external_id(self,extid):
@@ -585,7 +607,8 @@ class FileSystemFrameController(FrameController):
                     'external_id' : self._build_external_id_index,
                     'length' : self._build_lengths_index}
         self._index = ConcurrentIndex(\
-                    builders,self._rootdir,self._datadir,self._iter_patterns,lock = self.lock)
+                    builders,self._rootdir,self._datadir,
+                    self._iter_patterns,lock = self.lock)
     
     
     def _to_skinny(self,record):
@@ -803,59 +826,72 @@ class FileSystemFrameController(FrameController):
         '''
         return '%s_sync' % self._rootdir
     
-    # TODO: A lot of this code is identical to what's in PyTablesFrameController.sync()
+#    # TODO: A lot of this code is identical to what's in PyTablesFrameController.sync()
+#    def sync(self,add,update,delete,recompute):
+#        newc = FileSystemFrameController(self.model,self._temp_path)
+#        new_ids = newc.list_ids()
+#        _ids = self.list_ids()
+#        
+#        for _id in _ids:
+#            if _id in new_ids:
+#                # this id has already been processed
+#                continue
+#            p = Pattern(_id,*self.external_id(_id))
+#            ec = self.model.extractor_chain(\
+#                            p,transitional = True,recompute = recompute)
+#            print 'updating %s - %s' % (p.source,p.external_id)
+#            newc.append(ec)
+#            # this pattern has been successfully updated. It's safe to remove
+#            # it from the original db.
+#            os.remove(self._pattern_path(_id))
+#        
+#        if (len(self) != len(newc)) or _ids != newc.list_ids():
+#            # Something went wrong. The number of rows or the set of _ids
+#            # don't match
+#            raise UpdateNotCompleteError()
+#        
+#       
+#        # remove the old file
+#        shutil.rmtree(self._rootdir)
+#        # rename the temp file to the name of the old file
+#        os.rename(self._temp_path,self._rootdir)
+#        # reload
+#        # TODO: Consider making the _load function an abstract method on the
+#        # base class.
+#        self._load(self._rootdir)
+    
     def sync(self,add,update,delete,recompute):
         newc = FileSystemFrameController(self.model,self._temp_path)
         new_ids = newc.list_ids()
         _ids = self.list_ids()
-        
-        for _id in _ids:
-            if _id in new_ids:
-                # this id has already been processed
-                continue
-            p = Pattern(_id,*self.external_id(_id))
-            ec = self.model.extractor_chain(\
-                            p,transitional = True,recompute = recompute)
-            print 'updating %s - %s' % (p.source,p.external_id)
-            newc.append(ec)
-            # this pattern has been successfully updated. It's safe to remove
-            # it from the original db.
-            os.remove(self._pattern_path(_id))
-        
-        if (len(self) != len(newc)) or _ids != newc.list_ids():
-            # Something went wrong. The number of rows or the set of _ids
-            # don't match
-            raise UpdateNotCompleteError()
-        
-       
-        # remove the old file
-        shutil.rmtree(self._rootdir)
-        # rename the temp file to the name of the old file
-        os.rename(self._temp_path,self._rootdir)
-        # reload
-        # TODO: Consider making the _load function an abstract method on the
-        # base class.
-        self._load(self._rootdir)
-    
-    def sync2(self,add,update,delete,recompute):
-        newc = FileSystemFrameController(self.model,self._temp_path)
-        new_ids = newc.list_ids()
-        _ids = self.list_ids()
-        difference = _ids - new_ids
+        difference = list(_ids - new_ids)
         mgr = Manager()
         lock = mgr.Lock()
         
         chunksize = 15
+        newc_args = (self.model,self._temp_path)
+        env_args = self.model.env().__getstate__()
+        env_args['do_sync'] = False
         args = []
         for i in range(0,len(difference),chunksize):
             chunk_ids = difference[i : i + chunksize]
-            newc_args = (self.model,self._temp_path)
-            env_args = self.model.env().__getstate__()
-            env_args['do_sync'] = False
             args.append((chunk_ids,newc_args,env_args,recompute,lock))
         
-        p = Pool(4)
-        processed_ids = p.map(update,args)
+        
+        def create_process(args):
+            return Process(target = update_chunk, args = args)
+        
+        
+        processes = 4
+        for i in range(0,len(args),processes):
+            argchunk = args[i : i + processes]
+            procs = map(create_process,argchunk)
+            map(lambda p : p.start(), procs)
+            map(lambda p: p.join(), procs)
+        
+        
+        self._index.force()
+        newc._index.force()
         
         if (len(self) != len(newc)) or _ids != newc.list_ids():
             # Something went wrong. The number of rows or the set of _ids
