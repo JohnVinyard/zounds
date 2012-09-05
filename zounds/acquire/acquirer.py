@@ -2,15 +2,14 @@ from __future__ import division
 from abc import ABCMeta,abstractmethod,abstractproperty
 import os.path
 from time import time
-from multiprocessing import Manager,Pool,Lock
+from multiprocessing import Manager,Pool
 import traceback
 
 from zounds.constants import available_file_formats
 from zounds.environment import Environment
 from zounds.model.pattern import FilePattern
-from zounds.data.frame.frame import FrameController
 
-# TODO: Maybe this should go in the acquirer module
+
 def audio_files(path):
     '''
     Return the name of each sound file that Zounds can process in
@@ -72,7 +71,8 @@ class Acquirer(object):
 def acquire_multi(args):
     Z,path,source,files,filen,total_files,lock = args
     # BUG: This is a FileSystemFrameController implementation-specific detail
-    # that I shouldn't know about
+    # that I shouldn't know about. Also, it assumes that a certain data backend
+    # is being used, which is bad.
     Z.framecontroller._index._lock = lock
     total_frames = 0
     for i,fn in enumerate(files):
@@ -128,6 +128,7 @@ class DiskAcquirer(Acquirer):
         start = time()
         seconds_processed = self.__acquire(files)
         elapsed = time() - start
+        self.framecontroller.update_index()
         print DiskAcquirer.complete_message(seconds_processed, elapsed)    
     
     def _acquire_multi(self,files):
@@ -137,9 +138,12 @@ class DiskAcquirer(Acquirer):
         args = []
         total_frames = 0
         chunksize = 15
+        print len(files)
         for i in range(0,len(files),chunksize):
+            filechunk = files[i : i + chunksize]
+            print len(filechunk)
             args.append((self.env,self.path,self._source,
-                         files[i : i + chunksize],i,lf,lock))
+                         filechunk,i,lf,lock))
         p = Pool(4)
         total_frames += sum(p.map(acquire_multi,args))
         return self.env.frames_to_seconds(total_frames)
