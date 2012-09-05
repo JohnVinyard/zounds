@@ -5,8 +5,7 @@ import cPickle
 from itertools import repeat
 import traceback
 import numpy as np
-from multiprocessing import Manager,Pool,Lock,Process
-from cPickle import UnpicklingError
+from multiprocessing import Manager,Process
 
 import zounds.model.frame
 from zounds.constants import audio_key,id_key,source_key,external_id_key
@@ -19,10 +18,8 @@ from time import time
 
 
 def update_chunk(chunk_ids,newc_args,env_args,recompute,lock):
-    Z = Environment.__new__(Environment)
-    Z = Z.__setstate__(env_args)
+    Z = Environment.reanimate(env_args)
     newc = FileSystemFrameController(*newc_args)
-    newc._index._lock = lock
     c = Z.framecontroller
     processed = []
     
@@ -32,6 +29,7 @@ def update_chunk(chunk_ids,newc_args,env_args,recompute,lock):
                                 p,transitional = True, recompute = recompute)
         print 'updating %s - %s' % (p.source,p.external_id)
         newc.append(ec)
+        os.remove(c._pattern_path(_id))
         processed.append(_id)
     return processed
     
@@ -162,6 +160,12 @@ class DummyLock(object):
     def __init__(self):
         object.__init__(self)
     
+    def __enter__(self):
+        self.acquire()
+    
+    def __exit__(self,*args):
+        self.release()
+    
     def acquire(self):
         pass
     
@@ -196,7 +200,7 @@ class ConcurrentIndex(object):
                         from each file/pattern.
         '''
         object.__init__(self)
-        self._lock = lock if lock else DummyLock()
+        self._lock = lock or DummyLock()
         self._keys = ['_id','external_id','length']
         self._builders = builders
         # the path to the on-disk index
@@ -225,19 +229,19 @@ class ConcurrentIndex(object):
         if not self.file_is_stale():
             # The in-memory index was stale, but the file on disk is current.
             # Just load it up and return the value
-            self._lock.acquire()
-            self._data = self.from_disk()
-            self._lock.release()
+            with self._lock:
+                self._data = self.from_disk()
+
             return self._data[k]
         
-        self._lock.acquire()
-        # Both the in-memory and on-disk indexes are stale, rebuild the index,
-        # persist it to disk, and return the requested value.
-        # rebuild the index
-        self.reindex()
-        # save it to disk
-        self.to_disk()
-        self._lock.release()
+        with self._lock:
+            # Both the in-memory and on-disk indexes are stale, rebuild the index,
+            # persist it to disk, and return the requested value.
+            # rebuild the index
+            self.reindex()
+            # save it to disk
+            self.to_disk()
+        
         return self._data[k]
     
     def startup(self):
@@ -245,23 +249,17 @@ class ConcurrentIndex(object):
         Called by __init__ only. Acquire the freshest index possible, either
         by reading it from disk, or building it your damn self.
         '''
-        self._lock.acquire()
-        if self.file_is_stale():
-            # the on-disk index is stale. Rebuild it for the benefit of self
-            # and others
-            self.reindex()
-            self.to_disk()
-        else:
-            # the on-disk index is up-to-date
-            try:
+        print self._lock
+        with self._lock:
+            if self.file_is_stale():
+                # the on-disk index is stale. Rebuild it for the benefit of self
+                # and others
+                self.reindex()
+                self.to_disk()
+            else:
                 self._data = self.from_disk()
-            except:
-                # KLUDGE: something was wrong with the on-disk index. Rebuild it from
-                # scratch
-                print '****** REBUILDING ******'
-                self.force()
-                self._data = self.from_disk()
-        self._lock.release()
+                
+        
     
     def append(self,_id,source,external_id,length):
         '''
@@ -272,32 +270,30 @@ class ConcurrentIndex(object):
             external_id - the identifier assigned to the pattern by source
             length      - the length, in frames, of the pattern 
         '''
-        self._lock.acquire()
-        if self.memory_is_stale():
-            # another controller has updated the disk index. Our in-memory
-            # version is out-of-date. Merge the disk version with our version
-            # before doing anything else.
-            fresh = self.from_disk()
-            for k in fresh.iterkeys():
-                self._data[k].update(fresh[k])
+        with self._lock:
+            if self.memory_is_stale():
+                # another controller has updated the disk index. Our in-memory
+                # version is out-of-date. Merge the disk version with our version
+                # before doing anything else.
+                fresh = self.from_disk()
+                for k in fresh.iterkeys():
+                    self._data[k].update(fresh[k])
+            
+            # Add the new pattern to all relevant indexes and persist them to disk
+            self._data['_id'][_id] = (source,external_id)
+            self._data['external_id'][(source,external_id)] = _id
+            self._data['length'][_id] = length
+            self.to_disk()
+            self._in_mem_timestamp = time()
         
-        # Add the new pattern to all relevant indexes and persist them to disk
-        self._data['_id'][_id] = (source,external_id)
-        self._data['external_id'][(source,external_id)] = _id
-        self._data['length'][_id] = length
-        self.to_disk()
-        self._in_mem_timestamp = time()
-        self._lock.release()
     
     
     def from_disk(self):
         '''
         Read the index from disk
         '''
-        #self._lock.acquire()
         with open(self._path,'rb') as f:
             index = cPickle.load(f)
-        #self._lock.release()
         self._in_mem_timestamp = time()
         return index
     
@@ -305,12 +301,10 @@ class ConcurrentIndex(object):
         '''
         Persist the in-memory index to disk
         ''' 
-        #self._lock.acquire()
         mode = 'wb' if not os.path.exists(self._path) else 'rw+b'
         with open(self._path,mode) as f:
             cPickle.dump(self._data,f,cPickle.HIGHEST_PROTOCOL)
         self._in_mem_timestamp = time()
-        #self._lock.release()
         
     
     def reindex(self):
@@ -325,12 +319,11 @@ class ConcurrentIndex(object):
                 self._data[index_key][k] = v
     
     def force(self):
-        self._lock.acquire()
-        self.reindex()
-        self.to_disk()
-        self._lock.release()
+        with self._lock:
+            self.reindex()
+            self.to_disk()
+        
 
-    
     def id_from_external_id(self,extid):
         '''
         Paramters
@@ -617,12 +610,7 @@ class FileSystemFrameController(FrameController):
         '''
         return record[self._skinny_features]
     
-    # TODO: It would be much more efficient to write a wrapper around recarray
-    # whose constructor takes literal fields. 
-    # record[0]['literal'] would always return the same value
-    # record['literal'] would return an array of the literal value the same length
-    # as the "real" recarray. I'm not exactly sure how this would work with
-    # multi-id addresses, however.
+    
     def _from_skinny(self,_id,source,external_id,skinny_record):
         '''
         "Hydrate" the data, by adding columns for metadata, namely, _id, source,
@@ -869,9 +857,11 @@ class FileSystemFrameController(FrameController):
         lock = mgr.Lock()
         
         chunksize = 15
-        newc_args = (self.model,self._temp_path)
-        env_args = self.model.env().__getstate__()
-        env_args['do_sync'] = False
+        newc_args = (self.model,self._temp_path,lock)
+        # make sure that Environment instances created in new processes don't
+        # initiate their own sync operations, and that controllers created in 
+        # new processes have a reference to the multiprocess lock
+        env_args = self.model.env().__getstate__(lock = lock, do_sync = False)
         args = []
         for i in range(0,len(difference),chunksize):
             chunk_ids = difference[i : i + chunksize]
