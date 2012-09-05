@@ -1,7 +1,5 @@
 TOOO:
 -------------
-- FloatDivision error when ingest is used and all files have been processed
-
 - FileSystemFrameController.stat implementation sucks (see TODO notes)
 
 - Try RBM and autoencoder for learning clusters
