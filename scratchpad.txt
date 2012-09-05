@@ -1,14 +1,8 @@
 TOOO:
 -------------
-- Why does FileSystemFrameController *always* miss files?
-
-
-
-- Wrap up fake pool into a class
-
 TEST : FileSystemFrameController multi-process update
 
-- Conv screwing up on updates?
+- Conv screwing up on updates? (for short files)
 
 - Environment.parallel property is completely ignored
 
@@ -17,8 +11,6 @@ TEST : FileSystemFrameController multi-process update
 - Way to configure number of cores for multiprocessing stuff
 
 - FloatDivision error when ingest is used and all files have been processed
-
-
 
 - FileSystemFrameController.stat implementation sucks (see TODO notes)
 

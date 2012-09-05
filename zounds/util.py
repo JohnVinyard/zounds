@@ -1,6 +1,28 @@
 from __future__ import division
 import numpy as np
 import os.path
+from multiprocessing import Process
+
+
+
+# KLUDGE: There have been a couple instances (the multiprocess 
+# FileSystemFrameController.sync() method being the most recent), where 
+# multiprocessing.Pool.map() just starts, and hangs. No exceptions are thrown,
+# and the program does not terminate.  New python processes are created, but
+# they sit and do nothing.  I've found that invoking multiprocess.Process
+# directly avoids this problem.
+class PoolX(object):
+    
+    def __init__(self,nprocesses):
+        object.__init__(self)
+        self._nprocesses = nprocesses
+    
+    def map(self,target,args):
+        for i in range(0,len(args),self._nprocesses):
+            argchunk = args[i : i + self._nprocesses]
+            procs = [Process(target = target, args = a) for a in argchunk]
+            [p.start() for p in procs]
+            [p.join() for p in procs]
 
 
 def ensure_path_exists(filename_or_directory):
