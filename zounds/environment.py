@@ -24,10 +24,13 @@ class Environment(object):
         
     
     def __init__(self,source,framemodel,framecontroller,framecontroller_args,
-                data,audio = AudioConfig,chunksize_seconds = 45.):
+                data,audio = AudioConfig,chunksize_seconds = 45.,do_sync = True):
         
         
         object.__init__(self)
+        
+        self.do_sync = do_sync
+        
         # audio settings, samplerate, windowsize and stepsize
         self.audio = audio
         
@@ -63,7 +66,7 @@ class Environment(object):
         
         self.framecontroller = framecontroller(*framecontroller_args)
         self.data[framemodel] = self.framecontroller
-        if not Environment._test:
+        if not Environment._test and self.do_sync:
             self.framemodel.sync()
     
     
@@ -141,6 +144,7 @@ class Environment(object):
         data = self._data
         audio = self.audio
         chunksize_seconds = self.chunksize_seconds
+        do_sync = self.do_sync
         return locals()
     
     def __setstate__(self,d):
@@ -156,6 +160,7 @@ class Environment(object):
                            d['framecontroller_args'],
                            data,
                            d['audio'],
-                           d['chunksize_seconds'])
+                           d['chunksize_seconds'],
+                           d['do_sync'])
     
     

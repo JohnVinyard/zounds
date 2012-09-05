@@ -1,6 +1,7 @@
 TOOO:
 -------------
-FileSystemFrameController.stat() implementation
+
+TEST : FileSystemFrameController multi-process update
 
 - Try RBM and autoencoder for learning clusters
 
@@ -8,9 +9,7 @@ FileSystemFrameController.stat() implementation
  
  - Why does FileSystemFrameController *always* miss files?
  
- - Why is extractor_chain so slow?
-
-- Blog entry explaining sliding_window method
+ - Blog entry explaining sliding_window method
 
 - KMeans++ implementation
 
@@ -20,26 +19,15 @@ Anyplace where I'm using len(a.shape), I should be using ndim
 
 2d fft performance?
 
-- Try more shapes and fewer means, maybe (2,45),(4,22),(22,4),(45,2) or
-(2,45),(6,15),(15,6),(45,2)
-
 - Try writing a simple, realtime JACK-based audio player (check out Alex McLean's SmoothDirt repo)
-
-- RBM/Autoencoder-based audio encoding?
-
-FileSystemFrameController multi-process update
 
 Quickstart - ensure that websearch is copied and setup correctly
 
+command-line args for websearch.py
+
 PyTables.stat() array is too big bug.
 
-PrecomputedFeature with filter (e.g. sum() > n) tests
-
 PrecomputedPatch tests
-
-preprocess.Downsample tests
-
-command-line args for websearch.py
 
 TODO: extractors using multiprocessing hang when updating database 
 	(Is this the case with FileSystemFrameController?)
@@ -107,6 +95,12 @@ TODO:  Try lowpass filter subtraction method for spectrogram sharpening
 
 After job-hunt
 ========================================================================
+PrecomputedFeature with filter (e.g. sum() > n) tests
+
+- RBM/Autoencoder-based audio encoding?
+
+- Why is FrameModel.extractor_chain() so slow?
+
 - FileSystemFrameController.stat implementation sucks (see TODO notes)
 
 - Multiscale kmeans
