@@ -121,13 +121,21 @@ class DiskAcquirer(Acquirer):
         return 'Processed %1.4f seconds of audio in %1.4f seconds. %1.4f%% realtime.' % \
             (total_seconds,seconds_spent_working,seconds_spent_working / total_seconds)
     
+    @staticmethod
+    def no_files_processed_message(source):
+        return '%s was empty, or all the files contained therein have been processed already.' \
+                 % source
+    
     def _acquire(self):
         files = audio_files(self.path)
         start = time()
         seconds_processed = self.__acquire(files)
         elapsed = time() - start
         self.framecontroller.update_index()
-        print DiskAcquirer.complete_message(seconds_processed, elapsed)    
+        if not seconds_processed:
+            print DiskAcquirer.no_files_processed_message(self._source)
+        else:
+            print DiskAcquirer.complete_message(seconds_processed, elapsed)    
     
     def _acquire_multi(self,files):
         mgr = Manager()
