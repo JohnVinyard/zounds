@@ -1,13 +1,5 @@
 TOOO:
 -------------
-TEST : FileSystemFrameController multi-process update
-
-- Conv screwing up on updates? (for short files)
-
-- Environment.parallel property is completely ignored
-
-- Disable multiprocess update for tests
-
 - Way to configure number of cores for multiprocessing stuff
 
 - FloatDivision error when ingest is used and all files have been processed
