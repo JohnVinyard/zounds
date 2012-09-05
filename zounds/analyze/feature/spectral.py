@@ -134,7 +134,6 @@ class Loudness(SingleInput):
     def _process(self):
         ls = len(self.in_data.shape)
         r = range(ls)
-        print self.in_data.shape
         summed = np.apply_over_axes(np.sum, self.in_data, r[1:])
         if summed.size > 1:
             return summed.squeeze()

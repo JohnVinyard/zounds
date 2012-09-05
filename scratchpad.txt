@@ -1,7 +1,5 @@
 TOOO:
 -------------
-- Way to configure number of cores for multiprocessing stuff
-
 - FloatDivision error when ingest is used and all files have been processed
 
 - FileSystemFrameController.stat implementation sucks (see TODO notes)

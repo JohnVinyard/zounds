@@ -1,6 +1,7 @@
 from __future__ import division
 from uuid import uuid4
 from zounds.analyze.synthesize import WindowedAudioSynthesizer
+from multiprocessing import cpu_count
 
 class AudioConfig:
     samplerate = 44100
@@ -14,8 +15,14 @@ class Environment(object):
     A Zounds client application
     '''
     
+    n_cores = cpu_count()
     _test = False 
     instance = None
+    
+    @classmethod
+    def parallel(cls):
+        return not cls._test and cls.n_cores > 1
+    
     def __new__(cls, *args, **kwargs):
         if not cls.instance or cls._test:       
             cls.instance = super(Environment, cls).__new__(cls)
@@ -46,8 +53,6 @@ class Environment(object):
         # function on the encoding side
         self.synth = WindowedAudioSynthesizer(self.windowsize,self.stepsize)
         
-        # Should we do analysis and db syncing in multiple processes?
-        self.parallel = False
         
         # the name of the 'source' attribute of patterns. Usually the client
         # application's name
@@ -161,7 +166,11 @@ class Environment(object):
         for k,v in data.iteritems():
             # KLUDGE: This assumes that controllers will always have zero-arg
             # constructors
-            data[k] = v()
+            #
+            # BUG: For some reason, when n_cores = 2, the values in d['data']
+            # come back as controller instances instead of classes when the
+            # second round of pattern chunks are processed
+            data[k] = v() if isinstance(v,type) else v
 
         return Environment(d['source'],
                            d['framemodel'],
