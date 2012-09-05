@@ -11,7 +11,7 @@ import zounds.model.frame
 from zounds.constants import audio_key,id_key,source_key,external_id_key
 from frame import FrameController,UpdateNotCompleteError
 from zounds.model.pattern import Pattern
-from zounds.util import ensure_path_exists
+from zounds.util import ensure_path_exists,PoolX
 from zounds.nputil import norm_shape
 from zounds.environment import Environment
 from time import time
@@ -249,7 +249,6 @@ class ConcurrentIndex(object):
         Called by __init__ only. Acquire the freshest index possible, either
         by reading it from disk, or building it your damn self.
         '''
-        print self._lock
         with self._lock:
             if self.file_is_stale():
                 # the on-disk index is stale. Rebuild it for the benefit of self
@@ -867,18 +866,8 @@ class FileSystemFrameController(FrameController):
             chunk_ids = difference[i : i + chunksize]
             args.append((chunk_ids,newc_args,env_args,recompute,lock))
         
-        
-        def create_process(args):
-            return Process(target = update_chunk, args = args)
-        
-        
         processes = 4
-        for i in range(0,len(args),processes):
-            argchunk = args[i : i + processes]
-            procs = map(create_process,argchunk)
-            map(lambda p : p.start(), procs)
-            map(lambda p: p.join(), procs)
-        
+        PoolX(processes).map(update_chunk,args)
         
         self._index.force()
         newc._index.force()
