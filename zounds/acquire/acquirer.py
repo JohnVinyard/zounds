@@ -71,6 +71,8 @@ class Acquirer(object):
 
 def acquire_multi(args):
     Z,path,source,files,filen,total_files,lock = args
+    # BUG: This is a FileSystemFrameController implementation-specific detail
+    # that I shouldn't know about
     Z.framecontroller._index._lock = lock
     total_frames = 0
     for i,fn in enumerate(files):

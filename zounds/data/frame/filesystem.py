@@ -5,7 +5,7 @@ import cPickle
 from itertools import repeat
 import traceback
 import numpy as np
-
+from multiprocessing import Manager,Pool,Lock
 
 import zounds.model.frame
 from zounds.constants import audio_key,id_key,source_key,external_id_key
@@ -13,7 +13,27 @@ from frame import FrameController,UpdateNotCompleteError
 from zounds.model.pattern import Pattern
 from zounds.util import ensure_path_exists
 from zounds.nputil import norm_shape
+from zounds.environment import Environment
 from time import time
+
+
+def update(args):
+    chunk_ids,newc_args,env_args,recompute,lock = args
+    Z = Environment(*env_args)
+    Z.framecontroller._index._lock = lock
+    newc = FileSystemFrameController(*newc_args)
+    c = Z.framecontroller
+    processed = []
+    for _id in chunk_ids:
+        p = Pattern(_id,*c.external_id(_id))
+        ec = c.model.extractor_chain(\
+                                p,transitional = True, recompute = recompute)
+        print 'updating %s - %s' % (p.source,p.external_id)
+        newc.append(ec)
+        os.remove(c._pattern_path(_id))
+        processed.append(_id)
+    return processed
+    
 
 
 # TODO: This class really sucks in the case where one, or a few new patterns
@@ -788,6 +808,7 @@ class FileSystemFrameController(FrameController):
         newc = FileSystemFrameController(self.model,self._temp_path)
         new_ids = newc.list_ids()
         _ids = self.list_ids()
+        
         for _id in _ids:
             if _id in new_ids:
                 # this id has already been processed
@@ -815,6 +836,42 @@ class FileSystemFrameController(FrameController):
         # TODO: Consider making the _load function an abstract method on the
         # base class.
         self._load(self._rootdir)
+    
+    def sync2(self,add,update,delete,recompute):
+        newc = FileSystemFrameController(self.model,self._temp_path)
+        new_ids = newc.list_ids()
+        _ids = self.list_ids()
+        difference = _ids - new_ids
+        mgr = Manager()
+        lock = mgr.Lock()
+        
+        chunksize = 15
+        args = []
+        for i in range(0,len(difference),chunksize):
+            chunk_ids = difference[i : i + chunksize]
+            newc_args = (self.model,self._temp_path)
+            env_args = self.model.env().__getstate__()
+            env_args['do_sync'] = False
+            args.append((chunk_ids,newc_args,env_args,recompute,lock))
+        
+        p = Pool(4)
+        processed_ids = p.map(update,args)
+        
+        if (len(self) != len(newc)) or _ids != newc.list_ids():
+            # Something went wrong. The number of rows or the set of _ids
+            # don't match
+            raise UpdateNotCompleteError()
+        
+       
+        # remove the old file
+        shutil.rmtree(self._rootdir)
+        # rename the temp file to the name of the old file
+        os.rename(self._temp_path,self._rootdir)
+        # reload
+        # TODO: Consider making the _load function an abstract method on the
+        # base class.
+        self._load(self._rootdir)
+        
     
     # TODO: A lot of this code is identical to PyTablesFrameController.sync().
     # Refactor!
