@@ -136,16 +136,25 @@ class Environment(object):
     def __str__(self):
         return self.__repr__()
     
-    def __getstate__(self):
-        source = self.source
-        framemodel = self.framemodel
-        framecontroller = self.framecontroller_class
-        framecontroller_args = self._framecontroller_args
-        data = self._data
-        audio = self.audio
-        chunksize_seconds = self.chunksize_seconds
-        do_sync = self.do_sync
-        return locals()
+    def __getstate__(self,lock = None,**kwargs):
+        d = {'source' : self.source,
+             'framemodel' : self.framemodel,
+             'framecontroller' : self.framecontroller_class,
+             'framecontroller_args' : self._framecontroller_args,
+             'data' : self._data,
+             'audio' : self.audio,
+             'chunksize_seconds' : self.chunksize_seconds,
+             'do_sync' : self.do_sync}
+        
+        # KLUDGE: This assumes that lock will always be the final argument
+        # to the FrameController
+        if None is not lock:
+            d['framecontroller_args'] += (lock,)
+        
+        for k,v in kwargs.iteritems():
+            d[k] = v
+        
+        return d
     
     def __setstate__(self,d):
         data = d['data']
@@ -162,5 +171,11 @@ class Environment(object):
                            d['audio'],
                            d['chunksize_seconds'],
                            d['do_sync'])
+    
+    @staticmethod
+    def reanimate(data):
+        env = Environment.__new__(Environment)
+        env = env.__setstate__(data)
+        return env
     
     

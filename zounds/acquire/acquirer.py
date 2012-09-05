@@ -69,11 +69,8 @@ class Acquirer(object):
 
 
 def acquire_multi(args):
-    Z,path,source,files,filen,total_files,lock = args
-    # BUG: This is a FileSystemFrameController implementation-specific detail
-    # that I shouldn't know about. Also, it assumes that a certain data backend
-    # is being used, which is bad.
-    Z.framecontroller._index._lock = lock
+    env_args,path,source,files,filen,total_files = args
+    Z = Environment.reanimate(env_args)
     total_frames = 0
     for i,fn in enumerate(files):
         fp = os.path.join(path,fn)
@@ -138,12 +135,10 @@ class DiskAcquirer(Acquirer):
         args = []
         total_frames = 0
         chunksize = 15
-        print len(files)
         for i in range(0,len(files),chunksize):
             filechunk = files[i : i + chunksize]
-            print len(filechunk)
-            args.append((self.env,self.path,self._source,
-                         filechunk,i,lf,lock))
+            env_args = self.env.__getstate__(lock = lock)
+            args.append((env_args,self.path,self._source,filechunk,i,lf))
         p = Pool(4)
         total_frames += sum(p.map(acquire_multi,args))
         return self.env.frames_to_seconds(total_frames)
