@@ -813,41 +813,50 @@ class FileSystemFrameController(FrameController):
         '''
         return '%s_sync' % self._rootdir
     
-#    # TODO: A lot of this code is identical to what's in PyTablesFrameController.sync()
-#    def sync(self,add,update,delete,recompute):
-#        newc = FileSystemFrameController(self.model,self._temp_path)
-#        new_ids = newc.list_ids()
-#        _ids = self.list_ids()
-#        
-#        for _id in _ids:
-#            if _id in new_ids:
-#                # this id has already been processed
-#                continue
-#            p = Pattern(_id,*self.external_id(_id))
-#            ec = self.model.extractor_chain(\
-#                            p,transitional = True,recompute = recompute)
-#            print 'updating %s - %s' % (p.source,p.external_id)
-#            newc.append(ec)
-#            # this pattern has been successfully updated. It's safe to remove
-#            # it from the original db.
-#            os.remove(self._pattern_path(_id))
-#        
-#        if (len(self) != len(newc)) or _ids != newc.list_ids():
-#            # Something went wrong. The number of rows or the set of _ids
-#            # don't match
-#            raise UpdateNotCompleteError()
-#        
-#       
-#        # remove the old file
-#        shutil.rmtree(self._rootdir)
-#        # rename the temp file to the name of the old file
-#        os.rename(self._temp_path,self._rootdir)
-#        # reload
-#        # TODO: Consider making the _load function an abstract method on the
-#        # base class.
-#        self._load(self._rootdir)
-    
     def sync(self,add,update,delete,recompute):
+        if not Environment._test and \
+           self.concurrent_reads_ok and \
+           self.concurrent_writes_ok:
+            
+            self._sync_multi(add, update, delete, recompute)
+        else:
+            self._sync_single(add, update, delete, recompute)
+    
+    # TODO: A lot of this code is identical to what's in PyTablesFrameController.sync()
+    def _sync_single(self,add,update,delete,recompute):
+        newc = FileSystemFrameController(self.model,self._temp_path)
+        new_ids = newc.list_ids()
+        _ids = self.list_ids()
+        
+        for _id in _ids:
+            if _id in new_ids:
+                # this id has already been processed
+                continue
+            p = Pattern(_id,*self.external_id(_id))
+            ec = self.model.extractor_chain(\
+                            p,transitional = True,recompute = recompute)
+            print 'updating %s - %s' % (p.source,p.external_id)
+            newc.append(ec)
+            # this pattern has been successfully updated. It's safe to remove
+            # it from the original db.
+            os.remove(self._pattern_path(_id))
+        
+        if (len(self) != len(newc)) or _ids != newc.list_ids():
+            # Something went wrong. The number of rows or the set of _ids
+            # don't match
+            raise UpdateNotCompleteError()
+        
+       
+        # remove the old file
+        shutil.rmtree(self._rootdir)
+        # rename the temp file to the name of the old file
+        os.rename(self._temp_path,self._rootdir)
+        # reload
+        # TODO: Consider making the _load function an abstract method on the
+        # base class.
+        self._load(self._rootdir)
+    
+    def _sync_multi(self,add,update,delete,recompute):
         newc = FileSystemFrameController(self.model,self._temp_path)
         new_ids = newc.list_ids()
         _ids = self.list_ids()

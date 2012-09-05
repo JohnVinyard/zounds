@@ -10,7 +10,7 @@ from zounds.analyze.extractor import Extractor,ExtractorChain
 from zounds.analyze.feature.metadata import \
     MetaDataExtractor, LiteralExtractor,CounterExtractor
 from zounds.analyze.feature.rawaudio import AudioSamples
-from zounds.util import recurse,sort_by_lineage
+from zounds.util import recurse,sort_by_lineage,PsychicIter
 from zounds.environment import Environment
 
 
@@ -208,22 +208,28 @@ class Precomputed(Dummy):
             _step_abs = extractor.step_abs()
         else:
             _step_abs = 1
-            
+        
+        
         # get an iterator that will iterate over this feature with 
         # the step size we just discovered
-        self.stream = self._c.iter_feature(\
+        stream = self._c.iter_feature(\
                                 self._id,
                                 self.key,
                                 step = _step_abs,
                                 chunksize = Environment.instance.chunksize_frames)
+        self.stream = PsychicIter(stream)
+        
     def _process(self):
         if None is self.stream:
             self._init_stream()
-        try:
-            return self.stream.next()
-        except StopIteration:
-            self.done = True
+            self._current = None
+            self._next = None
+        
+        out = self.stream.next()
+        if self.stream.done:
             self.out = None
+            self.done = True
+        return out
             
 
 # TODO: Write better documentation
