@@ -1,12 +1,29 @@
 TOOO:
 -------------
+TODO: Use the python logging module
+	- Create a log folder when creating quickstart directory
+
+- Add a note in the docs about the source distribution being the preferred route
+
+- Add a small collection of soundfiles downloadable from the doc site
+
+- If you're on Ubuntu, you can use the command `xdg-open <html-file>` to open a local file or URL using the default browser.
+
+- Make a note in the documentation about ALSA audio
+
+TODO: Two modes for ExhaustiveSearch
+
+TODO: Do another installation test run and move up a new dist package
+
+TODO: API documentation
+
+TODO: Ensure that all quickstart scripts use argparse. (Use nargs='?' for single arg scripts)
+
+TODO: README file for setuptools
+
+
+
 - FileSystemFrameController.stat implementation sucks (see TODO notes)
-
-- Try RBM and autoencoder for learning clusters
-
- - bug with 9228
- 
-- Blog entry explaining sliding_window method
 
 - KMeans++ implementation
 
@@ -35,13 +52,6 @@ TODO: extractors using multiprocessing hang when updating database
 
 - Configurable setup.py depending on choice of backing store
 
-- Add a note in the docs about the source distribution being the preferred route
-
-- Add a small collection of soundfiles downloadable from the doc site
-
-- If you're on Ubuntu, you can use the command `xdg-open <html-file>` to open a local file or URL using the default browser.
-
-- Make a note in the documentation about ALSA audio
 
 - TODO: Pooled doesn't do chunk-based processing
 
@@ -53,17 +63,7 @@ TODO: extractors using multiprocessing hang when updating database
 - BUG: It's possible to add duplicates to the database because of external_id
 	truncation
 
-TODO: Two modes for ExhaustiveSearch
 
-TODO: Do another installation test run and move up a new dist package
-
-TODO: API documentation
-
-TODO: Use the python logging module
-
-TODO: Ensure that all quickstart scripts use argparse. (Use nargs='?' for single arg scripts)
-
-TODO: README file for setuptools
 
 TODO: "TODO" and "KLUDGE" sweep for low-hanging fruit
 
@@ -88,6 +88,8 @@ Finish Constant-Q implementation
 
 After job-hunt
 ========================================================================
+- Try RBM and autoencoder for learning patch centroids, instead of KMeans
+
 PrecomputedFeature with filter (e.g. sum() > n) tests
 
 - RBM/Autoencoder-based audio encoding?
