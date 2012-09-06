@@ -6,6 +6,7 @@ from itertools import repeat
 import traceback
 import numpy as np
 from multiprocessing import Manager,Process
+import logging
 
 import zounds.model.frame
 from zounds.constants import audio_key,id_key,source_key,external_id_key
@@ -15,6 +16,8 @@ from zounds.util import ensure_path_exists,PoolX
 from zounds.nputil import norm_shape
 from zounds.environment import Environment
 from time import time
+
+LOGGER = logging.getLogger('zounds.data.frame.filesystem')
 
 
 def update_chunk(chunk_ids,newc_args,env_args,recompute,lock):
@@ -27,7 +30,7 @@ def update_chunk(chunk_ids,newc_args,env_args,recompute,lock):
         p = Pattern(_id,*c.external_id(_id))
         ec = c.model.extractor_chain(\
                                 p,transitional = True, recompute = recompute)
-        print 'updating %s - %s' % (p.source,p.external_id)
+        LOGGER.info('updating %s - %s',p.source,p.external_id)
         newc.append(ec)
         os.remove(c._pattern_path(_id))
         processed.append(_id)
@@ -834,7 +837,8 @@ class FileSystemFrameController(FrameController):
             p = Pattern(_id,*self.external_id(_id))
             ec = self.model.extractor_chain(\
                             p,transitional = True,recompute = recompute)
-            print 'updating %s - %s' % (p.source,p.external_id)
+            
+            LOGGER.info('updating %s - %s',p.source,p.external_id)
             newc.append(ec)
             # this pattern has been successfully updated. It's safe to remove
             # it from the original db.
@@ -947,7 +951,7 @@ class FileSystemFrameController(FrameController):
         try:
             self._index.append(_id, source, external_id, nframes)
         except:
-            print traceback.format_exc()
+            LOGGER.exception(traceback.format_exc())
         addr = self.address_class((_id,slice(0,nframes)))
         datafile.close()
         return addr

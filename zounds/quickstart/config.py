@@ -1,3 +1,5 @@
+from zounds.log import *
+
 # User Config
 source = '${Source}'
 

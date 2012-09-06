@@ -4,11 +4,13 @@ import os.path
 from time import time
 from multiprocessing import Manager,Pool
 import traceback
+import logging
 
 from zounds.constants import available_file_formats
 from zounds.environment import Environment
 from zounds.model.pattern import FilePattern
 
+LOGGER = logging.getLogger('zounds.acquire')
 
 def audio_files(path):
     '''
@@ -78,17 +80,17 @@ def acquire_multi(args):
         pattern = FilePattern(Z.newid(),source,extid,fp)
         if not Z.framecontroller.exists(source,extid):
             try:
-                print DiskAcquirer.processing_message(\
-                                            source, fn, filen + i, total_files)
+                LOGGER.info(DiskAcquirer.processing_message(\
+                                            source, fn, filen + i, total_files))
                 addr = Z.framecontroller.append(Z.framemodel.extractor_chain(pattern))
                 total_frames += len(addr)
             except:
                 # KLUDGE: Do some real logging here
                 # TODO: How do I recover from an error once partial data has
                 # been written? 
-                print traceback.format_exc()
+                LOGGER.exception(traceback.format_exc())
         else:
-            print DiskAcquirer.skip_message(source, fn)
+            LOGGER.info(DiskAcquirer.skip_message(source, fn))
     return total_frames
     
 class DiskAcquirer(Acquirer):
@@ -133,9 +135,9 @@ class DiskAcquirer(Acquirer):
         elapsed = time() - start
         self.framecontroller.update_index()
         if not seconds_processed:
-            print DiskAcquirer.no_files_processed_message(self._source)
+            LOGGER.info(DiskAcquirer.no_files_processed_message(self._source))
         else:
-            print DiskAcquirer.complete_message(seconds_processed, elapsed)    
+            LOGGER.info(DiskAcquirer.complete_message(seconds_processed, elapsed)) 
     
     def _acquire_multi(self,files):
         mgr = Manager()
@@ -162,7 +164,7 @@ class DiskAcquirer(Acquirer):
             pattern = FilePattern(self.env.newid(),self.source,extid,fp)
             if not self.framecontroller.exists(self.source,extid):
                 try:
-                    print DiskAcquirer.processing_message(self.source, fn, i, lf)
+                    LOGGER.info(DiskAcquirer.processing_message(self.source, fn, i, lf))
                     addr = \
                         self.framecontroller.append(self.extractor_chain(pattern))
                     frames_processed += len(addr)
@@ -170,9 +172,9 @@ class DiskAcquirer(Acquirer):
                     # KLUDGE: Do some real logging here
                     # TODO: How do I recover from an error once partial data has
                     # been written?
-                    print traceback.format_exc()
+                    LOGGER.exception(traceback.format_exc())
             else:
-                print DiskAcquirer.skip_message(self.source, fn)
+                LOGGER.info(DiskAcquirer.skip_message(self.source, fn))
         
         return self.env.frames_to_seconds(frames_processed)
             
