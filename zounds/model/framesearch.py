@@ -5,6 +5,7 @@ import struct
 from bisect import bisect_left
 import os
 from multiprocessing import Pool
+import logging
 
 import numpy as np
 from scipy.spatial.distance import cdist
@@ -16,6 +17,7 @@ from zounds.nputil import \
     hamming_distance,pad,Packer,packed_hamming_distance,TypeCodes,flatten2d
 from zounds.environment import Environment
 
+LOGGER = logging.getLogger(__name__)
 
 def nbest(query,index,nresults = 10,metric = 'euclidean'):
     dist = cdist(np.array([query]),index,metric)[0]

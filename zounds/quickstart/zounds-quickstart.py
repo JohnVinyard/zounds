@@ -21,9 +21,10 @@ if __name__ == '__main__':
         # They do. Remove the directory and its contents.
         shutil.rmtree(args.directory)
     
-    # Create directories for the app and datastore.
+    # Create directories for the app, datastore, and logs.
     os.makedirs(args.directory)
     os.makedirs(os.path.join(args.directory,'datastore'))
+    os.makedirs(os.path.join(args.directory,'log'))
     
     dr = args.directory
     # get the zounds installation path.

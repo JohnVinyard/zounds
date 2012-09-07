@@ -1,20 +1,34 @@
 import logging
 import logging.handlers
 
-logging.basicConfig(level=logging.DEBUG,
-                    format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
-                    datefmt='%m-%d %H:%M',
-                    filename='/temp/myapp.log',
-                    filemode='w')
+print __name__
 
-console = logging.StreamHandler()
-console.setLevel(logging.DEBUG)
-formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
-console.setFormatter(formatter)
+record_fmt = '%(asctime)s %(name)-12s %(levelname)-8s %(message)s'
+date_fmt = '%m-%d %H:%M'
+
+formatter = logging.Formatter(record_fmt,datefmt = date_fmt)
+
+# the parent logger for the entire zounds library
 root_logger = logging.getLogger('zounds')
-root_logger.addHandler(console)
 
+# one megabyte, in bytes
+mb = 1e6
+# the name of the most current log file
+log_file_name = 'log/log.txt'
+# the number of old log files to keep
+backups = 5
+# the rotating log file handler
 rfile = logging.handlers.RotatingFileHandler(\
-                            'log/log.txt',maxBytes=1*1000*1000,backupCount = 5)
+                            log_file_name,maxBytes=mb,backupCount = backups)
+# the console handler
+console = logging.StreamHandler()
+
+# for now, log everything to both the console and the log file
 rfile.setLevel(logging.DEBUG)
+console.setLevel(logging.DEBUG)
+rfile.setFormatter(formatter)
+console.setFormatter(formatter)
+
+root_logger.setLevel(logging.DEBUG)
 root_logger.addHandler(rfile)
+root_logger.addHandler(console)

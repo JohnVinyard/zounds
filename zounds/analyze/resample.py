@@ -1,7 +1,10 @@
 from __future__ import division
 from ctypes import *
 import numpy as np
+import logging
 libsamplerate = CDLL('libsamplerate.so')
+
+LOGGER = logging.getLogger(__name__)
 
 class SRC_DATA(Structure):
     '''
@@ -35,7 +38,7 @@ class Resample(object):
                          and slowest converter
         
         '''
-        print 'resampling from %i to %i' % (orig_sample_rate,new_sample_rate)
+        LOGGER.info('resampling from %i to %i',orig_sample_rate,new_sample_rate)
         self._ratio = new_sample_rate / orig_sample_rate
         # check if the conversion ratio is considered valid by libsamplerate
         if not libsamplerate.src_is_valid_ratio(c_double(self._ratio)):
@@ -78,7 +81,6 @@ class Resample(object):
     
     def _check_for_error(self,return_code):
         if return_code:
-            # print the string error for the non-zero return code
             raise Exception(\
                 c_char_p(libsamplerate.src_strerror(c_int(return_code))).value)
             

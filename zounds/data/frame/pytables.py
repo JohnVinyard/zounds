@@ -3,6 +3,7 @@ import os.path
 import re
 import time
 import cPickle
+import logging
 
 from tables import \
     openFile,IsDescription,StringCol,Col,Int8Col
@@ -13,6 +14,8 @@ from zounds.constants import audio_key,id_key,source_key,external_id_key
 from zounds.model.pattern import Pattern
 from zounds.util import ensure_path_exists
 from frame import FrameController
+
+LOGGER = logging.getLogger(__name__)
 
 class PyTablesFrameController(FrameController):
     
@@ -514,7 +517,8 @@ class PyTablesFrameController(FrameController):
             ec = self.model.extractor_chain(p,
                                             transitional=True,
                                             recompute = recompute)
-            print 'updating %s - %s' % (p.source,p.external_id)
+            
+            LOGGER.info('updating %s - %s',p.source,p.external_id)
             # process this pattern and insert it into the new database
             newc.append(ec)
         
@@ -561,7 +565,6 @@ class PyTablesFrameController(FrameController):
             and all([isinstance(k,str) for k in key]):
             
             source,extid = key
-            print source,extid
             return self.db_read.readWhere(\
                             self._query(source = source, external_id = extid))
         
