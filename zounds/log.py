@@ -1,8 +1,6 @@
 import logging
 import logging.handlers
 
-print __name__
-
 record_fmt = '%(asctime)s %(name)-12s %(levelname)-8s %(message)s'
 date_fmt = '%m-%d %H:%M'
 

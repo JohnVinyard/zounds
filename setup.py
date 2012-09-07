@@ -38,7 +38,6 @@ for dirpath, dirnames, filenames in os.walk(zounds_dir):
         packages.append(string.join(pathparts[index:],'.'))
 
 
-
 def read(fname):
     '''
     This is yanked from the setuptools documentation at 

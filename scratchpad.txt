@@ -1,12 +1,5 @@
 TOOO:
 -------------
-TODO: Use the python logging module
-	- Create a log folder when creating quickstart directory
-
-- Add a note in the docs about the source distribution being the preferred route
-
-- Add a small collection of soundfiles downloadable from the doc site
-
 - If you're on Ubuntu, you can use the command `xdg-open <html-file>` to open a local file or URL using the default browser.
 
 - Make a note in the documentation about ALSA audio
@@ -19,6 +12,7 @@ TODO: Ensure that all quickstart scripts use argparse. (Use nargs='?' for single
 
 TODO: README file for setuptools
 
+TODO: Remove doc/install.txt
 
 TODO: Do another installation test run and move up a new dist package
 
@@ -52,9 +46,6 @@ TODO: extractors using multiprocessing hang when updating database
 
 - tests for all extractors
 
-- Configurable setup.py depending on choice of backing store
-
-
 - TODO: Pooled doesn't do chunk-based processing
 
 - BUG: Pooled doesn't work for nested Pooled features
@@ -64,8 +55,6 @@ TODO: extractors using multiprocessing hang when updating database
 
 - BUG: It's possible to add duplicates to the database because of external_id
 	truncation
-
-
 
 TODO: "TODO" and "KLUDGE" sweep for low-hanging fruit
 
@@ -142,3 +131,5 @@ TODO: The idea behind some of the PyTablesFrameController.Address methods is
 TODO:  Try lowpass filter subtraction method for spectrogram sharpening
 
 Finish Scattering implementation
+
+- Configurable setup.py depending on choice of backing store

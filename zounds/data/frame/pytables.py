@@ -13,7 +13,7 @@ import zounds.model.frame
 from zounds.constants import audio_key,id_key,source_key,external_id_key
 from zounds.model.pattern import Pattern
 from zounds.util import ensure_path_exists
-from frame import FrameController
+from frame import FrameController,UpdateNotCompleteError
 
 LOGGER = logging.getLogger(__name__)
 
