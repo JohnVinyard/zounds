@@ -11,17 +11,18 @@ TODO: Use the python logging module
 
 - Make a note in the documentation about ALSA audio
 
+- Optional arg to zounds quickstart to use PyTablesFrameController or FileSystemFrameController
+
 TODO: Two modes for ExhaustiveSearch
-
-TODO: Do another installation test run and move up a new dist package
-
-TODO: API documentation
 
 TODO: Ensure that all quickstart scripts use argparse. (Use nargs='?' for single arg scripts)
 
 TODO: README file for setuptools
 
 
+TODO: Do another installation test run and move up a new dist package
+
+TODO: API documentation
 
 - FileSystemFrameController.stat implementation sucks (see TODO notes)
 
@@ -44,7 +45,8 @@ PyTables.stat() array is too big bug.
 PrecomputedPatch tests
 
 TODO: extractors using multiprocessing hang when updating database 
-	(Is this the case with FileSystemFrameController?)
+	(Is this the case with FileSystemFrameController?) - Use PoolX in Template.py
+	and see if the problem persists
 
 - Get rid of binary incompatibility warning
 

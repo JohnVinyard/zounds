@@ -10,7 +10,7 @@ from zounds.constants import available_file_formats
 from zounds.environment import Environment
 from zounds.model.pattern import FilePattern
 
-LOGGER = logging.getLogger('zounds.acquire')
+LOGGER = logging.getLogger(__name__)
 
 def audio_files(path):
     '''

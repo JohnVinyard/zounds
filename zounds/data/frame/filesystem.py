@@ -17,7 +17,7 @@ from zounds.nputil import norm_shape
 from zounds.environment import Environment
 from time import time
 
-LOGGER = logging.getLogger('zounds.data.frame.filesystem')
+LOGGER = logging.getLogger(__name__)
 
 
 def update_chunk(chunk_ids,newc_args,env_args,recompute,lock):
