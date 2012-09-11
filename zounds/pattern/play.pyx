@@ -1,9 +1,5 @@
-from __future__ import division
 cimport numpy as np
 import numpy as np
-
-INT_DTYPE = np.int
-ctypedef np.int_t INT_DTYPE_t
 
 FLOAT_DTYPE = np.float32
 ctypedef np.float32_t FLOAT_DTYPE_t

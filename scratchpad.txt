@@ -1,14 +1,18 @@
 TOOO:
 -------------
+- Fix problems in pyxbld file
+
+- How do I build cplay with setuptools?
+
 - Using uint64 instead of jack_time_t in play.pyx
 
-- Why does pyximport in another module interfere with synthesize? 
-
-- Make a note in the documentation about ALSA audio
+ - Make a note in the documentation about ALSA audio
 
 - Try writing a simple, realtime JACK-based audio player (check out Alex McLean's SmoothDirt repo)
 
 - Add jack to list of dependencies
+
+==============================================================================
 
 - mmap "cannot allocate memory error"?
 

@@ -1,0 +1,39 @@
+
+import subprocess
+import re
+import os
+
+p = subprocess.Popen('pkg-config --cflags --libs jack',shell = True, stdout = subprocess.PIPE, stderr = subprocess.PIPE)
+p.wait()
+pkgconfig_output = p.stdout.read()
+p.stdout.close()
+p.stderr.close()
+r = re.compile('-l(?P<libname>[^\s]+)')
+jacklibs = r.findall(pkgconfig_output)
+
+
+
+def make_ext(modname, pyxfilename):
+    dir = os.path.split(pyxfilename)[0]
+    obj = os.path.join(dir,'cplay.o')
+
+    # Build the C library
+    # KLUDGE: THIS IS A HACK! Figure out how to use distutils to accomplish
+    # this in a cross-platform way.
+    libflags = ' '.join(['-l' + lib for lib in jacklibs])
+    cfile = os.path.join(dir,'cplay.c')
+    output = os.path.join(dir,'cplay.o')
+    cmd = 'gcc %s -I%s -c %s -o %s' % (libflags,dir,cfile,output)
+    print cmd
+    p = subprocess.Popen(cmd,shell = True)
+    p.wait()
+	    
+    
+    # Build the cython extension
+    from distutils.extension import Extension
+    return Extension(name = modname,
+                     sources=[pyxfilename],
+                     libraries = jacklibs,
+                     include_dirs=['/usr/include/python2.6',dir],
+                     extra_objects=[obj],
+                     extra_compile_args=['-shared', '-pthread', '-fPIC', '-fwrapv', '-O2', '-Wall', '-fno-strict-aliasing'] )
