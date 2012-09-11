@@ -4,6 +4,7 @@ syntax: glob
 *.h.gch
 *.o
 *.so
+*.pyxbldc
 *~
 analyze/features.png
 zounds2
