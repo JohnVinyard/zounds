@@ -1,0 +1,8 @@
+Build the C object file
+1. gcc `pkg-config --cflags --libs jack` -c cplay.c cplay.h
+
+Create play.c using cython
+2. cython play.pyx
+
+Build the play cython extension 
+3. gcc -shared -pthread -fPIC -fwrapv -O2 -Wall -fno-strict-aliasing -I/usr/include/python2.6 `pkg-config --cflags --libs jack` cplay.o -o play.so play.c

@@ -1,6 +1,9 @@
 syntax: glob
 *.pyc
 *.h5
+*.h.gch
+*.o
+*.so
 *~
 analyze/features.png
 zounds2
