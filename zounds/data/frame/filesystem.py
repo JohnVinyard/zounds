@@ -30,7 +30,7 @@ def update_chunk(chunk_ids,newc_args,env_args,recompute,lock):
         p = Pattern(_id,*c.external_id(_id))
         ec = c.model.extractor_chain(\
                                 p,transitional = True, recompute = recompute)
-        LOGGER.info('updating %s - %s',p.source,p.external_id)
+        LOGGER.info('updating %s - %s - %s',_id,p.source,p.external_id)
         newc.append(ec)
         os.remove(c._pattern_path(_id))
         processed.append(_id)
