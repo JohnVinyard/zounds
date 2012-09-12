@@ -13,10 +13,6 @@ TOOO:
 
 ==============================================================================
 
-- mmap "cannot allocate memory error"? when doing update?
-
-- Optional arg to zounds quickstart to use PyTablesFrameController or FileSystemFrameController
-
 TODO: Two modes for ExhaustiveSearch
 
 TODO: Ensure that all quickstart scripts use argparse. (Use nargs='?' for single arg scripts)
@@ -84,6 +80,8 @@ Finish Constant-Q implementation
 
 After job-hunt
 ========================================================================
+- mmap "cannot allocate memory error"? when doing update with FileSystemFrameController?
+
 - zounds.pattern pyxbld file builds cplay.c and cplay.h in a non-cross-platform way
 
 - play.pyx uses uint64 type instead of jack_time_t. How do I use the proper type?
