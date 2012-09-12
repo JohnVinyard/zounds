@@ -40,7 +40,7 @@ Welcome to Zounds' documentation!
 
 Download
 ====================================
-Get the latest source distribution here: `zounds-0.01.tar.gz <https://bitbucket.org/jvinyard/zounds2/downloads/zounds-0.01.tar.gz>`_.
+Get the latest source distribution here: `zounds-0.02.tar.gz <https://bitbucket.org/jvinyard/zounds2/downloads/zounds-0.02.tar.gz>`_.
 The source distribution is the latest stable release, so this is the preferred way to get Zounds if you're planning to go through the quickstart tutorial, or write a client application.
 
 Get the source: `Zounds on BitBucket <https://bitbucket.org/jvinyard/zounds2/src>`_.

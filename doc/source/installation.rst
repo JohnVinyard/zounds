@@ -9,7 +9,7 @@ This is a very early release of Zounds. So far, it has only been tested on Ubunt
 =================================
 Download
 =================================
-You can download the latest source distribution here: `zounds-0.01.tar.gz <https://bitbucket.org/jvinyard/zounds2/downloads/zounds-0.01.tar.gz>`_.
+You can download the latest source distribution here: `zounds-0.02.tar.gz <https://bitbucket.org/jvinyard/zounds2/downloads/zounds-0.02.tar.gz>`_.
 For the quickstart tutorial, it's highly recommended that you download the source distribution, and *not* clone the source repository.
 
 .. WARNING::

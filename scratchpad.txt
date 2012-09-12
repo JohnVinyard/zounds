@@ -1,10 +1,5 @@
 TOOO:
 -------------
-- Fix problems in pyxbld file
-
-- How do I build cplay with setuptools?
-
-- Using uint64 instead of jack_time_t in play.pyx
 
  - Make a note in the documentation about ALSA audio
 
@@ -13,6 +8,10 @@ TOOO:
 - Add jack to list of dependencies
 
 ==============================================================================
+
+- Why are all the QT libraries being installed? What in dependencies.sh relies on them?
+
+- slash goes the wrong way for dependencies.sh in doc installation guide
 
 - mmap "cannot allocate memory error"?
 
@@ -87,7 +86,11 @@ Finish Constant-Q implementation
 
 After job-hunt
 ========================================================================
-2d fft performance (as compared to TemplateMatch)?
+- zounds.pattern pyxbld file builds cplay.c and cplay.h in a non-cross-platform way
+
+- play.pyx uses uint64 type instead of jack_time_t. How do I use the proper type?
+
+- 2d fft performance (as compared to TemplateMatch)?
 
 - Try RBM and autoencoder for learning patch centroids, instead of KMeans
 
