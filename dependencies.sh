@@ -10,6 +10,7 @@
 # Tool to install python libraries from the Python Package Index
 # The following two libraries are needed by matplotlib
 # g++ is required to compile Scipy
+# jackd1 and libjack-dev are required to use/build against the jack library
 
 sudo apt-get install \
 python-dev \
@@ -26,3 +27,5 @@ python-pip \
 libfreetype6-dev \
 libpng-dev \
 g++ \
+jackd1 \
+libjack-dev \

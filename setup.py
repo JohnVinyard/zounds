@@ -60,13 +60,14 @@ except ImportError:
 
 setup(
       name = 'zounds',
-      version = '0.01',
+      version = '0.02',
       url = 'http://www.johnvinyard.com',
       author = 'John Vinyard',
       author_email = 'john.vinyard@gmail.com',
       long_description = read('README.txt'),
       scripts = ['zounds/quickstart/zounds-quickstart.py'],
-      package_data = {'quickstart' : ['*.py']},
+      package_data = {'quickstart' : ['*.py'],
+                      'pattern' : ['*.c','*.h','*.pyx','*.pyxbld']},
       include_package_data = True,
       packages = packages,
       install_requires = python_packages
