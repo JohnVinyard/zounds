@@ -437,7 +437,17 @@ class FileSystemFrameController(FrameController):
             else:
                 raise ValueError(\
                     'key must be a two-tuple of (_id,int, iterable of ints, or slice)')
-            
+        
+        # BUG: The following two methods only work/make sense if the key is a
+        # slice.    
+        @property
+        def start(self):
+            return self._index.start
+        
+        @property
+        def stop(self):
+            return self._index.stop
+        
         
         @property
         def _span(self):

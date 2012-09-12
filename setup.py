@@ -48,7 +48,7 @@ def read(fname):
 
 python_packages = ['bitarray','tables','cython','numexpr',
                    'nose','scikits.audiolab',
-                   'matplotlib','scipy','numpy']
+                   'matplotlib','web','scipy','numpy']
 
 # argparse was introduced into the standard library in python 2.7. Instead of
 # checking the python version, just try to import it. If the import fails, add
@@ -67,6 +67,10 @@ setup(
       long_description = read('README.txt'),
       scripts = ['zounds/quickstart/zounds-quickstart.py'],
       package_data = {'quickstart' : ['*.py'],
+                      'quickstart/websearch'     : ['*.py'],
+                      'quickstart/websearch/css' : ['*.css'],
+                      'quickstart/websearch/js'  : ['*.js'],
+                      'quickstart/websearch/templates' : ['*.html'],
                       'pattern' : ['*.c','*.h','*.pyx','*.pyxbld'],
                       'nputil' : ['*.pyx']},
       include_package_data = True,

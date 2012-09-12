@@ -2,7 +2,7 @@ from abc import ABCMeta,abstractmethod
 
 import cPickle
 from controller import Controller,PickledController
-
+from zounds.model.pipeline import Pipeline
 
 class PipelineController(Controller):
     '''
@@ -52,7 +52,6 @@ class PickledPipelineController(PickledController,PipelineController):
     '''
     A learning controller that persists Pipelines by pickling them to disk
     '''
-    pass
         
         
         

@@ -1,9 +1,8 @@
-Zounds
+About
 ===============================================================================
 Zounds is a python library designed to make experimenting with audio feature
 extraction easy.  It allows you to define your features-of-interest in an 
-inuitive, pythonic way.  Features are stored in a database, and can be searched
-in a number of ways.
+inuitive, pythonic way, store them, and search them.
 
 Installation
 ===============================================================================

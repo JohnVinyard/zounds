@@ -1,5 +1,8 @@
 TOOO:
 -------------
+DONE Quickstart - ensure that websearch is copied and setup correctly
+
+
 
 - can't find numpy headers when building (both nputil and pattern need a pyxbld file that points to numpy header location)
 
@@ -12,15 +15,18 @@ TOOO:
 - Switch Environment.play method to use new jack-based audio player
 
 ==============================================================================
-Quickstart - ensure that websearch is copied and setup correctly
 
-command-line args for websearch.py to configure search class, etc.
+Websearch is written in a very PyTablesFrameController-centric way
+
+
+
+command-line args for websearch.py to configure search class, etc. (refactor quickstart/search.convert_leftovers, so it can be used by both modules)
+Can I factor out the cmd line arguments themselves, too?
 
 TODO: Two modes for ExhaustiveSearch
 
 TODO: Ensure that all quickstart scripts use argparse. (Use nargs='?' for single arg scripts)
 
-TODO: README file for setuptools
 
 
 
@@ -37,6 +43,7 @@ TEST : Cut down on search time by *excluding* ignored codes from the index
 Anyplace where I'm using len(a.shape), I should be using ndim
 
 
+- Configurable setup.py depending on choice of backing store
 
 PyTables.stat() array is too big bug.
 
@@ -74,8 +81,7 @@ Finish Constant-Q implementation
 
 - TODO: Ensure that quickstart/ab.py works with a few different algorithms
 
-- Bug: It's possible to load controllers of the wrong type with 
-	PickledController-derived classes
+
 	
 
 
@@ -83,6 +89,12 @@ Finish Constant-Q implementation
 
 After job-hunt
 ========================================================================
+- In websearch, templates shouldn't live in the same directory as js and css.
+  This makes it accessible to the outside world
+ 
+- More descriptive error when you try to use a search implementation for which
+  no back-end is configured in config.py
+  
 - Add psychoacoustics module.  Add mel scale and refactor some code in analyze.bark
 
 - mmap "cannot allocate memory error"? when doing update with FileSystemFrameController?
@@ -108,7 +120,7 @@ PrecomputedFeature with filter (e.g. sum() > n) tests
 - Precomputed Feature and PrecomputedPatch are slow, because they read the entire
  frame instance into memory before sampling
 
-TODO: The idea behind some of the PyTablesFrameController.Address methods is
+TODO: The idea behind some of the FrameController.Address methods is
 	seriously broken
 	
 - BUG : Address equivalence bug: [1,4,10] and [1,6,10] are considered equivalent.  This
@@ -142,4 +154,5 @@ TODO:  Try lowpass filter subtraction method for spectrogram sharpening
 
 Finish Scattering implementation
 
-- Configurable setup.py depending on choice of backing store
+- Bug: It's possible to load controllers of the wrong type with 
+	PickledController-derived classes

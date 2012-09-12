@@ -86,6 +86,13 @@ class PyTablesFrameController(FrameController):
             
             self._span = self.max - self.min
             
+        @property
+        def start(self):
+            return self.key.start
+        
+        @property
+        def stop(self):
+            return self.key.stop
         
         def __str__(self):
             return '%s - %s' % (self.__class__,self.key)
@@ -107,6 +114,8 @@ class PyTablesFrameController(FrameController):
         def span(self):
             return self._span
         
+        # BUG: __lt__, __gt__, etc. only concern themselves with the starting
+        # position. Mixing that idea and the one embodied here makes no sense.
         def __eq__(self,other):
             if len(self) != len(other):
                 return False

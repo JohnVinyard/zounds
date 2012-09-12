@@ -10,10 +10,10 @@ if __name__ == '__main__':
     # required arguments
     aa('--directory',
        help='the directory where your new app will live',
-       optional = False)
+       required = True)
     aa('--source',
        help='the name of your application',
-       optional = False)
+       required = True)
     
     # optional arguments
     aa('--filesystem',
@@ -49,6 +49,20 @@ if __name__ == '__main__':
         path = os.path.join(zp,fn)
         if fn != os.path.split(__file__)[1] and os.path.isfile(path):
             shutil.copy(path,os.path.join(dr,fn))
+    
+    # copy and setup the websearch stuff
+    # KLUDGE: Templates shouldn't go into the static directory
+    ws = 'websearch'
+    st = 'static'
+    src_wsdir = os.path.join(zp,ws)
+    dst_wsdir = os.path.join(args.directory,st)
+    # copy the entire directory
+    shutil.copytree(src_wsdir,dst_wsdir)
+    # move websearch.py into the root folder of the app
+    wspy = '%s.py' % ws
+    old_fn = os.path.join(dst_wsdir,wspy)
+    new_fn = os.path.join(args.directory,wspy)
+    shutil.move(old_fn,new_fn)
     
     # Read the contents of the config file template
     configfile = os.path.join(dr,'config.py')
