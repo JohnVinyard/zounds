@@ -94,6 +94,7 @@ class FrameSearch(Model):
     # KLUDGE: This is a total mess!  Doing on the fly audio extraction should
     # be much easier and nicer than this
     def search(self,query, nresults = 10):
+        print query
         env = self.env()
         
         start = time()
@@ -378,6 +379,9 @@ class ExhaustiveLshSearch(FrameSearch):
         
         # 76561193665298448
         # 100010000000000000000000000000000000000000000000000010000
+        
+        # 8001096117072440285
+        
         '''
         _id - the key used to fetch this search from the database, once it's 
               been built

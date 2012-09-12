@@ -1,7 +1,7 @@
 from abc import ABCMeta, abstractmethod
 
 from controller import Controller,PickledController
-
+from zounds.model.framesearch import FrameSearch
 
 class SearchController(Controller):
     
@@ -26,4 +26,3 @@ class PickledSearchController(PickledController,SearchController):
     '''
     A search controller that persists Searches by pickling them to disk
     '''
-    pass

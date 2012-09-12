@@ -16,7 +16,7 @@ $def with (results)
 	<canvas width="2" height="200" id="playhead"></canvas>
 	<h1>$results.brag</h1>
 	<div class="snippet query shadow" tabindex="1">
-		$ addr = '%i_%i' % (results.query.key.start,results.query.key.stop)
+		$ addr = results.query_address
 		<div class="spectrogram">
 			<div class="tile" style="$results.querytile"></div>
 			<div style="clear:both;"></div>
@@ -30,7 +30,7 @@ $def with (results)
 	<div style="clear:both;"/>
 	<hr/>
 	$for r in results.results:
-		$ addr = '%i_%i' % (r.start,r.stop)
+		$ addr = r.encoded_address
 		<div class="snippet shadow" tabindex="${loop.index + 1}">
 			<div class="spectrogram">
 			$for t in r.tiles:

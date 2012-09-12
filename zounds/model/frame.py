@@ -1,5 +1,5 @@
 from __future__ import division
-from abc import ABCMeta,abstractmethod
+from abc import ABCMeta,abstractmethod,abstractproperty
 import numpy as np
 
 from zounds.constants import audio_key,id_key,source_key,external_id_key
@@ -306,6 +306,19 @@ class Address(object):
     @abstractmethod
     def __hash__(self):
         pass
+    
+    # KLUDGE: The following two methods were added to make writing 
+    # FrameController-agnostic applications a bit easier, however, I don't 
+    # think this is the correct way to proceeed. The backend-specific Address
+    # class idea needs a serious overhaul
+    @abstractproperty
+    def start(self):
+        pass
+    
+    @abstractproperty
+    def stop(self):
+        pass
+    
     
 
 class MetaFrame(type):
