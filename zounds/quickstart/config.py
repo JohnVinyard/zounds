@@ -1,3 +1,4 @@
+# import zounds' logging configuration so it can be used in this application
 from zounds.log import *
 
 # User Config
@@ -21,7 +22,7 @@ class FrameModel(Frames):
 
 # Data backends
 from zounds.model.framesearch import ExhaustiveSearch
-from zounds.data.frame import PyTablesFrameController
+from zounds.data.frame import ${ControllerClassName}
 from zounds.data.search import PickledSearchController
 
 data = {
@@ -30,12 +31,12 @@ data = {
 
 
 from zounds.environment import Environment
-dbfile = 'datastore/frames.h5'
+dbfile = '${DbFile}'
 Z = Environment(
-                source,                             # name of this application
-                FrameModel,                         # our frame model
-                PyTablesFrameController,            # FrameController class
-                (FrameModel,dbfile),                # FrameController args
-                data,                                # data-backend config
-                audio = AudioConfig)                               
+                source,                  # name of this application
+                FrameModel,              # our frame model
+                ${ControllerClassName},  # FrameController class
+                (FrameModel,dbfile),     # FrameController args
+                data,                    # data-backend config
+                audio = AudioConfig)     # audio configuration     
 

@@ -7,8 +7,21 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     aa = parser.add_argument
     
-    aa('--directory',help='the directory where your new app will live')
-    aa('--source',help='the name of your application')
+    # required arguments
+    aa('--directory',
+       help='the directory where your new app will live',
+       optional = False)
+    aa('--source',
+       help='the name of your application',
+       optional = False)
+    
+    # optional arguments
+    aa('--filesystem',
+       action = 'store_true',
+       help = 'use the FileSystemFrameController')
+    aa('--pytables',
+       action = 'store_true',
+       help = 'use the PyTablesFrameController')
     
     args = parser.parse_args()
     if os.path.exists(args.directory):
@@ -21,9 +34,10 @@ if __name__ == '__main__':
         # They do. Remove the directory and its contents.
         shutil.rmtree(args.directory)
     
+    datadir = 'datastore'
     # Create directories for the app, datastore, and logs.
     os.makedirs(args.directory)
-    os.makedirs(os.path.join(args.directory,'datastore'))
+    os.makedirs(os.path.join(args.directory,datadir))
     os.makedirs(os.path.join(args.directory,'log'))
     
     dr = args.directory
@@ -41,8 +55,14 @@ if __name__ == '__main__':
     with open(configfile,'r') as f:
         config_t = string.Template(f.read())
     
-    # Substitute the user-specified source parameter
-    s = config_t.substitute({'Source'    : args.source})
+    # get appropriate values based on the user's choice of FrameController
+    controller_class_name = \
+        'FileSystemFrameController' if args.filesystem else 'PyTablesFrameController'
+    db_filename = datadir if args.filesystem else os.path.join(datadir,'frames.h5')
+    # Substitute the user-specified parameters in the config file
+    s = config_t.substitute({'Source'              : args.source,
+                             'ControllerClassName' : controller_class_name,
+                             'DbFile'              : db_filename})
     
     # Write the real config file to disk
     with open(configfile,'w') as f:
