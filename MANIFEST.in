@@ -2,6 +2,7 @@ include README.txt
 include MANIFEST.in
 include dependencies.sh
 recursive-include zounds/quickstart *.py
+recursive-include zounds/nputil *.pyx
 recursive-include zounds/pattern *.c
 recursive-include zounds/pattern *.h
 recursive-include zounds/pattern *.pyx

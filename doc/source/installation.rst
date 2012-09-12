@@ -32,7 +32,7 @@ Otherwise, run::
 
 so you can execute the script, and then::
 
-	.\dependencies.sh
+	./dependencies.sh
 
 This will install any libraries you need that you don't already have.
 

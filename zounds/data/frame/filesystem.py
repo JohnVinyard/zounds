@@ -1071,4 +1071,10 @@ class FileSystemFrameController(FrameController):
     def update_index(self):
         self._reindex_if_necessary()
     
-    
+
+# Crazy Bad KLUDGE: I rely on FrameController-derived classes to define a back-end
+# specific Address class as a nested class. This makes those classes impossible
+# to pickle, however.  This is a baaad solution, but I'd like to keep moving
+# for right now.    
+import sys         
+setattr(sys.modules[__name__], 'Address', FileSystemFrameController.Address)
