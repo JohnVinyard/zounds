@@ -67,7 +67,8 @@ setup(
       long_description = read('README.txt'),
       scripts = ['zounds/quickstart/zounds-quickstart.py'],
       package_data = {'quickstart' : ['*.py'],
-                      'pattern' : ['*.c','*.h','*.pyx','*.pyxbld']},
+                      'pattern' : ['*.c','*.h','*.pyx','*.pyxbld'],
+                      'nputil' : ['*.pyx']},
       include_package_data = True,
       packages = packages,
       install_requires = python_packages
