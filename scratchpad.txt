@@ -12,12 +12,17 @@ TOOO:
 - Switch Environment.play method to use new jack-based audio player
 
 ==============================================================================
+Quickstart - ensure that websearch is copied and setup correctly
+
+command-line args for websearch.py to configure search class, etc.
 
 TODO: Two modes for ExhaustiveSearch
 
 TODO: Ensure that all quickstart scripts use argparse. (Use nargs='?' for single arg scripts)
 
 TODO: README file for setuptools
+
+
 
 TODO: Do another installation test run and move up a new dist package
 
@@ -31,9 +36,7 @@ TEST : Cut down on search time by *excluding* ignored codes from the index
 
 Anyplace where I'm using len(a.shape), I should be using ndim
 
-Quickstart - ensure that websearch is copied and setup correctly
 
-command-line args for websearch.py to configure search class, etc.
 
 PyTables.stat() array is too big bug.
 
@@ -74,12 +77,14 @@ Finish Constant-Q implementation
 - Bug: It's possible to load controllers of the wrong type with 
 	PickledController-derived classes
 	
-- Add psychoacoustics module.  Add mel scale and refactor some code in analyze.bark
+
 
 
 
 After job-hunt
 ========================================================================
+- Add psychoacoustics module.  Add mel scale and refactor some code in analyze.bark
+
 - mmap "cannot allocate memory error"? when doing update with FileSystemFrameController?
 
 - zounds.pattern pyxbld file builds cplay.c and cplay.h in a non-cross-platform way
