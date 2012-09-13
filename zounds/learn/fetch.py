@@ -5,6 +5,7 @@ import numpy as np
 
 from zounds.environment import Environment
 from zounds.nputil import pad
+from zounds.util import tostring
 from random import choice
 
 class Fetch(object):
@@ -51,6 +52,13 @@ class PrecomputedFeature(Fetch):
         self._reduction = reduction
         self._filter = filter
         
+    def __repr__(self):
+        return tostring(self,short = False,feature = self.feature.key,
+                        nframes = self.nframes,reduction = self._reduction, 
+                        filter = self._filter)
+    
+    def __str__(self):
+        return tostring(self,feature = self.feature.key,nframes = self.nframes)
         
     # TODO: I don't think this method works at all. Write some tests
     # and find out
@@ -258,6 +266,8 @@ class PrecomputedPatch(PrecomputedFeature):
         self._patch = patch if isinstance(patch,list) else patch
         self._static = all(map(lambda i : isinstance(i,slice),self._patch))
         self._filter = filter
+    
+    # TODO: __str__ and __repr__ methods that show fullsize and patch size
     
     @property
     def patch(self):

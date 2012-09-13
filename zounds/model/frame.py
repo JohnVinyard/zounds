@@ -10,7 +10,7 @@ from zounds.analyze.extractor import Extractor,ExtractorChain
 from zounds.analyze.feature.metadata import \
     MetaDataExtractor, LiteralExtractor,CounterExtractor
 from zounds.analyze.feature.rawaudio import AudioSamples
-from zounds.util import recurse,sort_by_lineage,PsychicIter
+from zounds.util import recurse,sort_by_lineage,PsychicIter,tostring
 from zounds.environment import Environment
 
 
@@ -36,6 +36,22 @@ class Feature(object):
             self.needs = [needs]
         
         self.key = None
+    
+
+    def __repr__(self):
+        return tostring(self,
+                        short = False,
+                        key = self.key,
+                        needs = self.needs,
+                        store = self.store,
+                        args = self.args,
+                        extractor_cls = self.extractor_cls.__name__)
+    
+    def __str__(self):
+        return tostring(self,
+                        key = self.key,
+                        extractor_cls = self.extractor_cls.__name__,
+                        store = self.store)
         
     def extractor(self,needs = None,key = None):
         '''
@@ -116,13 +132,7 @@ class Feature(object):
                 frozenset(self.args.values()),
                 frozenset(self.needs if self.needs else [])))
     
-    def __repr__(self):
-        return '%s(%s, store = %s, needs = %s, args = %s)' %\
-         (self.__class__.__name__,
-          self.extractor_cls.__name__,
-          self.store,
-          self.needs,
-          self.args)
+    
     
 
 
@@ -354,6 +364,12 @@ class MetaFrame(type):
         - a frame address
         '''
         return self(address)
+    
+    def __str__(self):
+        return tostring(self,features = self.features.keys())
+    
+    def __repr__(self):
+        return tostring(self,short = False,**self.features)
 
 
 class Frames(Model):
@@ -398,21 +414,16 @@ class Frames(Model):
             v = self._data[k]
             v = v[()] if isinstance(v,np.recarray) else v
             setattr(self,k,v)
+
+    # BUG: What if the frames instance is composed of more than one sound/pattern?
+    def __repr__(self):
+        return tostring(self,short = False,zounds_id = self._id[0],
+                        source = self.source[0],external_id = self.external_id[0],
+                        n_seconds = self.seconds,nframes = len(self))
     
-    # BUG: What if the frames instance is composed of more than one sound?
     def __str__(self):
-        return '''%s(
-    zounds id   : %s,
-    source      : %s,
-    external_id : %s,
-    n_seconds   : %1.4f,
-    n_frames    : %i
-)''' % (self.__class__.__name__,
-        self._id[0],
-        self.source[0],
-        self.external_id[0],
-        self.seconds,
-        len(self))
+        return tostring(self,zounds_id = self._id[0],
+                        source = self.source[0],external_id = self.external_id[0])
     
         
     def __len__(self):

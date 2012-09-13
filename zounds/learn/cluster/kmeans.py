@@ -4,6 +4,7 @@ from scipy.cluster.vq import kmeans
 from scipy.spatial.distance import cdist
 from zounds.learn.learn import Learn
 from zounds.nputil import flatten2d
+from zounds.util import tostring
 
 # KLUDGE: I've added indim and hdim so this class can be used 
         # as a NeuralNetwork-derived class
@@ -42,6 +43,12 @@ class KMeans(Learn):
         feature = np.zeros((l,len(self.codebook)),dtype = np.uint8)
         feature[best] = 1
         return feature
+    
+    def __repr__(self):
+        return tostring(self,n_centroids = self.n_centroids)
+    
+    def __str__(self):
+        return self.__repr__()
 
 
 # BUG: The problem with this method is that the exemplars are taken from the

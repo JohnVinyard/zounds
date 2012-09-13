@@ -5,6 +5,7 @@ import numpy as np
 
 
 from zounds.nputil import safe_unit_norm as sun,norm_shape,downsample,flatten2d
+from zounds.util import tostring
 
 
 class Preprocess(object):
@@ -20,6 +21,12 @@ class Preprocess(object):
     
     def __call__(self,data):
         return self._preprocess(data)
+    
+    def __str__(self):
+        return tostring(self)
+    
+    def __repr__(self):
+        return tostring(self)
     
     
 class NoOp(Preprocess):
@@ -41,6 +48,12 @@ class Add(Preprocess):
     
     def _preprocess(self,data):
         return data + self.n
+    
+    def __repr__(self):
+        return tostring(self,add = self.n)
+    
+    def __str__(self):
+        return self.__repr__()
 
 class Multiply(Preprocess):
     
@@ -50,6 +63,12 @@ class Multiply(Preprocess):
     
     def _preprocess(self,data):
         return data * self.n
+    
+    def __repr__(self):
+        return tostring(self,add = self.n)
+    
+    def __str__(self):
+        return self.__repr__()
 
 class SubtractMean(Preprocess):
     
@@ -79,6 +98,12 @@ class SubtractMean(Preprocess):
         
         return data - self.mean
 
+    def __repr__(self):
+        return tostring(self,axis = self._axis)
+    
+    def __str__(self):
+        return self.__repr__()
+
 class DivideByStd(Preprocess):
     
     def __init__(self,std = None, axis = 0):
@@ -107,6 +132,12 @@ class DivideByStd(Preprocess):
             self._std = data.std(self._axis)
         
         return data / self.std
+
+    def __repr__(self):
+        return tostring(self,axis = self._axis)
+    
+    def __str__(self):
+        return self.__repr__()
     
 
 class UnitNorm(Preprocess):
@@ -133,6 +164,9 @@ class SequentialPreprocessor(Preprocess):
         for p in self._p:
             data = p(data)
         return data
+    
+    def __repr__(self):
+        return tostring(self,short = False,preprocessors = self._p)
 
 class MeanStd(SequentialPreprocessor):
     
@@ -198,5 +232,8 @@ class Downsample(Preprocess):
             return ds
         
         return flatten2d(ds)
+    
+    def __repr__(self):
+        return tostring(self,factor = self._factor,method = self._method)
     
     

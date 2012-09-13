@@ -6,6 +6,7 @@ from sklearn.decomposition import PCA as SKPCA
 
 from zounds.learn.learn import Learn
 from zounds.nputil import safe_unit_norm as sun
+from zounds.util import tostring
 
 class Eigenvectors(Learn):
     
@@ -38,3 +39,9 @@ class PCA(Learn):
     
     def __call__(self,data):
         return self._pca.transform(data)
+    
+    def __repr__(self):
+        return tostring(self,n_components = self.n_dim)
+    
+    def __str__(self):
+        return self.__repr__()

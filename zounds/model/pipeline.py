@@ -2,6 +2,7 @@ from datetime import datetime
 from zounds.nputil import flatten2d
 from model import Model
 from multiprocessing import Pool
+from zounds.util import tostring
 
 class MetaPipeline(type):
     
@@ -42,6 +43,15 @@ class Pipeline(Model):
         self.learn = learn
         # the date this pipeline completed training
         self.trained_date = None
+    
+    def __repr__(self):
+        return tostring(self,short = False,id = self._id, fetch = self.fetch, 
+                        preprocess = self.preprocess,learn = self.learn,
+                        trained_date = self.trained_date)
+    
+    def __str__(self):
+        return tostring(self,id = self._id, fetch = self.fetch, 
+                        preprocess = self.preprocess, learn = self.learn)
     
     @property
     def dim(self):

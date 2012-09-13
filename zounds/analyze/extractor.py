@@ -1,7 +1,7 @@
 import numpy as np
 from abc import ABCMeta,abstractproperty,abstractmethod
 from zounds.nputil import pad
-from zounds.util import recurse,sort_by_lineage
+from zounds.util import recurse,sort_by_lineage,tostring
 from zounds.nputil import windowed
 from zounds.environment import Environment
 
@@ -49,6 +49,14 @@ class Extractor(object):
         # extractor chain containing infinite extractors must be aware of this
         # fact to avoid creating artifically long lists of features
         self.finite = True
+    
+    def __repr__(self):
+        return tostring(self,short = False,key = self.key,needs = self.sources,
+                         nframes = self.nframes, step = self.step)
+            
+    def __str__(self):
+        return tostring(\
+                self,key = self.key, nframes = self.nframes, step = self.step)
     
     
     @abstractmethod
@@ -207,13 +215,6 @@ class Extractor(object):
     
     def __ne__(self,other):
         return not self.__eq__(other)
-    
-    def __repr__(self):
-        return '%s(key = %s, nframes = %i, step = %i)' % \
-            (self.__class__.__name__,self.key,self.nframes,self.step)
-            
-    def __str__(self):
-        return self.__repr__()
 
 
 
@@ -273,6 +274,12 @@ class ExtractorChain(object):
         self.chain.sort(sort_by_lineage(Extractor._deep_sources))
         if not self.chain[0].is_root:
             raise RootlessExtractorChainException()
+    
+    def __str__(self):
+        return tostring(self,extractors = [e.key for e in self])
+    
+    def __repr__(self):
+        return tostring(self,short = False,extractors = self.chain)
         
     def __len__(self):
         '''
