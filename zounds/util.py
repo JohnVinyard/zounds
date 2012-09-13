@@ -2,6 +2,103 @@ from __future__ import division
 import numpy as np
 import os.path
 from multiprocessing import Process
+import argparse
+
+class SearchSetup(object):
+    '''
+    SearchSetup parses user-specified (at the command-line) search parameters,
+    and builds a search to meet the user's specifications. 
+    '''
+    
+    def __init__(self,framemodel):
+        object.__init__(self)
+        self._framemodel = framemodel
+        self._parser = argparse.ArgumentParser()
+    
+    def _add_args(self):
+        aa = self._parser.add_argument
+        # required arguments
+        aa('--feature',
+           help='the name of the feature to use',
+           required = True)
+        aa('--searchclass',
+           help='the name of the FrameSearch-derived class to use',
+           required = True)
+        aa('--sounddir',
+           help='directory from which queries will be drawn',
+           required = True)
+        # optional arguments
+        aa('--minseconds',
+           help='the minimum length of a query',
+           type=float,
+           default = 1.0)
+        aa('--maxseconds',
+           help='the maximum length of a query',
+           type=float,
+           default = 5.0)
+        aa('--rebuild',
+           help='forces the search index to be rebuilt',
+           default = False, 
+           action = 'store_true')
+        aa('--nresults',
+           help='the number of results to return for each query',
+           type = int,
+           default = 10)
+    
+    def _convert_leftovers(self,l):
+        # KLUDGE: I need to be able to pass arbitrary kwargs to the search class
+        # via the command-line interface. There's probably a better way, but this
+        # is my best shot for the moment.
+        d = {}
+        for i in xrange(len(l)):
+            if i % 2:
+                # this is a value
+                try:
+                    # number,bool,list, etc.
+                    l[i] = eval(l[i])
+                except NameError:
+                    # the value is a string. Leave it alone.
+                    pass
+                d[l[i - 1]] = l[i]
+            else:
+                # This is a key. Strip leading dashes
+                l[i] = l[i].lstrip('-')
+        return d
+    
+    def _parse_known(self):
+        return self._parser.parse_known_args()
+    
+    def _get_search(self,args,searchclass_kwargs):
+        from zounds.model.framesearch import *
+        _id = 'search/%s' % args.feature    
+        searchclass = eval(args.searchclass)
+        
+        if args.rebuild:
+            try:
+                del searchclass[_id]
+            except KeyError:
+                # It's ok. No search with that name exists. We'll be rebuilding it
+                # anyway.
+                pass
+    
+        try:
+            search = searchclass[_id]
+        except KeyError:
+            search = searchclass(\
+                        _id,getattr(self._framemodel,args.feature),**searchclass_kwargs)
+            search.build_index()
+        
+        return search
+        
+    def setup(self):
+        self._add_args()
+        args,leftover = self._parse_known()
+        if args.maxseconds <= args.minseconds:
+            raise ValueError('maxseconds must be greater than minseconds')
+        searchclass_kwargs = self._convert_leftovers(leftover)
+        return args,self._get_search(args,searchclass_kwargs)
+        
+
 
 
 class PsychicIter(object):
@@ -73,6 +170,7 @@ def ensure_path_exists(filename_or_directory):
         except OSError:
             # This probably means that the path already exists
             pass
+
 
 
 # TODO: This should go into a new "synthesize" module

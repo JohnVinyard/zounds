@@ -94,7 +94,6 @@ class FrameSearch(Model):
     # KLUDGE: This is a total mess!  Doing on the fly audio extraction should
     # be much easier and nicer than this
     def search(self,query, nresults = 10):
-        print query
         env = self.env()
         
         start = time()

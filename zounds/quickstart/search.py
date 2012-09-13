@@ -1,7 +1,6 @@
 from __future__ import division
 import os.path
 from random import choice
-import argparse
 from time import time
 
 import numpy as np
@@ -10,11 +9,12 @@ from config import *
 from scikits.audiolab import Sndfile,play
 from zounds.model.framesearch import *
 from zounds.environment import Environment
-from zounds.util import audio_files
+from zounds.acquire.acquirer import audio_files
 from zounds.nputil import pad
 from zounds.analyze.audiostream import read_frames_mono
 from zounds.analyze.resample import Resample
 from zounds.visualize.plot import plot
+from zounds.util import SearchSetup
 
 
 class Zndfile(Sndfile):
@@ -77,62 +77,6 @@ class Zndfile(Sndfile):
         self.seek(nsamples,whence) 
 
     
-def parse_args():
-    parser = argparse.ArgumentParser()
-    aa = parser.add_argument
-    # required arguments
-    aa('--feature',
-       help='the name of the feature to use',
-       required = True)
-    aa('--searchclass',
-       help='the name of the FrameSearch-derived class to use',
-       required = True)
-    aa('--sounddir',
-       help='directory from which queries will be drawn',
-       required = True)
-    # optional arguments
-    aa('--minseconds',
-       help='the minimum length of a query',
-       type=float,
-       default = 1.0)
-    aa('--maxseconds',
-       help='the maximum length of a query',
-       type=float,
-       default = 5.0)
-    aa('--rebuild',
-       help='forces the search index to be rebuilt',
-       default = False, 
-       action = 'store_true')
-    aa('--nresults',
-       help='the number of results to return for each query',
-       type = int,
-       default = 10)
-    
-    args,leftover = parser.parse_known_args()
-    # KLUDGE: I need to be able to pass arbitrary kwargs to the search class
-    # via the command-line interface. There's probably a better way, but this
-    # is my best shot for the moment.
-    def convert_leftovers(l):
-        d = {}
-        for i in xrange(len(l)):
-            if i % 2:
-                # this is a value
-                try:
-                    # number,bool,list, etc.
-                    l[i] = eval(l[i])
-                except NameError:
-                    # the value is a string. Leave it alone.
-                    pass
-                d[l[i - 1]] = l[i]
-            else:
-                # This is a key. Strip leading dashes
-                l[i] = l[i].lstrip('-')
-        return d
-            
-    searchclass_kwargs = convert_leftovers(leftover)
-    if args.maxseconds <= args.minseconds:
-        raise ValueError('maxseconds must be greater than minseconds')
-    return args,searchclass_kwargs
 
 def get_query(path,files,minseconds,maxseconds):
     # choose a random audio file from path
@@ -158,26 +102,7 @@ def get_query(path,files,minseconds,maxseconds):
     
 if __name__ == '__main__':
     
-    args,searchclass_kwargs = parse_args()
-    
-    _id = 'search/%s' % args.feature    
-    searchclass = eval(args.searchclass)
-    
-    if args.rebuild:
-        try:
-            del searchclass[_id]
-        except KeyError:
-            # It's ok. No search with that name exists. We'll be rebuilding it
-            # anyway.
-            pass
-
-    try:
-        search = searchclass[_id]
-    except KeyError:
-        search = searchclass(\
-                    _id,getattr(FrameModel,args.feature),**searchclass_kwargs)
-        search.build_index()
-    
+    args,search = SearchSetup(FrameModel).setup()
     
     # Pick a sound segment
     d = args.sounddir
