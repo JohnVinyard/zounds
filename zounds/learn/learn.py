@@ -1,4 +1,5 @@
 from abc import ABCMeta, abstractmethod
+from zounds.util import tostring
 
 class Learn(object):
     
@@ -24,3 +25,10 @@ class Learn(object):
         Extract features from the data
         '''
         pass
+    
+    def __repr__(self):
+        return tostring(self)
+    
+    def __str__(self):
+        return self.__repr__()
+    

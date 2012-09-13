@@ -16,6 +16,7 @@ from pattern import DataPattern
 from zounds.nputil import \
     hamming_distance,pad,Packer,packed_hamming_distance,TypeCodes,flatten2d
 from zounds.environment import Environment
+from zounds.util import tostring
 
 LOGGER = logging.getLogger(__name__)
 
@@ -66,6 +67,12 @@ class FrameSearch(Model):
         Model.__init__(self)
         self._id = _id
         self.features = features
+    
+    def __repr__(self):
+        return tostring(self,id = self._id,feature = self.features)
+    
+    def __str__(self):
+        return self.__repr__()
     
     @classmethod
     def __getitem__(cls,key):
@@ -257,6 +264,13 @@ class ExhaustiveSearch(FrameSearch):
         self._multi_process = multi_process
         self._do_max = do_max
     
+    def __repr__(self):
+        return tostring(self,short = False,feature = self.feature,step = self._step,
+                        normalize = self._normalize, do_max = self._do_max)
+    
+    def __str__(self):
+        return tostring(self,feature = self.feature,step = self._step)
+    
     def _search(self,frames,nresults):
         if self._multi_process:
             return self._search_multi_process(frames, nresults)
@@ -427,6 +441,14 @@ class ExhaustiveLshSearch(FrameSearch):
         self.nbits = nbits
         self._hashdtype = TypeCodes.np_dtype(nbits)
         self._structtype = TypeCodes.type_code(nbits)
+    
+    def __repr__(self):
+        return tostring(self,short = False,feature = self.feature,id = self._id,
+                        step = self.step, nbits = self.nbits, 
+                        fine_feature = self._fine_feature,ignore = self._filter)
+    def __str__(self):
+        return tostring(self,id = self._id,feature = self.feature,
+                        step = self.step,nbits= self.nbits)
         
     
     @property

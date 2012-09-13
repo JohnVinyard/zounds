@@ -4,6 +4,39 @@ import os.path
 from multiprocessing import Process
 import argparse
 
+# TODO: Can I use pprint.pformat here to get what I'm after in a more general
+# and flexible way, e.g., for dictionaries? See Feature.__repr__ as an example
+# of the problem
+def _parts(name = '',nitems = 1,nesting = 1,short = True,delimiter = ',',brackets = ('(',')')):
+    if short:
+        j = '%s ' % delimiter
+        tmpl = '%s%s%%s%s' % (name,brackets[0],brackets[1])
+    else:
+        tabs = '\t' * nesting
+        j = '%s\n%s' % (delimiter,tabs)
+        space = '\n' + tabs if nitems > 1 else ''
+        tmpl = '%s%s%s%%s%s' % (name,brackets[0],space,brackets[1])  
+    return j,tmpl
+
+
+def tostring(obj,short = True,**kwargs):
+    name = obj.__class__.__name__
+    j,tmpl = _parts(nitems = len(kwargs),name = name,short = short)
+    key_val_tmpl = '%s = %s'
+    strs = []
+    for k,v in kwargs.iteritems():
+        if isinstance(v,list) or isinstance(v,tuple):
+            iterj,itertmpl = _parts(\
+                nitems = len(v),short = short, brackets = ('[',']'),nesting = 2)
+            joined = iterj.join([str(a) for a in v])
+            v = itertmpl % joined
+        
+        strs.append(key_val_tmpl % (k,v))
+        
+    attrs = j.join(strs)
+    return tmpl % attrs
+    
+
 class SearchSetup(object):
     '''
     SearchSetup parses user-specified (at the command-line) search parameters,

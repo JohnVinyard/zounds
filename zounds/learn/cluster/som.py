@@ -4,6 +4,7 @@ import numpy as np
 from scipy.spatial.distance import cdist
 
 from zounds.learn.learn import Learn
+from zounds.util import tostring
 
 class Som(Learn):
     
@@ -19,6 +20,12 @@ class Som(Learn):
         self._gravity = gravity
         self._gravity_decay = gravity_decay
         self._weights = np.zeros((size,size,fdim))
+    
+    def __repr__(self):
+        return tostring(self,feature_dim = self._fdim,n_centroids = self._ncells)
+    
+    def __str__(self):
+        return self.__repr__()
     
     @property
     def codebook(self):

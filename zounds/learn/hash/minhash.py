@@ -1,6 +1,7 @@
 import numpy as np
 
 from zounds.learn.learn import Learn
+from zounds.util import tostring
 
 
 class MinHash(Learn):
@@ -42,3 +43,9 @@ class MinHash(Learn):
             # first non-zero value, if there was one
             a[:,i][unique] = nz[1][indices]
         return a
+    
+    def __repr__(self):
+        return tostring(self,feature_dim = self.size,n_hashes = self.nhashes)
+    
+    def __str__(self):
+        return self.__repr__()

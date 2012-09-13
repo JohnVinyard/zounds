@@ -1,5 +1,6 @@
 import numpy as np
 from matplotlib import pyplot as plt
+from zounds.util import tostring
 
 # TODO: package up these activation functions somehow
 def sigmoid(a):
@@ -13,7 +14,13 @@ def stochastic_binary(a):
 class NeuralNetwork(object):
 
     def __init__(self):
-        pass
+        object.__init__(self)
+    
+    def __repr__(self):
+        return tostring(self,indim = self.indim,hdim = self.hdim)
+    
+    def __str__(self):
+        return self.__repr__()
 
     def activate(self,inp):
         raise NotImplemented('nnet is meant to be an abstract base class')

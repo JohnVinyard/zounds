@@ -1,6 +1,10 @@
 TOOO:
 -------------
-- TODO: Nice printing for Extractor, FrameModel, Preprocess, Learn, Environment, etc...
+- TODO: Nice printing for Extractor, FrameModel, Preprocess, Learn, Environment, FrameSearch etc...
+	- fix Extractor's __str__ method
+	- Fix Feature's __str__ method
+	- Environment has more stuff to add
+	- 
 
 - can't find numpy headers when building (both nputil and pattern need a pyxbld file that points to numpy header location)
 
@@ -23,12 +27,15 @@ Why is search slower?  I think it's the fetching of the frames,FileSystem-style
 
 ===============================================================================
 
+
+
+After job-hunt
+========================================================================
 - FileSystemFrameController.stat implementation sucks (see TODO notes)
 
 - KMeans++ implementation
 
 Anyplace where I'm using len(a.shape), I should be using ndim
-
 
 PyTables.stat() array is too big bug.
 
@@ -64,9 +71,6 @@ Finish Constant-Q implementation
 
 - TODO: Ensure that quickstart/ab.py works with a few different algorithms
 
-
-After job-hunt
-========================================================================
 - Configurable setup.py depending on choice of backing store
 
 - In websearch, templates shouldn't live in the same directory as js and css.
