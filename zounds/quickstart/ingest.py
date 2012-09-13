@@ -33,7 +33,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     aa = parser.add_argument
     aa('--path',
-       help = 'the directory to ingest sound files from')
+       help = 'the directory to ingest sound files from',
+       required = True)
     args = parser.parse_args()
     if args.path:
         path = args.path
