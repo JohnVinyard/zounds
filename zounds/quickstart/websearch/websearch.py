@@ -12,6 +12,7 @@ from matplotlib.cm import hot
 
 from config import *
 from zounds.model.framesearch import ExhaustiveLshSearch
+from zounds.util import ensure_path_exists,SearchSetup
 
 import collections
 
@@ -89,10 +90,8 @@ audio_path = os.path.join(media_path,'audio')
 
 
 controller = Z.framecontroller
+args,search = SearchSetup(FrameModel).setup()
 
-# TODO: This needs to be configurable from the command line when the server is
-# started!  None of this (including the search class) should be hard coded!
-search = ExhaustiveLshSearch['search/packed']
 _ids = list(controller.list_ids())
 
 nframes = len(controller)
@@ -342,22 +341,18 @@ class zoundsapp(object):
         addr = controller.address(qid)
         start,stop = addr.start,addr.stop
         l = len(addr)
-        # TODO: Query lengths should be specified in arguments when the webserver
-        # is started
-        minlength = 60
-        maxlength = 60 * 4
+        minlength = Z.seconds_to_frames(args.minseconds)
+        maxlength = Z.seconds_to_frames(args.maxseconds)
         qlength = np.random.randint(minlength,maxlength)
         slack = l - qlength
         if slack > 0:
             qstart = np.random.randint(slack) + start
             qstop = qlength + qstart
             addr = build_address(qid,qstart,qstop)
-        # TODO: nresults should be specified by a command-line arg when the server
-        # is started
+        
         tic = time()
-        results = search.search(addr, nresults = 75)
+        results = search.search(addr, nresults = args.nresults)
         r = Results(qid,addr,results,tic)
-        # TODO: Render the results to a template
         render = web.template.render('static/templates')
         return render.zoundsapp(r)
             
@@ -367,8 +362,6 @@ class zoundsapp(object):
 app = web.application(urls, globals())
 
 if __name__ == "__main__":
-    if not os.path.exists(images_path):
-        os.makedirs(images_path)
-    if not os.path.exists(audio_path):
-        os.makedirs(audio_path)
+    ensure_path_exists(images_path)
+    ensure_path_exists(audio_path)
     app.run()
