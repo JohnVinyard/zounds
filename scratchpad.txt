@@ -71,7 +71,6 @@ Finish Constant-Q implementation
 
 After job-hunt
 ========================================================================
-
 - Configurable setup.py depending on choice of backing store
 
 - In websearch, templates shouldn't live in the same directory as js and css.
@@ -141,3 +140,5 @@ Finish Scattering implementation
 
 - Bug: It's possible to load controllers of the wrong type with 
 	PickledController-derived classes
+
+- Try parallel exhaustive search with FileSystemFrameController
