@@ -1,9 +1,5 @@
 TOOO:
 -------------
-TODO: Two modes for ExhaustiveSearch
-
-TODO: Ensure that all quickstart scripts use argparse. (Use nargs='?' for single arg scripts)
-
 - TODO: Nice printing for Extractor, FrameModel, Preprocess, Learn, Environment, etc...
 
 - can't find numpy headers when building (both nputil and pattern need a pyxbld file that points to numpy header location)

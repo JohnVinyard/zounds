@@ -1,12 +1,12 @@
 import os.path
 import shutil
-import sys
+import argparse
 
 import string
 from string import Template
 from config import *
 from zounds.visualize.plot import plot
-from zounds.nputil import safe_log
+
 
 HtmlTemplate = Template('''
 <html>
@@ -49,8 +49,18 @@ PatternTemplate = Template('''
 
 
 if __name__ == '__main__':
+    
+    parser = argparse.ArgumentParser(description = \
+    'Create an html file displaying all stored features for 10 random sounds.')
+    aa = parser.add_argument
+    aa('--path',
+       help = 'The path into which images and html should be placed',
+       type = str,
+       default = 'display')
 
-    path = sys.argv[1]
+
+    args = parser.parse_args()
+    path = args.path
     if os.path.exists(path):
         shutil.rmtree(path)
     
@@ -88,5 +98,8 @@ if __name__ == '__main__':
     with open(os.path.join(path,'index.htm'),'w') as f:
         f.write(html)
 
+    path_to_index = os.path.join(path,'index.htm')
+    fmt = 'view the features by opening %s with your favorite browser, e.g. "google-chrome %s"'
+    print  fmt % (path_to_index,path_to_index)
         
         
