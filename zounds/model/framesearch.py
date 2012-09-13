@@ -234,13 +234,28 @@ def _search_parallel(args):
 class ExhaustiveSearch(FrameSearch):
     
     def __init__(self,_id,feature,step = 1,
-                 normalize = True,multi_process = False):
+                 normalize = True,multi_process = False,do_max = False):
+        
+        '''
+        Parameters
+            feature       - the stored feature used to compare segments of audio
+            step          - the stepsize, in frames, to use when comparing segments
+            normalize     - if true, divide each element of feature by that feature's
+                            database-wide standard deviation, so that each element
+                            has approximately the same magnitude
+            multi_process - perform the search using multiple cores
+            do_max        - if true, compare only the max values (feature-wise)
+                            from each segment. if false, unravel the features
+                            from each segment into a long vector, and take the
+                            euclidean distance between these. 
+        '''
         
         FrameSearch.__init__(self,_id,feature)
         self._std = None
         self._step = step
         self._normalize = normalize
         self._multi_process = multi_process
+        self._do_max = do_max
     
     def _search(self,frames,nresults):
         if self._multi_process:
@@ -306,8 +321,8 @@ class ExhaustiveSearch(FrameSearch):
             seq /= self._std
         ls = len(seq)
         
-        # TODO: I'm not calling ravel for the sequence search
-        #seq = seq.ravel()
+        if not self._do_max:
+            seq = seq.ravel()
         
         env = self.env()
         c = env.framecontroller
@@ -325,17 +340,16 @@ class ExhaustiveSearch(FrameSearch):
                     skip = -1
                 feat = frames[self.feature]
                 
-                # TODO: This is what I'm calling for "normal" searches
-                #feat /= self._std
-                #feat[np.isnan(feat)] = 0
-                #feat = pad(feat,ls)
-                #dist = np.linalg.norm(feat.ravel() - seq)
-                
-                # TODO: This is what I'm using for the template search
-                feat /= self._std
-                feat = feat.max(0)
-                seq2 = seq.max(0)
-                dist = np.linalg.norm(feat - seq2)
+                if self._do_max:
+                    feat /= self._std
+                    feat = feat.max(0)
+                    seq2 = seq.max(0)
+                    dist = np.linalg.norm(feat - seq2)
+                else:
+                    feat /= self._std
+                    feat[np.isnan(feat)] = 0
+                    feat = pad(feat,ls)
+                    dist = np.linalg.norm(feat.ravel() - seq)
                 
                 t = (dist,(_id,addr))
                 try:
