@@ -2,6 +2,7 @@
 import subprocess
 import re
 import os
+import numpy as np
 
 p = subprocess.Popen('pkg-config --cflags --libs jack',shell = True, stdout = subprocess.PIPE, stderr = subprocess.PIPE)
 p.wait()
@@ -34,6 +35,6 @@ def make_ext(modname, pyxfilename):
     return Extension(name = modname,
                      sources=[pyxfilename],
                      libraries = jacklibs,
-                     include_dirs=['/usr/include/python2.6',dir],
+                     include_dirs=[dir,np.get_include()],
                      extra_objects=[obj],
                      extra_compile_args=['-shared', '-pthread', '-fPIC', '-fwrapv', '-O2', '-Wall', '-fno-strict-aliasing'] )
