@@ -1,28 +1,50 @@
 from setuptools import setup,Extension
 import os
 import string
+import subprocess
+import getpass
+import sys
 
-# TODO: This code should only run when the 'install' command is used.
-npmsg = 'You must have numpy >= 1.6 installed.%s Type "sudo pip install numpy" to install.'
-try:
-    import numpy
-    vparts = [int(s) for s in numpy.__version__.split('.')]
-    if vparts[0] < 1 or vparts[1] < 6:
-        print npmsg % ('  Yours is version %s' % numpy.__version__)
+# KLUDGE: Is there a better way to get setuptools commands?
+
+install = 'install' in sys.argv[1:]
+
+def force_manual_numpy_scipy_install():
+    # TODO: This code should only run when the 'install' command is used.
+    npmsg = 'You must have numpy >= 1.6 installed.%s Type "sudo pip install numpy" to install.'
+    try:
+        import numpy
+        vparts = [int(s) for s in numpy.__version__.split('.')]
+        if vparts[0] < 1 or vparts[1] < 6:
+            print npmsg % ('  Yours is version %s' % numpy.__version__)
+            exit()
+        setup.announce('You\'ve got numpy version %s. Great!' % numpy.__version__)
+    except ImportError:
+        setup.announce(npmsg % '')
         exit()
-    print 'You\'ve got numpy version %s. Great!' % numpy.__version__
-except ImportError:
-    print npmsg % ''
-    exit()
-    
-spmsg = 'You must have scipy installed. Type "sudo pip install scipy" to install.'
-try:
-    import scipy
-    print 'You\'ve got scipy version %s. Great!' % scipy.__version__
-except ImportError:
-    print spmsg
-    exit()
+        
+    spmsg = 'You must have scipy installed. Type "sudo pip install scipy" to install.'
+    try:
+        import scipy
+        setup.announce('You\'ve got scipy version %s. Great!' % scipy.__version__)
+    except ImportError:
+        setup.announce(spmsg)
+        exit()
 
+def setup_jack_audio():
+    username = getpass.getuser()
+    setup.announce('adding %s to the audio user group' % username)
+    # Add the current user to the audio group
+    p = subprocess.Popen('usermod -a -G audio %s' % username,shell = True)
+    p.wait()
+    
+    setup.announce('giving JACK realtime priority')
+    # Give JACK realtime priority
+    p = subprocess.Popen('dpkg-reconfigure -p high jack',shell = True)
+    p.wait()
+
+if install:
+    force_manual_numpy_scipy_install()
 
 # build up the list of packages
 packages = []
@@ -79,3 +101,7 @@ setup(
       packages = packages,
       install_requires = python_packages
 )
+
+if install:
+    setup_jack_audio()
+    setup.announce('Done! Enjoy Zounds.')
