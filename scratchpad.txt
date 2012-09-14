@@ -2,14 +2,9 @@ TOOO:
 -------------
 - Upload new tarball of .02 to BitBcket, which doesn't have ingest.py bug
 
-- Riddle: What's the same about multi-core task processing and chunk-based
-  audio processing?  
- 
  - Is it possible to setup jack config settings automatically?
  
- - Do pyxbld files need patch to python headers hardcoded. This is version-specific and no bueno
-
- - Make a note in the documentation about ALSA audio
+- Make a note in the documentation about ALSA audio
 
 - Try writing a simple, realtime JACK-based audio player (check out Alex McLean's SmoothDirt repo)
 
@@ -25,6 +20,11 @@ TEST : Cut down on search time by *excluding* ignored codes from the index
 
 Why is search slower?  I think it's the fetching of the frames,FileSystem-style
 	- Hint, I'm not seeing the longer times in search.py, only websearch
+	- Hint 2- it's about reading from the file!
+
+Fix tile normalization problem
+
+Bookmark searches
 
 
 After job-hunt
