@@ -1,12 +1,13 @@
 TOOO:
 -------------
-- TODO: Nice printing for Extractor, FrameModel, Preprocess, Learn, Environment, FrameSearch etc...
-	- fix Extractor's __str__ method
-	- Fix Feature's __str__ method
-	- Environment has more stuff to add
-	- 
+- Upload new tarball of .02 to BitBcket, which doesn't have ingest.py bug
 
-- can't find numpy headers when building (both nputil and pattern need a pyxbld file that points to numpy header location)
+- Riddle: What's the same about multi-core task processing and chunk-based
+  audio processing?  
+ 
+ - Is it possible to setup jack config settings automatically?
+ 
+ - Do pyxbld files need patch to python headers hardcoded. This is version-specific and no bueno
 
  - Make a note in the documentation about ALSA audio
 
@@ -25,12 +26,11 @@ TEST : Cut down on search time by *excluding* ignored codes from the index
 Why is search slower?  I think it's the fetching of the frames,FileSystem-style
 	- Hint, I'm not seeing the longer times in search.py, only websearch
 
-===============================================================================
-
-
 
 After job-hunt
 ========================================================================
+- Nice printing for dictionaries (maybe using pprint.format)?
+
 - FileSystemFrameController.stat implementation sucks (see TODO notes)
 
 - KMeans++ implementation

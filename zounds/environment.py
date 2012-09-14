@@ -1,7 +1,10 @@
 from __future__ import division
 from uuid import uuid4
-from zounds.analyze.synthesize import WindowedAudioSynthesizer
 from multiprocessing import cpu_count
+
+from zounds.analyze.synthesize import WindowedAudioSynthesizer
+from zounds.util import tostring
+
 
 class AudioConfig:
     samplerate = 44100
@@ -74,6 +77,25 @@ class Environment(object):
         if not Environment._test and self.do_sync:
             self.framemodel.sync()
     
+    def __repr__(self):
+        return tostring(self,
+                        short = False,
+                        sample_rate = self.samplerate,
+                        window_size = self.windowsize,
+                        step_size = self.stepsize,
+                        chunksize_seconds = self.chunksize_seconds,
+                        source = self.source,
+                        framemodel = self.framemodel,
+                        framecontroller = self.framecontroller_class,
+                        data = self.data)
+    
+    def __str__(self):
+        return tostring(self,
+                        sample_rate = self.samplerate,
+                        window_size = self.windowsize,
+                        step_size = self.stepsize,
+                        source = self.source,
+                        framemodel = self.framemodel)
     
     def play(self,audio):
         self.synth.play(audio)
@@ -123,23 +145,6 @@ class Environment(object):
     # with concurrent reads.  This should be handled some other way.
     def unique_controller(self):
         return self.framecontroller_class(*self._framecontroller_args)
-    
-    def __repr__(self):
-        data = '''{%s
-    }'''
-        data = data % ''.join(['\n\t%s : %s' % \
-            (k.__name__,v.__class__.__name__) for k,v in self.data.iteritems()])
-        return '''Environment(
-    source     : %s,
-    samplerate : %i,
-    windowsize : %i,
-    stepsize   : %i,
-    data       : %s 
-)
-''' % (self.source,self.samplerate,self.windowsize,self.stepsize,data)
-
-    def __str__(self):
-        return self.__repr__()
     
     def __getstate__(self,lock = None,**kwargs):
         d = {'source' : self.source,

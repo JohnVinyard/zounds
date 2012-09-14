@@ -48,7 +48,7 @@ def read(fname):
 
 python_packages = ['bitarray','tables','cython','numexpr',
                    'nose','scikits.audiolab',
-                   'matplotlib','web','scipy','numpy']
+                   'matplotlib','web.py','scipy','numpy']
 
 # argparse was introduced into the standard library in python 2.7. Instead of
 # checking the python version, just try to import it. If the import fails, add
@@ -58,6 +58,8 @@ try:
 except ImportError:
     python_packages.append('argparse')
 
+c_ext = ['*.c','*.h']
+pyx_ext = ['*.pyx','*.pyxbld']
 setup(
       name = 'zounds',
       version = '0.02',
@@ -71,8 +73,8 @@ setup(
                       'quickstart/websearch/css' : ['*.css'],
                       'quickstart/websearch/js'  : ['*.js'],
                       'quickstart/websearch/templates' : ['*.html'],
-                      'pattern' : ['*.c','*.h','*.pyx','*.pyxbld'],
-                      'nputil' : ['*.pyx']},
+                      'pattern' : c_ext + pyx_ext,
+                      'nputil' : pyx_ext},
       include_package_data = True,
       packages = packages,
       install_requires = python_packages

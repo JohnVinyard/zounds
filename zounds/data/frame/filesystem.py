@@ -12,7 +12,7 @@ import zounds.model.frame
 from zounds.constants import audio_key,id_key,source_key,external_id_key
 from frame import FrameController,UpdateNotCompleteError
 from zounds.model.pattern import Pattern
-from zounds.util import ensure_path_exists,PoolX
+from zounds.util import ensure_path_exists,PoolX,tostring
 from zounds.nputil import norm_shape
 from zounds.environment import Environment
 from time import time
@@ -604,6 +604,8 @@ class FileSystemFrameController(FrameController):
         self._reindex_if_necessary()
     
     
+    def __repr__(self):
+        return tostring(self,model = self.model,data_dir = self._rootdir)
     
     def _reindex_if_necessary(self):
         # create an index instance, which will get us the most up-to-date

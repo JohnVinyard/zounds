@@ -3,6 +3,7 @@ import numpy as np
 import zounds
 from zounds.data.controller import Controller
 from zounds.nputil import pad
+from zounds.util import tostring
 
 class FrameController(Controller):
     __metaclass__ = ABCMeta
@@ -10,6 +11,12 @@ class FrameController(Controller):
     def __init__(self,framesmodel):
         Controller.__init__(self)
         self.model = framesmodel
+    
+    def __repr__(self):
+        return tostring(self,model = self.model)
+    
+    def __str__(self):
+        return self.__repr__()
     
     @abstractmethod
     def address(self,_id):

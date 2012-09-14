@@ -12,7 +12,7 @@ import numpy as np
 import zounds.model.frame
 from zounds.constants import audio_key,id_key,source_key,external_id_key
 from zounds.model.pattern import Pattern
-from zounds.util import ensure_path_exists
+from zounds.util import ensure_path_exists,tostring
 from frame import FrameController,UpdateNotCompleteError
 
 LOGGER = logging.getLogger(__name__)
@@ -268,6 +268,9 @@ class PyTablesFrameController(FrameController):
         self._temp_external_ids = None
         # update the indexes, if need be
         self.update_index()
+    
+    def __repr__(self):
+        return tostring(self, model = self.model, data_path = self.filepath)
     
     @property
     def concurrent_reads_ok(self):
