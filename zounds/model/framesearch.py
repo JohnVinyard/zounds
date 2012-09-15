@@ -151,7 +151,7 @@ class FrameSearch(Model):
         # get a frames instance
         frames = fm(data = r)
         stop = time() - start
-        print 'analysis took %1.4f seconds' % stop
+        LOGGER.info('analysis took %1.4f seconds' % stop)
         return frames,self._search(frames, nresults = nresults)
     
     

@@ -1,5 +1,6 @@
 import numpy as np
-from scikits.audiolab import play
+#from scikits.audiolab import play
+from zounds.pattern import start,usecs,put
 
 
 class WindowedAudioSynthesizer(object):
@@ -20,6 +21,13 @@ class WindowedAudioSynthesizer(object):
         # small, but noticeable clicks at the chunk boundaries.  Libvorbis 
         # seems to not be "crosslapping" at write boundaries. 
         self.vorbis_chunk_size = 25 * 44100
+    
+    def _start_audio_engine(self):
+        start()
+        self._start_audio_engine = self._start_audio_engine_done 
+    
+    def _start_audio_engine_done(self):
+        pass
     
     def _vorbis_write(self,frames,sndfile,output):
         cs = self.vorbis_chunk_size
@@ -51,7 +59,8 @@ class WindowedAudioSynthesizer(object):
         Returns
             output - a 1D array containing the rendered audio
         '''
-        output = np.zeros(self.windowsize + (len(frames) * self.stepsize))
+        output = np.zeros(\
+                    self.windowsize + (len(frames) * self.stepsize),np.float32)
         
         if sndfile and 'ogg' == sndfile.file_format:
             # The caller has requested that output audio be written to an ogg
@@ -76,10 +85,12 @@ class WindowedAudioSynthesizer(object):
         return self.playraw(output)
     
     def playraw(self,audio):
-        try:
-            play(np.tile(audio,(2,1)) * .2)
-        except KeyboardInterrupt:
-            pass
+        self._start_audio_engine()
+        #play(np.tile(audio,(2,1)) * .2)
+        # time is in microseconds
+        # TODO: How do I cancel the event?   
+        put(audio,0,len(audio),usecs() + 1e4)
+        
 
 # TODO: FFT synthesizer
 # TODO: DCT synthesizer
