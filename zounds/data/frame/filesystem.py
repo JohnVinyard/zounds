@@ -6,7 +6,7 @@ from itertools import repeat
 import traceback
 import numpy as np
 from multiprocessing import Manager,Process
-import logging
+import logging 
 
 import zounds.model.frame
 from zounds.constants import audio_key,id_key,source_key,external_id_key
@@ -16,6 +16,7 @@ from zounds.util import ensure_path_exists,PoolX,tostring
 from zounds.nputil import norm_shape
 from zounds.environment import Environment
 from time import time
+
 
 LOGGER = logging.getLogger(__name__)
 
@@ -674,14 +675,12 @@ class FileSystemFrameController(FrameController):
         step = 1 if None is slce.step else slce.step
         # the number of rows to read
         to_read = stop_index - start_index
-        with open(fn,'rb') as f:
-            # read the metadata from the file
-            source,extid = self._get_source_and_external_id(f)
-            # get the offset, in bytes, where we'll start reading
-            start_bytes = start_index * size 
-            offset = start_bytes + self._metadata_chars
-            data = np.memmap(\
-                    f,dtype = self._skinny_dtype, mode = 'r',offset = offset)
+        source,extid = self.external_id(_id)
+        start_bytes = start_index * size
+        offset = start_bytes + self._metadata_chars
+        data = np.memmap(\
+                    fn,dtype = self._skinny_dtype, mode = 'r', offset = offset)
+        
         return _id,source,extid,data[:to_read:step]
     
     def _get_source_and_external_id(self,f):

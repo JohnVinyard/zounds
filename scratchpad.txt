@@ -1,9 +1,10 @@
 TOOO:
 -------------
-- Upload new tarball of .02 to BitBcket, which doesn't have ingest.py bug
+TEST - Is it possible to setup jack config settings automatically?
 
- - Is it possible to setup jack config settings automatically?
- 
+
+- Get rid of as many warnings as possible
+
 - Make a note in the documentation about ALSA audio
 
 - Try writing a simple, realtime JACK-based audio player (check out Alex McLean's SmoothDirt repo)
@@ -16,8 +17,6 @@ TODO: Do another installation test run and move up a new dist package
 
 TODO: API documentation
 
-TEST : Cut down on search time by *excluding* ignored codes from the index
-
 Why is search slower?  I think it's the fetching of the frames,FileSystem-style
 	- Hint, I'm not seeing the longer times in search.py, only websearch
 	- Hint 2- it's about reading from the file!
@@ -25,6 +24,8 @@ Why is search slower?  I think it's the fetching of the frames,FileSystem-style
 Fix tile normalization problem
 
 Bookmark searches
+
+- Upload new tarball of .02 to BitBcket
 
 
 After job-hunt

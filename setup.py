@@ -18,30 +18,46 @@ def force_manual_numpy_scipy_install():
         if vparts[0] < 1 or vparts[1] < 6:
             print npmsg % ('  Yours is version %s' % numpy.__version__)
             exit()
-        setup.announce('You\'ve got numpy version %s. Great!' % numpy.__version__)
+        print 'You\'ve got numpy version %s. Great!' % numpy.__version__
     except ImportError:
-        setup.announce(npmsg % '')
+        print npmsg % ''
         exit()
         
     spmsg = 'You must have scipy installed. Type "sudo pip install scipy" to install.'
     try:
         import scipy
-        setup.announce('You\'ve got scipy version %s. Great!' % scipy.__version__)
+        print 'You\'ve got scipy version %s. Great!' % scipy.__version__
     except ImportError:
-        setup.announce(spmsg)
+        print spmsg
         exit()
 
 def setup_jack_audio():
-    username = getpass.getuser()
-    setup.announce('adding %s to the audio user group' % username)
+    
+    # KLUDGE: This is a hack. Right?  I'd like to add the currently logged-in user
+    # to the "audio" group, since JACK's installation has already setup realtime
+    # audio permissions for users in that group, but the user is impersonating
+    # root
+    
+    fail_msg = 'There was a problem adding you to the audio user group : %s' 
+    
+    p = subprocess.Popen(\
+     'logname',shell = True,stdout = subprocess.PIPE,stderr = subprocess.PIPE)
+    rc = p.wait()
+    if rc:
+        print fail_msg % p.stderr.read()
+        return
+    
+    # the output of logname ends with a newline
+    username = p.stdout.read()[:-1]
+    print 'adding %s to the audio user group' % username 
     # Add the current user to the audio group
     p = subprocess.Popen('usermod -a -G audio %s' % username,shell = True)
-    p.wait()
+    rc = p.wait()
+    if rc:
+        print fail_msg % p.stderr.read()
     
-    setup.announce('giving JACK realtime priority')
-    # Give JACK realtime priority
-    p = subprocess.Popen('dpkg-reconfigure -p high jack',shell = True)
-    p.wait()
+    
+    
 
 if install:
     force_manual_numpy_scipy_install()
@@ -104,4 +120,4 @@ setup(
 
 if install:
     setup_jack_audio()
-    setup.announce('Done! Enjoy Zounds.')
+    print 'Done! Enjoy Zounds.'
