@@ -102,9 +102,10 @@ class SearchSetup(object):
         return self._parser.parse_known_args()
     
     def _get_search(self,args,searchclass_kwargs):
-        from zounds.model.framesearch import *
         _id = 'search/%s' % args.feature    
-        searchclass = eval(args.searchclass)
+        module = \
+        __import__('zounds.model.framesearch',fromlist = [args.searchclass])
+        searchclass = getattr(module,args.searchclass)
         
         if args.rebuild:
             try:

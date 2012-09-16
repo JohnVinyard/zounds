@@ -148,7 +148,7 @@ class WindowedAudioSynthesizer(object):
         
         if block:
             # block until the audio is done playing, unless a KeyboardInterrupt
-            # is received
+            # is received first
             try:
                 while bb.is_alive():
                     bb.join(5)

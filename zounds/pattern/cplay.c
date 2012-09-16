@@ -20,7 +20,7 @@ event_t *EVENTS;
  * Schedule an event to be played. If the list of events is full, the event
  * will not be scheduled.
  */
-extern void put_event(
+void put_event(
 float *buf,unsigned int start_sample,unsigned int stop_sample,jack_time_t start_time_ms,char done) {
 
 	event_t ne;
@@ -40,12 +40,12 @@ float *buf,unsigned int start_sample,unsigned int stop_sample,jack_time_t start_
 	}
 }
 
-extern jack_time_t get_time() {
+jack_time_t get_time(void) {
 	jack_nframes_t frames = jack_frame_time(client);
 	return jack_frames_to_time(client,frames);
 }
 
-void cancel_all_events() {
+void cancel_all_events(void) {
 	int i;
 	for (i = 0; i < N_EVENTS; i++) {
 		EVENTS[i].done = 1;
@@ -55,7 +55,7 @@ void cancel_all_events() {
 /*
  * Initialize all events
  */
-void init_events() {
+void init_events(void) {
 	EVENTS = (event_t*)calloc(N_EVENTS,sizeof(event_t));
 	cancel_all_events();
 }
@@ -123,7 +123,7 @@ void jack_shutdown(void *arg) {
 	exit(1);
 }
 
-extern jack_client_t *jack_start() {
+jack_client_t *jack_start(void) {
 	const char **ports;
 	const char *client_name = "zounds";
 	const char *server_name = NULL;
@@ -212,12 +212,12 @@ extern jack_client_t *jack_start() {
 }
 
 
-extern void setup() {
+void setup(void) {
 	init_events();
 	jack_start();
 }
 
-extern void teardown() {
+void teardown(void) {
 	jack_client_close(client);
 	free(EVENTS);
 }
