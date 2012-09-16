@@ -25,7 +25,6 @@ def make_ext(modname, pyxfilename):
     cfile = os.path.join(dir,'cplay.c')
     output = os.path.join(dir,'cplay.o')
     cmd = 'gcc %s -I%s -c %s -o %s' % (libflags,dir,cfile,output)
-    print cmd
     p = subprocess.Popen(cmd,shell = True)
     p.wait()
 	    

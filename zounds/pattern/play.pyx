@@ -7,7 +7,6 @@ ctypedef np.float32_t FLOAT_DTYPE_t
 UINT64_DTYPE = np.uint64
 ctypedef np.uint64_t UINT64_DTYPE_t
 
-
 cdef extern from 'cplay.h':
     void setup()
     void teardown()

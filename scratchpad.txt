@@ -1,10 +1,7 @@
 TOOO:
 -------------
-
-- Get rid of as many warnings as possible
-
 - Update build instructions and quickstart tutorial
-	- make a note about logging out and logging in again
+	- make a note about logging out and logging in again after running setup.py
 
 - cplay.o permissions error?
 
@@ -12,19 +9,24 @@ TODO: Do another installation test run and move up a new dist package
 
 TODO: API documentation
 
-Why is search slower?  I think it's the fetching of the frames,FileSystem-style
-	- Hint, I'm not seeing the longer times in search.py, only websearch
-	- Hint 2- it's about reading from the file!
-
 Fix tile normalization problem
 
-Bookmark searches
+- Bookmark searches
+
+- Limit search sizes
+
+- Limit size of image and audio requests
 
 - Upload new tarball of .02 to BitBcket
 
 
 After job-hunt
 ========================================================================
+Why is search slower?  I think it's the fetching of the frames,FileSystem-style
+	- Hint, I'm not seeing the longer times in search.py, only websearch
+	- Hint 2- it's about reading from the file!
+
+
 - How do I know when the jack server is ready? (get rid of sleep() call)
 
 - How do I shut things down so that JACK doesn't complain about xruns, etc...
