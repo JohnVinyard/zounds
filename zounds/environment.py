@@ -97,8 +97,11 @@ class Environment(object):
                         source = self.source,
                         framemodel = self.framemodel)
     
-    def play(self,audio):
-        self.synth.play(audio)
+    def play(self,audio,block = True):
+        self.synth.play(audio,block = block)
+    
+    def shush(self):
+        self.synth.shush()
     
     @property
     def address_class(self):

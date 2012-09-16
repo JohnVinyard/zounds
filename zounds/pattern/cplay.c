@@ -21,9 +21,7 @@ event_t *EVENTS;
  * will not be scheduled.
  */
 extern void put_event(
-	float *buf,int start_sample,int stop_sample,jack_time_t start_time_ms,char done) {
-
-
+float *buf,unsigned int start_sample,unsigned int stop_sample,jack_time_t start_time_ms,char done) {
 
 	event_t ne;
 	ne.buf = buf;
@@ -47,27 +45,31 @@ extern jack_time_t get_time() {
 	return jack_frames_to_time(client,frames);
 }
 
-
-/*
- * Initialize all events to NULL
- */
-void init_events() {
-	EVENTS = (event_t*)calloc(N_EVENTS,sizeof(event_t));
+void cancel_all_events() {
 	int i;
-	for(i = 0; i < N_EVENTS; i++) {
+	for (i = 0; i < N_EVENTS; i++) {
 		EVENTS[i].done = 1;
 	}
 }
+
+/*
+ * Initialize all events
+ */
+void init_events() {
+	EVENTS = (event_t*)calloc(N_EVENTS,sizeof(event_t));
+	cancel_all_events();
+}
+
+
 
 int process(jack_nframes_t nframes, void *arg) {
 	jack_default_audio_sample_t *out[CHANNELS+1];
 	jack_default_audio_sample_t *in;
 
-	int i,j,k;
+	int i,j,k,current_pos;
 	for (i = 0; i < CHANNELS; ++i) {
 		out[i] = jack_port_get_buffer(output_ports[i], nframes);
 	}
-
 
 	jack_nframes_t frame_time = jack_last_frame_time(client);
 	float sample = 0;
@@ -89,11 +91,12 @@ int process(jack_nframes_t nframes, void *arg) {
 
 			if(EVENTS[j].position > 0 || frame_time >= EVENTS[j].start_time_frames) {
 				// the sample has already started, or starts on this frame
-				sample+= EVENTS[j].buf[EVENTS[j].start_sample + EVENTS[j].position];
+				current_pos = EVENTS[j].start_sample + EVENTS[j].position;
+				sample+= EVENTS[j].buf[current_pos];
 				// advance the sample position of this event
 				EVENTS[j].position++;
 
-				if((EVENTS[j].start_sample + EVENTS[j].position) >= EVENTS[j].stop_sample) {
+				if((current_pos + 1) >= EVENTS[j].stop_sample) {
 					// Mark this event as done
 					EVENTS[j].done = 1;
 				}
@@ -113,8 +116,6 @@ int process(jack_nframes_t nframes, void *arg) {
 	return 0;
 
 }
-
-
 
 
 
@@ -217,5 +218,6 @@ extern void setup() {
 }
 
 extern void teardown() {
+	jack_client_close(client);
 	free(EVENTS);
 }

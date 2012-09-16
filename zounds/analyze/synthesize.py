@@ -1,8 +1,51 @@
 import numpy as np
 #from scikits.audiolab import play
-from zounds.pattern import start,usecs,put
+from zounds.pattern import start,usecs,put,stop,cancel_all
+from threading import Thread
+from time import sleep
 
 
+class BufferBabysitter(Thread):
+    '''
+    This class is for internal use only.  This class solves the problem, albeit
+    in a bit of a klunky way, of passing numpy arrays (which are subject to 
+    garbage collection) into my JACK event queue.  If no reference to the
+    numpy array of audio samples exists in python code, it's likely that the
+    array will be garbage collected before, or during the time the audio is
+    playing. C code will then attempt to access the memory, and a segfault
+    will occur. This class is meant to solve the problem of one-off previews
+    of audio, e.g.
+    
+    >>> frames = FrameModel.random()
+    >>> Environment.instance.play(frames.audio)
+    
+    Note that audio will be synthesized from frames.audio and passed along to 
+    the jack client, but no reference will remain in python code.
+    
+    A *real* buffer management scheme will be required when we start scheduling
+    audio as musical patterns.
+    '''
+    def __init__(self,buf):
+        Thread.__init__(self)
+        self._buf = buf
+        self.daemon = True
+        # BUG: This only works for 44.1Khz. How do I know what samplerate the
+        # buffer is?
+        self._seconds = len(buf) / 44100.
+        self._pos = 0
+        self._should_stop = False
+        
+
+    def run(self):
+        while self._pos < self._seconds and not self._should_stop:
+            sleep(.5)
+            self._pos += .5
+        
+        self.cleanup()
+    
+    def cleanup(self):
+        del self._buf
+    
 class WindowedAudioSynthesizer(object):
     '''
     A very simple synthesizer that assumes windowed, but otherwise raw frames
@@ -24,10 +67,15 @@ class WindowedAudioSynthesizer(object):
     
     def _start_audio_engine(self):
         start()
-        self._start_audio_engine = self._start_audio_engine_done 
+        self._start_audio_engine = self._start_audio_engine_done
+        # KLUDGE: I don't know how to determine when the JACK server is ready
+        sleep(1) 
     
     def _start_audio_engine_done(self):
         pass
+    
+    def _stop_audio_engine(self):
+        stop()
     
     def _vorbis_write(self,frames,sndfile,output):
         cs = self.vorbis_chunk_size
@@ -80,16 +128,39 @@ class WindowedAudioSynthesizer(object):
         
         return output
             
-    def play(self,audio):
+    def play(self,audio,block = True):
         output = self(audio)
-        return self.playraw(output)
+        return self.playraw(output,block = block)
     
-    def playraw(self,audio):
+    def playraw(self,audio,block = True):
+        if np.float32 != audio.dtype:
+            audio = audio.astype(np.float32)
+        
+        # ensure that the audio engine is started. If it has already been started,
+        # this call is a no-op
         self._start_audio_engine()
-        #play(np.tile(audio,(2,1)) * .2)
+        # this will "babysit" a reference to the audio samples until they're
+        # through playing
+        bb = BufferBabysitter(audio)
+        bb.start()
         # time is in microseconds
-        # TODO: How do I cancel the event?   
         put(audio,0,len(audio),usecs() + 1e4)
+        
+        if block:
+            # block until the audio is done playing, unless a KeyboardInterrupt
+            # is received
+            try:
+                while bb.is_alive():
+                    bb.join(5)
+            except KeyboardInterrupt:
+                bb._should_stop = True
+                self.shush()
+    
+    def shush(self):
+        cancel_all()
+    
+    def __del__(self):
+        self._stop_audio_engine()
         
 
 # TODO: FFT synthesizer
