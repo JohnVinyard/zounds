@@ -1,17 +1,12 @@
 TOOO:
 -------------
-TEST - Is it possible to setup jack config settings automatically?
-
 
 - Get rid of as many warnings as possible
 
-- Make a note in the documentation about ALSA audio
+- Update build instructions and quickstart tutorial
+	- make a note about logging out and logging in again
 
-- Try writing a simple, realtime JACK-based audio player (check out Alex McLean's SmoothDirt repo)
-
-- Add jack to list of dependencies
-
-- Switch Environment.play method to use new jack-based audio player
+- cplay.o permissions error?
 
 TODO: Do another installation test run and move up a new dist package
 
@@ -30,6 +25,13 @@ Bookmark searches
 
 After job-hunt
 ========================================================================
+- How do I know when the jack server is ready? (get rid of sleep() call)
+
+- How do I shut things down so that JACK doesn't complain about xruns, etc...
+
+- JACK player doesn't do any resampling. If Environment.samplerate and
+  JACK's samplerate disagree, all buffers must be resampled
+ 
 - Nice printing for dictionaries (maybe using pprint.format)?
 
 - FileSystemFrameController.stat implementation sucks (see TODO notes)

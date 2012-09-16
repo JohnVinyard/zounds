@@ -10,7 +10,6 @@ import sys
 install = 'install' in sys.argv[1:]
 
 def force_manual_numpy_scipy_install():
-    # TODO: This code should only run when the 'install' command is used.
     npmsg = 'You must have numpy >= 1.6 installed.%s Type "sudo pip install numpy" to install.'
     try:
         import numpy
@@ -36,7 +35,8 @@ def setup_jack_audio():
     # KLUDGE: This is a hack. Right?  I'd like to add the currently logged-in user
     # to the "audio" group, since JACK's installation has already setup realtime
     # audio permissions for users in that group, but the user is impersonating
-    # root
+    # root, so I'm using the "logname" command to guess what the user's name
+    # *probably* is.
     
     fail_msg = 'There was a problem adding you to the audio user group : %s' 
     
