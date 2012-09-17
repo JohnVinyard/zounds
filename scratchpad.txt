@@ -1,5 +1,30 @@
 TOOO:
 -------------
+TODO: API documentation
+	zounds.acquire
+	zounds.analyze.extractor
+	zounds.analyze.feature
+	zounds.data
+		zounds.data.frame
+	zounds.learn
+		zounds.learn.cluster
+		zounds.learn.nnet
+		fetch
+		preprocess
+	zounds.model
+		frame
+		framesearch
+		pipeline
+	zounds.nputil
+		*
+	zounds.environment
+
+
+- Make a note about audio settings for a VM (if they work)
+
+- Make a note in installation about answering "yes" to the JACK installation
+  question
+  
 - Add readme file with attributions to the pre-selected sounds
 
 - Test the quickstart features using a composite of (loudness,centroid,flatness)
@@ -18,13 +43,15 @@ TOOO:
 
 TODO: Do another installation test run and move up a new dist package
 
-TODO: API documentation
+
 
 Fix tile normalization problem
 
 - Bookmark searches
 
 - Button to reload page
+
+- Freesound attribution
 
 - Limit search sizes
 
