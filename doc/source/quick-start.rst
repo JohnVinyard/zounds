@@ -19,44 +19,52 @@ The Configuration File
 Change directory into the new myapp folder, and open up config.py in your favorite
 text editor. You'll see something like this::
 
-	# The name of your application
+	# import zounds' logging configuration so it can be used in this application
+	from zounds.log import *
+
+	# User Config
 	source = 'myapp'
 	
-	
+	# Audio Config
 	class AudioConfig:
 	    samplerate = 44100
 	    windowsize = 2048
 	    stepsize = 1024
 	    window = None
 	
+	# FrameModel
 	from zounds.model.frame import Frames, Feature
 	from zounds.analyze.feature.spectral import FFT,BarkBands
 	
-	# Here's where we define the features we're interested in.
 	class FrameModel(Frames):
 	    fft = Feature(FFT, store = False)
 	    bark = Feature(BarkBands, needs = fft, nbands = 100, stop_freq_hz = 12000)
 	
+	
 	# Data backends
 	from zounds.model.framesearch import ExhaustiveSearch
+	from zounds.model.pipeline import Pipeline
 	from zounds.data.frame import PyTablesFrameController
 	from zounds.data.search import PickledSearchController
+	from zounds.data.pipeline import PickledPipelineController
 	
 	data = {
-	    ExhaustiveSearch    : PickledSearchController()
+	    ExhaustiveSearch    : PickledSearchController(),
+	    Pipeline            : PickledPipelineController()
 	}
 	
 	
 	from zounds.environment import Environment
 	dbfile = 'datastore/frames.h5'
-	# setup the environment for our Zounds application
 	Z = Environment(
-	                source,                             # name of this application
-	                FrameModel,                         # our frame model
-	                PyTablesFrameController,            # FrameController class
-	                (FrameModel,dbfile),                # FrameController args
-	                data,                                # data-backend config
-	                audio = AudioConfig)
+	                source,                  # name of this application
+	                FrameModel,              # our frame model
+	                PyTablesFrameController, # FrameController class
+	                (FrameModel,dbfile),     # FrameController args
+	                data,                    # data-backend config
+	                audio = AudioConfig)     # audio configuration     
+
+
 
 That's a lot to take in, but the parts we're interested for now are the AudioConfig,
 FrameModel, and Environment classes.
@@ -74,7 +82,7 @@ which define how this zounds application will handle audio::
 	    window = None
 
 This application's default sample rate will be 44100 hertz. Any incoming sound
-files with a different sample rate will be resample prior to processing.  We'll
+files with a different sample rate will be resampled prior to processing.  We'll
 process windows of 2048 samples at a time, and each window will overlap with the
 previous window by half.
 
@@ -120,12 +128,15 @@ near the top, so that everything will be wired up correctly.
 =====================================================
 Importing Audio
 =====================================================
-Let's analyze some audio! Use the following command, replacing the --path option
-with the path to a directory on your computer that contains some audio files::
+Let's analyze some audio! Use the following command::
 
-	python ingest.py --path /path/to/audio_folder
+	python ingest.py
 
-If you don't have any audio files laying around, I highly recommend `Freesound.org <http://www.freesound.org>`_.
+to download a small set of pre-selected sounds and process them, or run::
+	
+	python ingest.py --path /path/to/my/sounds
+
+to process a folder full of sounds on your machine.  If you don't have any audio files laying around, I highly recommend `Freesound.org <http://www.freesound.org>`_.
 
 .. WARNING::
 	Keep in mind that Zounds can't handle mp3 files yet.  Mp3 files will be skipped by ingest.py.
@@ -135,7 +146,7 @@ Visualize the Results
 =====================================================
 Let's make sure that the analysis worked. Type::
 
-	python display.py display
+	python display.py
 
 This will create a simple html file with images of the features we just computed.
 Use your favorite browser to view the results like so::
@@ -168,7 +179,7 @@ Here, we've added three new features
 Save the file. Now, the next time we try to do anything in our app, the changes
 will be detected, and the datastore will be updated to reflect our changes. Let's run::
 
-	python display.py display
+	python display.py
 
 again. You should see some indication that your database is being upgraded.  Take
 a look at the results again, e.g.::
@@ -203,6 +214,12 @@ other features and search implementations.
 The FrameModel class
 ====================================================
 Let's see what the FrameModel class you defined in config.py is good for.::
+
+	>>> from config import FrameModel,Z
+	>>> frames = FrameModel.random()
+	hai!
+
+And then this::
 	
 	from config import FrameModel,Z
 	import numpy as np

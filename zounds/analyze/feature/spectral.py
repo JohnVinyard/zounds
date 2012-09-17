@@ -3,13 +3,64 @@ from __future__ import division
 import numpy as np
 from scipy.stats.mstats import gmean
 from scipy.stats import kurtosis
-from scipy.signal import triang
+from scipy.signal import triang,lfilter
+from scipy.signal.filter_design import butter
 from scipy.fftpack import dct
 
 from zounds.environment import Environment
 from zounds.analyze.extractor import SingleInput
 import zounds.analyze.bark as bark
-from zounds.nputil import safe_log,flatten2d
+from zounds.nputil import safe_log,flatten2d,sliding_window
+
+
+class BandpassFilter(SingleInput):
+    
+    def __init__(self,needs = None, key = None, nframes = 1, step = 1,
+                 start_band = None,stop_band = None,filter_order = 6):
+        
+        SingleInput.__init__(self, needs = needs, nframes = nframes, 
+                             step = step, key = key)
+        if start_band < 0 or start_band >= stop_band:
+            raise ValueError('start band must be less stop band')
+        
+        if stop_band > 1:
+            raise ValueError('start_band and stop_band be between 0 and 1')
+        
+        self._start_band = start_band
+        self._stop_band = stop_band
+        print self._start_band,self._stop_band
+        self._coeffs = butter(\
+            filter_order,(self._start_band,self._stop_band),btype = 'bandpass')
+        print np.abs(np.roots(self._coeffs[1]))
+        assert np.all(np.abs(np.roots(self._coeffs[1]))<1)
+        self._env = Environment.instance
+        self._dim = self._env.windowsize
+        self._window = self._env.window if None is not self._env.window else 1
+        
+    @property
+    def dtype(self):
+        return np.float32
+    
+    def dim(self,env):
+        return self._dim
+    
+    def _process(self):
+        # KLUDGE: This will produce discontinuities at chunk boundaries. I can
+        # live with this for now. The right way is to look at how lfilter works,
+        # and mantain whatever state is necessary to filter properly across
+        # chunk boundaries
+        data = self.in_data
+        assert not np.any(np.isnan(data))
+        env = Environment.instance
+        # data is windowed audio data. create an audio signal
+        audio = env.synth(data)
+        assert not np.any(np.isnan(audio))
+        # bandpass filter the audio signal
+        filtered = lfilter(self._coeffs[0],self._coeffs[1],audio)
+        assert not np.any(np.isnan(filtered))
+        return sliding_window(filtered,env.windowsize,env.stepsize) * self._window
+        
+        
 
 
 class FFT(SingleInput):
