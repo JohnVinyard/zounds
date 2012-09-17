@@ -16,13 +16,19 @@ from zounds.environment import Environment
 
 class Feature(object):
     '''
-    
+    A useful descriptor for audio
     '''
+    
     def __init__(self,extractor_cls,store=True,needs=None,**kwargs):
-        '''
-        A useful descriptor for audio
+        '''__init__
         
-        :param extractor_cls: Extractor-derived class that will compute this feature
+        :param extractor_cls: Extractor-derived class that will compute this \
+        feature
+        :param store: If True, the feature will be stored, otherwise, the \
+        feature will be computed, but not stored.
+        :param needs: a Feature instance, or a list of Feature instances which \
+        are required to compute this feature
+        :param kwargs: arguments to pass to the Extractor class' __init__ method
         '''
         self.extractor_cls = extractor_cls
         self.store = store
@@ -374,8 +380,10 @@ class MetaFrame(type):
 
 class Frames(Model):
     '''
-    
+    Frames-derived classes can easily define a feature extraction plan by
+    defining class attributes which are Feature instances.
     '''
+    
     __metaclass__ = MetaFrame
     
     _string_dtype = 'a32'
@@ -427,11 +435,17 @@ class Frames(Model):
     
         
     def __len__(self):
+        '''
+        The length of this instance, in seconds
+        '''
         return len(self._data)
     
     # TODO: Write tests for overlapping and non-overlapping windows
     @property
     def seconds(self):
+        '''
+        The length of this instance, in seconds, once synthesized
+        '''
         return self.env().frames_to_seconds(len(self))
     
     def __getitem__(self,key):

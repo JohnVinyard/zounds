@@ -5,3 +5,4 @@ API Documentation
 	:maxdepth: 2
 	
 	environment
+	model
