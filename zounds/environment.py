@@ -15,7 +15,10 @@ class AudioConfig:
 
 class Environment(object):
     '''
-    A Zounds client application
+    An Environment instance encapsulates all the settings required for a zounds
+    application. It includes information about how audio will be processed and
+    stored, which audio features will be computed, and which data backends
+    will be used to store zounds.model.* instances.
     '''
     
     n_cores = cpu_count()
@@ -36,12 +39,22 @@ class Environment(object):
     def __init__(self,source,framemodel,framecontroller,framecontroller_args,
                 data,audio = AudioConfig,chunksize_seconds = 45.,do_sync = True):
         
+        '''__init__
         
+        :param source: The name of the application
+        :param framemodel: A zounds.model.frame.Frames-derived class, which defines the features to be computed
+        :param framecontroller: A zounds.data.frame.FrameController-derived class which handles the persistence, retrieval, and indexing of audio features.
+        :param framecontroller_args: A tuple of arguments to be passed to the framecontroller class' __init__ method
+        :param data: A dictionary-like object mapping other zounds.model.* classes to data backend instances
+        :param audio: A class or object with attributes defining the sample rate, window and step size, and the window (e.g., blackman-harris) to be applied to windows of audio samples prior to any processing.
+        :param chunksize_seconds: The number of seconds of audio that will be passed to the root extractor at a time
+        :param do_sync: Mostly for internal use. This should usually be True.
+        ''' 
         object.__init__(self)
         
         self.do_sync = do_sync
         
-        # audio settings, samplerate, windowsize and stepsize
+        #: audio settings, samplerate, windowsize and stepsize
         self.audio = audio
         
         self.chunksize_seconds = chunksize_seconds
@@ -61,8 +74,8 @@ class Environment(object):
         # application's name
         self.source = source
         
-        # a frame.model.Frames derived class that defines the features that
-        # the client app considers important
+        #: a frame.model.Frames derived class that defines the features that
+        #: the client app considers important
         self.framemodel = framemodel
         
         self.framecontroller_class = framecontroller
@@ -98,9 +111,21 @@ class Environment(object):
                         framemodel = self.framemodel)
     
     def play(self,audio,block = True):
+        '''play
+        
+        Play some audio.
+        
+        :param audio: the audio attribute of a Frames-derived instance
+        :param block: If True, block until the audio is finished playing, \
+        otherwise, play the audio in the background.
+        '''
         self.synth.play(audio,block = block)
     
     def shush(self):
+        '''shush
+        
+        Silence *all* currently playing audio 
+        '''
         self.synth.shush()
     
     @property
@@ -109,24 +134,55 @@ class Environment(object):
         
     @property
     def windowsize(self):
+        '''
+        The window-size, in samples, to be used when processing audio
+        '''
         return self.audio.windowsize
     
     @property
     def stepsize(self):
+        '''
+        The step-size, in samples, to be used when processing audio
+        '''
         return self.audio.stepsize
     
     @property
     def samplerate(self):
+        '''
+        The sample rate, in hz, to be used when processing audio.  Incoming \
+        sounds with a different sample rate will be re-sampled prior to processing.
+        '''
         return self.audio.samplerate
     
     @property
     def window(self):
+        '''
+        The windowing function (e.g. blackman-harris) to be applied to windows \
+        of audio samples prior to processing.
+        '''
         return self.audio.window
     
     def seconds_to_frames(self,secs):
+        '''seconds_to_frames
+        
+        Convert seconds to frames, i.e., windows of audio, using the current \
+        audio settings
+        
+        :param secs: The number of seconds to convert to frames
+        :returns: An integer number of frames
+        '''
         return int((secs * self.samplerate) / self.stepsize)
     
     def frames_to_seconds(self,nframes):
+        '''frames_to_seconds
+        
+        Convert a number of frames, i.e., windows of audio, to seconds using the\
+        current audio settings
+        
+        :param nframes: The number of frames to convert to seconds
+        :returns: The number of frames corresponding to seconds, given the \
+        current audio settings.
+        '''
         if not nframes:
             return 0
         

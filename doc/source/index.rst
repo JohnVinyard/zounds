@@ -4,6 +4,8 @@
    contain the root `toctree` directive.
 
 
+
+
 Welcome to Zounds' documentation!
 ==================================
 **Zounds** is a library designed to make experimenting with audio features a breeze!
@@ -47,9 +49,12 @@ Get the source: `Zounds on BitBucket <https://bitbucket.org/jvinyard/zounds2/src
 
 Documentation
 =====================================
-* :doc:`Installation </installation>`
-* :doc:`Quick Start </quick-start>`
-* TODO: API Documentation
+.. toctree::
+	:maxdepth: 2
+	
+	installation
+	quick-start
+	api
 
 
 Indices and tables
