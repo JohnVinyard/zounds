@@ -1,9 +1,20 @@
 TOOO:
 -------------
+- Add readme file with attributions to the pre-selected sounds
+
+- Test the quickstart features using a composite of (loudness,centroid,flatness)
+  for the exhaustive search. Use the --normalize cmd line option, and link to
+  the ExhaustiveSearch documentation
+ 
+
+- Do the last part of the quickstart tutorial as an interactive session
+
 - Update build instructions and quickstart tutorial
 	- make a note about logging out and logging in again after running setup.py
 
 - cplay.o permissions error?
+
+- try audio settings suggested here: http://jaket.is-a-geek.com/blog/linux/glitchy-audio-on-puredyne-in-a-virtual-machine
 
 TODO: Do another installation test run and move up a new dist package
 
@@ -12,6 +23,8 @@ TODO: API documentation
 Fix tile normalization problem
 
 - Bookmark searches
+
+- Button to reload page
 
 - Limit search sizes
 

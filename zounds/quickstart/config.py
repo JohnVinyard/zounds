@@ -22,11 +22,14 @@ class FrameModel(Frames):
 
 # Data backends
 from zounds.model.framesearch import ExhaustiveSearch
+from zounds.model.pipeline import Pipeline
 from zounds.data.frame import ${ControllerClassName}
 from zounds.data.search import PickledSearchController
+from zounds.data.pipeline import PickledPipelineController
 
 data = {
-    ExhaustiveSearch    : PickledSearchController()
+    ExhaustiveSearch    : PickledSearchController(),
+    Pipeline            : PickledPipelineController()
 }
 
 

@@ -67,6 +67,19 @@ While you're still in the source distribution directory, run::
 to make sure everything is working.
 
 =================================
+Test Audio
+=================================
+Zounds uses the `JACK <http://jackaudio.org/>`_ library to play audio.  Setup.py
+added the user you're logged in as to the "audio" group, which gives you realtime
+audio permissions. You'll need to log out and back in for these changes to take
+effect. Once you do, run::
+
+	zounds-audio-test.py
+
+You should hear a rhythmic ticking sound. This means that everything is setup
+properly.
+
+=================================
 Bravo!
 =================================
 You've succesfully installed zounds! Now on to the :doc:`Quick Start Tutorial </quick-start>`

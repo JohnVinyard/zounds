@@ -13,8 +13,8 @@ class Downsample(SingleInput):
         
         SingleInput.__init__(self,needs = needs,key = key,
                              step = step, nframes = nframes)
-        if 2 != len(inshape):
-            raise ValueError('Downsample expects a 2d input')
+        #if 2 != len(inshape):
+        #    raise ValueError('Downsample expects a 2d input')
         
         self._inshape = norm_shape(inshape)
         self._factor = factor 
@@ -29,6 +29,7 @@ class Downsample(SingleInput):
         return np.float32
     
     def _process(self):
+        '''
         data = self.in_data
         print data.shape
         l = data.shape[0]
@@ -41,7 +42,10 @@ class Downsample(SingleInput):
             return ds
         
         return flatten2d(ds)
-        
+        '''
+        # KLUDGE: This is temporary. It's only appropriate for
+        # 1D inputs
+        return self.in_data[:,::self._factor]
 
 class Reduce(Basic):
     
