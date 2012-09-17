@@ -1,4 +1,4 @@
 Pattern
 =================================
-.. automodule:: model.pattern
+.. automodule:: zounds.model.pattern
 	:members:

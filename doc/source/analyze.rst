@@ -1,4 +1,4 @@
 Analyze
 ======================================
-.. automodule:: analyze.audiostream
+.. automodule:: zounds.analyze.audiostream
 	:members:
