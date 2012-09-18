@@ -21,7 +21,7 @@ class BandpassFilter(SingleInput):
         SingleInput.__init__(self, needs = needs, nframes = nframes, 
                              step = step, key = key)
         if start_band < 0 or start_band >= stop_band:
-            raise ValueError('start band must be less stop band')
+            raise ValueError('start band must be less than stop band')
         
         if stop_band > 1:
             raise ValueError('start_band and stop_band be between 0 and 1')
@@ -50,14 +50,11 @@ class BandpassFilter(SingleInput):
         # and mantain whatever state is necessary to filter properly across
         # chunk boundaries
         data = self.in_data
-        assert not np.any(np.isnan(data))
         env = Environment.instance
         # data is windowed audio data. create an audio signal
         audio = env.synth(data)
-        assert not np.any(np.isnan(audio))
         # bandpass filter the audio signal
         filtered = lfilter(self._coeffs[0],self._coeffs[1],audio)
-        assert not np.any(np.isnan(filtered))
         return sliding_window(filtered,env.windowsize,env.stepsize) * self._window
         
         
@@ -318,9 +315,12 @@ class SpectralCentroid(SingleInput):
             centroid = Feature(SpectralCentroid, needs = bark)
     '''
     
-    def __init__(self,needs = None,key = None,step = 1):
+    def __init__(self,needs = None,key = None):
+        '''__init__
         
-        SingleInput.__init__(self,needs = needs,key = key, step = step)
+        :param needs: A feature which probably consists of spectral coefficients
+        '''
+        SingleInput.__init__(self,needs = needs,key = key)
         self._bins = None
         self._bins_sum = None
     
@@ -357,10 +357,23 @@ class SpectralFlatness(SingleInput):
     spectrum would appear "spiky"..."
     
     From http://en.wikipedia.org/wiki/Spectral_flatness
+    
+    This feature's :code:`needs` parameter usually points to a feature which \
+    computes spectral coefficients, such as :py:class:`FFT`, or \
+    :py:class:`BarkBands`, e.g.:
+    
+        class FrameModel(Frames):
+            fft = Feature(FFT)
+            bark = Feature(BarkBands, needs = FFT)
+            centroid = Feature(SpectralFlatness, needs = bark)
     '''
     
-    def __init__(self, needs = None, key = None, step = 1):
-        SingleInput.__init__(self,needs = needs, key = key, step = step)
+    def __init__(self, needs = None, key = None):
+        '''__init__
+        
+        :param needs: A feature which probably consists of spectral coefficients
+        '''
+        SingleInput.__init__(self,needs = needs, key = key)
     
     def dim(self,env):
         return ()
@@ -391,8 +404,46 @@ class Kurtosis(SingleInput):
         return kurtosis(self.in_data,axis = 1)
     
 class BFCC(SingleInput):
+    '''
+    BFCC stands for Bark Frequency Cepstral Coefficients. It is very similar to \
+    the popular \
+    `MFCC, or Mel Frequency Cepstral Coefficients <http://en.wikipedia.org/wiki/Mel-frequency_cepstrum>`_, \
+    only differing \
+    in the psychoacoustical scale onto which FFT coefficients are mapped prior \
+    to computing the cepstrum.  The aim of both features is to describe the shape \
+    of the spectrum in a frequency-invariant way.  Concretely (and ideally), a \
+    saxophone playing two different notes, perhaps in different octaves, would
+    still have the same "shape".  The feature is computed as follows:
+        
+        * Take an STFT of audio data
+        * map the fourier coefficients onto the Bark scale
+        * Take the log() of the coefficients, to decrease dynamic range
+        * Take a DCT of the log of the coefficients.  This is essentially a \
+          spectrum of the fourier spectrum.  Typically, only the first 12 or 13 \
+          DCT coefficients are kept, since the majority of the signal's energy \
+          is concentrated in the these lower frequencies.
+    
+    For the sake of decomposability, the :code:`BFCC` class does not implement \
+    the first two steps itself, but expects :py:class:`BarkBands` as input::
+    
+        class FrameModel(Frames):
+            fft = Feature(FFT)
+            bark = Feature(BarkBands, needs = fft, nbands = 200)
+            bfcc = Feature(BFCC, needs = bark)
+    '''
     
     def __init__(self, needs = None, key = None, ncoeffs = 13,exclude = 1):
+        '''__init__
+        
+        :param needs: A :py:class:`BarkBands` feature
+        
+        :param ncoeffs: The number of DCT coefficients to keep. 12 or 13 is a \
+        commonly chosen number
+        
+        :param exclude: How many of the bottom DCT coefficients to discard. It's \
+        typical to discard the first coefficient, since it can roughly be \
+        interpreted as the signal's overall loudness.
+        '''
         SingleInput.__init__(self, needs = needs, key = key)
         self.ncoeffs = ncoeffs
         # the first coefficient is often dropped, as it carries information
@@ -411,6 +462,8 @@ class BFCC(SingleInput):
         
         return dct(safe_log(barks),axis = 1)[:,self.exclude: self.exclude + self.ncoeffs]
 
+# TODO: Write docs for this demonstrating how to find periodicities in a 
+# loudness input
 class AutoCorrelation(SingleInput):
     '''
     Compute the autocorrelation, using the Wiener-Khinchin theorem, detailed
@@ -435,13 +488,42 @@ class AutoCorrelation(SingleInput):
         f2 = f*f.conjugate()
         return np.fft.ifft(f2,axis = -1)
 
-
+# TODO: Consider adding an option to normalize (i.e. give unit-norm) to frames
+# to de-emphasize volume changes and emphasize spectral changes alone, as suggested
+# here: http://en.wikipedia.org/wiki/Spectral_flux
 class Difference(SingleInput):
-    def __init__(self, needs = None, key = None, size = None):
+    '''
+    Compute the first-order difference between the current frame of features and 
+    a previous frame in any number of dimensions.  Typically, this will serve 
+    as a precursor to the :py:class:`Flux` feature.  The first frame is also
+    compared to zeros of the same dimension as the input feature.
+    
+    To calculate the change in loudness over time::
+    
+        class FrameModel(Frames):
+            fft = Feature(FFT)
+            loudness = Feature(Loudness, needs = fft)
+            diff = Feature(Difference, needs = loud)
+    
+    To calculate the difference between successive FFT frames, a precursor to
+    computing spectral flux::
+    
+        class FrameModel(Frames):
+            fft = Feature(FFT)
+            # this assumes a window size of 2048
+            diff = Feature(Difference, needs = FFT, inshape = 1024)
+    '''
+    
+    def __init__(self, needs = None, key = None, inshape = ()):
+        '''__init__
+        
+        :param needs: The feature to compute the first-order difference over
+        
+        :param inshape: The shape of individual input frames. By default, a \
+        one-dimensional signal is expected
+        '''
         SingleInput.__init__(self, needs = needs, key = key)
-        if not size:
-            raise ValueError('please specifiy a size')
-        self.size = size
+        self.inshape = inshape
         self._memory = np.zeros(self.size)
         
     @property
@@ -449,7 +531,7 @@ class Difference(SingleInput):
         return np.float32
     
     def dim(self,env):
-        return self.size
+        return self.inshape
     
     def _process(self):
         indata = self.in_data
@@ -458,8 +540,23 @@ class Difference(SingleInput):
         return output
 
 class Flux(SingleInput):
+    '''
+    Compute the Euclidean norm of the difference between successive vectors.  For \
+    the sake of decomposability, this extractor expects :py:class:`Difference` as \
+    an input.  To compute spectral flux::
+    
+        class FrameModel(Frames):
+            fft = Feature(FFT)
+            # this assumes a window size of 2048
+            diff = Feature(Difference, needs = fft, inshape = 1024)
+            flux = Feature(Flux, needs = diff)
+    '''
     
     def __init__(self, needs = None, key = None):
+        '''__init__
+        
+        :param needs: The feature whose euclidean norm should be computed
+        '''
         SingleInput.__init__(self, needs = needs, key = key)
     
     @property
