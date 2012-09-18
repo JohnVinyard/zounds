@@ -20,9 +20,11 @@ TODO: API documentation
 	zounds.environment
 
 
+- try audio settings suggested here: http://jaket.is-a-geek.com/blog/linux/glitchy-audio-on-puredyne-in-a-virtual-machine
+
 - Make a note about audio settings for a VM (if they work)
 
-- Make a note in installation about answering "yes" to the JACK installation
+- Make a note in installation docs about answering "yes" to the JACK installation
   question
   
 - Add readme file with attributions to the pre-selected sounds
@@ -31,7 +33,6 @@ TODO: API documentation
   for the exhaustive search. Use the --normalize cmd line option, and link to
   the ExhaustiveSearch documentation
  
-
 - Do the last part of the quickstart tutorial as an interactive session
 
 - Update build instructions and quickstart tutorial
@@ -39,11 +40,7 @@ TODO: API documentation
 
 - cplay.o permissions error?
 
-- try audio settings suggested here: http://jaket.is-a-geek.com/blog/linux/glitchy-audio-on-puredyne-in-a-virtual-machine
-
 TODO: Do another installation test run and move up a new dist package
-
-
 
 Fix tile normalization problem
 
@@ -59,13 +56,23 @@ Fix tile normalization problem
 
 - Upload new tarball of .02 to BitBcket
 
+- Move bugs and feature "requests" into bitbucket issue tracker
+
+- start a planning document for the higher level/ more abstract stuff
+
 
 After job-hunt
 ========================================================================
+- PrecomputedPatch limits itself to the same number of samples as PrecomputedFeature,
+  even if there might be an opportunity to gather many more samples.
+
+- zounds.learn.fetch.Patch should implement the __iter__ method, so it can
+  be used interchangeably with an NDPatch with one Patch argument
+ 
+
 Why is search slower?  I think it's the fetching of the frames,FileSystem-style
 	- Hint, I'm not seeing the longer times in search.py, only websearch
 	- Hint 2- it's about reading from the file!
-
 
 - How do I know when the jack server is ready? (get rid of sleep() call)
 
@@ -74,7 +81,8 @@ Why is search slower?  I think it's the fetching of the frames,FileSystem-style
 - JACK player doesn't do any resampling. If Environment.samplerate and
   JACK's samplerate disagree, all buffers must be resampled
  
-- Nice printing for dictionaries (maybe using pprint.format)?
+- For __str__ and __repr__ methods, nice printing for dictionaries 
+  (maybe using pprint.format)?
 
 - FileSystemFrameController.stat implementation sucks (see TODO notes)
 
@@ -90,7 +98,7 @@ TODO: extractors using multiprocessing hang when updating database
 	(Is this the case with FileSystemFrameController?) - Use PoolX in Template.py
 	and see if the problem persists
 
-- Get rid of binary incompatibility warning from nputil.countbits.pyx
+- Get rid of binary incompatibility warning from pyx files
 
 - tests for all extractors
 
@@ -137,8 +145,6 @@ Finish Constant-Q implementation
 - Try RBM and autoencoder for learning patch centroids, instead of KMeans
 
 PrecomputedFeature with filter (e.g. sum() > n) tests
-
-- RBM/Autoencoder-based audio encoding?
 
 - Why is FrameModel.extractor_chain() so slow?
 
