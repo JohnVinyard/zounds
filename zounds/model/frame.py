@@ -16,7 +16,9 @@ from zounds.environment import Environment
 
 class Feature(object):
     '''
-    A useful descriptor for audio
+    A useful descriptor for audio::
+    
+        a = 10
     '''
     
     def __init__(self,extractor_cls,store=True,needs=None,**kwargs):
@@ -436,7 +438,7 @@ class Frames(Model):
         
     def __len__(self):
         '''
-        The length of this instance, in seconds
+        The length of this instance, in frames
         '''
         return len(self._data)
     
@@ -511,6 +513,7 @@ class Frames(Model):
         
     @classmethod
     def list_ids(cls):
+        
         return cls.controller().list_ids()
     
     @classmethod
