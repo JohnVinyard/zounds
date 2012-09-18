@@ -64,9 +64,66 @@ class BandpassFilter(SingleInput):
 
 
 class FFT(SingleInput):
+    '''
+    Compute the real-valued magnitudes of input data.  This means that
+        * phase is discarded
+        * the zero-frequency term is discarded
+        * all magnitudes are positive
+    
+    The most common use for this class will be to compute the STFT of audio \
+    frames.  This is the default behavior::
+    
+        class FrameModel(Frames):
+            fft = Feature(FFT)
+    
+    It is possible to apply this class to other signals.  To apply an FFT to the
+    STFT we just computed, similar to the frequency-invariance-promoting \
+    operation performed when computing \
+    `MFCCs or BFCCs <http://en.wikipedia.org/wiki/Mel-frequency_cepstrum>`_, we
+    can do the following::
+    
+        class FrameModel(Frames):
+            # compute the STFT
+            fft = Feature(FFT)
+            # take an FFT of the spectrum itself.  Note that this example 
+            # assumes an audio configuration with a window size of 2048 samples.
+            # The output shape of the "fft" feature will be 1024, and the output
+            # shape of this feature will be 512.
+            cepstrum = Feature(FFT, needs = fft, inshape = 1024)
+    
+    We could also try to find periodicities in the overall amplitude of the 
+    signal, like so::
+    
+        class FrameModel(Frames):
+            # compute the STFT
+            fft = Feature(FFT)
+            # Compute the "loudness" of the signal by summing each FFT frame
+            loudness = Feature(Loudness, needs = fft)
+            # Each time we've collected 60 frames of loudness data, apply a 
+            # fourier transform.  This spectrum should display strong peaks if
+            # the signal is periodic over time.
+            periods = Feature(FFT, needs = loudness, inshape = 60, nframes = 60, step = 30)
+    '''
     
     def __init__(self, needs = None, key = None, inshape = None, 
                  nframes = 1, step = 1, axis = -1):
+        '''__init__
+        
+        :param needs: the single feature we'll be applying a fourier transform to
+         
+        :param nframes: the number of frames to collect before performing a computation
+        
+        :param step: step size. This determines the overlap between successive frames
+        
+        :param inshape: The shape of individual frames of incoming data. This must \
+        be specified if this extractor is doing something other than its default \
+        behavior, which is to compute an STFT of audio frames whose size, overlap \
+        and windowing function is determined by the current \
+        :py:class:`~zounds.environment.Environment` instance.
+        
+        :param axis: The axis of :code:`self.in_data` over which the FFT should \
+        be computed.  The default is the last axis.
+        '''
         
         SingleInput.__init__(self, needs = needs, nframes = nframes, 
                              step = step, key = key)
@@ -111,14 +168,37 @@ class FFT(SingleInput):
         return flatten2d(out)
     
 class BarkBands(SingleInput):
+    '''
+    Maps STFT coefficients computed from raw audio data onto the \
+    `Bark psychoacoustical scale <http://en.wikipedia.org/wiki/Bark_scale>`_.  \
+    While most of the energy in the FFT is concentrated in the lower-frequency
+    coefficients, energy will be more evenly distributed across the Bark \
+    coefficients.
     
+    Most of the time, :code:`BarkBands` will be used like this:::
+    
+        class FrameModel(Frames):
+            fft = Feature(FFT)
+            bark = Feature(BarkBands, needs = fft)
+    '''
     
     def __init__(self,needs=None, key=None,
-                 nbands = None,start_freq_hz = 50, stop_freq_hz = 20000):
+                 nbands = 100,start_freq_hz = 50, stop_freq_hz = 20000):
+        '''__init__
+        
+        :param needs:  The source feature. This should usually be a \
+        :py:class:`FFT` feature with the default behavior
+        
+        :param nbands: The resolution of the Bark spectrum
+        
+        :param start_freq_hz: FFT coefficients representing frequencies below \
+        this value will be excluded.
+        
+        :param stop_freq_hz: FFT coefficients representing frequencies above \
+        this value will be excluded.
+        '''
         
         SingleInput.__init__(self,needs=needs, nframes=1, step=1, key=key)
-        if None is nbands:
-            raise ValueError('an integer must be supplied for nbands')
         
         self.nbands = nbands
         self.env = Environment.instance
@@ -171,8 +251,35 @@ class BarkBands(SingleInput):
                                self._triwins)
 
 class Loudness(SingleInput):
+    '''
+    Loudness performs no psychoacoustical weighting of input frequencies, and
+    simply sums input data over one or more dimensions.  It should probably
+    be replaced by a more general :code:`Sum` class.
+    
+    It can be used to find the magnitude of individual frames of FFT \
+    coefficients, e.g.::
+    
+        class FrameModel(Frames):
+            fft = Feature(FFT)
+            loudness = Feature(Loudness, needs = fft)
+    
+    Or, it can be used to sum over both frequency and time, like so::
+    
+        class FrameModel(Frames):
+            fft = Feature(FFT)
+            loudness = Feature(Loudness, needs = fft, nframes = 10, step = 4)
+    '''
     
     def __init__(self,needs=None,nframes=1,step=1,key=None):
+        '''__init__
+        
+        :param needs: The feature to be summed
+        
+        :param nframes: The number of frames from the source feature to sum over
+        
+        :param step: The number of frames of the input feature described by a \
+        single frame of this feature
+        '''
         SingleInput.__init__(self,needs=needs,nframes=nframes,step=step,key=key)
     
     def dim(self,env):
@@ -200,9 +307,19 @@ class SpectralCentroid(SingleInput):
     their magnitudes as the weights..."
     
     From http://en.wikipedia.org/wiki/Spectral_centroid
+    
+    This feature's :code:`needs` parameter usually points to a feature which \
+    computes spectral coefficients, such as :py:class:`FFT`, or \
+    :py:class:`BarkBands`, e.g.:
+    
+        class FrameModel(Frames):
+            fft = Feature(FFT)
+            bark = Feature(BarkBands, needs = FFT)
+            centroid = Feature(SpectralCentroid, needs = bark)
     '''
     
     def __init__(self,needs = None,key = None,step = 1):
+        
         SingleInput.__init__(self,needs = needs,key = key, step = step)
         self._bins = None
         self._bins_sum = None
@@ -319,7 +436,6 @@ class AutoCorrelation(SingleInput):
         return np.fft.ifft(f2,axis = -1)
 
 
-        
 class Difference(SingleInput):
     def __init__(self, needs = None, key = None, size = None):
         SingleInput.__init__(self, needs = needs, key = key)
