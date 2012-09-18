@@ -63,6 +63,18 @@ Fix tile normalization problem
 
 After job-hunt
 ========================================================================
+- Good, efficient, cached and computed-on-demand stats implementations for
+ both PyTables and FileSystem that are robust to very large data stores.
+
+
+- FrameModel.extract() method, to get a Frames instance directly, without
+  appending it to the database
+
+- FrameModel.append() method, which does the same thing as FrameController.append()
+
+
+- BarkBands have artifacts when nbands > 150
+
 - PrecomputedPatch limits itself to the same number of samples as PrecomputedFeature,
   even if there might be an opportunity to gather many more samples.
 

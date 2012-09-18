@@ -5,7 +5,6 @@ import numpy as np
 from zounds.constants import audio_key,id_key,source_key,external_id_key
 from zounds.model.model import Model
 from zounds.model.pattern import FilePattern,DataPattern
-# KLUDGE: These are temporarily set to point at the experimental analyze2 module
 from zounds.analyze.extractor import Extractor,ExtractorChain
 from zounds.analyze.feature.metadata import \
     MetaDataExtractor, LiteralExtractor,CounterExtractor
@@ -16,21 +15,31 @@ from zounds.environment import Environment
 
 class Feature(object):
     '''
-    A useful descriptor for audio::
+    To define individual features of interest, instantiate Feature instances
+    as attributes of your :py:class:`~zounds.model.frame.Frames`-derived class::
     
-        a = 10
+        class FrameModel(Frames):
+            fft = Feature(FFT,needs = None, store = False)
+            bark = Feature(BarkBands, needs = fft, nbands = 100)
+            centroid = Feature(SpectralCentroid, needs = bark) 
     '''
     
     def __init__(self,extractor_cls,store=True,needs=None,**kwargs):
         '''__init__
         
-        :param extractor_cls: Extractor-derived class that will compute this \
-        feature
+        :param extractor_cls: An \
+        :py:class:`~zounds.analyze.extractor.Extractor`-derived class that will \
+        compute this feature
+        
         :param store: If True, the feature will be stored, otherwise, the \
         feature will be computed, but not stored.
+        
         :param needs: a Feature instance, or a list of Feature instances which \
         are required to compute this feature
-        :param kwargs: arguments to pass to the Extractor class' __init__ method
+        
+        :param kwargs: arguments to pass to the \
+        :py:class:`~zounds.analyze.extractor.Extractor`-derived class' \
+        __init__ method
         '''
         self.extractor_cls = extractor_cls
         self.store = store
@@ -75,29 +84,49 @@ class Feature(object):
     
     @property
     def step(self):
+        '''
+        The step size of this feature, i.e., the number of audio frames one
+        frame of this feature describes.  Note that this value is relative to
+        the step sizes of features on which this feature depends. E.g., if this
+        feature has a step size of 2, and the feature on which it depends also
+        has a step size of 2, a single frame of this feature describes *4* audio
+        frames.
+        '''
         return self.extractor().step
     
     @property
     def nframes(self):
+        '''
+        The number of frames of data that must be gathered from source features
+        before this feature can be computed.  Note that this value is relative
+        to the nframes values of source features. E.g., if this feature has an
+        nframes value of 3, and the feature on which it depends has an nframes
+        value of 2, *6* audio frames are required to compute this feature.
+        '''
         return self.extractor().nframes
     
     # BUG: This may not always return the correct answer, if the property
     # depends on the input sources. See Composite extractor, e.g.
     @property
     def dtype(self):
+        '''
+        The numpy datatype used to store this feature
+        '''
         return self.extractor().dtype
     
     # BUG: This may not always return the correct answer, if the property
     # depends on the input sources. See Composite extractor, e.g.
     @property
     def dim(self):
+        '''
+        The shape, or dimension, of a single computed frame of this feature
+        '''
         return self.extractor().dim(Environment.instance)
     
     @recurse
     def depends_on(self):
         '''
-        Return all features that this feature directly or indirectly depends
-        on.
+        A list of all features on which this feature directly or indirectly depends
         '''
         return self.needs
     
@@ -107,18 +136,83 @@ class Feature(object):
                                             self,aggregate,step = s, axis = axis)
     
     def mean(self,step = 1,axis = 0):
+        '''
+        Compute the mean of this feature over the entire data store.  Continuing \
+        with our FrameModel above::
+        
+            >>> FrameModel.bark.mean().shape
+            (100,)
+        
+        :param step: step sizes of greater than one speed computation time by \
+        "dropping" samples.
+        :param axis: The axis over which the stat will be computed.  The default \
+        0, will compute a feature-wise mean. axis = 1 will compute a frame-wise \
+        mean.
+        '''
         return self._stat(np.mean,step = step, axis = axis)
     
     def sum(self,step = 1, axis = 0):
+        '''
+        Compute the sum of this feature over the entire data store.  Continuing \
+        with our FrameModel above::
+        
+            >>> FrameModel.bark.sum().shape
+            (100,)
+        
+        :param step: step sizes of greater than one speed computation time by \
+        "dropping" samples.
+        :param axis: The axis over which the stat will be computed.  The default \
+        0, will compute a feature-wise mean. axis = 1 will compute a frame-wise \
+        mean.
+        '''
         return self._stat(np.sum,step = step, axis = axis)
     
     def std(self,step = 1, axis = 0):
+        '''
+        Compute the standard deviation of this feature over the entire data store.\
+          Continuing with our FrameModel above::
+        
+            >>> FrameModel.bark.std().shape
+            (100,)
+        
+        :param step: step sizes of greater than one speed computation time by \
+        "dropping" samples.
+        :param axis: The axis over which the stat will be computed.  The default \
+        0, will compute a feature-wise mean. axis = 1 will compute a frame-wise \
+        mean.
+        '''
         return self._stat(np.std, step = step, axis = axis)
     
     def max(self,step = 1, axis = 0):
+        '''
+        Compute the max of this feature over the entire data store.  Continuing \
+        with our FrameModel above::
+        
+            >>> FrameModel.bark.max().shape
+            (100,)
+        
+        :param step: step sizes of greater than one speed computation time by \
+        "dropping" samples.
+        :param axis: The axis over which the stat will be computed.  The default \
+        0, will compute a feature-wise mean. axis = 1 will compute a frame-wise \
+        mean.
+        '''
         return self._stat(np.max, step = step, axis = axis)
     
     def min(self,step = 1, axis = 0):
+        '''
+        Compute the min of this feature over the entire data store.  Continuing \
+        with our FrameModel above::
+        
+            >>> FrameModel.bark.min().shape
+            (100,)
+        
+        :param step: step sizes of greater than one speed computation time by \
+        "dropping" samples.
+        :param axis: The axis over which the stat will be computed.  The default \
+        0, will compute a feature-wise mean. axis = 1 will compute a frame-wise \
+        mean.
+        '''
         return self._stat(np.min, step = step, axis = axis)
     
     # TODO: Write tests
@@ -382,8 +476,84 @@ class MetaFrame(type):
 
 class Frames(Model):
     '''
-    Frames-derived classes can easily define a feature extraction plan by
-    defining class attributes which are Feature instances.
+    Defining a Frames-derived class is the method by which you specify the set
+    of features you'd like to compute and/or store in your zounds application.
+    E.g. ::
+    
+        class FrameModel(Frames):
+            fft = Feature(FFT,needs = None, store = False)
+            bark = Feature(BarkBands, needs = fft, nbands = 100)
+            centroid = Feature(SpectralCentroid, needs = bark)
+    
+    When you pass this class to the :py:class:`~zounds.environment.Environment` 
+    constructor, you'll end up with a zounds application that knows how to 
+    compute the features you've defined from incoming audio, and how to fetch 
+    them from your data store.
+    
+    In general, you won't instantiate your Frames-derived class explicitly; 
+    instances will be built for you when fetching stored sounds from the database.
+    Continuing with the example above
+        
+       >>> frames = FrameModel['a_zounds_id']
+    
+    Frames-derived instances can also be fetched using a (Source,External ID)
+    pair::
+    
+        >>> frames = FrameModel[('Freesound.org','1234')]
+    
+    Features can be accessed just as you'd expect, and will be returned
+    as n-dimensional numpy arrays
+    
+        >>> frames.bark.dtype
+        <type 'numpy.ndarray'>
+        >>> frames.bark.shape
+        (1137,100)
+    
+    Features that aren't stored will be computed on-the-fly, and cached for the
+    life of the Frames-derived instance
+    
+        >>> frames.fft.dtype
+        <type 'numpy.ndarray'>
+    
+    Frames-derived instances can be indexed just like numpy arrays.  Indexing
+    always returns a new Frames instance::
+    
+        >>> frames = FrameModel.random()
+        >>> frames
+        FrameModel(
+            source = Test2,
+            nframes = 509,
+            zounds_id = 28f4af80358c46fab46e5e83bb4470a3,
+            external_id = 12692__connum__movement-in-c,
+            n_seconds = 11.8421768707)
+        >>> frames[::-1] # reverse the frames
+        FrameModel(
+            source = Test2,
+            nframes = 509,
+            zounds_id = 28f4af80358c46fab46e5e83bb4470a3,
+            external_id = 12692__connum__movement-in-c,
+            n_seconds = 11.8421768707)
+        >>> frames[::4] # get every fourth frame
+        FrameModel(
+            source = Test2,
+            nframes = 128,
+            zounds_id = 28f4af80358c46fab46e5e83bb4470a3,
+            external_id = 12692__connum__movement-in-c,
+            n_seconds = 2.99537414966)
+        >>> frames[10:20] # get a slice of frames
+        FrameModel(
+            source = Test2,
+            nframes = 10,
+            zounds_id = 28f4af80358c46fab46e5e83bb4470a3,
+            external_id = 12692__connum__movement-in-c,
+            n_seconds = 0.255419501134)
+        >>> frames[[10,20,35,16]] # get an arbitrary list of frames
+        FrameModel(
+            source = Test2,
+            nframes = 4,
+            zounds_id = 28f4af80358c46fab46e5e83bb4470a3,
+            external_id = 12692__connum__movement-in-c,
+            n_seconds = 0.116099773243)
     '''
     
     __metaclass__ = MetaFrame
@@ -437,7 +607,8 @@ class Frames(Model):
     
         
     def __len__(self):
-        '''
+        '''__len__
+        
         The length of this instance, in frames
         '''
         return len(self._data)
@@ -446,7 +617,7 @@ class Frames(Model):
     @property
     def seconds(self):
         '''
-        The length of this instance, in seconds, once synthesized
+        The length of this instance, in seconds, given the current environment
         '''
         return self.env().frames_to_seconds(len(self))
     
@@ -504,18 +675,24 @@ class Frames(Model):
             return f
     
     @classmethod
-    def random(cls):
+    def list_ids(cls):
+        '''list_ids
+        
+        List every zounds identifier in the current database.  These will usually
+        be guids.
         '''
-        Return the frames of a random pattern/sound
+        return cls.controller().list_ids()
+    
+    @classmethod
+    def random(cls):
+        '''random
+        
+        Return a random instance of your Frames-derived class
         '''
         _ids = list(cls.list_ids())
         return cls[_ids[np.random.randint(0,len(_ids))]]
         
-    @classmethod
-    def list_ids(cls):
-        
-        return cls.controller().list_ids()
-    
+
     @classmethod
     def stored_features(cls):
         '''

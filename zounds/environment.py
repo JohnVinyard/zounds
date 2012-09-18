@@ -42,18 +42,25 @@ class Environment(object):
         '''__init__
         
         :param source: The name of the application
-        :param framemodel: A zounds.model.frame.Frames-derived class, which \
+        
+        :param framemodel: A :py:class:`zounds.model.frame.Frames`-derived class, which \
         defines the features to be computed
+        
         :param framecontroller: A zounds.data.frame.FrameController-derived \
         class which handles the persistence, retrieval, and indexing of audio features.
+        
         :param framecontroller_args: A tuple of arguments to be passed to the \
         framecontroller class' __init__ method
+        
         :param data: A dictionary-like object mapping other zounds.model.* \
         classes to data backend instances
+        
         :param audio: A class or object with attributes defining the sample \
         rate, window and step size, and the window (e.g., blackman-harris) to be applied to windows of audio samples prior to any processing.
+        
         :param chunksize_seconds: The number of seconds of audio that will be \
         passed to the root extractor at a time
+        
         :param do_sync: Mostly for internal use. This should usually be True.
         ''' 
         object.__init__(self)

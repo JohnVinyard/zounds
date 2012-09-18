@@ -16,10 +16,17 @@ class CircularDependencyException(BaseException):
 
 
 class Extractor(object):
+    '''
+    One who extracts
+    '''
     
     __metaclass__ = ABCMeta
     
     def __init__(self, needs = None, nframes = 1, step = 1, key = None):
+        
+        '''
+        Some stuff
+        '''
         
         self.set_sources(needs = needs)
         
