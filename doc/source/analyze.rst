@@ -27,3 +27,18 @@ Spectral Features
 
 .. autoclass:: Loudness
 	:members: __init__
+	
+.. autoclass:: SpectralCentroid
+	:members: __init__
+
+.. autoclass:: SpectralFlatness
+	:members: __init__
+
+.. autoclass:: BFCC
+	:members: __init__
+
+.. autoclass:: Difference
+	:members: __init__
+
+.. autoclass:: Flux
+	:members: __init__
