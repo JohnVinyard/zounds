@@ -17,17 +17,42 @@ class CircularDependencyException(BaseException):
 
 class Extractor(object):
     '''
-    One who extracts
+    The Extractor class is an abstract base class which defines an interface to
+    be implemented by feature extractors.  Extractor-derived classes are usually
+    not instantiated directly; their class is passed to a 
+    :py:class:`~zounds.model.frame.Feature` instance which is an attribute of a 
+    user-defined :py:class:`~zounds.model.frame.Frames` instance, like so::
+    
+        class FrameModel(Frames):
+            feat = Feature(SomeExtractorDerivedClass, needs = None, nframes = 2, step = 1)
+    
+    Note that arguments needed to instantiate the extractor are passed to the
+    :py:meth:`~zounds.model.frame.Feature.__init__` method.
     '''
     
     __metaclass__ = ABCMeta
     
-    def __init__(self, needs = None, nframes = 1, step = 1, key = None):
+    def __init__(self, needs = None, nframes = 1, step = 1, key = None):        
+        '''__init__
         
-        '''
-        Some stuff
+        :param needs: An Extractor-derived class, or a list of them, upon which \
+        this feature extractor depends.  If :code:`None`, this extractor is fed by raw \
+        audio samples, shaped according to the \
+        :py:class:`~zounds.environment.Environment`'s audio settings.
+        
+        :param nframes: The number of frames required from source extractors \
+        (argument(s) to the :code:`needs` parameter) to compute a single frame of this \
+        feature.
+        
+        :param step: The number of frame of input data
+        
+        :param key: In general, this parameter does not need to be provided.  In \
+        use, it is determinded by the attribute name of the \
+        :py:class:`~zounds.model.frame.Feature` instance defined on the \
+        :py:class:`~zounds.model.frame.Frames`-derived class 
         '''
         
+        self.sources = None
         self.set_sources(needs = needs)
         
         # the number of frames needed from all sources to
@@ -68,16 +93,22 @@ class Extractor(object):
     
     @abstractmethod
     def dim(self,env):
-        '''
-        A tuple representing the dimensions of a single frame of output from 
-        this extractor
+        '''dim
+        **Must be implemented by inheriting classes**
+        
+        Return a tuple representing the dimensions of a single frame of output from 
+        this extractor. 
+        
+        :param env: The current :py:class:`~zounds.environment.Environment` instance
         '''
         pass
     
     @abstractproperty
     def dtype(self):
         '''
-        The numpy dtype that will be output by this extractor
+        **Must be implemented by inheriting classes**
+        
+        The numpy dtype that will be output by this extractor.  \
         '''
         pass
     
@@ -199,8 +230,21 @@ class Extractor(object):
     @abstractmethod
     def _process(self):
         '''
-        A hook that derived classes must implement. This is where the feature
-        extraction happens
+        **Must be implemented by inheriting classes**
+        
+        This method is called by the base :code:`Extractor` class when enough \
+        data has become available.  The data from source extractors is available
+        via the :code:`self.input` attribute, which is a dictionary mapping \
+        source extractors to the data they have computed.  This method should be \
+        implemented so that it can accept arbitrarily-sized chunks of data from its \
+        sources, e.g., an FFT extractor might receive 10 audio frames in one call \
+        to :code:`_process()`, and 100 in another.
+        
+        Here's an example of a :code:`_process()` implementation that performs
+        a frame-wise sum of all its input features::
+        
+            def _process(self):
+                return np.sum([self.input[src].sum(1) for src in self.sources],axis = 1)
         '''
         raise NotImplemented()
             
@@ -228,8 +272,18 @@ class Extractor(object):
 class SingleInput(Extractor):
     '''
     This class addresses the common case in which an extractor
-    will only have a single input. It exposes a property, in_data,
-    which is equivalent to self.input[self.sources[0]]
+    will only have a single input. It exposes a property, :code:`in_data`,
+    which is equivalent to self.input[self.sources[0]]. \
+    :py:class:`~zounds.analyze.extractor.Extractor`-derived classes that only
+    have a single source should inherit from this class to simplify the \
+    implementation of :py:meth:`~zounds.analyze.extractor.Extractor._process`.
+    
+    Here's an example of a \
+    :py:meth:`~zounds.analyze.extractor.Extractor._process` implementation that
+    computes the frame-wise sum of incoming data::
+    
+        def _process(self):
+            return self.in_data.sum(1)
     '''
     def __init__(self,needs,nframes=1,step=1,key=None):
         if needs is None:
