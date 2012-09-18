@@ -5,6 +5,8 @@ from scipy.spatial.distance import cdist
 from zounds.learn.learn import Learn
 from zounds.nputil import flatten2d
 from zounds.util import tostring
+from zounds.visualize import plot_series
+import os
 
 # KLUDGE: I've added indim and hdim so this class can be used 
         # as a NeuralNetwork-derived class
@@ -41,7 +43,7 @@ class KMeans(Learn):
         dist = cdist(data,self.codebook)
         best = np.argmin(dist,axis = 1)
         feature = np.zeros((l,len(self.codebook)),dtype = np.uint8)
-        feature[best] = 1
+        feature[np.arange(l),best] = 1
         return feature
     
     def __repr__(self):
@@ -49,6 +51,9 @@ class KMeans(Learn):
     
     def __str__(self):
         return self.__repr__()
+    
+    def view_codes(self,path):
+        plot_series(self.codebook,os.path.join(path,'codes'))
 
 
 # BUG: The problem with this method is that the exemplars are taken from the

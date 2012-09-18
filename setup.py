@@ -6,7 +6,6 @@ import getpass
 import sys
 
 # KLUDGE: Is there a better way to get setuptools commands?
-
 install = 'install' in sys.argv[1:]
 
 def force_manual_numpy_scipy_install():

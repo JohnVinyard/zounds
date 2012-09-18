@@ -1,4 +1,6 @@
 Analyze
 ======================================
-.. automodule:: zounds.analyze.audiostream
-	:members:
+.. currentmodule:: zounds.analyze.extractor
+
+.. autoclass:: Extractor
+	:members: __init__,dim,dtype

@@ -6,3 +6,4 @@ API Documentation
 	
 	environment
 	model
+	analyze
