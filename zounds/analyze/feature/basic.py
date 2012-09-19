@@ -6,8 +6,10 @@ from scipy.signal import convolve
 from zounds.analyze.extractor import SingleInput
 from zounds.nputil import safe_log,safe_unit_norm as sun,norm_shape,pack,flatten2d
 
+
 class Basic(SingleInput):
     
+    # TODO: Can inshape be inferred from the feature on which we rely?
     def __init__(self, inshape = None, outshape = None, op = None, needs = None, \
                   key = None, nframes = 1, step = 1):
         
@@ -131,6 +133,7 @@ class Threshold(SingleInput):
         data = flatten2d(self.in_data)
         return (data > self._thresh).astype(self.dtype)
 
+# KLUDGE: This doesn't belong in this module
 class Sharpen(SingleInput):
     '''
     Convolve input with a simple high-pass filter to accentuate peaks

@@ -20,6 +20,10 @@ TODO: API documentation
 	zounds.environment
 
 
+-Make a note in analyze module documentation about the convention of only
+ documenting Extractor.__init__ args that need to be passed to Feature.__init__
+
+
 - try audio settings suggested here: http://jaket.is-a-geek.com/blog/linux/glitchy-audio-on-puredyne-in-a-virtual-machine
 
 - Make a note about audio settings for a VM (if they work)

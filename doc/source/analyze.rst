@@ -42,3 +42,11 @@ Spectral Features
 
 .. autoclass:: Flux
 	:members: __init__
+
+--------------------------------------
+The Composite Extractor
+--------------------------------------
+.. currentmodule:: zounds.analyze.feature.composite
+
+.. autoclass:: Composite
+	:members: __init__

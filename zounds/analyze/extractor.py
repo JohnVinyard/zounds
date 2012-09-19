@@ -273,7 +273,7 @@ class SingleInput(Extractor):
     '''
     This class addresses the common case in which an extractor
     will only have a single input. It exposes a property, :code:`in_data`,
-    which is equivalent to self.input[self.sources[0]]. \
+    which is equivalent to :code:`self.input[self.sources[0]]`. \
     :py:class:`~zounds.analyze.extractor.Extractor`-derived classes that only
     have a single source should inherit from this class to simplify the \
     implementation of :py:meth:`~zounds.analyze.extractor.Extractor._process`.
