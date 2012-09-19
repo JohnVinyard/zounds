@@ -1,5 +1,9 @@
 TOOO:
 -------------
+1) Document Learn module
+2) Come back and document Learned extractor
+3) Document extractors in the "basic" module
+
 TODO: API documentation
 	zounds.acquire
 	zounds.analyze.extractor
@@ -67,6 +71,10 @@ Fix tile normalization problem
 
 After job-hunt
 ========================================================================
+- Documentation punt on the p.train() call about stopping condition in the 
+ zounds.learn module documentation
+
+
 - Good, efficient, cached and computed-on-demand stats implementations for
  both PyTables and FileSystem that are robust to very large data stores.
 

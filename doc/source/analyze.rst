@@ -50,3 +50,11 @@ The Composite Extractor
 
 .. autoclass:: Composite
 	:members: __init__
+
+--------------------------------------
+Extracting Learned Features
+--------------------------------------
+.. currentmodule:: zounds.analyze.feature.learned
+
+.. autoclass:: Learned
+	:members: __init__
