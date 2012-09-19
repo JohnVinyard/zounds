@@ -18,23 +18,47 @@ class MetaPipeline(type):
 
 class Pipeline(Model):
     '''
-    A generic pipeline that can be used to chain together methods for:
-        - fetching data
-        - preprocessing data
-        - running supervised or unsupervised algorithms on the data
+    A Pipeline defines a workflow consisting of three parts:
     
-    A trained pipeline can be treated as a feature extractor.
+        * A strategy for fetching training data.  This step is only used prior \
+          to training.
+        * A strategy for preprocessing data.  This step is important both before \
+          and after training.  Once the learning algorithm has been trained, and \
+          is being used as a feature extractor, all incoming data must be preprocessed \
+          precisely as it was prior to training
+        * A learning algorithm, which transforms data into some more useful \
+          representation
+    
+    Pipelines are persisted to a data store once trained, and can be retrieved \
+    by the id they were assigned at creation::
+    
+        >>> p = Pipeline['pipeline/audio_256']
+        Pipeline(
+            preprocess = UnitNorm(),
+            learn = KMeans(n_centroids = 500),
+            trained_date = 2012-09-19 16:12:52.578097,
+            id = pipeline/audio_256,
+            fetch = PrecomputedFeature(feature = audio, nframes = 1))
     '''
     
     __metaclass__ = MetaPipeline
     
     def __init__(self,_id,fetch,preprocess,learn):
-        '''
-        param _id: a filepath-like identifier for this specific pipeline, .e.g
-        pipeline/bark/rbm/rbm2000
-        param fetch: a learn.fetch.Fetch implementation
-        param preprocess: a learn.preprocess.Preprocess implementation
-        param learn: a learn.learn.Learn implementation
+        '''__init__
+        
+        :param _id: a filepath-like identifier for this pipeline, .e.g \
+        :code:`'pipeline/bark/kmeans_500'`.  This _id can be used to retrieve the Pipeline \
+        from the data store, once trained.
+        
+        :param fetch: A :py:class:`~zounds.learn.fetch.Fetch`-derived class, responsible \
+        for gathering training data from the data store
+        
+        :param preprocess: A :py:class:`~zounds.learn.preprocess.Preprocess`-derived \
+        class, responsible for preparing the data for training and/or feature \
+        extraction
+        
+        :param learn: A :py:class:`~zounds.learn.learn.Learn`-derived class, \
+        responsible for learning a new representation of the input data.
         '''
         Model.__init__(self)        
         self._id = _id
@@ -62,10 +86,18 @@ class Pipeline(Model):
                                 self.learn.__class__.__name__)
     
     def train(self,nexamples,stopping_condition,data = None):
-        '''
-        param stopping_condition: A callable that is specific to the 
-        Learn-derived class. It is evaluated periodically by Learn.train to 
-        decide when learning is complete.
+        '''train
+        
+        Fetch data, preprocess it, and pass it along to a learning algorithm.
+        
+        :param nexamples: Passed along to :code:`self.fetch.__call__`, this will \
+        determine the number of training examples that are fetched from the data \
+        store
+        
+        :param stopping_condition: A callable, which is specific to the \
+        :py:class:`~zounds.learn.learn.Learn`-derived class.  It is evaluated \
+        periodically by :py:meth:`~zounds.learn.learn.Learn.train` to decide \
+        when learning is complete.
         '''
         if self.controller().id_exists(self._id):
             raise ValueError(\
@@ -82,6 +114,18 @@ class Pipeline(Model):
         self.store()
     
     def __call__(self,data):
+        '''__call__
+        
+        Activate the Pipeline on an arbitrary number of input data. Data will \
+        be preprocessed and passed along to the learning algorithm for \ 
+        transformation.
+        
+        :param data: A numpy array containing data to be transformed.  The data \
+        must be the same size as the data that this Pipeline trained on, \
+        in all dimensions except for the first.  E.g., if trained on a feature \
+        of dimension 10, the second dimension of data must always be 10, but the \
+        first dimension can be anything.
+        '''
         data = self.preprocess(data)
         return self.learn(data)
     
