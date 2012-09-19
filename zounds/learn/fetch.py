@@ -9,7 +9,11 @@ from zounds.util import tostring
 from random import choice
 
 class Fetch(object):
-    
+    '''
+    Fetch is an abstract base class. Derived classes should implement the
+    :code:`__call__` method which will fetch data from the data store in a manner \
+    specified by the implementation.
+    '''
     __metaclass__ = ABCMeta
     
     def __init__(self):
@@ -17,12 +21,20 @@ class Fetch(object):
     
     @abstractmethod
     def __call__(self, nexamples = None):
-        '''
-        Acquire a number of training examples
+        '''__call__
+        
+        Fetch n examples from the data store
+        
+        :param nexamples: The number of examples to fetch
         '''
         pass
 
 class NoOp(Fetch):
+    '''
+    Occasionally, a "learned" feature might not need any training data, e.g.
+    :py:class:`~zounds.learn.hash.minhash.MinHash`.  This class returns no data, \
+     ever.
+    '''
     
     def __init__(self):
         Fetch.__init__(self)
@@ -32,33 +44,60 @@ class NoOp(Fetch):
 
 class PrecomputedFeature(Fetch):
     '''
-    Fetches "patches" of precomputed features from the frames database.  Attempts
+    Fetches "patches" of pre-computed features from the database.  Attempts
     to sample evenly from the database, drawing more samples from longer 
-    patterns.
+    patterns.  Concretely, if this was our 
+    :py:class:`~zounds.model.frame.Frames`-derived class::
+    
+        class FrameModel(Frames):
+            fft = Feature(FFT)
+            bark = Feature(BarkBands,needs = fft, nbands = 50)
+    
+    We could fetch 1,000 random examples of successive pairs of bark bands like
+    so::
+    
+        >>> pf = PrecomputedFeature(2,FrameModel.bark)
+        >>> samples = pf(1000)
+        >>> samples.shape
+        (1000,100)
+    
+    Note that the successive frames were flattened into vectors of dimension 100.
     '''
     def __init__(self,nframes,feature, reduction = None,filter = None):
-        '''
-        nframes - the number of frames for each sample, e.g. nframes = 10
-                  means each sample will consist of 10 frames of feature
-        feature - a Feature instance
-        reduction - An aggregate function (e.g., max() or sum()) to apply to 
-                   samples before returning them
-        filter -   a callable which takes the samples, and returns the indices
-                   to keep
+        '''__init__
+        
+        :param nframes: The number of successive frames of feature to treat as \
+        a single example
+        
+        :param feature: A *stored* feature instance, or its key
+        
+        :param reduction: An aggregate function (e.g. :code:`max()` or :code:`sum()`) \
+        to apply example-wise to samples before returning them
+        
+        :param filter: A callable which takes the fetched samples, and returns \
+        the indices that should be kept.  When filter is not :code:`None`, this \
+        class is not guaranteed to return the number of samples requested.
         '''
         Fetch.__init__(self)
         self.feature = feature
         self.nframes = nframes
         self._reduction = reduction
         self._filter = filter
-        
+
+    @property
+    def _feature_repr(self):
+        try:
+            return self.feature.key
+        except AttributeError:
+            return self.feature
+            
     def __repr__(self):
-        return tostring(self,short = False,feature = self.feature.key,
+        return tostring(self,short = False,feature = self._feature_repr,
                         nframes = self.nframes,reduction = self._reduction, 
                         filter = self._filter)
     
     def __str__(self):
-        return tostring(self,feature = self.feature.key,nframes = self.nframes)
+        return tostring(self,feature = self._feature_repr,nframes = self.nframes)
         
     # TODO: I don't think this method works at all. Write some tests
     # and find out
@@ -202,8 +241,40 @@ class _Patch(object):
         pass
 
 class Patch(_Patch):
+    '''
+    Specifies how to take *random* slices from a larger input, in one dimension.
+    
+    Concretely, let's say we'd like to take random slices of size 2 from an array
+    of size 10.  Here's how :code:`Patch` would be used to achieve that.
+    
+    >>> p = Patch(0,10,2,step = 1)
+    >>> a = np.arange(10)
+    >>> p(a)
+    array([0, 1])
+    >>> p(a)
+    array([4, 5])
+    >>> p(a)
+    array([2, 3])
+    >>> p(a)
+    array([4, 5])
+    >>> p(a)
+    array([1, 2])
+    >>> p(a)
+    array([2, 3])
+    '''
     
     def __init__(self,start,stop,size,step = None):
+        '''__init__
+        
+        :param start: The first position in the input where slices may begin
+        
+        :param stop: The position in the input that no slices may include
+        
+        :param size: The size of the slice
+        
+        :param step: The interval at which slices may begin.  If :code:`None`, \
+        the step size defaults to the same value as the :code:`size` parameter.
+        '''
         _Patch.__init__(self)
         self.fullsize = stop - start
         self.start = start
@@ -221,8 +292,34 @@ class Patch(_Patch):
         return arr[self._slice()]
 
 class NDPatch(_Patch):
+    '''
+    Specifies how to take *random* slices from a larger input, in d-dimensions.
+    
+    Concretely, let's say we'd like to tak random slices of size (2,2) from an \
+    array of size (10,10).  Here's how :code:`NDPatch` would be used to achieve \
+    that::
+        
+        >>> p = NDPatch(Patch(0,10,2,step = 1), Patch(0,10,2,step = 1))
+        >>> a = np.arange(100).reshape((10,10)) # create a 10x10 array
+        >>> p(a)
+        array([[20, 21],
+               [30, 31]])
+        >>> p(a)
+        array([[44, 45],
+               [54, 55]])
+        >>> p(a)
+        array([[56, 57],
+               [66, 67]])
+        >>> p(a)
+        array([[24, 25],
+               [34, 35]])
+    '''
     
     def __init__(self,*patches):
+        '''__init__
+        
+        :param patches: A :py:class:`Patch` instance for each dimension
+        '''
         _Patch.__init__(self)
         self.patches = patches
     
@@ -240,23 +337,48 @@ class NDPatch(_Patch):
 # TODO: Write tests
 class PrecomputedPatch(PrecomputedFeature):
     '''
-    Cut arbitrary patches from samples drawn from the database
+    Cut arbitrary patches from samples drawn from the database.  Concretely, one
+    might want to draw constant-sized patches randomly from spectrograms, in both
+    time and frequency.  Assuming this as the application's
+    :py:class:`~zounds.model.frame.Frames`-derived class...::
+    
+        class FrameModel(Frames):
+            fft = Feature(FFT)
+            bark = Feature(BarkBands, needs = fft, nbands = 100)
+    
+    ...consider the case where we'd like to draw 10x10 patches which can occur
+    anywhere, in both time and frequency::
+        
+        >>> time_patch = Patch(0,10,10)
+        >>> freq_patch = Patch(0,100,10,step = 1)
+        >>> pp = PrecomputedPatch(10,FrameModel.bark,(10,100),NDPatch(time_patch,freq_patch))
+        >>> samples = pp(100)
+        >>> samples.shape
+        (100,10,10)
     '''
     def __init__(self,nframes,feature,fullsize,patch,filter = None):
-        PrecomputedFeature.__init__(self,nframes,feature)
-        '''
-        nframes -  the number of frames of feature to fetch
-        feature - the feature to fetch
-        fullsize - the shape of the full patch, from which we'll be slicing
-        patch - Can be one of the following:
-            - a slice, if fullsize is one-dimensional
-            - a list of slices, one for each dimension, if fullsize is
-              multi-dimensional
-            - a Patch or NDPatch instance
-        filter -   a callable which takes the samples, and returns the indices
-                   to keep
-        '''
+        '''__init__
         
+        :param nframes: The number of frames of :code:`feature` to fetch
+        
+        :param feature: A :py:class:`~zounds.model.frame.Feature`-derived \ 
+        instance, or its key
+        
+        :param fullsize: An integer or tuple of integers representing the size \
+        of the patch before slicing. It should be nframes x :code:`feature`'s \
+        dimension
+        
+        :param patch: Can be one of the following:
+            * A slice, if :code:`fullsize` is one-dimensional and the patches will be drawn from a static location
+            * A list of slices, on for each dimension, if :code:`fullsize` is multi-dimensional and the patches will be drawn from a static location
+            * A :py:class:`Patch` instance, if :code:`fullsize` is one-dimensional and the patches will be drawn from a random location
+            * A :py:class:`NDPatch` instance, if :code:`fullsize` is multi-dimensional and the patches will be drawn from a random location
+
+        :param filter: A callable which takes the fetched samples, and returns \
+        the indices that should be kept.  When filter is not :code:`None`, this \
+        class is not guaranteed to return the number of samples requested.
+        '''
+        PrecomputedFeature.__init__(self,nframes,feature)
         # TODO: Check that number of dimensions of fullsize and patch agree,
         # and that all slices are valid for fullsize
         
