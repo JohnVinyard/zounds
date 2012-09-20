@@ -46,7 +46,7 @@ class Composite(Extractor):
         :param needs: An iterable of :py:class:`~zounds.model.frame.Feature` \
         instances
         
-        :param nframes: The number of frames from the source feature needed to
+        :param nframes: The number of frames from the source feature needed to \
         perform a computation
         
         :param step: The number of frames of the input features described by a \

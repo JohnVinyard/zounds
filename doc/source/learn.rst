@@ -106,4 +106,11 @@ Neural Networks
 .. autoclass:: Autoencoder
 	:members: __init__,train,__call__
 
+Hashing
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. currentmodule:: zounds.learn.hash.minhash
+
+.. autoclass:: MinHash
+	:members: __init__,train,__call__
+
 	
