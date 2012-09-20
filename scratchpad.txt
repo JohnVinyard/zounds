@@ -75,6 +75,9 @@ Fix tile normalization problem
 
 After job-hunt
 ========================================================================
+- TODO: KMeansStoppingCondition class, which has n_iterations and threshold
+attributes to pass along to scipy.cluster.vq.kmeans
+
 BUG: For MeanStd-type preprocessors, if the axis arg = 1 (meaning normalization
 should happen example-wise) the value should never be "remembered", since there
 will be a different number of examples each time, and the stats computed from

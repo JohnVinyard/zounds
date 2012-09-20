@@ -75,8 +75,14 @@ Learn
 .. autoclass:: Learn
 	:members: train, __call__
 
+Clustering
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 .. currentmodule:: zounds.learn.cluster.kmeans
 
 .. autoclass:: KMeans
-	:members: __init__
+	:members: __init__,train
+
+.. autoclass:: SoftKMeans
+	:members: __call__
 	
