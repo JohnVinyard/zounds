@@ -4,6 +4,10 @@ TOOO:
 2) Come back and document Learned extractor
 3) Document extractors in the "basic" module
 
+Use :type: and :rtype: directives, as described here: http://sphinx.pocoo.org/domains.html#info-field-lists
+
+
+
 TODO: API documentation
 	zounds.acquire
 	zounds.analyze.extractor
@@ -71,6 +75,16 @@ Fix tile normalization problem
 
 After job-hunt
 ========================================================================
+BUG: For MeanStd-type preprocessors, if the axis arg = 1 (meaning normalization
+should happen example-wise) the value should never be "remembered", since there
+will be a different number of examples each time, and the stats computed from
+one set of data won't be applicable to the next.
+
+- How can docstrings be inherited?
+
+- How do I put brackets around optional arguments in the documentation using
+.. autoclass::?
+
 - Documentation punt on the p.train() call about stopping condition in the 
  zounds.learn module documentation
 

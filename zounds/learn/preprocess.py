@@ -9,6 +9,11 @@ from zounds.util import tostring
 
 
 class Preprocess(object):
+    '''
+    Preprocess is an abstract base class.  Derived classes must implement the
+    :code:`_preprocess` method which should transform data in a manner appropriate
+    to the learning algorithm being used. 
+    '''
     
     __metaclass__ = ABCMeta
     
@@ -17,6 +22,14 @@ class Preprocess(object):
 
     @abstractmethod    
     def _preprocess(self,data):
+        '''_preprocess
+        
+        Transform data in a manner appropriate to the learning algorithm being
+        used
+        
+        :param data: A numpy array whose first dimension represents examples, and \
+        whose subsequent dimensions represent features
+        '''
         raise NotImplemented()
     
     def __call__(self,data):
@@ -30,56 +43,37 @@ class Preprocess(object):
     
     
 class NoOp(Preprocess):
-     
+    '''
+    Returns data unaltered.  Use when no preprocessing is required.
+    '''
+    
     def __init__(self):
         Preprocess.__init__(self)
          
     def _preprocess(self,data):
         return data
 
-class Add(Preprocess):
-    '''
-    Add a number to every element in the input
-    '''
-    
-    def __init__(self,n):
-        Preprocess.__init__(self)
-        self.n = n
-    
-    def _preprocess(self,data):
-        return data + self.n
-    
-    def __repr__(self):
-        return tostring(self,add = self.n)
-    
-    def __str__(self):
-        return self.__repr__()
 
-class Multiply(Preprocess):
-    
-    def __init__(self,n):
-        Preprocess.__init__(self)
-        self.n = n
-    
-    def _preprocess(self,data):
-        return data * self.n
-    
-    def __repr__(self):
-        return tostring(self,add = self.n)
-    
-    def __str__(self):
-        return self.__repr__()
 
 class SubtractMean(Preprocess):
+    '''
+    Subtract the mean of the data from the data itself, either feature or 
+    example-wise.  This is intended to center data around zero.
+    '''
     
     def __init__(self,mean = None, axis = 0):
+        '''__init__
+        
+        :param mean:  If provided, this value will be subtracted from all data. \
+        A mean will never be computed from training data.  Otherwise, a mean will \
+        be computed the first time this preprocessor is called.  The mean computed \
+        will be used for the lifetime of this instance.
+        
+        :param axis: The axis along which the mean will be computed.  Zero \
+        (the default) means that an average will be computed feature-wise, \
+        while one means that an average will be computed example-wise.
         '''
-        mean - If provided, this value will be subtracted from all data. A mean
-               will never be computed from training data.
-        axis - The axis along which the mean will be computed.  Generally, zero
-               means that an average will be computed feature-wise, while one
-               means that an average will be computed example-wise.
-        '''
+        
         Preprocess.__init__(self)
         self._mean = mean
         self._axis = axis
@@ -105,15 +99,23 @@ class SubtractMean(Preprocess):
         return self.__repr__()
 
 class DivideByStd(Preprocess):
+    '''
+    Divide data by its own standard deviation, either feature or example-wise. This
+    is intended to give all features (or examples) equal variance.
+    '''
     
     def __init__(self,std = None, axis = 0):
-        '''
-        std - If provided, this value will be subtracted from all data. A
-              standard deviation value will never be computed from the training
-              data.
-        axis - The axis along which the mean will be computed.  Generally, zero
-               means that an average will be computed feature-wise, while one
-               means that an average will be computed example-wise.
+        '''__init__
+        
+        :param std: If provided, this value will be subtracted from all data. A \
+        standard deviation value will never be computed from the training data.  \
+        Otherwise, a standard deviation will be computed from the data the first \
+        time this instance is called, and the value will be used for the lifetime \
+        of this instance.
+        
+        :param axis: The axis along which the mean will be computed.  Zero \
+        (the default) means that an average will be computed feature-wise, \
+        while one means that an average will be computed example-wise.
         '''
         Preprocess.__init__(self)
         self._std = std
@@ -141,6 +143,9 @@ class DivideByStd(Preprocess):
     
 
 class UnitNorm(Preprocess):
+    '''
+    Give all examples unit-norm.
+    '''
     
     def __init__(self):
         Preprocess.__init__(self)
@@ -153,7 +158,14 @@ class SequentialPreprocessor(Preprocess):
     '''
     Apply a chain of preprocessors, in order.
     '''
+    
     def __init__(self,preprocessors):
+        '''__init__
+        
+        :param preprocessors: A list of :py:class:`Preprocess`-derived classes \
+        to be applied to data, in the order given.
+        '''
+        
         Preprocess.__init__(self)
         self._p = preprocessors
     
@@ -169,8 +181,29 @@ class SequentialPreprocessor(Preprocess):
         return tostring(self,short = False,preprocessors = self._p)
 
 class MeanStd(SequentialPreprocessor):
+    '''
+    A :py:class:`SequentialPreprocessor` that first subtracts the data's mean
+    from itself, either feature or example-wise, and then divides the data by
+    its standard deviation, either feature or example-wise.
+    '''
     
     def __init__(self,mean = None, std = None, axis = 0):
+        '''__init__
+        
+        :param mean: If :code:`None`, the mean will be computed from the data, \
+        otherwise, the provided value will be subtracted from the data.
+        
+        :param std: If :code:`None`, the standard deviation will be computed from \
+        the data, otherwise, the data will be divided by the value provided.
+        
+        :param axis:  If zero, data will be normalized feature-wise. Otherwise, \
+        data will be normalized example-wise.
+        '''
+        
+        # TODO: The axis *must* be zero if either mean or std are provided, since
+        # there's no way for a client to knwo the number of examples of data that
+        # will be passed to _preprocess()
+        
         SequentialPreprocessor.__init__(\
                         self,
                         [SubtractMean(mean = mean, axis = axis),
@@ -210,8 +243,35 @@ class Whiten(Preprocess):
         return data * self._weights
         
 class Downsample(Preprocess):
+    '''
+    Downsample data by a constant factor in every dimension.
+    
+    Downsample always expects to receive data as a two-dimensional array; the
+    first dimension represents examples, and the second represents features.  
+    Concretely, here's what it would look like to downsample 50 examples of
+    10x10 rectangles, by a factor of 2::
+    
+        >>> data = np.ones((50,10,10))
+        >>> data = data.reshape((50,100))
+        >>> ds = Downsample((10,10),2)
+        >>> ds(data).shape
+        (50,25)
+    
+    The output is 50 5x5 rectangles, flattened into one dimension.
+    '''
+    
     
     def __init__(self,shape,factor,method = np.mean):
+        '''__init__
+        
+        :param shape: A tuple representing the shape each example should be in \
+        prior to downsampling
+        
+        :param factor: The factor to downsample by, in all dimensions
+        
+        :param method: The method by which "blocks" of values will be reduced to \
+        a single value, e.g. mean, max, sum, etc...
+        '''
         if not isinstance(factor,int):
             raise ValueError('factor must be an int')
     
@@ -236,4 +296,36 @@ class Downsample(Preprocess):
     def __repr__(self):
         return tostring(self,factor = self._factor,method = self._method)
     
+
+class Add(Preprocess):
+    '''
+    Add a number to every element in the input
+    '''
     
+    def __init__(self,n):
+        Preprocess.__init__(self)
+        self.n = n
+    
+    def _preprocess(self,data):
+        return data + self.n
+    
+    def __repr__(self):
+        return tostring(self,add = self.n)
+    
+    def __str__(self):
+        return self.__repr__()
+
+class Multiply(Preprocess):
+    
+    def __init__(self,n):
+        Preprocess.__init__(self)
+        self.n = n
+    
+    def _preprocess(self,data):
+        return data * self.n
+    
+    def __repr__(self):
+        return tostring(self,add = self.n)
+    
+    def __str__(self):
+        return self.__repr__()
