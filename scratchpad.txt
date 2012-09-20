@@ -75,6 +75,9 @@ Fix tile normalization problem
 
 After job-hunt
 ========================================================================
+- zounds.learn.nnet.autoencoder has a *lot* of cruft. Do some cleanup and 
+  "modernization"
+
 - TODO: KMeansStoppingCondition class, which has n_iterations and threshold
 attributes to pass along to scipy.cluster.vq.kmeans
 

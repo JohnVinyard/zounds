@@ -93,6 +93,17 @@ Clustering
 
 Neural Networks
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. currentmodule:: zounds.learn.nnet.rbm
 
+.. autoclass:: Rbm
+	:members: __init__,indim,hdim,train
+
+.. autoclass:: LinearRbm
+	:members: __init__
+
+.. currentmodule:: zounds.learn.nnet.autoencoder
+
+.. autoclass:: Autoencoder
+	:members: __init__,train,__call__
 
 	
