@@ -1,15 +1,16 @@
 from __future__ import division
+
 import numpy as np
 from scipy.cluster.vq import kmeans
 from scipy.spatial.distance import cdist
+
 from zounds.learn.learn import Learn
 from zounds.nputil import flatten2d
 from zounds.util import tostring
 from zounds.visualize import plot_series
-import os
 
 # KLUDGE: I've added indim and hdim so this class can be used 
-        # as a NeuralNetwork-derived class
+# as a NeuralNetwork-derived class
 class KMeans(Learn):
     '''
     Perform `k-means clustering <http://en.wikipedia.org/wiki/K-means_clustering>`_
@@ -29,7 +30,10 @@ class KMeans(Learn):
         :param n_centroids:  The desired number of clusters. Note that a slightly \
         lower number of clusters may be returned, in some cases.
         
-        :param guess: TODO
+        :param guess: Initial guess for the cluster centers.  It should be a two-\
+        dimensional array whose first dimension is equal to :code:`n_centroids` \
+        and whose second dimension is equal to the dimension of input features \
+        vectors.
         '''
         Learn.__init__(self)
         self.n_centroids = n_centroids
@@ -62,6 +66,18 @@ class KMeans(Learn):
         self.codebook = codebook
     
     def __call__(self,data):
+        '''__call__
+        
+        Transform the data by mapping each input example to the nearest cluster
+        center
+        
+        :param data: A two-dimensional numpy array of examples to be mapped to \
+        cluster centers.
+        
+        :returns: A numpy arrray whose shape is :code:`(len(data),n_centroids)`.  \
+        Each row consists of all zeros, except for a one in the position of the \
+        best matching cluster center.
+        '''
         l = data.shape[0]
         dist = cdist(data,self.codebook)
         best = np.argmin(dist,axis = 1)
@@ -76,7 +92,38 @@ class KMeans(Learn):
         return self.__repr__()
     
     def view_codes(self,path):
+        import os
         plot_series(self.codebook,os.path.join(path,'codes'))
+
+
+# TODO: Add a sparsify option which will zero out values below the row's mean,
+# after the inverse has been taken.
+class SoftKMeans(KMeans):
+    '''
+    :py:class:`SoftKMeans`' training phase is identical to :py:class:`KMeans`, but
+    its :py:meth:`__call__` method returns the inverse of the distance to *every*
+    cluster center, instead of a "one-hot" encoding.  This should give a richer, 
+    more nuanced description of input examples.
+    '''
+    
+    def __init__(self,n_centroids):
+        KMeans.__init__(self,n_centroids)
+    
+    def __call__(self,data):
+        '''__call__
+        
+        Transform the data by returning the inverse of the distance to *every*
+        cluster center.
+        
+        :param data: A two-dimensional numpy array of examples to be mapped to \
+        cluster centers.
+        
+        :returns: A numpy array whose shape is :code:`(len(data),n_centroids)`.  \
+        Each row is :code:`1 / distance` from that example to every cluster center.
+        '''
+        dist = cdist(data,self.codebook)
+        dist[dist == 0] = -1e12
+        return 1 / dist
 
 
 # BUG: The problem with this method is that the exemplars are taken from the
@@ -126,25 +173,6 @@ class ConvolutionalKMeans(KMeans):
             self.codebook = flatten2d(data[np.argmin(dist,1)])
         
     
-    
-class SoftKMeans(KMeans):
-    '''
-    TODO: Soft KMeans documentation
-    '''
-    def __init__(self,n_centroids):
-        KMeans.__init__(self,n_centroids)
-    
-    def __call__(self,data):
-        '''__call__
-        
-        TODO
-        '''
-        dist = cdist(data,self.codebook)
-        dist[dist == 0] = -1e12
-        return 1 / dist
-    
-
-
 class TopNKMeans(KMeans):
     
     def __init__(self,n_centroids,topn):

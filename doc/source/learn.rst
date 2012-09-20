@@ -81,8 +81,18 @@ Clustering
 .. currentmodule:: zounds.learn.cluster.kmeans
 
 .. autoclass:: KMeans
-	:members: __init__,train
+	:members: __init__,train,__call__
 
 .. autoclass:: SoftKMeans
 	:members: __call__
+
+.. currentmodule:: zounds.learn.cluster.som
+
+.. autoclass:: Som
+	:members: __init__,train,__call__
+
+Neural Networks
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
 	
