@@ -7,9 +7,44 @@ from zounds.learn.learn import Learn
 from zounds.util import tostring
 
 class Som(Learn):
+    '''
+    A two-dimensional 
+    `self-organizing map <http://en.wikipedia.org/wiki/Self-organizing_map>`_.
+    implementation.
+    
+    A self-organizing map projects high-dimensional vectors topologically onto a
+    lower (two-dimensional, in this case) space.  Similar items (in a euclidean
+    sense) can be found in the same neighborhood of the map, once it has been
+    trained.
+    
+    This implementation requires that the map be two-dimensional and square.
+    '''
     
     def __init__(self,size,fdim,lasso_size = 18, lasso_decay = 0.8, 
                  gravity = 0.1, gravity_decay = 0.9):
+    
+        '''__init__
+        
+        :param size: The number of cells on one edge of the map.  This \
+        implementation requires that the map be square, so the number of cells \
+        will be :code:`size ** 2`.
+        
+        :param fdim: The dimension of input data vectors.
+        
+        :param lasso_size:  Used only during training.  The radius of a circle \
+        which is centered on the nearest cell to a given  sample.  Every cell \
+        in this region will be dragged closer to the sample.
+        
+        :param lasso_decay:  The percentage by which the "lasso" will shrink on \
+        each epoch training.
+        
+        :param gravity:  Cells within the "lasso" will be pulled this percentage \
+        of their distance from the current training example closer to the sample.
+        
+        :param gravity_decay: The percentage by which the gravity will decrease \
+        on each epoch of training.
+        
+        '''
         
         Learn.__init__(self)
         self._fdim = fdim
@@ -159,6 +194,13 @@ class Som(Learn):
     
     
     def train(self,data,stopping_condition):
+        '''train
+        
+        :param data: A two-dimensional numpy array of training examples
+        
+        :param stopping_condition: a callable which takes the current epoch as \
+        its only argument.
+        '''
         self._train(data,
                     stopping_condition,
                     self._lasso_size,
@@ -233,6 +275,17 @@ class Som(Learn):
     
     
     def __call__(self,data):
+        '''__call__
+        
+        :param data: A two-dimensional numpy array of samples to be mapped to \
+        the best matching cell.
+        
+        :returns: The inverse of the distance from each example to each cell.  \
+        Notice that cell addresses are "flattened".  To obtain the two dimensional \
+        address of a cell: :code:`row_number = cell_number // self._size` and \
+        :code:`column_number = cell_number % self._size`.
+        
+        '''
         dist = cdist(data,self.codebook)
         dist[dist == 0] = 1e-3
         return 1 / dist
