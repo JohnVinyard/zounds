@@ -58,3 +58,20 @@ Extracting Learned Features
 
 .. autoclass:: Learned
 	:members: __init__
+	
+--------------------------------------
+Some Basic Operations
+--------------------------------------
+.. currentmodule:: zounds.analyze.feature.basic
+
+.. autoclass:: Abs
+	:members: __init__
+	
+.. autoclass:: UnitNorm
+	:members: __init__
+
+.. autoclass:: Log
+	:members: __init__
+
+.. autoclass:: SliceX
+	:members: __init__

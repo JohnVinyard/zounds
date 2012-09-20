@@ -36,9 +36,26 @@ class Basic(SingleInput):
 
 
 class Abs(Basic):
+    '''
+    Give input data absolute value
+    '''
     
     def __init__(self, inshape = None, needs = None, key = None, 
                  nframes = 1, step = 1):
+        '''__init__
+        
+        :param inshape: The shape of input data.  The output data will be the \
+        same shape
+        
+        :param needs: The :py:class:`~zounds.model.frame.Feature` to give \
+        absolute value to
+        
+        :param nframes: The number of frames of data required from the input \
+        feature to perform a computation.
+        
+        :param step: The number of frames of the input feature described by a \
+        single frame of this feature 
+        '''
         
         Basic.__init__(self,inshape = inshape, outshape = np.product(inshape),
                        op = np.abs, needs = needs, key = key, 
@@ -46,18 +63,50 @@ class Abs(Basic):
 
 class UnitNorm(Basic):
     '''
-    Return input given unit-norm, example-wise
+    Give the input data unit-norm
     '''
+    
     def __init__(self, inshape = None, needs = None, key = None, 
                  nframes = 1, step = 1):
+        '''__init__
+        
+        :param inshape: The shape of input data.  The output data will be the \
+        same shape
+        
+        :param needs: The :py:class:`~zounds.model.frame.Feature` to give \
+        unit-norm to
+        
+        :param nframes: The number of frames of data required from the input \
+        feature to perform a computation.
+        
+        :param step: The number of frames of the input feature described by a \
+        single frame of this feature 
+        '''
         
         Basic.__init__(self, inshape = inshape, outshape = np.product(inshape),
                        op = sun, needs = needs, key = key,
                        nframes = nframes, step = step)
 class Log(Basic):
+    '''
+    Take the log of the input
+    '''
     
     def __init__(self, inshape = None, needs = None, key = None,
                  nframes = 1, step = 1):
+        '''__init__
+        
+        :param inshape: The shape of input data.  The output data will be the \
+        same shape
+        
+        :param needs: The :py:class:`~zounds.model.frame.Feature` to take the \
+        log of
+        
+        :param nframes: The number of frames of data required from the input \
+        feature to perform a computation.
+        
+        :param step: The number of frames of the input feature described by a \
+        single frame of this feature 
+        '''
         
         Basic.__init__(self, inshape = inshape, outshape = np.prod(inshape),
                        op = safe_log, needs = needs, key = key,
@@ -65,9 +114,31 @@ class Log(Basic):
 
 
 class SliceX(SingleInput):
+    '''
+    Output a slice of the input
+    '''
     
+    # TODO: Why the hell am I not just passing a slice instance, instead of
+    # a tuple which is used to instantiate a slice?
     def __init__(self, needs = None, key = None, slce = None, 
                  nframes = 1, step = 1):
+        '''__init__
+        
+        :param needs: The :py:class:`~zounds.model.frame.Feature` to take the \
+        log of
+        
+        :param slce: :code:`slice` can be one of:
+            
+            * a tuple of length one. This is interpreted as the ending value of the slice
+            * a tuple of length two. These are interpreted as the start and stop values of the slice
+            * a tuple of length three. These are interpreted as the start, stop, and step values of the slice
+        
+        :param nframes: The number of frames of data required from the input \
+        feature to perform a computation.
+        
+        :param step: The number of frames of the input feature described by a \
+        single frame of this feature
+        '''
         
         SingleInput.__init__(self, needs = needs, key = key, 
                              nframes = nframes, step = step)
@@ -96,6 +167,7 @@ class Pack(SingleInput):
             raise ValueError('nbits must be one of (32,64)')
         
         self._dim = ()
+        # TODO: use the mappings defined in nputil
         self._dtype = np.uint32 if nbits == 32 else np.uint64
         SingleInput.__init__(\
                 self,needs = needs, key = key, nframes = nframes, step = step)

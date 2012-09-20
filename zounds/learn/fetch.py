@@ -63,6 +63,7 @@ class PrecomputedFeature(Fetch):
     
     Note that the successive frames were flattened into vectors of dimension 100.
     '''
+    
     def __init__(self,nframes,feature, reduction = None,filter = None):
         '''__init__
         
@@ -356,6 +357,7 @@ class PrecomputedPatch(PrecomputedFeature):
         >>> samples.shape
         (100,10,10)
     '''
+    
     def __init__(self,nframes,feature,fullsize,patch,filter = None):
         '''__init__
         

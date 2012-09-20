@@ -10,22 +10,23 @@ Use :type: and :rtype: directives, as described here: http://sphinx.pocoo.org/do
 
 TODO: API documentation
 	zounds.acquire
-	zounds.analyze.extractor
-	zounds.analyze.feature
+	DONE zounds.analyze.extractor
+	DONE zounds.analyze.feature
+	
 	zounds.data
 		zounds.data.frame
-	zounds.learn
-		zounds.learn.cluster
-		zounds.learn.nnet
-		fetch
-		preprocess
+	DONE zounds.learn
+	DONE	zounds.learn.cluster
+	DONE	zounds.learn.nnet
+	DONE	fetch
+	DONE	preprocess
 	zounds.model
-		frame
+	DONE	frame
 		framesearch
-		pipeline
+	DONE	pipeline
 	zounds.nputil
 		*
-	zounds.environment
+	DONE zounds.environment
 
 
 -Make a note in analyze module documentation about the convention of only
