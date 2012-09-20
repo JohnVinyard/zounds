@@ -20,7 +20,26 @@ class Learned(SingleInput):
                   nframes = 1, 
                   step = 1, 
                   key = None):
+        '''__init__
         
+        :param pipeline_id: The id of a trained \
+        :py:class:`~zounds.model.pipeline.Pipeline` class.
+        
+        :param dim: An integer or tuple representing the shape of the \
+        :py:class:`~zounds.model.pipeline.Pipeline`'s output
+        
+        :param dtype: The numpy datatype that features should be stored with
+        
+        :param needs: A :py:class:`~zounds.model.frame.Feature` instance upon \
+        which this feature relies.  Typically, this will be the feature that \
+        the :py:class:`~zounds.model.pipeline.Pipeline` was trained on.
+        
+        :param nframes: The number of frames of data required from the input \
+        feature to perform a computation.
+        
+        :param step: The number of frames of the input feature described by a \
+        single frame of this feature 
+        '''
         
         SingleInput.__init__(\
                         self, needs=needs,nframes=nframes,step=step,key=key)
@@ -28,7 +47,6 @@ class Learned(SingleInput):
         self._dim = dim
         self._dtype = dtype
         self.env = Environment.instance
-    
     
     def dim(self,env):
         return self._dim
