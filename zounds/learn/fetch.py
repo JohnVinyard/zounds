@@ -369,8 +369,9 @@ class PrecomputedPatch(PrecomputedFeature):
         dimension
         
         :param patch: Can be one of the following:
+        
             * A slice, if :code:`fullsize` is one-dimensional and the patches will be drawn from a static location
-            * A list of slices, on for each dimension, if :code:`fullsize` is multi-dimensional and the patches will be drawn from a static location
+            * A list of slices, one for each dimension, if :code:`fullsize` is multi-dimensional and the patches will be drawn from a static location
             * A :py:class:`Patch` instance, if :code:`fullsize` is one-dimensional and the patches will be drawn from a random location
             * A :py:class:`NDPatch` instance, if :code:`fullsize` is multi-dimensional and the patches will be drawn from a random location
 

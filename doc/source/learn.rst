@@ -44,3 +44,39 @@ from both time and feature-space possible.
 
 .. autoclass:: PrecomputedPatch
 	:members: __init__
+
+Preprocess
+------------------------------------------
+.. currentmodule:: zounds.learn.preprocess
+
+.. autoclass:: Preprocess
+	:members: _preprocess
+
+.. autoclass:: NoOp
+
+.. autoclass:: SubtractMean
+	:members: __init__
+
+.. autoclass:: DivideByStd
+	:members: __init__
+
+.. autoclass:: UnitNorm
+
+.. autoclass:: SequentialPreprocessor
+	:members: __init__
+
+.. autoclass:: Downsample
+	:members: __init__
+
+Learn
+-----------------------------------------
+.. currentmodule:: zounds.learn.learn
+
+.. autoclass:: Learn
+	:members: train, __call__
+
+.. currentmodule:: zounds.learn.cluster.kmeans
+
+.. autoclass:: KMeans
+	:members: __init__
+	

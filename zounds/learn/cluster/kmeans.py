@@ -17,7 +17,6 @@ class KMeans(Learn):
         self.n_centroids = n_centroids
         self.codebook = None
         self.guess = guess
-        
     
     @property
     def indim(self):
