@@ -11,8 +11,26 @@ import os
 # KLUDGE: I've added indim and hdim so this class can be used 
         # as a NeuralNetwork-derived class
 class KMeans(Learn):
+    '''
+    Perform `k-means clustering <http://en.wikipedia.org/wiki/K-means_clustering>`_
+    on data. 
+    
+    K-means attempts to partition data into n clusters by minimizing the 
+    distance of each data example from the mean of its assigned cluster, for 
+    all clusters.
+    
+    This class is really just a thin wrapper around 
+    `scipy.cluster.vq.kmeans <http://docs.scipy.org/doc/scipy/reference/generated/scipy.cluster.vq.kmeans.html#scipy.cluster.vq.kmeans>`_
+    '''
     
     def __init__(self,n_centroids,guess = None):
+        '''__init__
+        
+        :param n_centroids:  The desired number of clusters. Note that a slightly \
+        lower number of clusters may be returned, in some cases.
+        
+        :param guess: TODO
+        '''
         Learn.__init__(self)
         self.n_centroids = n_centroids
         self.codebook = None
@@ -31,6 +49,12 @@ class KMeans(Learn):
         return self.hdim
     
     def train(self,data,stopping_condition):
+        '''train
+        
+        :param data: The examples to cluster
+        
+        :param stopping_condition:  A callable which takes no arguments
+        '''
         self._indim = data.shape[1]
         centroids = self.guess if None is not self.guess else self.n_centroids
         codebook,distortion = kmeans(data,centroids)
@@ -104,10 +128,17 @@ class ConvolutionalKMeans(KMeans):
     
     
 class SoftKMeans(KMeans):
+    '''
+    TODO: Soft KMeans documentation
+    '''
     def __init__(self,n_centroids):
         KMeans.__init__(self,n_centroids)
     
     def __call__(self,data):
+        '''__call__
+        
+        TODO
+        '''
         dist = cdist(data,self.codebook)
         dist[dist == 0] = -1e12
         return 1 / dist
