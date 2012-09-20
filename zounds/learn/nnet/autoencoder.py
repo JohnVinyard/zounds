@@ -11,7 +11,7 @@ class Params:
     
     '''
     A wrapper around weights and biases
-    for an autoencoder
+    for an _Autoencoder
     '''
     def __init__(self,indim,hdim,w1 = None,b1 = None,w2 = None,b2 = None):
         self._indim = indim
@@ -75,15 +75,17 @@ class Params:
         
 
 
-class Autoencoder(NeuralNetwork,Learn):
+
+class _Autoencoder(NeuralNetwork,Learn):
     
     '''
     A horribly inefficient implementation
-    of an autoencoder, which is meant to 
+    of an _Autoencoder, which is meant to 
     teach me, and not much else.   
     '''
 
-    def __init__(self, params, corruption = 0.0, linear_decoder=False):
+    def __init__(self, params, sparsity_target = .01,corruption = 0.0, 
+                 linear_decoder=False):
         
         NeuralNetwork.__init__(self)
         Learn.__init__(self)
@@ -93,7 +95,7 @@ class Autoencoder(NeuralNetwork,Learn):
 
         # this is multiplied against the sparsity delta
         self._beta = 3
-        self._sparsity = 0.01
+        self._sparsity = sparsity_target
         
         # this is the learning rate
         self._alpha = .01
@@ -106,7 +108,7 @@ class Autoencoder(NeuralNetwork,Learn):
         # percentage of the inputs to corrupt
         # (i.e., set to zero). If this number
         # is greater than zero, then this becomes
-        # a denoising autoencoder
+        # a denoising _Autoencoder
         self._corruption = corruption
 
         # If true, don't apply the sigmoid function to the output
@@ -159,7 +161,7 @@ class Autoencoder(NeuralNetwork,Learn):
         the unaltered input
         '''
         if 0 == self._corrupt:
-            # this isn't a denoising autoencoder
+            # this isn't a denoising _Autoencoder
             return inp
 
         # multiply the input by a binomial distribution
@@ -214,8 +216,11 @@ class Autoencoder(NeuralNetwork,Learn):
         return o
     
     def __call__(self,inp):
-        '''
-        Return the sigmoid activation of the hidden layer
+        '''__call__
+        
+        :param data: A two-dimensional numpy array of input data vectors
+        
+        :returns: The activations of the hidden layer for each input example
         '''
         inp,a,z2,z3,o = self._activate(inp)
         return a
@@ -229,7 +234,7 @@ class Autoencoder(NeuralNetwork,Learn):
         '''
         if None == o:
             # activate the network with params
-            ae = Autoencoder(params)
+            ae = _Autoencoder(params)
             inp,a,z2,z3,o = ae._activate(inp,params=params)
         
 
@@ -530,7 +535,20 @@ class Autoencoder(NeuralNetwork,Learn):
 
 
     def train(self,data,stopping_condition):
-        '''
+        '''train
+        
+        Minimize:
+            
+            * The difference between input examples and their reconstructions 
+              from a linear combination of basis vectors (weights)
+            * The difference between the average value of hidden units and the 
+              sparsity target
+        
+        :param data: A two-dimensional numpy array of examples
+        
+        :param stopping_condition: A callable which takes two arguments: \
+        the current epoch and current error
+        
         '''
         # TODO: Group into batches!
         epoch = 0
@@ -596,8 +614,32 @@ class Autoencoder(NeuralNetwork,Learn):
         plt.show()
 
 
+class Autoencoder(_Autoencoder):
+    '''
+    A neural network with a single hidden layer whose objective is to learn a \
+    sparse encoding of input data.  It learns to reconstruct input data using \
+    a linear combination of a small subset of its basis functions (weights).
+    
+    There's an excellent tutorial about sparse autoencoders, available \
+    `here <http://ufldl.stanford.edu/wiki/index.php/UFLDL_Tutorial>`_
+    '''
+    def __init__(self,indim,hdim,sparsity_target = .01):
+        '''__init__
+        
+        :param indim: The number of units in the visible layers, i.e., the \
+        dimension of training data vectors
+        
+        :param hdim: The number of units in the hidden layer, i.e., the \
+        dimension of the representation
+        
+        :param sparsity_target:  The average number of hidden units that should \
+        be "on" at once.
+        '''
+        _Autoencoder.__init__(\
+                        Params(indim,hdim),sparsity_target = sparsity_target)
+
 import unittest
-class autoencoder_tests(unittest.TestCase):
+class _Autoencoder_tests(unittest.TestCase):
 
     def test_backprop_methods_equivalent(self):
         '''
@@ -608,7 +650,7 @@ class autoencoder_tests(unittest.TestCase):
         '''
         indim = 100
         hdim = 33
-        ae = Autoencoder(Params(indim,hdim))
+        ae = _Autoencoder(Params(indim,hdim))
         err = np.random.random_sample((637,indim))
         b = ae._backprop(err)
         blm = ae._backprop_lmem(err)
@@ -625,7 +667,7 @@ class autoencoder_tests(unittest.TestCase):
         nsamples = 25
         indim = 100
         hdim = 33
-        ae = Autoencoder(Params(indim,hdim))
+        ae = _Autoencoder(Params(indim,hdim))
         cost = np.random.random_sample((nsamples,indim))
         activations = np.random.random_sample((nsamples,hdim))
         wg = ae._weight_grad(cost,activations,ae._netp.w2)
@@ -637,7 +679,7 @@ import argparse
 if __name__ == '__main__':
 
 
-    parser = argparse.ArgumentParser(description='Attempted autoencoder implementation')
+    parser = argparse.ArgumentParser(description='Attempted _Autoencoder implementation')
     aa = parser.add_argument
 
 
@@ -694,7 +736,7 @@ If not specified, start from a random guess.',
         parms = Params.from_file(args.guess)
     else:
         parms = Params(n_dim,h_dim)
-    ae = Autoencoder(parms,args.corrupt,linear_decoder=args.linear)
+    ae = _Autoencoder(parms,args.corrupt,linear_decoder=args.linear)
     fetch = __import__(args.fetch)
     theta = ae.train_minibatch(fetch.fetch(args.nsamples),
                                args.batchsize,

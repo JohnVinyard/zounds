@@ -7,10 +7,16 @@ from zounds.learn.learn import Learn
 
 class Rbm(NeuralNetwork,Learn):
     '''
-    classic, binary-binary rbm
-    Ripped off from http://www.cs.toronto.edu/~hinton/code/rbm.m
-    Justifications for different parameters can be found here:
-    http://www.cs.toronto.edu/~hinton/absps/guideTR.pdf
+    A binary->binary 
+    `Restricted Boltzmann Machine <http://www.cs.toronto.edu/~hinton/absps/guideTR.pdf>`_.
+    
+    Adapted from matlab code written by Geoff Hinton, available 
+    `here <http://www.cs.toronto.edu/~hinton/code/rbm.m>`_
+    
+    Justifications for initialization parameters can be found 
+    `here <http://www.cs.toronto.edu/~hinton/absps/guideTR.pdf>`_
+    
+    TODO: More in-depth explanation of RBMs
     '''
     def __init__(self,
                  indim,
@@ -22,6 +28,35 @@ class Rbm(NeuralNetwork,Learn):
                  sparsity_target=.01,
                  sparsity_decay=.9,
                  sparsity_cost=.001):
+        
+        '''__init__
+        
+        :param indim: The number of units in the visible layer, i.e., the \
+        dimension of training data vectors
+        
+        :param hdim: The number of units in the hidden layer, i.e., the \
+        dimension of the representation
+        
+        :param learning_rate:  The size of "step" to take when adjusting weights \
+        during the update step
+        
+        :param weight_decay: A value which discourages large weights
+        
+        :param initial_momentum: The amount by which momentum from previous \
+        updates decays from epoch to epoch, for the first five epochs.
+        
+        :param final_momentum: The amount by which momentum from previous \
+        updates decays from epoch to epoch, after the first five epochs.
+        
+        :param sparsity_target:  The average number of hidden units that should \
+        be "on" at once.
+        
+        :param sparsity_decay: The amount by which the sparsity penalty decays from \
+        epoch to epoch
+        
+        :param sparsity_cost: The importance of the sparsity target.  Higher numbers \
+        increast the importance of sparsity to the learning objective.
+        '''
 
         NeuralNetwork.__init__(self)
         Learn.__init__(self)
@@ -56,10 +91,17 @@ class Rbm(NeuralNetwork,Learn):
         
     @property
     def indim(self):
+        '''
+        The size of the visible layer, i.e., the dimension of input data vectors
+        '''
         return self._indim
     
     @property
     def hdim(self):
+        '''
+        The size of the hidden layer, i.e. the dimension of the learned 
+        representation
+        '''
         return self._hdim
 
     @property
@@ -190,8 +232,16 @@ class Rbm(NeuralNetwork,Learn):
 
 
     def train(self,samples,stopping_condition):
+        '''train
+        
+        :param samples: A two-dimensional numpy array whose second dimension \
+        should be equal to :py:meth:`Rbm.indim`
+        
+        :param stopping_condition: A callable which takes epoch and error as \
+        arguments
+        
         '''
-        '''
+        
         batch_size = 100
         nbatches = int(len(samples) / batch_size)
         # If the number of samples isn't evenly divisible by batch size, we're
@@ -246,16 +296,54 @@ class Rbm(NeuralNetwork,Learn):
     
     # TODO: Is this the correct implementation for both Rbm and LinearRbm?
     def __call__(self,data):
+        '''__call__
+        
+        :param data: A two-dimensional numpy array of input data vectors
+        
+        :returns: The activations of the hidden layer for each input example
+        '''
+        
         ps,s,stoch = self._h_from_v(data)
         s[s > .5] = 1
         s[s <= .5] = 0
         return s
 
 class LinearRbm(Rbm):
-
+    '''
+    A Restricted Boltzmann Machine with gaussian visible units, as described
+    in section 13.2 "Gaussian visible units", 
+    `here <http://www.cs.toronto.edu/~hinton/absps/guideTR.pdf>`_.
+    
+    When learning a deep-belief network, an instance of this class usually \
+    constitutes the first layer, as the raw data is typically real-valued, \
+    instead of binary.  
+    '''
+    
     def __init__(self,indim,hdim,
                  sparsity_target=.01,
                  learning_rate = .001):
+        '''__init__
+        
+        :param indim: The number of units in the visible layer, i.e., the \
+        dimension of training data vectors
+        
+        :param hdim: The number of units in the hidden layer, i.e., the \
+        dimension of the representation
+        
+        :param sparsity_target:  The average number of hidden units that should \
+        be "on" at once.
+        
+        :param learning_rate:  The size of "step" to take when adjusting weights \
+        during the update step.  The default :code:`learning_rate` is lower than \
+        in the :py:class:`Rbm` because *"The learning rate needs to be about one \
+        or two orders of magnitude smaller than when using binary visible units \
+        ...A smaller learning rate is required because there is no upper bound \
+        to the size of a component in the reconstruction and if one component \
+        becomes very large, the weights emanating from it will get a very big \
+        learning signal".*, from section 13.2 "Gaussian visible units", available \
+        `here <http://www.cs.toronto.edu/~hinton/absps/guideTR.pdf>`_
+        
+        '''
         Rbm.__init__(self,
                      indim,
                      hdim,
