@@ -8,7 +8,7 @@ from zounds.nputil import norm_shape,sliding_window,flatten2d
 # TODO: Write tests!
 class Learned(SingleInput):
     '''
-    Wraps up a trained :py:class:`zounds.model.pipeline.Pipeline` instance so
+    Wraps up a trained :py:class:`~zounds.model.pipeline.Pipeline` instance so
     it can be used as a feature extractor.
     '''
     
