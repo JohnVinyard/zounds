@@ -1,5 +1,11 @@
 TOOO:
 -------------
+1) Do acquirer documentation
+2) come back and finish framecontroller API intro with examples of
+	- acquiring data
+	- getting frames from the db
+	- listing all ids
+	- getting feature stats
 
 Use :type: and :rtype: directives, as described here: http://sphinx.pocoo.org/domains.html#info-field-lists
 
@@ -59,6 +65,14 @@ Fix tile normalization problem
 
 After job-hunt
 ========================================================================
+- Store variable length data
+
+- Don't store redundant data for features with a step size greater than 1
+
+- It's kinda clunky that frames storage and other storage backends are configured
+  in two seperate ways. Is there a good reason for this? Why can't all of them
+  be treated equally? 
+
 - zounds.learn.nnet.autoencoder has a *lot* of cruft. Do some cleanup and 
   "modernization"
 
