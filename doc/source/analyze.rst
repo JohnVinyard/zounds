@@ -7,6 +7,13 @@ The Extractor Abstract Base Class
 --------------------------------------
 .. autoclass:: Extractor
 	:members: __init__,dim,dtype,_process
+	
+
+--------------------------------------
+The ExtractorChain Class
+--------------------------------------
+.. autoclass:: ExtractorChain
+	:members: __init__
 
 --------------------------------------
 The SingleInput Class

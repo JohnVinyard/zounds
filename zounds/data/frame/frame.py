@@ -6,6 +6,11 @@ from zounds.nputil import pad
 from zounds.util import tostring
 
 class FrameController(Controller):
+    '''
+    Handle persistence and retrieval of 
+    :py:class:`~zounds.model.frame.Frames`-derived class instances.
+    '''
+    
     __metaclass__ = ABCMeta
     
     def __init__(self,framesmodel):
@@ -28,7 +33,7 @@ class FrameController(Controller):
     @abstractproperty
     def concurrent_reads_ok(self):
         '''
-        Return True if it's safe for multiple processes to read from the DB at
+        Return :code:`True` if it's safe for multiple processes to read from the DB at
         once
         '''
         pass
@@ -36,7 +41,7 @@ class FrameController(Controller):
     @abstractproperty
     def concurrent_writes_ok(self):
         '''
-        Return True if it's safe for multiple processes to write to the DB at 
+        Return :code:`True` if it's safe for multiple processes to write to the DB at 
         once
         '''
         pass
@@ -58,17 +63,19 @@ class FrameController(Controller):
     @abstractmethod
     def list_external_ids(self):
         '''
-        List all pattern (source,external_id) pairs
+        List (source,external_id) pairs for all existing patterns
         '''
         pass
     
     @abstractmethod
     def external_id(self,_id):
         '''
-        Parameters
-            _id - a zounds id
-        Returns
-            source,external_id - the source,external_id pair corresponding to id
+        Get the external id belonging to zounds id
+        
+        :param _id: a zounds id
+        
+        :returns: A two-tuple of (source,external_id). The source,external_id \
+        pair corresponding to the zounds id
         '''
         pass
     
@@ -76,12 +83,12 @@ class FrameController(Controller):
     @abstractmethod
     def exists(self,source,external_id):
         '''
-        Parameters
-            source      - the source of the pattern, e.g. FreeSound, or MySoundDir
-            external_id - the identifier assigned to the pattern by the source 
-        Returns
-            exists - a boolean indicating whether that source,external_id pair
-                     exists in the data store
+        :param source: the source of the pattern, e.g. FreeSound, or MySoundDir
+        
+        :param external_id: the identifier assigned to the pattern by the source
+         
+        :returns: a boolean indicating whether that source,external_id pair \
+        exists in the data store
         '''
         pass
      
@@ -89,34 +96,58 @@ class FrameController(Controller):
     @abstractmethod
     def sync(self,add,update,delete,chain):
         '''
-        Follows an update plan in order to update the database in the most
-        efficient way possible.
+        This method is called when the user defined set of 
+        :py:class:`~zounds.model.frame.Feature`-derived instances belonging to 
+        the :py:class:`~zounds.model.frame.Frames`-derived instance for this 
+        application has changed.
         
-        This might be a long running process, so we should be able to save state
-        and resume in case of an error
+        The controller is informed about which features will added, updated, 
+        and deleted, and should update stored data in a manner appropriate to
+        the backing store.
+        
+        Note that this might be a long running process, so implementations 
+        should be able to save state and resume in case of an error or 
+        interruption.
+        
+        :param add: A list of features that are new
+        
+        :param update: A list of features that should be recomputed
+        
+        :param delete: A list of features that have been removed
+        
+        :param chain: An :py:class:`~zounds.analyze.extractor.ExtractorChain` \
+        instance which has been built to compute the new feature graph in the \
+        most efficient way possible.
+        
         '''
         pass
     
     @abstractmethod
     def append(self,extractor_chain):
         '''
-        Adds frames to the datastore
+        Add a single new pattern to the data store.
+        
+        :param extractor_chain: An \
+        :py:class:`~zounds.analyze.extractor.ExtractorChain` instance which can \
+        compute the current feature graph.
         '''
         pass
     
     @abstractmethod
     def get(self,key):
         '''
-        Get row from the database
+        Get rows from the database
         
-        Parameters
-            key - key may be a zounds id, a (source,external_id) pair, or a 
-                  backing-store-specific Address instance
-        Returns
-            rows - If key is an id or a (source,external_id) pair, all rows for
-                   the corresponding pattern will be returned. If key is a 
-                   backing-store-specific address, all rows specified by the address
-                   will be returned
+        :param key: :code:`key` may be
+        
+            * a zounds id
+            * a two-tuple of (source,external_id)
+            * a backing-store-specific :py:class:`zounds.model.frame.Address`-derived instance
+        
+        :returns:  If :code:`key` is an id or (source,external_id) pair, all rows of the \
+        corresponding pattern will be returned.  If :code:`key` is a \
+        backing-store-specific :py:class:`zounds.model.frame.Address`-derived \
+        instance, all rows specified by the address will be returned.
         '''
         pass
     
@@ -125,16 +156,21 @@ class FrameController(Controller):
         '''
         Compute aggregate statistics over all features in the data store
         
-        Parameters
-            feature   - the feature key or instance for which the statistics will
-                        be computed
-            aggregate - an aggregate function, e.g., np.sum or np.mean
-            axis      - the axis over which the aggregate function will be computed
-            step      - the step between collected rows. If the feature's absolute
-                        step size is greater than one, redundant data is stored,
-                        so it's ok to only sample every n frames.
-        Returns
-            stat - a numpy array representing the aggregate statistic
+        :param feature: A :py:class:`~zounds.model.frame.Feature`-derived \
+        instance defined on the current application's \
+        :py:class:`~zounds.model.frame.Frames`-derived instance, or a string \
+        corresponding to a feature's key.
+        
+        :param aggregate: the aggregate function, e.g., sum, mean, max, etc...
+        
+        :param axis:  The axis over which the aggregate function will be \
+        computed
+        
+        :param step: The step size between collected rows.  If the feature's \
+        absolute step size is greater than one, redundant data is stored, so \
+        it's ok to only sample every n frames.
+        
+        :returns: a numpy array representing the aggregate value
         '''
         pass
     
@@ -157,23 +193,35 @@ class FrameController(Controller):
     @abstractmethod
     def iter_feature(self,_id,feature,step = 1,chunksize=1):
         '''
-        Return an iterator over a single feature from pattern _id
+        Iterate over a feature from the pattern with :code:`_id`
         
-        Parameters
-            _id       - a zounds id
-            feature   - a feature key or instance
-            step      - the frequency at which samples should be drawn from frames
-            chunksize - if greater than one, chunks of feature values are returned.
-                        E.g., if step is 1 and chunksize is 10, chunks of 10 frames
-                        will be returned. If step is 2 and chunksize is 10, chunks
-                        of 5 frames will be returned.  
+        :param _id: a zounds id
+        
+        :param feature: a feature key or :py:class:`~zounds.model.frame.Feature` \
+        derived instance.
+        
+        :param step: the frequency at which samples should be drawn from the \
+        available frames.
+        
+        :param chunksize: if greater than one, chunks of feature values are \
+        returned.  E.g., if :code:`step` is 1 and :code:`chunksize` is 10, chunks \
+        of 10 frames will be returned. If :code:`step` is 2 and :code:`chunksize` \
+        is 10, chunks of 5 frames will be returned.
+        
+        :returns: an iterator over :code:`feature`  
+        
         '''
         pass
   
     @abstractmethod
     def get_features(self):
         '''
-        Return the current set of features represented in the database
+        
+        :returns: a dictionary mapping feature keys to the current set of \
+        :py:class:`~zounds.model.frame.Feature`-derived instances defined \
+        on this application's :py:class:`~zounds.model.frame.Frames`-derived \
+        class.
+        
         '''
         pass
     
@@ -181,25 +229,40 @@ class FrameController(Controller):
     @abstractmethod
     def get_dtype(self,key):
         '''
-        Get the data type of the feature with key. Key may be a Feature, or a 
-        string
+        Get the datatype of a feature
+        
+        :param key: may be a :py:class:`~zounds.model.frame.Feature` instance, \
+        or a string
+        
+        :returns: The :code:`numpy.dtype` of the feature 
         '''
         pass
     
     @abstractmethod
     def get_dim(self,key):
         '''
-        Get the dimension of the feature with key. Key may be a feature, or a
-        string
+        Get the shape of a single frame of a feature.  E.g., the shape of an fft
+        feature in a zounds application with a window size of 2048 would be
+        :code:`(1024,)`
+        
+        :param key: may be a :py:class:`~zounds.model.frame.Feature` instance, \
+        or a string
+        
+        :returns: A tuple representing the shape of a single frame of the \
+        feature
         '''
         pass
     
     @abstractmethod
     def iter_all(self,step = 1):
         '''
-        Iterate over all frames, returning two-tuples of address,frames.  If 
-        the step is greater than one, care should be taken to never return
-        frames that span two patterns!
+        Iterate over *all* frames in the database, returning two-tuples of 
+        (:py:class:`~zounds.model.frame.Address`, :py:class:`~zounds.model.frame.Frames`).
+        
+        :param step: An integer representing the step size of the iterator
+        
+        :returns: An iterator which will yield two-tuples of \
+        (:py:class:`~zounds.model.frame.Address`, :py:class:`~zounds.model.frame.Frames`)
         '''
         pass
     
@@ -207,7 +270,20 @@ class FrameController(Controller):
     def iter_id(self,_id,chunksize,step = 1):
         '''
         Iterate over the frames from a single id, returning two-tuples of 
-        (address,frames)
+        (:py:class:`~zounds.model.frame.Address`, :py:class:`~zounds.model.frame.Frames`).
+        
+        :param _id: the zounds id of the pattern to iterate over
+        
+        :param chunksize: if greater than one, chunks of rows are returned.  \
+        E.g., if :code:`step` is 1 and :code:`chunksize` is 10, chunks \
+        of 10 frames will be returned. If :code:`step` is 2 and :code:`chunksize` \
+        is 10, chunks of 5 frames will be returned.
+        
+        :param step: the step size of the iterator
+        
+        :returns: An iterator which will yield two-tuples of \
+        (:py:class:`~zounds.model.frame.Address`, :py:class:`~zounds.model.frame.Frames`) \
+        from a single zounds pattern
         '''
         pass
     

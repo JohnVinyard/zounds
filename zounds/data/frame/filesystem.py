@@ -382,11 +382,11 @@ class FileSystemFrameController(FrameController):
     The structure of the directory is as follows:
     
     /path/to/data
-        data
-            35b412ad41f74c1f9d56f2ae6f757393.dat
-            4331530721d9454b89db30713801b053.dat
-        feature.dat
-        index.dat
+        - data
+            - 35b412ad41f74c1f9d56f2ae6f757393.dat
+            - 4331530721d9454b89db30713801b053.dat
+        - feature.dat
+        - index.dat
     
     Where
         - data is a directory containing binary feature data for each pattern
@@ -395,7 +395,7 @@ class FileSystemFrameController(FrameController):
           data. 
               - _ids - maps zounds ids -> (source,external_id) pairs
               - _external_ids - maps (source,external_id) pairs to zounds ids
-              - lengths - maps zounds ids to their lenghts in frames
+              - lengths - maps zounds ids to their lengths in frames
         
     '''
     
@@ -534,13 +534,14 @@ class FileSystemFrameController(FrameController):
     stat_dn = 'stat'
     
     def __init__(self,framesmodel,filepath,lock = None):
-        '''
-        Parameters
-            framesmodel - a zounds.model.frame.Frames-derived class that defines
-                          the features that should be computed and stored for
-                          each pattern
-            filepath    - a path to the directory that should contain all data 
-                          files. It's ok if this directory doesn't yet exist.
+        '''__init__
+        
+        :param framesmodel: a :py:class:`~zounds.model.frame.Frames`-derived \
+        class that defines the features that should be computed and stored for \
+        each pattern
+        
+        :param filepath: a path to the directory that should contain all data \
+        files. It's ok if this directory doesn't yet exist.
         '''
         FrameController.__init__(self,framesmodel)
         self.lock = lock

@@ -84,7 +84,7 @@ one set of data won't be applicable to the next.
 
 
 - FrameModel.extract() method, to get a Frames instance directly, without
-  appending it to the database
+  appending it to the database. Also, FrameModel.append(), and FrameModel.nframes().
 
 - FrameModel.append() method, which does the same thing as FrameController.append()
 

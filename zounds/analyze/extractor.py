@@ -320,12 +320,32 @@ class RootlessExtractorChainException(BaseException):
             
 class ExtractorChain(object):
     '''
-    A pipeline of feature extractors. An example might be:
+    Wraps a list of extractors and sorts them according to their dependencies, 
+    making it possible to send data through the extractor graph in the correct
+    order::
     
-    raw audio -> FFT -> MFCC
+        >>> samples = np.zeros(44100 * 2) # 2 seconds of "audio"
+        >>> afm = AudioFromMemory(44100,2048,1024,samples)
+        >>> fft = FFT(needs = afm)
+        >>> bark = BarkBands(needs = fft)
+        >>> ExtractorChain([bark,afm,fft]) # notice that the extractors are out of order
+        ExtractorChain(extractors = [
+            AudioFromMemory(step = 1, key = audio, nframes = 1),
+            FFT(step = 1, key = None, nframes = 1),
+            BarkBands(step = 1, key = None, nframes = 1)])
+    
+    Notice that :py:class:`ExtractorChain` has sorted the 
+    :py:class:`Extractor`-derived instances based on their dependencies.  Now, their 
+    :py:meth:`Extractor._process` methods can be called in the correct order so
+    data will always be available at the approprate times.
     '''
     
     def __init__(self,extractors):
+        '''__init__
+        
+        :param extractors: a list of :py:class:`Extractor`-derived classes
+        '''
+        object.__init__(self)
         if not extractors:
             raise ValueError('An empty extractor chain is not valid')
         elif not isinstance(extractors,list):

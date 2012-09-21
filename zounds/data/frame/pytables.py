@@ -10,7 +10,7 @@ from tables import \
 
 import numpy as np
 import zounds.model.frame
-from zounds.constants import audio_key,id_key,source_key,external_id_key
+from zounds.constants import audio_key,source_key,external_id_key
 from zounds.model.pattern import Pattern
 from zounds.util import ensure_path_exists,tostring
 from frame import FrameController,UpdateNotCompleteError
@@ -18,25 +18,24 @@ from frame import FrameController,UpdateNotCompleteError
 LOGGER = logging.getLogger(__name__)
 
 class PyTablesFrameController(FrameController):
-    
     '''
-    A FrameController that stores feature data in the hdf5 file format, and 
-    uses the PyTables library to access it.
+    A :py:class:`~zounds.data.frame.FrameController` that stores feature data in 
+    the hdf5 file format, and uses the PyTables library to access it.
     
-    PyTables has some special limitations, .e.g, columns cannot be added or
+    PyTables/hdf5 has some special limitations, .e.g, columns cannot be added or
     removed after table creation. This class attempts to hide some of the messy
-    details from clients
-    
-    Access by row numbers wins out speed-wise over access by indexed column 
-    (e.g. where _id == 1234), so a slice with literal row numbers is the best
-    address for this controller.
-    
-    This class takes for granted that only addresses from the same pattern
-    will be compared.  
+    details from clients.
     '''
     
     class Address(zounds.model.frame.Address):
+        '''
+        Access by row numbers wins out speed-wise over access by indexed column 
+        (e.g. where _id == 1234), so a slice with literal row numbers is the best
+        address for this controller.
         
+        This class takes for granted that only addresses from the same pattern
+        will be compared.
+        '''
         # key types
         INTEGER = object()
         SLICE = object()
@@ -157,6 +156,15 @@ class PyTablesFrameController(FrameController):
                     
     
     def __init__(self,framesmodel,filepath):
+        '''__init__
+        
+        :param framesmodel: the :py:class:`~zounds.model.frame.Frames`-derived \
+        class defining features-of-interest
+        
+        :param filepath: a relative or absolute path to an hdf5 file where data \
+        should be stored
+        '''
+        
         FrameController.__init__(self,framesmodel)
         self._load(filepath)
     
