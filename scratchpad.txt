@@ -1,34 +1,17 @@
 TOOO:
 -------------
-1) Document Learn module
-2) Come back and document Learned extractor
-3) Document extractors in the "basic" module
 
 Use :type: and :rtype: directives, as described here: http://sphinx.pocoo.org/domains.html#info-field-lists
 
-
-
 TODO: API documentation
-	zounds.acquire
-	DONE zounds.analyze.extractor
-	DONE zounds.analyze.feature
-	
+	discussion of the backend-specific Address class
+	zounds.acquire	
 	zounds.data
 		zounds.data.frame
-	DONE zounds.learn
-	DONE	zounds.learn.cluster
-	DONE	zounds.learn.nnet
-	DONE	fetch
-	DONE	preprocess
-	zounds.model
-	DONE	frame
-		framesearch
-	DONE	pipeline
+	framesearch
 	zounds.nputil
 		*
-	DONE zounds.environment
-
-
+	
 -Make a note in analyze module documentation about the convention of only
  documenting Extractor.__init__ args that need to be passed to Feature.__init__
 
