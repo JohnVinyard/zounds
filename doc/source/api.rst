@@ -9,3 +9,4 @@ API Documentation
 	analyze
 	learn
 	data
+	acquire

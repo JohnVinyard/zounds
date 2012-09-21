@@ -39,10 +39,18 @@ class Acquirer(object):
     
     @property
     def framemodel(self):
+        '''
+        The :py:class:`~zounds.model.frame.Frames`-derived class defined for the
+        current environment
+        '''
         return self.env.framemodel
     
     @property
     def framecontroller(self):
+        '''
+        The :py:class:`~zounds.data.frame.frame.FrameController`-derived instance that
+        the current enviornment is configured to use.
+        '''
         return self.framemodel.controller()
     
     def extractor_chain(self,pattern):
@@ -51,18 +59,31 @@ class Acquirer(object):
     @abstractproperty
     def source(self):
         '''
+        **Must be implemented by inheriting classes**
+        
         The source name, e.g. 'Freesound' or 'StemsFromMyAlbum'
+        
+        A string which identifies the source of the audio files to be consumed
+        by this acquirer.  The identifier may be constant, or may vary depending
+        on parameters used when constructing this :py:class:`Acquirer` instance.
         '''
         pass
     
     @abstractmethod
     def _acquire(self):
+        '''
+        **Must be implemented by inheriting classes**
+        
+        Do the work necessary to fetch audio, analyze it, and insert it into the
+        database
+        '''
         pass
     
     def acquire(self):
         '''
         Do the work necessary to acquire sound data, process it, and
-        insert it into the db
+        insert it into the db. Ensure that the database's indexes are updated
+        when all data has been ingested.
         '''
         # let subclasses do the dirty work
         self._acquire()
@@ -94,8 +115,23 @@ def acquire_multi(args):
     return total_frames
     
 class DiskAcquirer(Acquirer):
+    '''
+    Import all audio files from a single directory into the zounds database.  
+    Note that mp3 files are not currently supported, and will be skipped.
+    '''
     
     def __init__(self,path,source = None):
+        '''__init__
+        
+        :param path: path to a directory containing one or more audio files. All \
+        files with supported formats (almost everything except mp3) will be \
+        analyzed and stored when :py:meth:`Acquirer.acquire` is called.
+        
+        :param source: If :code:`None`, the :py:meth:`Acquirer.source` will \
+        default to the final segment of :code:`path`.  If provided, \
+        :py:meth:`Acquirer.source` will return this value.
+        
+        '''
         Acquirer.__init__(self)
         self.path = os.path.normpath(path)
         self._source = source if source else os.path.split(self.path)[1]
