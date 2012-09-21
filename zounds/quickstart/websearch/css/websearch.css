@@ -1,7 +1,8 @@
 body {	
 	background-color:#bbbbcc;
-	font-family:Helvetica,arial;
+	font-family:'Helvetica Neue',Helvetica,Arial,san-serif;
 	color:#444;
+	font-size:2em;
 }
 #playhead {
 	position:absolute;
