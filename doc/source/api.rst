@@ -10,3 +10,4 @@ API Documentation
 	learn
 	data
 	acquire
+	framesearch
