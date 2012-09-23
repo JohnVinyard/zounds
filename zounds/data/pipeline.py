@@ -2,7 +2,6 @@ from abc import ABCMeta,abstractmethod
 
 import cPickle
 from controller import Controller,PickledController
-from zounds.model.pipeline import Pipeline
 
 class PipelineController(Controller):
     '''

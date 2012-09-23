@@ -47,15 +47,15 @@ class PickledController(Controller):
             raise KeyError(key)
             
     
-    def store(self,pipeline):
-        filename = self._filename(pipeline._id)
+    def store(self,item):
+        filename = self._filename(item._id)
         if os.path.exists(filename):
             raise ValueError(\
                 'An object with the key %s already exists. Please delete it\
-                 first if you\'d like to store it again' % pipeline._id)
+                 first if you\'d like to store it again' % item._id)
         
         ensure_path_exists(filename)
         
         with open(filename,'wb') as f:
-            cPickle.dump(pipeline,f,cPickle.HIGHEST_PROTOCOL)
+            cPickle.dump(item,f,cPickle.HIGHEST_PROTOCOL)
             
