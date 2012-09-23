@@ -1,8 +1,7 @@
 from __future__ import division
 import web
 import os
-import shutil
-from time import sleep,time
+from time import time
 from random import choice
 
 import numpy as np
@@ -11,7 +10,6 @@ from scipy.misc import imsave,imresize
 from matplotlib.cm import hot
 
 from config import *
-from zounds.model.framesearch import ExhaustiveLshSearch
 from zounds.util import ensure_path_exists,SearchSetup
 
 import collections
@@ -112,22 +110,22 @@ from zounds.data.frame.filesystem import FileSystemFrameController
 Address = Z.address_class
 if controller.__class__ == PyTablesFrameController:
     def decode_address(addr):
-        start,stop = [int(s) for s in addr.split('_')]
+        start,stop = [int(s) for s in addr.split(':')]
         return Address(slice(start,stop))
     
     def encode_address(addr):
-        return '%s_%s' % (addr.start,addr.stop)
+        return '%s:%s' % (addr.start,addr.stop)
     
     def build_address(_id,start,stop):
         return Address(slice(start,stop))
 
 elif controller.__class__ == FileSystemFrameController:
     def decode_address(addr):
-        _id,start,stop = addr.split('_')
+        _id,start,stop = addr.split(':')
         return Address((_id,slice(int(start),int(stop))))
     
     def encode_address(addr):
-        return '%s_%s_%s' % (addr._id,addr.start,addr.stop)
+        return '%s:%s:%s' % (addr._id,addr.start,addr.stop)
     
     def build_address(_id,start,stop):
         return Address((_id,slice(start,stop)))
@@ -324,6 +322,10 @@ class image(object):
             self.make_file(fn, addr,feature)
         
         web.header('Content-Type','image/png')
+        web.header('Cache-Control','private')
+        
+        web.http.expires(60 * 60 * 24 * 30)
+        
         with open(fn,'rb') as f:
             data = f.read()
         web.header('Content-Length',len(data))
