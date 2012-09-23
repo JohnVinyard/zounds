@@ -5,9 +5,10 @@ API Documentation
 	:maxdepth: 2
 	
 	environment
-	model
+	frames
 	analyze
-	learn
-	data
 	acquire
 	framesearch
+	learn
+	data
+	

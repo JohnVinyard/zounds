@@ -1,4 +1,4 @@
-Search
+Searching Stored Audio
 =============================
 .. currentmodule:: zounds.model.framesearch
 

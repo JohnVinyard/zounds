@@ -41,7 +41,7 @@ The results are returned as a list of two-tuples of
 relevance to your query.  :py:meth:`FrameSearch.search` can also accept a
 backend-specifc address, or raw audio samples in the form of a numpy array.
 
-If you used the :role:`quickstart script <quick-start>` to start your application,
+If you used the :doc:`quickstart script <quick-start>` to start your application,
 there's a handy command-line tool, :code:`search.py`, which handles many search
 details for you.  It will also play the search results, so you can judge the
 quality of the search results with your own ears!  Here's how you'd use the
@@ -350,7 +350,7 @@ def _search_parallel(args):
 class ExhaustiveSearch(FrameSearch):
     '''
     Find similar segments of sound by taking the euclidean distance between
-    the query's features and the features at every valid position in the 
+    the query's features and stored features at every valid position in the 
     database.
     
     This approach is not appropriate for large databases, but can be used on

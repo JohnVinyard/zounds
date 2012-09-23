@@ -1,5 +1,8 @@
-Frames
+Frames and Features
 =================================
+
+Frames
+-----------------------------------
 .. currentmodule:: zounds.model.frame
 
 .. autoclass:: Frames
@@ -7,7 +10,7 @@ Frames
 
 
 Feature
-==================================
+------------------------------------
 .. currentmodule:: zounds.model.frame
 
 .. autoclass:: Feature
