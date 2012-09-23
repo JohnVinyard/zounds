@@ -67,7 +67,8 @@ text editor. You'll see something like this::
 
 
 That's a lot to take in, but the parts we're interested for now are the AudioConfig,
-FrameModel, and Environment classes.
+:py:class:`FrameModel <zounds.model.frame.Frames>`, and 
+:py:class:`~zounds.environment.Environment` classes.
 
 ------------------------------------
 Audio Configuration
@@ -89,18 +90,20 @@ previous window by half.
 -----------------------------------
 FrameModel Class
 -----------------------------------
-The FrameModel class is where you define the features you're interested in.  Some
-features will be intermediate, i.e., they're needed to compute other features down
-the line, but aren't interesting on their own.::
+The :py:class:`FrameModel <zounds.model.frame.Frames>` class is where you define 
+the features you're interested in.  Some features will be intermediate, i.e., 
+they're needed to compute other features down the line, but aren't interesting 
+on their own.::
 		
 		class FrameModel(Frames):
 		    fft = Feature(FFT, store = False)
 		    bark = Feature(BarkBands, needs = fft, nbands = 100, stop_freq_hz = 12000)
 
-In this case, we're computing an FFT on each window of audio, and then mapping
-the FFT coefficients onto the `Bark Scale <http://en.wikipedia.org/wiki/Bark_scale>`_.
-Note that features are stored by default, so we're saying explicitly that we don't
-want to store the FFT features.
+In this case, we're computing an :py:class:`~zounds.analyze.feature.spectral.FFT` 
+on each window of audio, and then mapping the FFT coefficients onto the 
+`Bark Scale <http://en.wikipedia.org/wiki/Bark_scale>`_. Note that features are 
+stored by default, so we're saying explicitly that we don't want to store the 
+FFT features.
 
 ----------------------------------
 The Zounds Environment
@@ -136,7 +139,9 @@ to download a small set of pre-selected sounds and process them, or run::
 	
 	python ingest.py --path /path/to/my/sounds
 
-to process a folder full of sounds on your machine.  If you don't have any audio files laying around, I highly recommend `Freesound.org <http://www.freesound.org>`_.
+to process a folder full of sounds on your machine.  If you don't have any audio 
+files laying around, `Freesound.org <http://www.freesound.org>`_ is highly
+recommended!
 
 .. WARNING::
 	Keep in mind that Zounds can't handle mp3 files yet.  Mp3 files will be skipped by ingest.py.
@@ -157,10 +162,12 @@ Use your favorite browser to view the results like so::
 Change Your FrameModel
 ====================================================
 Let's add some new features. Open up config.py in your favorite text editor, and
-change the FrameModel portion so it looks like this::
+change the :py:class:`FrameModel <zounds.model.frame.Frames>` portion so it looks 
+like this::
 
 	from zounds.model.frame import Frames, Feature
-	from zounds.analyze.feature.spectral import FFT,BarkBands,Loudness,SpectralCentroid,SpectralFlatness
+	from zounds.analyze.feature.spectral import FFT,BarkBands,SpectralCentroid,SpectralFlatness,Loudness
+	from zounds.analyze.feature.composite import Composite
 	
 	# Here's where we define the features we're interested in.
 	class FrameModel(Frames):
@@ -169,15 +176,17 @@ change the FrameModel portion so it looks like this::
 	    loud = Feature(Loudness, needs = bark)
 	    centroid = Feature(SpectralCentroid, needs = bark)
 	    flat = Feature(SpectralFlatness, needs = bark)
+	    vec = Feature(Composite, needs = [centroid,flat])
 
 Here, we've added three new features
 
-- **Loudness** measures how loud a frame is.
 - **SpectralCentroid** measures the center of gravity of the spectrum, or how perceptually "high" or "low" a frame sounds.
 - **SpectralFlatness** measures how noisy a frame sounds.  Imagine this as the scale between a pure sine tone and white noise.
+- **Composite** combines the previous two scalar features into a single, two-dimensional feature
 
 Save the file. Now, the next time we try to do anything in our app, the changes
-will be detected, and the datastore will be updated to reflect our changes. Let's run::
+will be detected, and the datastore will be updated to reflect our changes. 
+Let's run::
 
 	python display.py
 
@@ -191,12 +200,12 @@ and you should see that the new features have been computed.
 ====================================================
 Do a Search
 ====================================================
-Zounds was designed to make experimenting with different features for audio similarity
-search as painless as possible.  There's a file called search.py in the myapp folder,
-which will perform searches using precomputed features in your database.  Let's give
-it a shot.::
+Zounds was designed to make experimenting with different features for audio 
+similarity search as painless as possible.  There's a file called search.py in 
+the myapp folder, which will perform searches using precomputed features in your 
+database.  Let's give it a shot.::
 
-	python search.py --feature bark --searchclass ExhaustiveSearch --sounddir /path/to/audio_folder --nresults 2
+	python search.py --feature vec --searchclass ExhaustiveSearch --sounddir /path/to/audio_folder --nresults 2
 
 Here's a quick explanation of the options:
 
@@ -206,56 +215,78 @@ Here's a quick explanation of the options:
 - **sounddir** is a directory containing audio files from which we'll be randomly pulling queries
 - **nresults** is the number of results we'd like returned for each query.  We've chosen a low number here, since our database is probably pretty small.
 
-Chances are the search results won't impress you much, since we're using a very 
-low-level feature, but this should give you a feel for how to quickly try out
+Chances are the search results won't impress you much, since we're using very 
+low-level features, but this should give you a feel for how to quickly try out
 other features and search implementations.
 
 ====================================================
 The FrameModel class
 ====================================================
-Let's see what the FrameModel class you defined in config.py is good for.::
+Let's see what the FrameModel class you defined in config.py is good for.  Start
+an interactive python session, and let's play around a bit.
+
+First, grab a random sound from the database::
 
 	>>> from config import FrameModel,Z
 	>>> frames = FrameModel.random()
-	hai!
+	>>> frames
+	FrameModel(
+		source = sound,
+		nframes = 1064,
+		zounds_id = 10e6d221ea194efc90f2ca95c1ea7551,
+		external_id = 32079,
+		n_seconds = 24.7292517007)
 
-And then this::
+Let's check out some statistics of the computed features::
+
+	>>> FrameModel.bark.mean()
+	array([ 18.13603592,  29.5746994 ,  25.22009659,  19.1783886 ,...
+	>>> FrameModel.bark.std()
+	array([ 26.31206703,  42.49121475,  34.20608139,  24.72426033,...
+	>>> FrameModel.loud.min()
+	0.0
+	>>> FrameModel.loud.max()
+	6146.4766
+
+Now, let's play the sound
+
+	>>> Z.play(frames.audio)
+
+If it's a longer sound, and you're tired of listening, just hit ctl-c.
+
+Features are just numpy arrays::
 	
-	from config import FrameModel,Z
-	import numpy as np
-	print '================================================================'
-	print 'The database-wide, feature-wise mean and standard deviation of the bark feature'
-	print FrameModel.bark.mean()
-	print FrameModel.bark.std()
-	print '================================================================'
-	print 'The database-wide min and max loudness values'
-	print FrameModel.loud.min()
-	print FrameModel.loud.max()
-	print '================================================================'
-	print 'Grab a random sound from the database and play it'
-	frames = FrameModel.random()
-	print frames
-	Z.play(frames.audio)
-	print '================================================================'
-	print 'Features are just numpy arrays.  Here\'s the shape and datatype of the "loud" feature'
-	print frames.loud.shape
-	print frames.loud.dtype
-	print '================================================================'
-	print 'Features that aren\'t stored can be computed on the fly and cached by simply accessing them. Here\'s the shape and datatype of the "fft" feature'
-	print frames.fft.shape
-	print frames.fft.dtype
-	print '================================================================'
-	print 'playing the sound\'s frames, from quietest to loudest'
-	li = np.argsort(frames.loud)
-	Z.play(frames.audio[li])
-	print '================================================================'
-	print 'playing the sound\'s frames, from lowest to highest'
-	ci = np.argsort(frames.centroid)
-	Z.play(frames.audio[ci])
-	print '================================================================'
-	print 'playing the sound\'s frames, from least to most noisy'
-	fi = np.argsort(frames.flat)
-	Z.play(frames.audio[fi])
+	>>> frames.bark.shape
+	(1064, 100)
+	>>> frames.bark.dtype
+	dtype('float32')
+
+Feature's that aren't stored can be computed on the fly and cached for the lifetime
+of the :py:class:`~zounds.model.frame.Frames`-derived instance::
+
+	>>> frames.fft
+	array([[  1.80337372e-06,   8.16792412e-06,   2.81055575e-05, ...,
+	>>> frames.fft.shape
+	(1066, 1024)
+	>>> frames.fft.dtype
+	dtype('float64')
+
+Since we've computed a loudness value for every frame, we can reorder the frames
+and play them from quietest to loudest::
+
+	>>> import numpy as np
+	>>> l = np.argsort(frames.loud)
+	>>> Z.play(frames.audio[l])
+
+How about playing the sound so it goes from the highest to lowest frequency::
+
+	>>> c = np.argsort(frames.centroid)[::-1]
+	>>> Z.play(frames.audio[c])
+
+Or from least to most noisy::
+
+	 >>> f = np.argsort(frames.flatness)
+	 >>> Z.play(frames.audio[f])
 	
 	
 	

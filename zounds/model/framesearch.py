@@ -1,3 +1,64 @@
+'''
+
+One of zounds' primary motivating factors is to build a fast, high-quality audio
+similarity search.  The :py:mod:`zounds.model.framesearch` module contains classes
+which define a common API for search implementations, and a couple concrete
+implementations.
+
+In general, a search should use one or more pre-computed features to index the
+frames database.
+
+Concretely, assume this is the current 
+:py:class:`~zounds.model.frame.Frames`-derived class::
+    
+    class FrameModel(Frames):
+        fft = Feature(FFT, store = False)
+        bark = Feature(BarkBands, needs = fft, nbands = 100, stop_freq_hz = 12000)
+        centroid = Feature(SpectralCentroid, needs = bark, store = False)
+        flatness = Feature(SpectralFlatness, needs = bark, store = False)
+        vec = Feature(Composite, needs = [centroid,flatness])
+
+
+Here's how you'd perform an :py:class:`ExhaustiveSearch` using the composite
+spectral centroid and spectral flatness feature called :code:`vec`::
+
+    >>> search = ExhaustiveSearch('search/mysearch',FrameModel.vec,normalize = True)
+    >>> search
+    ExhaustiveSearch(
+        normalize = True,
+        step = 1,
+        do_max = False,
+        feature = Feature(extractor_cls = Composite, store = True, key = vec))
+    >>> search.build_index()
+    >>> frames = FrameModel.random()[:60] # take the first 60 frames of a random sound
+    >>> search.search(frames)
+    [('408ca7fcffd2492c89a59d8f1c685a30', <class 'zounds.data.frame.pytables.Address'> - slice(3487, 3546, None)), 
+    ('e5a3f19dd45d459baab8f3a3f8746576', <class 'zounds.data.frame.pytables.Address'> - slice(3282, 3341, None)), 
+    ('e5a3f19dd45d459baab8f3a3f8746576', <class 'zounds.data.frame.pytables.Address'> - slice(3322, 3381, None))]
+
+The results are returned as a list of two-tuples of 
+:code:`(zounds_id,backend-specific address)`, sorted in order of descending 
+relevance to your query.  :py:meth:`FrameSearch.search` can also accept a
+backend-specifc address, or raw audio samples in the form of a numpy array.
+
+If you used the :role:`quickstart script <quick-start>` to start your application,
+there's a handy command-line tool, :code:`search.py`, which handles many search
+details for you.  It will also play the search results, so you can judge the
+quality of the search results with your own ears!  Here's how you'd use the
+command-line tool to perform the same search we just did in code::
+
+    python search.py --feature vec --searchclass ExhaustiveSearch --sounddir sound --nresults 3 --normalize True
+
+If you run... ::
+    
+    python search.py --help
+
+... you'll notice that :code:`normalize` isn't one of the options listed there.
+You can pass arbitrary additional arguments to :code:`search.py`, and they'll
+be passed along to the constructor of whichever search class you're using.
+
+'''
+
 from __future__ import division
 from abc import ABCMeta,abstractmethod
 from time import time
@@ -287,22 +348,34 @@ def _search_parallel(args):
 ############################################################################
 
 class ExhaustiveSearch(FrameSearch):
+    '''
+    Find similar segments of sound by taking the euclidean distance between
+    the query's features and the features at every valid position in the 
+    database.
+    
+    This approach is not appropriate for large databases, but can be used on
+    smaller sets of sounds to evaluate the performance of a certain feature.
+    '''
     
     def __init__(self,_id,feature,step = 1,
                  normalize = True,multi_process = False,do_max = False):
         
-        '''
-        Parameters
-            feature       - the stored feature used to compare segments of audio
-            step          - the stepsize, in frames, to use when comparing segments
-            normalize     - if true, divide each element of feature by that feature's
-                            database-wide standard deviation, so that each element
-                            has approximately the same magnitude
-            multi_process - perform the search using multiple cores
-            do_max        - if true, compare only the max values (feature-wise)
-                            from each segment. if false, unravel the features
-                            from each segment into a long vector, and take the
-                            euclidean distance between these. 
+        '''__init__
+        
+        :param _id:  The key that will be used to store and retrieve this instance
+        
+        :param feature: a :py:class:`~zounds.model.frame.Feature` instance that \
+        is currently stored
+        
+        :param step: The interval at which frames from the query and equal-length \
+        spans of frames from the database should be compared.  Frequently, this \
+        will be the absolute step value of the feature.
+        
+        :param normalize: If True, and feature is multi-dimensional, all feature \
+        values from the query and the database will be divided feature-wise by \
+        the feature's standard deviation, so that all dimensions of the feature \
+        are given equal importance.
+         
         '''
         
         FrameSearch.__init__(self,_id,feature)
@@ -448,7 +521,18 @@ class Frequency(object):
         return w / len(arr)
 
 class ExhaustiveLshSearch(FrameSearch):
+    '''
+    Very quickly search large databases using features which are stored as
+    32 or 64 bit scalars.  The scalars are treated as binary feature vectors
+    of dimension 32 or 64, and are compared using the hamming distance.
     
+    Works well for features computed using 
+    `locality-sensitive hashing <http://en.wikipedia.org/wiki/Locality-sensitive_hashing>`_
+    or 
+    'semantic hashing <http://www.utstat.toronto.edu/~rsalakhu/papers/semantic_final.pdf>'_
+    '''
+    
+    # TODO: nbits could be inferred from the feature
     def __init__(self,_id,feature,step = None,nbits = None,
                  fine_feature = None,ignore = None):
         
@@ -457,17 +541,27 @@ class ExhaustiveLshSearch(FrameSearch):
         
         # 8001096117072440285
         
+        '''__init__
+        
+        :param _id:  The key that will be used to store and retrieve this instance
+        
+        :param feature: a :py:class:`~zounds.model.frame.Feature` instance that \
+        is currently stored
+        
+        :param step: The interval at which frames from the query and equal-length \
+        spans of frames from the database should be compared.  Frequently, this \
+        will be the absolute step value of the feature.
+        
+        :param nbits: 32 or 64
+        
+        :param fine_feature: Please just ignore this for now
+        
+        :param ignore: a list of 32 or 64 bit unsigned integers which represent \
+        codes that should be ignored, i.e., that should not figure into sequence \
+        similarity either negatively or positively
+    
         '''
-        _id - the key used to fetch this search from the database, once it's 
-              been built
-        feature - The name of a 32 or 64 bit scalar feature
-        step - The step size of the feature
-        nbits - The number of bits in the scalar feature
-        fine_feature - A finer detail feature. It should have the same stepsize
-                       as feature, and have a boolean data type
-        ignore - a code, or an iterable of codes that should be ignored when performing a 
-                query, usually because they represent silence.
-        '''
+        
         k = TypeCodes._bits
         if nbits not in k:
             raise ValueError('nbits must be in %s' % (str(k)))

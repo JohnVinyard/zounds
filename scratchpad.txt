@@ -1,9 +1,10 @@
 TOOO:
 -------------
+- Test the quickstart features using a composite of (loudness,centroid,flatness)
+  for the exhaustive search. Use the --normalize cmd line option, and link to
+  the ExhaustiveSearch documentation
+  
 Use :type: and :rtype: directives, as described here: http://sphinx.pocoo.org/domains.html#info-field-lists
-
-TODO: API documentation
-	framesearch
 
 - Check API doc titles and ordering
 	
@@ -21,9 +22,7 @@ TODO: API documentation
 
 - Ensure that quickstart tutorial is linked up, where appropriate
 
-- Test the quickstart features using a composite of (loudness,centroid,flatness)
-  for the exhaustive search. Use the --normalize cmd line option, and link to
-  the ExhaustiveSearch documentation
+
  
 - Document the last part of the quickstart tutorial as an interactive session
 
@@ -54,7 +53,8 @@ Fix tile normalization problem
 
 - start a planning document for the higher level/ more abstract stuff
 
-- Temporarily disable two failing tests, or switch to unittest2
+- Temporarily disable two failing tests, or switch to unittest2 so they can
+be ignored
 
 
 After job-hunt
