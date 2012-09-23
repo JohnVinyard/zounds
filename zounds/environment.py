@@ -19,6 +19,10 @@ class Environment(object):
     application. It includes information about how audio will be processed and
     stored, which audio features will be computed, and which data backends
     will be used to store zounds.model.* instances.
+    
+    Instantiating an :py:class:`Environment` "wires up" your application, letting
+    all the classes you'll be using know how audio should be processed, what
+    features to extract, and how to store them.
     '''
     
     n_cores = cpu_count()
@@ -43,7 +47,7 @@ class Environment(object):
         
         :param source: The name of the application
         
-        :param framemodel: A :py:class:`zounds.model.frame.Frames`-derived class, which \
+        :param framemodel: A :py:class:`~zounds.model.frame.Frames`-derived class, which \
         defines the features to be computed
         
         :param framecontroller: A zounds.data.frame.FrameController-derived \
@@ -128,7 +132,8 @@ class Environment(object):
         
         Play some audio.
         
-        :param audio: the audio attribute of a Frames-derived instance
+        :param audio: the audio attribute of a \
+        :py:class:`~zounds.model.frame.Frames`-derived instance
         :param block: If True, block until the audio is finished playing, \
         otherwise, play the audio in the background.
         '''

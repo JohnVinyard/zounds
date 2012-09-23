@@ -1,30 +1,12 @@
 TOOO:
 -------------
-- Test the quickstart features using a composite of (loudness,centroid,flatness)
-  for the exhaustive search. Use the --normalize cmd line option, and link to
-  the ExhaustiveSearch documentation
-  
-Use :type: and :rtype: directives, as described here: http://sphinx.pocoo.org/domains.html#info-field-lists
-
 - Check API doc titles and ordering
 	
 -Make a note in analyze module documentation about the convention of only
  documenting Extractor.__init__ args that need to be passed to Feature.__init__
 
-- try audio settings suggested here: http://jaket.is-a-geek.com/blog/linux/glitchy-audio-on-puredyne-in-a-virtual-machine
-
-- Make a note about audio settings for a VM (if they work)
-
-- Make a note in installation docs about answering "yes" to the JACK installation
-  question
-  
 - Add readme file with attributions to the pre-selected sounds
 
-- Ensure that quickstart tutorial is linked up, where appropriate
-
-
- 
-- Document the last part of the quickstart tutorial as an interactive session
 
 - Update build instructions and quickstart tutorial
 	- make a note about logging out and logging in again after running setup.py

@@ -1,4 +1,4 @@
-Environment
+The Zounds Environment
 =============================
 .. currentmodule:: zounds.environment
 

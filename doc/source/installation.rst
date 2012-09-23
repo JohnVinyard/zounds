@@ -34,7 +34,9 @@ so you can execute the script, and then::
 
 	./dependencies.sh
 
-This will install any libraries you need that you don't already have.
+This will install any libraries you need that you don't already have.  During this
+process, JACK will ask you to confirm that you'd like it to have realtime permissions.
+Please say "yes".
 
 --------------------------------
 Numpy and Scipy

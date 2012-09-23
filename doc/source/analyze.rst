@@ -1,4 +1,4 @@
-Analyze
+Feature Extractors
 ======================================
 .. currentmodule:: zounds.analyze.extractor
 
