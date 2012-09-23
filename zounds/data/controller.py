@@ -32,6 +32,11 @@ class PickledController(Controller):
         return os.path.exists(self._filename(_id))
     
     def __getitem__(self,key):
+        '''
+        Fetch the item with key. If it doesn't exist, raise a KeyError.
+        
+        :param key: a hashable object, usually a string
+        '''
         filename = self._filename(key)
         try:
             with open(filename,'rb') as f:
@@ -40,14 +45,24 @@ class PickledController(Controller):
             raise KeyError(key)
     
     def __delitem__(self,key):
+        '''
+        Delete the item (from disk). If it doesn't exist, raise a KeyError.
+        
+        :param key: a hashable object, usually a string
+        '''
         path = self._filename(key)
         try:
             os.remove(path)
         except OSError:
             raise KeyError(key)
-            
     
     def store(self,item):
+        '''
+        Store an item, using its :code:`_id` attribute as the item's key. If an
+        item with the same :code:`_id` already exists, raise a ValueEror
+        
+        :param item: a python object with an :code:`_id` attribute
+        '''
         filename = self._filename(item._id)
         if os.path.exists(filename):
             raise ValueError(\
