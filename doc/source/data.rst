@@ -146,10 +146,35 @@ The FileSystemFrameController
 .. autoclass:: FileSystemFrameController
 	:members: __init__
 
-Storing Learning Pipelines
+Storing Learning Pipelines and Searches
 ----------------------------------
-blah blah
+.. currentmodule:: zounds.data.controller
 
-Storing Search Indexes
-----------------------------------
-blah blah
+There's currently only one backend option for storing 
+:py:class:`~zounds.model.pipeline.Pipeline` and 
+:py:class:`~zounds.model.framesearch.FrameSearch`, which simply uses 
+`cPickle <http://docs.python.org/library/pickle.html#module-cPickle>`_ to persist
+objects, and is wrapped in a simple, dictionary-like interface.
+
+Typically, you won't call the :py:meth:`~PickledController.store` method directly.  It
+will be called by the :py:meth:`~zounds.model.pipeline.Pipeline.train` and
+:py:meth:`~zounds.model.framesearch.FrameSearch.build_index` methods.
+
+Getting and deleting objects can also be handled through the classes themselves.  
+To fetch a :py:class:`~zounds.model.framesearch.ExhaustiveLshSearch` instance
+whose index has already been built... ::
+
+	>>> els = ExhaustiveLshSearch['search/mysearch']
+
+...or delete a :py:class:`~zounds.model.pipeline.Pipeline` instance that's already 
+been trained::
+
+	>>> del Pipeline['pipeline/mypipeline']
+
+The API for both the :py:class:`~zounds.data.pipeline.PickledPipelineController`
+and the :py:class:`~zounds.data.search.PickledSearchController` look like this:
+
+.. autoclass:: PickledController
+	:members: __delitem__,__getitem__,store
+
+  

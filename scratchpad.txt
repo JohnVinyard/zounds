@@ -1,23 +1,14 @@
 TOOO:
 -------------
-Pipeline and Search data stuff: Idea, punt by telling readers to just not worry
-about it. Refer them to the Pipeline and search documentation. They only have
-one option, so there's no point in thinking too much about it.
-
 Use :type: and :rtype: directives, as described here: http://sphinx.pocoo.org/domains.html#info-field-lists
 
 TODO: API documentation
-	
-	DONE zounds.acquire	
-	zounds.data
-		zounds.data.frame
 	framesearch
 	zounds.nputil
 		*
 	
 -Make a note in analyze module documentation about the convention of only
  documenting Extractor.__init__ args that need to be passed to Feature.__init__
-
 
 - try audio settings suggested here: http://jaket.is-a-geek.com/blog/linux/glitchy-audio-on-puredyne-in-a-virtual-machine
 
@@ -27,6 +18,8 @@ TODO: API documentation
   question
   
 - Add readme file with attributions to the pre-selected sounds
+
+- Ensure that quickstart tutorial is linked up, where appropriate
 
 - Test the quickstart features using a composite of (loudness,centroid,flatness)
   for the exhaustive search. Use the --normalize cmd line option, and link to
@@ -61,14 +54,16 @@ Fix tile normalization problem
 
 - start a planning document for the higher level/ more abstract stuff
 
+- Temporarily disable two failing tests, or switch to unittest2
+
 
 After job-hunt
 ========================================================================
 - BUG: totally unhelpful error message when calling aggregate function on
   an unstored feature, e.g. FrameModel.fft.std()
  
+- TODO: Ensure that minhash search implementation is working
 
-  
 - Store variable length data
 
 - Don't store redundant data for features with a step size greater than 1
