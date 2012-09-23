@@ -58,12 +58,27 @@ class MetaFrameSearch(ABCMeta):
 # and/or if it should be Model-derived
 class FrameSearch(Model):
     '''
+    Framesearch is an abstract base class.  The 
+    :py:meth:`FrameSearch._build_index` and 
+    :py:meth:`FrameSearch._search` methods must be implemented by inheriting 
+    classes.
+    
     FrameSearch-derived classes use the frames backing store to provide results
-    to queries in the form of sound using one or more stored features.
+    to queries in the form of sound or precomputed features using one or more 
+    stored features.
     '''
     __metaclass__ = MetaFrameSearch
     
     def __init__(self,_id,*features):
+        '''__init__
+        
+        :param _id: The _id that will be used to persist and fetch this search
+        
+        :param features: One or more \
+        :py:class:`~zounds.model.frame.Feature`-derived instances that will be \
+        used by the search to determine similarity or relevance.
+        
+        '''
         Model.__init__(self)
         self._id = _id
         self.features = features
@@ -74,6 +89,8 @@ class FrameSearch(Model):
     def __str__(self):
         return self.__repr__()
     
+    #TODO: Is this method necessary? Isn't this defined on the MetaFrameSearch
+    # class?
     @classmethod
     def __getitem__(cls,key):
         return cls.controller()[key]
@@ -81,26 +98,58 @@ class FrameSearch(Model):
     @abstractmethod
     def _build_index(self):
         '''
-        Build any data structures needed by this search and persist them 
-        somehow
+        **Must be implemented by inheriting classes**
+        
+        Build any data structures needed by this search
         '''
         pass
     
     def build_index(self):
+        '''
+        Build data structures need for this search and persist them for future
+        use
+        '''
         self._build_index()
         self.controller().store(self)
     
     @abstractmethod
     def _search(self,frames):
         '''
-        Do work
+        **Must be implemented by inheriting classes**
+        
+        Perform the search, returning a list of two-tuples of 
+        :code:`(zounds_id,address)`, where :code:`address` is an instance
+        of :py:attr:`~zounds.environment.Environment.address_class`.
+        
+        :param frames: a :py:class:`~zounds.model.frame.Frames`-derived instance
         '''
         pass
     
    
     # KLUDGE: This is a total mess!  Doing on the fly audio extraction should
-    # be much easier and nicer than this
+    # be much easier and nicer than this.
+    
+    # TODO: Frames should have an extract method, which transforms raw audio
+    # into a frames instance which is identical to one that would be returned
+    # from the database. 
     def search(self,query, nresults = 10):
+        '''
+        Perform a search
+        
+        :param query: query can be one of
+            
+            * a :py:class:`~zounds.model.frame.Frames`-derived instance
+            * an address, which points at frames in the datastore
+            * a numpy array containing raw audio samples. The current set of
+              features will be computed for the query audio.
+        
+        :returns: :code:`(frames,results)` where :code:`frames` is the \
+        :py:class:`~zounds.model.frame.Frames`-derived instance that was either \
+        passed in, fetched from the database, or computed, and :code:`results` \
+        is a list of two-tuples of :code:`(zounds_id,address)` where \
+        :code:`address` is an instance of the current \
+        :py:attr:`~zounds.environment.Environment.address_class`.
+        '''
         env = self.env()
         
         start = time()
@@ -146,7 +195,6 @@ class FrameSearch(Model):
                     r[k] = padded
                 except ValueError:
                     r[k] = flatten2d(padded)
-            
         
         # get a frames instance
         frames = fm(data = r)

@@ -4,8 +4,8 @@ Use :type: and :rtype: directives, as described here: http://sphinx.pocoo.org/do
 
 TODO: API documentation
 	framesearch
-	zounds.nputil
-		*
+
+- Check API doc titles and ordering
 	
 -Make a note in analyze module documentation about the convention of only
  documenting Extractor.__init__ args that need to be passed to Feature.__init__
