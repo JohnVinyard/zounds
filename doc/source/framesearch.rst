@@ -2,11 +2,15 @@ Search
 =============================
 .. currentmodule:: zounds.model.framesearch
 
-TODO: Quick flyover
+.. automodule:: zounds.model.framesearch
 
+The FrameSearch API
+-----------------------------
 .. autoclass:: FrameSearch
 	:members: __init__,_build_index,build_index,_search,search
 
+Search Implementations
+-----------------------------
 .. autoclass:: ExhaustiveSearch
 	:members: __init__
 
