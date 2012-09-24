@@ -23,6 +23,61 @@ class Environment(object):
     Instantiating an :py:class:`Environment` "wires up" your application, letting
     all the classes you'll be using know how audio should be processed, what
     features to extract, and how to store them.
+    
+    Normally, the :py:class:`Environment` will be instantiated in your config.py
+    file.  Here's the example config.py file from the 
+    :doc:`quickstart tutorial <quick-start>`, so you can see how the 
+    :py:class:`Environment` class is used in context::
+    
+        # import zounds' logging configuration so it can be used in this application
+        from zounds.log import *
+        
+        # User Config
+        source = 'myapp'
+        
+        # Audio Config
+        class AudioConfig:
+            samplerate = 44100
+            windowsize = 2048
+            stepsize = 1024
+            window = None
+        
+        # FrameModel
+        from zounds.model.frame import Frames, Feature
+        from zounds.analyze.feature.spectral import FFT,BarkBands
+        
+        class FrameModel(Frames):
+            fft = Feature(FFT, store = False)
+            bark = Feature(BarkBands, needs = fft, nbands = 100, stop_freq_hz = 12000)
+        
+        
+        # Data backends
+        from zounds.model.framesearch import ExhaustiveSearch
+        from zounds.model.pipeline import Pipeline
+        from zounds.data.frame import PyTablesFrameController
+        from zounds.data.search import PickledSearchController
+        from zounds.data.pipeline import PickledPipelineController
+        
+        data = {
+            ExhaustiveSearch    : PickledSearchController(),
+            Pipeline            : PickledPipelineController()
+        }
+        
+        
+        from zounds.environment import Environment
+        dbfile = 'datastore/frames.h5'
+        Z = Environment(
+                        source,                  # name of this application
+                        FrameModel,              # our frame model
+                        PyTablesFrameController, # FrameController class
+                        (FrameModel,dbfile),     # FrameController args
+                        data,                    # data-backend config
+                        audio = AudioConfig)     # audio configuration
+    
+    Notice that the entire script consists of:
+        
+        * creating data structures which define different aspects of the application's behavior
+        * passing those data structures to :py:meth:`Environment.__init__`
     '''
     
     n_cores = cpu_count()

@@ -39,7 +39,7 @@ class Feature(object):
         
         :param kwargs: arguments to pass to the \
         :py:class:`~zounds.analyze.extractor.Extractor`-derived class' \
-        __init__ method
+        :code:`__init__` method
         '''
         self.extractor_cls = extractor_cls
         self.store = store
@@ -492,7 +492,7 @@ class Frames(Model):
     
     In general, you won't instantiate your Frames-derived class explicitly; 
     instances will be built for you when fetching stored sounds from the database.
-    Continuing with the example above
+    Continuing with the example above:
         
        >>> frames = FrameModel['a_zounds_id']
     
@@ -617,7 +617,8 @@ class Frames(Model):
     @property
     def seconds(self):
         '''
-        The length of this instance, in seconds, given the current environment
+        The length of this instance, in seconds, given the current environment's
+        audio settings
         '''
         return self.env().frames_to_seconds(len(self))
     

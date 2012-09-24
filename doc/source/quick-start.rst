@@ -96,14 +96,12 @@ they're needed to compute other features down the line, but aren't interesting
 on their own.::
 		
 		class FrameModel(Frames):
-		    fft = Feature(FFT, store = False)
+		    fft = Feature(FFT)
 		    bark = Feature(BarkBands, needs = fft, nbands = 100, stop_freq_hz = 12000)
 
 In this case, we're computing an :py:class:`~zounds.analyze.feature.spectral.FFT` 
 on each window of audio, and then mapping the FFT coefficients onto the 
-`Bark Scale <http://en.wikipedia.org/wiki/Bark_scale>`_. Note that features are 
-stored by default, so we're saying explicitly that we don't want to store the 
-FFT features.
+`Bark Scale <http://en.wikipedia.org/wiki/Bark_scale>`_.
 
 ----------------------------------
 The Zounds Environment
@@ -118,28 +116,28 @@ Finally, we're setting everything up::
 	                FrameModel,                         # our frame model
 	                PyTablesFrameController,            # FrameController class
 	                (FrameModel,dbfile),                # FrameController args
-	                data,                                # data-backend config
-	                audio = AudioConfig)
+	                data,                               # data-backend config
+	                audio = AudioConfig)				# audio config
 	                              
 
-Other scripts in your application should have an import statement like this::
+Other scripts in your application should have an import statement like this... ::
 	
 	from config import *
 
-near the top, so that everything will be wired up correctly.
+...near the top, so that everything will be wired up correctly.
 
 =====================================================
 Importing Audio
 =====================================================
-Let's analyze some audio! Use the following command::
+Let's analyze some audio! Use the following command... ::
 
 	python ingest.py
 
-to download a small set of pre-selected sounds and process them, or run::
+...to download a small set of pre-selected sounds and process them, or run... ::
 	
 	python ingest.py --path /path/to/my/sounds
 
-to process a folder full of sounds on your machine.  If you don't have any audio 
+...to process a folder full of sounds on your machine.  If you don't have any audio 
 files laying around, `Freesound.org <http://www.freesound.org>`_ is highly
 recommended!
 
@@ -178,31 +176,38 @@ like this::
 	    flat = Feature(SpectralFlatness, needs = bark)
 	    vec = Feature(Composite, needs = [centroid,flat])
 
-Here, we've added three new features
+Here, we've added four new features
 
+- **Loudness** measures the amplitude of the sound
 - **SpectralCentroid** measures the center of gravity of the spectrum, or how perceptually "high" or "low" a frame sounds.
 - **SpectralFlatness** measures how noisy a frame sounds.  Imagine this as the scale between a pure sine tone and white noise.
 - **Composite** combines the previous two scalar features into a single, two-dimensional feature
 
 Save the file. Now, the next time we try to do anything in our app, the changes
-will be detected, and the datastore will be updated to reflect our changes. 
-Let's run::
+in our feature set will be detected, and the datastore will be updated to reflect
+those changes.
+ 
+Run... ::
 
 	python display.py
 
-again. You should see some indication that your database is being upgraded.  Take
-a look at the results again, e.g.::
+...again. You should see some indication that your database is being upgraded.  
+Take a look at the results again, e.g.... ::
 
 	google-chrome display/index.html
 
-and you should see that the new features have been computed.
+... and you should see that the new features have been computed.
+
+Zounds does its best to perform the update in the most efficient way possible, 
+so, in this case, the :code:`fft` and :code:`bark` features were not recomputed.
+The stored :code:`bark` values were passed along to the new features.
 
 ====================================================
 Do a Search
 ====================================================
 Zounds was designed to make experimenting with different features for audio 
 similarity search as painless as possible.  There's a file called search.py in 
-the myapp folder, which will perform searches using precomputed features in your 
+the myapp folder, which will perform searches using pre-computed features in your 
 database.  Let's give it a shot.::
 
 	python search.py --feature vec --searchclass ExhaustiveSearch --sounddir /path/to/audio_folder --nresults 2
@@ -278,12 +283,12 @@ and play them from quietest to loudest::
 	>>> l = np.argsort(frames.loud)
 	>>> Z.play(frames.audio[l])
 
-How about playing the sound so it goes from the highest to lowest frequency::
+How about playing the sound so it goes from the most to least "bright" ::
 
 	>>> c = np.argsort(frames.centroid)[::-1]
 	>>> Z.play(frames.audio[c])
 
-Or from least to most noisy::
+Or from least to most noisy ::
 
 	 >>> f = np.argsort(frames.flatness)
 	 >>> Z.play(frames.audio[f])

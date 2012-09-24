@@ -17,7 +17,7 @@ class CircularDependencyException(BaseException):
 
 class Extractor(object):
     '''
-    The Extractor class is an abstract base class which defines an interface to
+    :py:class:`Extractor` is an abstract base class which defines an interface to
     be implemented by feature extractors.  Extractor-derived classes are usually
     not instantiated directly; their class is passed to a 
     :py:class:`~zounds.model.frame.Feature` instance which is an attribute of a 
@@ -26,8 +26,8 @@ class Extractor(object):
         class FrameModel(Frames):
             feat = Feature(SomeExtractorDerivedClass, needs = None, nframes = 2, step = 1)
     
-    Note that arguments needed to instantiate the extractor are passed to the
-    :py:meth:`~zounds.model.frame.Feature.__init__` method.
+    Note that keyword arguments needed to instantiate the extractor are passed 
+    to the :py:meth:`zounds.model.frame.Feature.__init__` method.
     '''
     
     __metaclass__ = ABCMeta
