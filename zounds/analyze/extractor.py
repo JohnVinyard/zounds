@@ -36,15 +36,15 @@ class Extractor(object):
         '''__init__
         
         :param needs: An Extractor-derived class, or a list of them, upon which \
-        this feature extractor depends.  If :code:`None`, this extractor is fed by raw \
-        audio samples, shaped according to the \
-        :py:class:`~zounds.environment.Environment`'s audio settings.
+        this feature extractor depends.  If :code:`None`, this extractor is fed \
+        raw audio samples.
         
         :param nframes: The number of frames required from source extractors \
         (argument(s) to the :code:`needs` parameter) to compute a single frame of this \
         feature.
         
-        :param step: The number of frame of input data
+        :param step: The number of frames of the input feature(s) described by a \
+        single frame of this feature
         
         :param key: In general, this parameter does not need to be provided.  In \
         use, it is determinded by the attribute name of the \

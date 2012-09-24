@@ -1,15 +1,6 @@
 TOOO:
 -------------
-- Check API doc titles and ordering
-	
--Make a note in analyze module documentation about the convention of only
- documenting Extractor.__init__ args that need to be passed to Feature.__init__
-
 - Add readme file with attributions to the pre-selected sounds
-
-
-- Update build instructions and quickstart tutorial
-	- make a note about logging out and logging in again after running setup.py
 
 - cplay.o permissions error on the VM?
 
@@ -41,6 +32,21 @@ be ignored
 
 After job-hunt
 ========================================================================
+- More in-depth explanation of rbms in the documentation
+
+ - Define appropriate, callable stopping condition classes for the different
+  learning algorithms
+
+- Document the pattern module
+
+- Document the nputil module
+
+- Document the visualize module
+
+- Error checking for search implementations, ensuring they have all the keyword
+  args they need.  This is especially important, since the command-line tool
+  is the most likely way users will perform a search.
+
 - BUG: totally unhelpful error message when calling aggregate function on
   an unstored feature, e.g. FrameModel.fft.std()
  

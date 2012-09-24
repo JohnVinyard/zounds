@@ -98,7 +98,7 @@ class FrameController(Controller):
         '''
         This method is called when the user defined set of 
         :py:class:`~zounds.model.frame.Feature`-derived instances belonging to 
-        the :py:class:`~zounds.model.frame.Frames`-derived instance for this 
+        the :py:class:`~zounds.model.frame.Frames`-derived class for this 
         application has changed.
         
         The controller is informed about which features will added, updated, 

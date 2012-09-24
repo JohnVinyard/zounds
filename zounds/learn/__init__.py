@@ -3,8 +3,9 @@ The :code:`learn` module provides tools that make it easy to define a workflow
 for using unsupervised machine learning algorithms (supervised algorithms aren't 
 currently supported, but may be in the future) to learn representations of your
 data.  Once trained, your workflow is saved, and can be reused as a feature
-extractor, by handing the workflow off to a :py:class:`zounds.analyze.feature.learned.Learned`
-feature.  The workflow always includes these steps:
+extractor, by handing the workflow off to a 
+:py:class:`~zounds.analyze.feature.learned.Learned` feature.  
+The workflow always includes these steps:
     
     * **Fetch** - Collect samples of the feature of interest from the datastore, \
     usually in a random fashion
@@ -20,17 +21,17 @@ feature.  The workflow always includes these steps:
 As an example, let's say we're interested in a feature that conveys some meaningful
 information about spectral shape.  Perhaps we'd like to perform 
 `k-means clustering <http://en.wikipedia.org/wiki/K-means_clustering>`_ on 
-individual frames of :py:class:`zounds.analyze.feature.spectral.BarkBands`.
+individual frames of :py:class:`~zounds.analyze.feature.spectral.BarkBands`.
 
-Assume we've defined a :py:class:`zounds.model.frame.Frames`-derived class which
-details the features we're interested in...::
+Assume we've defined a :py:class:`~zounds.model.frame.Frames`-derived class which
+details the features we're interested in... ::
     
     class FrameModel(Frames):
         fft = Feature(FFT)
         bark = Feature(BarkBands, needs = fft, nbands = 100)
 
 ...and that we've analyzed a significant amount of audio.  We'd begin by 
-instantiating a :py:class:`zounds.learn.pipeline.Pipeline` class::
+instantiating a :py:class:`~zounds.model.pipeline.Pipeline` class::
     
     p = Pipeline(
         # this is a key than can be used to access our Pipeline once it's trained.
@@ -56,7 +57,7 @@ data store, at random::
     p.train(10000,lambda : True)
 
 Once training is complete, we can always access our 
-:py:class:`~zounds.learn.pipeline.Pipeline` in the following way, and apply it to
+:py:class:`~zounds.model.pipeline.Pipeline` in the following way, and apply it to
 some new data::
 
     >>> p = Pipeline['pipelines/bark/kmeans_500'] # retrieve the Pipeline using our key

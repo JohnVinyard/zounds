@@ -18,10 +18,12 @@ Fetch and Derived Classes
 .. autoclass:: Fetch
 	:members:  __call__
 
-.. autoclass:: NoOp
+
 
 Fetching Features
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. autoclass:: NoOp
+
 .. autoclass:: PrecomputedFeature
 	:members: __init__
 

@@ -120,12 +120,14 @@ class SliceX(SingleInput):
     
     # TODO: Why the hell am I not just passing a slice instance, instead of
     # a tuple which is used to instantiate a slice?
+    
+    # TODO: Concrete example in the documentation
     def __init__(self, needs = None, key = None, slce = None, 
                  nframes = 1, step = 1):
         '''__init__
         
-        :param needs: The :py:class:`~zounds.model.frame.Feature` to take the \
-        log of
+        :param needs: The :py:class:`~zounds.model.frame.Feature` to take a \
+        slice of
         
         :param slce: :code:`slice` can be one of:
             
@@ -134,7 +136,7 @@ class SliceX(SingleInput):
             * a tuple of length three. These are interpreted as the start, stop, and step values of the slice
         
         :param nframes: The number of frames of data required from the input \
-        feature to perform a computation.
+        feature to perform a computation
         
         :param step: The number of frames of the input feature described by a \
         single frame of this feature

@@ -269,7 +269,7 @@ class Patch(_Patch):
         
         :param start: The first position in the input where slices may begin
         
-        :param stop: The position in the input that no slices may include
+        :param stop: The exclusive position beyond which no slices may extend
         
         :param size: The size of the slice
         
@@ -294,9 +294,9 @@ class Patch(_Patch):
 
 class NDPatch(_Patch):
     '''
-    Specifies how to take *random* slices from a larger input, in d-dimensions.
+    Specifies how to take *random* slices from a larger input, in n-dimensions.
     
-    Concretely, let's say we'd like to tak random slices of size (2,2) from an \
+    Concretely, let's say we'd like to take random slices of size (2,2) from an \
     array of size (10,10).  Here's how :code:`NDPatch` would be used to achieve \
     that::
         
@@ -341,7 +341,7 @@ class PrecomputedPatch(PrecomputedFeature):
     Cut arbitrary patches from samples drawn from the database.  Concretely, one
     might want to draw constant-sized patches randomly from spectrograms, in both
     time and frequency.  Assuming this as the application's
-    :py:class:`~zounds.model.frame.Frames`-derived class...::
+    :py:class:`~zounds.model.frame.Frames`-derived class... ::
     
         class FrameModel(Frames):
             fft = Feature(FFT)
@@ -358,16 +358,19 @@ class PrecomputedPatch(PrecomputedFeature):
         (100,10,10)
     '''
     
+    # TODO: Can't fullsize be inferred from nframes and the feature instance?
+    # Maybe fullsize should be optional. It will only be required if feature is
+    # passed as a string, or if the caller would like to override the fullsize.
     def __init__(self,nframes,feature,fullsize,patch,filter = None):
         '''__init__
         
         :param nframes: The number of frames of :code:`feature` to fetch
         
-        :param feature: A :py:class:`~zounds.model.frame.Feature`-derived \ 
+        :param feature: A :py:class:`~zounds.model.frame.Feature`-derived \
         instance, or its key
         
         :param fullsize: An integer or tuple of integers representing the size \
-        of the patch before slicing. It should be nframes x :code:`feature`'s \
+        of the patch before slicing. It should be :code:`nframes` x :code:`feature`'s \
         dimension
         
         :param patch: Can be one of the following:

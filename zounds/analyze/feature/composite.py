@@ -29,7 +29,7 @@ class Composite(Extractor):
     
     
     Note that multiple frames of features can be captured and collapsed into
-    a Composite feature::
+    a :py:class:`Composite` feature::
     
         class FrameModel(Frames):
             fft = Feature(FFT, store = False)

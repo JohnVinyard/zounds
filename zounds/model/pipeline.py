@@ -90,9 +90,9 @@ class Pipeline(Model):
         
         Fetch data, preprocess it, and pass it along to a learning algorithm.
         
-        :param nexamples: Passed along to :code:`self.fetch.__call__`, this will \
-        determine the number of training examples that are fetched from the data \
-        store
+        :param nexamples: Passed along to \
+        :py:meth:`zounds.learn.fetch.Fetch.__call__`, this will determine the \
+        number of training examples that are fetched from the data store
         
         :param stopping_condition: A callable, which is specific to the \
         :py:class:`~zounds.learn.learn.Learn`-derived class.  It is evaluated \
