@@ -1,9 +1,9 @@
 '''
 
-One of zounds' primary motivating factors is to build a fast, high-quality audio
-similarity search.  The :py:mod:`zounds.model.framesearch` module contains classes
-which define a common API for search implementations, and a couple concrete
-implementations.
+One of zounds' primary motivating factors is to develop the building blocks for 
+a fast, high-quality audio similarity search.  The 
+:py:mod:`zounds.model.framesearch` module contains classes which define a 
+common API for search implementations, and a couple concrete implementations.
 
 In general, a search should use one or more pre-computed features to index the
 frames database.
@@ -353,8 +353,8 @@ class ExhaustiveSearch(FrameSearch):
     the query's features and stored features at every valid position in the 
     database.
     
-    This approach is not appropriate for large databases, but can be used on
-    smaller sets of sounds to evaluate the performance of a certain feature.
+    This brute force approach is not appropriate for large databases, but can be
+    used on smaller sets of sounds to evaluate the performance of a certain feature.
     '''
     
     def __init__(self,_id,feature,step = 1,
@@ -368,13 +368,13 @@ class ExhaustiveSearch(FrameSearch):
         is currently stored
         
         :param step: The interval at which frames from the query and equal-length \
-        spans of frames from the database should be compared.  Frequently, this \
+        spans of frames from the database should be compared.  Typically, this \
         will be the absolute step value of the feature.
         
-        :param normalize: If True, and feature is multi-dimensional, all feature \
-        values from the query and the database will be divided feature-wise by \
-        the feature's standard deviation, so that all dimensions of the feature \
-        are given equal importance.
+        :param normalize: If :code:`True`, and :code:`feature` is multi-dimensional, \
+        all feature values from the query and the database will be divided \
+        feature-wise by the feature's standard deviation, so that all dimensions \
+        of the feature are given equal variance.
          
         '''
         
@@ -522,14 +522,14 @@ class Frequency(object):
 
 class ExhaustiveLshSearch(FrameSearch):
     '''
-    Very quickly search large databases using features which are stored as
+    Quickly search large databases using features which are stored as
     32 or 64 bit scalars.  The scalars are treated as binary feature vectors
     of dimension 32 or 64, and are compared using the hamming distance.
     
     Works well for features computed using 
     `locality-sensitive hashing <http://en.wikipedia.org/wiki/Locality-sensitive_hashing>`_
     or 
-    'semantic hashing <http://www.utstat.toronto.edu/~rsalakhu/papers/semantic_final.pdf>'_
+    `semantic hashing <http://www.utstat.toronto.edu/~rsalakhu/papers/semantic_final.pdf>`_
     '''
     
     # TODO: nbits could be inferred from the feature

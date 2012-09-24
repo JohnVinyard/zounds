@@ -19,7 +19,7 @@ LOGGER = logging.getLogger(__name__)
 
 class PyTablesFrameController(FrameController):
     '''
-    A :py:class:`~zounds.data.frame.FrameController` that stores feature data in 
+    A :py:class:`~zounds.data.frame.frame.FrameController` that stores feature data in 
     the hdf5 file format, and uses the PyTables library to access it.
     
     PyTables/hdf5 has some special limitations, .e.g, columns cannot be added or
@@ -162,7 +162,7 @@ class PyTablesFrameController(FrameController):
         class defining features-of-interest
         
         :param filepath: a relative or absolute path to an hdf5 file where data \
-        should be stored
+        should be stored.  If the file doesn't already exist, it will be created.
         '''
         
         FrameController.__init__(self,framesmodel)

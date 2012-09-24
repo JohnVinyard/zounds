@@ -7,10 +7,11 @@ Data Persistence
 
 Storing Computed Features
 ----------------------------------
-This section will be useful to developers interested in implementing new storage
-backends, or adding new functionality to zounds, but writing a standard zounds
-application should only require you to interact with these classes in one place:
-your :code:`config.py` file.  Here's an example of a simple configuration file::
+The :py:mod:`zounds.data` documentation will be useful to developers interested 
+in implementing new storage backends, or adding new functionality to zounds, 
+but writing a standard zounds application should only require you to interact 
+with these classes in one place: your :code:`config.py` file.  
+Here's an example of a simple configuration file::
 
 	# import zounds' logging configuration so it can be used in this application
 	from zounds.log import *
@@ -152,13 +153,13 @@ Storing Learning Pipelines and Searches
 
 There's currently only one backend option for storing 
 :py:class:`~zounds.model.pipeline.Pipeline` and 
-:py:class:`~zounds.model.framesearch.FrameSearch`, which simply uses 
+:py:class:`~zounds.model.framesearch.FrameSearch` instances, which simply uses 
 `cPickle <http://docs.python.org/library/pickle.html#module-cPickle>`_ to persist
 objects, and is wrapped in a simple, dictionary-like interface.
 
 Typically, you won't call the :py:meth:`~PickledController.store` method directly.  It
-will be called by the :py:meth:`~zounds.model.pipeline.Pipeline.train` and
-:py:meth:`~zounds.model.framesearch.FrameSearch.build_index` methods.
+will be called by the :py:meth:`zounds.model.pipeline.Pipeline.train` and
+:py:meth:`zounds.model.framesearch.FrameSearch.build_index` methods.
 
 Getting and deleting objects can also be handled through the classes themselves.  
 To fetch a :py:class:`~zounds.model.framesearch.ExhaustiveLshSearch` instance

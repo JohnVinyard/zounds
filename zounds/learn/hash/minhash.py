@@ -15,7 +15,8 @@ class MinHash(Learn):
     permutation, and returns the lowest index with an "on" bit.
     
     Many such hashes are created, and the output of each is concatenated into a
-    vector of integers.
+    vector of integers.  The more hash functions used, the closer the 
+    approximation comes to the actual jaccard distance.
     
     When comparing the output of the min-hash algorithm to approximate the 
     similarity of two binary feature vectors, it's important to remember that
@@ -24,7 +25,16 @@ class MinHash(Learn):
     
     Note that the "training" phase for the min-hash algorithm merely consists of
     picking n random permutations.  These are persisted for the life of an instance,
-    so hash values are always reproducible.
+    so hash values are always reproducible.  This means that a min-hash pipeline
+    would look something like this::
+    
+        from zounds.learn.fetch import NoOp as FetchNoOp
+        from zounds.learn.preprocess import NoOp as PreNoOp
+        p = Pipeline(
+            'pipeline/minhash',
+            FetchNoOp(),   # no training data is needed
+            PreNoOp(),     # and hence, no preprocessing
+            MinHash(100))  # Choose 100 hash functions (i.e., permutations)
     '''
     
     def __init__(self,size,nhashes):

@@ -54,11 +54,11 @@ class NoOp(Preprocess):
         return data
 
 
-
+# TODO: Don't save the mean if axis = 1
 class SubtractMean(Preprocess):
     '''
     Subtract the mean of the data from the data itself, either feature or 
-    example-wise.  This is intended to center data around zero.
+    example-wise.  This is intended to center features around zero.
     '''
     
     def __init__(self,mean = None, axis = 0):
@@ -98,6 +98,7 @@ class SubtractMean(Preprocess):
     def __str__(self):
         return self.__repr__()
 
+# TODO: Don't save the std if axis = 1
 class DivideByStd(Preprocess):
     '''
     Divide data by its own standard deviation, either feature or example-wise. This
@@ -113,9 +114,10 @@ class DivideByStd(Preprocess):
         time this instance is called, and the value will be used for the lifetime \
         of this instance.
         
-        :param axis: The axis along which the mean will be computed.  Zero \
-        (the default) means that an average will be computed feature-wise, \
-        while one means that an average will be computed example-wise.
+        :param axis: The axis along which the standard deviation will be computed.  \
+        Zero (the default) means that standard deviation will be computed \
+        feature-wise, while one means that standard deviation will be computed \
+        example-wise.
         '''
         Preprocess.__init__(self)
         self._std = std

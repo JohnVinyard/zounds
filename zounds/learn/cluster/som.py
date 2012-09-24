@@ -281,7 +281,7 @@ class Som(Learn):
         the best matching cell.
         
         :returns: The inverse of the distance from each example to each cell.  \
-        Notice that cell addresses are "flattened".  To obtain the two dimensional \
+        Note that cell addresses are flattened.  To obtain the two dimensional \
         address of a cell: :code:`row_number = cell_number // self._size` and \
         :code:`column_number = cell_number % self._size`.
         

@@ -297,17 +297,18 @@ class Loudness(SingleInput):
 
 class SpectralCentroid(SingleInput):
     '''
-    "Indicates where the "center of mass" of the spectrum is. Perceptually, 
-    it has a robust connection with the impression of "brightness" of a 
-    sound.  It is calculated as the weighted mean of the frequencies 
-    present in the signal, determined using a Fourier transform, with 
-    their magnitudes as the weights..."
+    .. epigraph::
+        Indicates where the "center of mass" of the spectrum is. Perceptually, 
+        it has a robust connection with the impression of "brightness" of a 
+        sound.  It is calculated as the weighted mean of the frequencies 
+        present in the signal, determined using a Fourier transform, with 
+        their magnitudes as the weights...
     
-    From http://en.wikipedia.org/wiki/Spectral_centroid
+        -- http://en.wikipedia.org/wiki/Spectral_centroid
     
     This feature's :code:`needs` parameter usually points to a feature which \
     computes spectral coefficients, such as :py:class:`FFT`, or \
-    :py:class:`BarkBands`, e.g.:
+    :py:class:`BarkBands`, e.g::
     
         class FrameModel(Frames):
             fft = Feature(FFT)
@@ -342,25 +343,26 @@ class SpectralCentroid(SingleInput):
 
 class SpectralFlatness(SingleInput):
     '''
-    "Spectral flatness or tonality coefficient, also known as Wiener 
-    entropy, is a measure used in digital signal processing to characterize an
-    audio spectrum. Spectral flatness is typically measured in decibels, and 
-    provides a way to quantify how tone-like a sound is, as opposed to being 
-    noise-like. The meaning of tonal in this context is in the sense of the 
-    amount of peaks or resonant structure in a power spectrum, as opposed to 
-    flat spectrum of a white noise. A high spectral flatness indicates that 
-    the spectrum has a similar amount of power in all spectral bands - this 
-    would sound similar to white noise, and the graph of the spectrum would 
-    appear relatively flat and smooth. A low spectral flatness indicates that
-    the spectral power is concentrated in a relatively small number of 
-    bands - this would typically sound like a mixture of sine waves, and the
-    spectrum would appear "spiky"..."
-    
-    From http://en.wikipedia.org/wiki/Spectral_flatness
+    .. epigraph::
+        Spectral flatness or tonality coefficient, also known as Wiener 
+        entropy, is a measure used in digital signal processing to characterize an
+        audio spectrum. Spectral flatness is typically measured in decibels, and 
+        provides a way to quantify how tone-like a sound is, as opposed to being 
+        noise-like. The meaning of tonal in this context is in the sense of the 
+        amount of peaks or resonant structure in a power spectrum, as opposed to 
+        flat spectrum of a white noise. A high spectral flatness indicates that 
+        the spectrum has a similar amount of power in all spectral bands - this 
+        would sound similar to white noise, and the graph of the spectrum would 
+        appear relatively flat and smooth. A low spectral flatness indicates that
+        the spectral power is concentrated in a relatively small number of 
+        bands - this would typically sound like a mixture of sine waves, and the
+        spectrum would appear "spiky"...
+        
+        -- http://en.wikipedia.org/wiki/Spectral_flatness
     
     This feature's :code:`needs` parameter usually points to a feature which \
     computes spectral coefficients, such as :py:class:`FFT`, or \
-    :py:class:`BarkBands`, e.g.:
+    :py:class:`BarkBands`, e.g::
     
         class FrameModel(Frames):
             fft = Feature(FFT)
@@ -413,7 +415,7 @@ class BFCC(SingleInput):
     to computing the cepstrum.  The aim of both features is to describe the shape \
     of the spectrum in a frequency-invariant way.  Concretely (and ideally), a \
     saxophone playing two different notes, perhaps in different octaves, would
-    still have the same "shape".  The feature is computed as follows:
+    still have the same spectral "shape".  The feature is computed as follows:
         
         * Take an STFT of audio data
         * map the fourier coefficients onto the Bark scale
@@ -423,8 +425,9 @@ class BFCC(SingleInput):
           DCT coefficients are kept, since the majority of the signal's energy \
           is concentrated in the these lower frequencies.
     
-    For the sake of decomposability, the :code:`BFCC` class does not implement \
-    the first two steps itself, but expects :py:class:`BarkBands` as input::
+    For the sake of decomposability and DRY-ness, the :py:class:`BFCC` class does \ 
+    not implement the first two steps itself, but expects :py:class:`BarkBands` \
+     as input::
     
         class FrameModel(Frames):
             fft = Feature(FFT)
