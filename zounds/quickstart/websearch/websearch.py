@@ -11,6 +11,9 @@ from scikits.audiolab import Sndfile,Format
 from scipy.misc import imsave,imresize
 from matplotlib.cm import hot
 
+from freesound import Freesound,Sound
+
+
 from config import FrameModel,Z
 from zounds.util import ensure_path_exists,SearchSetup
 
@@ -27,6 +30,17 @@ def media_domain(index,mtype):
 def static_domain(index,mtype):
     sub = index % N_SUBDOMAINS
     return 'http://%s%i.%s' % (mtype[0],sub,web.ctx.host)
+
+
+freesound_key = None
+try:
+    freesound_api_key_filename = 'freesound_api_key.txt'
+    with open(freesound_api_key_filename,'r') as f:
+        freesound_key = f.read()[:-1]
+    Freesound.set_api_key(freesound_key)
+except IOError:
+    pass
+
 
 KEY, PREV, NEXT = range(3)
 
@@ -97,8 +111,6 @@ media_path = 'media'
 images_path = os.path.join(media_path,'images')
 audio_path = os.path.join(media_path,'audio')
 
-
-
 delimiter = ':'
 
 controller = Z.framecontroller
@@ -114,7 +126,8 @@ human_friendly_db_length = '%i hours and %i minutes' % (hours,minutes)
 
 urls = (r'/audio/(?P<addr>.+?)',AUDIO,
         r'/image/(?P<addr>.+?)/(?P<feature>[\w]+)',IMAGE,
-        r'/zoundsapp','zoundsapp')
+        r'/zoundsapp','zoundsapp',
+        r'/freesound/(?P<zid>.+?)','attribution')
 
 
 # KLUDGE: The way addresses are being handled is atrocious!
@@ -393,7 +406,28 @@ class image(object):
         return data
  
 
-
+class attribution(object):
+    
+    def __init__(self):
+        object.__init__(self)
+    
+    def GET(self,zid = None):
+        web.header('Content-Type','text/plain')
+        
+        if not zid:
+            return ''
+        
+        try:
+            fsid = controller.external_id(zid)
+        except KeyError:
+            return ''
+        
+        try:
+            snd = Sound.get_sound(fsid[1])
+            return snd['url']
+        except Exception:
+            return ''
+    
 class zoundsapp(object):
     
     def __init__(self):

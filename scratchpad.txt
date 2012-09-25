@@ -6,10 +6,12 @@ TOOO:
 
 - Keyboard help
 
+- Handle malformed query paramters
+
 - Silence bug
 
 - Tweak search results organization
-	- DONE do mean instead of min
+	- switch back to min value (or something better)
 	- try tf/idf again
 
 - Add option to search.py to draw sounds randomly from a database, or from
