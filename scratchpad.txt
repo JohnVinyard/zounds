@@ -1,5 +1,13 @@
 TOOO:
 -------------
+- Bookmark searches
+
+- Button to reload page
+
+- Freesound attribution
+
+- Silence bug
+
 - Tweak search results organization
 	- DONE do mean instead of min
 	- try tf/idf again
@@ -9,11 +17,6 @@ TOOO:
   	
 - Fix tile normalization problem
 
-- Bookmark searches
-
-- Button to reload page
-
-- Freesound attribution
 
 - Limit search sizes
 

@@ -2,11 +2,14 @@ body {
 	background-color:#bbbbcc;
 	font-family:'Helvetica Neue',Helvetica,Arial,san-serif;
 	color:#444;
-	font-size:2em;
 }
 #playhead {
 	position:absolute;
 	display:none;
+}
+.snippet.focus,.linkbutton {
+	background-image: -moz-linear-gradient(bottom, #ccccdd 0%, #ddddee 50%);
+  	background-image: -webkit-linear-gradient(bottom, #ccccdd 0%, #ddddee 50%);
 }
 .snippet {
 	margin:10px;
@@ -19,6 +22,8 @@ body {
   	-webkit-box-shadow: 3px 3px 5px 6px #aaa;
   	box-shadow:         3px 3px 5px 6px #aaa;
   	outline:none;
+  	background-image: -moz-linear-gradient(bottom, #bebece 0%, #cfcfdf 50%);
+  	background-image: -webkit-linear-gradient(bottom, #bebece 0%, #cfcfdf 50%);
 }
 .snippet.focus {
 	background-color:#ddddee;
@@ -38,4 +43,24 @@ body {
 	background-color:#555555;
 	background-repeat:no-repeat;
 	float:left;
+}
+.linkbutton {
+	color:#444;
+	text-shadow:0 1px 0 #ddd;
+	border: 1px solid #bbb;
+	border-bottom-color:#aaa;
+  	cursor:pointer;
+  	border-radius:7px;
+  	whitespace:nowrap;
+  	line-height:24px;
+  	font-size:2em;
+  	font-weight:bold;
+  	display:inline-block;
+  	padding:20px;
+  	margin:10px;
+  	text-decoration:none;
+}
+.linkbutton:hover {
+	background-image: -moz-linear-gradient(bottom, #aabbee 0%, #bbccff 50%);
+  	background-image: -webkit-linear-gradient(bottom, #aabbee 0%, #bbccff 50%);
 }
