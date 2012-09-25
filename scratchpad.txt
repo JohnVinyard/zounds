@@ -1,12 +1,13 @@
 TOOO:
 -------------
-- Add readme file with attributions to the pre-selected sounds
+- Tweak search results organization
+	- DONE do mean instead of min
+	- try tf/idf again
 
-- cplay.o permissions error on the VM?
-
-TODO: Do another installation test run and move up a new dist package
-
-Fix tile normalization problem
+- Add option to search.py to draw sounds randomly from a database, or from
+  a directory
+  	
+- Fix tile normalization problem
 
 - Bookmark searches
 
@@ -20,8 +21,6 @@ Fix tile normalization problem
 
 - Host images from a few different sub-domains
 
-- Upload new tarball of .02 to BitBcket
-
 - Move bugs and feature "requests" into bitbucket issue tracker
 
 - start a planning document for the higher level/ more abstract stuff
@@ -29,6 +28,9 @@ Fix tile normalization problem
 - Temporarily disable two failing tests, or switch to unittest2 so they can
 be ignored
 
+TODO: Do another installation test run and move up a new dist package
+
+- cplay.o permissions error on the VM?
 
 After job-hunt
 ========================================================================

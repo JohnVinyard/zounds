@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 from __future__ import division
 import web
 import os
@@ -254,7 +256,7 @@ class Results(object):
         for v in d.itervalues():
             self.results.extend(Result.congeal(list(v)))
         
-        self.results = sorted(self.results,key = lambda a : min(a.scores))
+        self.results = sorted(self.results,key = lambda a : np.mean(a.scores))
 
         self.search_time = time() - tic
         self.brag = 'Searched %s of sound in %1.4f seconds' %\
@@ -360,10 +362,7 @@ class zoundsapp(object):
             
             
             
-
+ensure_path_exists(images_path)
+ensure_path_exists(audio_path)
 app = web.application(urls, globals())
-
-if __name__ == "__main__":
-    ensure_path_exists(images_path)
-    ensure_path_exists(audio_path)
-    app.run()
+application = app.wsgifunc()    
