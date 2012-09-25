@@ -1,0 +1,58 @@
+This document details the steps I've taken so far to get a working nginx + uwsgi
+server configured.
+
+
+1. pip install uwsgi in the zounds2 virtualenv
+2. get the latest nginx source (1.2.6), build it, and install in the zounds2 virtualenv
+3. Use the following as the nginx configuration
+
+	user www-data;
+	worker_processes  1;
+	
+	error_log  /var/log/nginx/error.log;
+	pid        /var/run/nginx.pid;
+	
+	events {
+	    worker_connections  1024;
+	    # multi_accept on;
+	}
+	
+	http {
+	    include       /etc/nginx/mime.types;
+	
+	    access_log	/var/log/nginx/access.log;
+	
+	    sendfile        on;
+	    #tcp_nopush     on;
+	
+	    #keepalive_timeout  0;
+	    keepalive_timeout  65;
+	    tcp_nodelay        on;
+	
+	    gzip  on;
+	    gzip_disable "MSIE [1-6]\.(?!.*SV1)";
+	
+	    include /etc/nginx/conf.d/*.conf;
+	    include /etc/nginx/sites-enabled/*;
+	
+		server {
+			listen       localhost:8080;
+			server_name  localhost;
+	
+			location /static {
+				alias /home/john/zoundsapps/filesystem/static;
+			}
+	
+			location / {
+				include uwsgi_params;
+				uwsgi_pass unix:/tmp/webpy.sock;
+			}
+		}
+	}
+4. Start uwsgi with the following options (I need to figure out all the pythonpath shit)
+
+	 /home/john/.virtualenvs/zounds2/bin/uwsgi -p 4 -s /tmp/webpy.sock --pythonpath /home/john/.virtualenvs/zounds2/  --pythonpath /home/john/.virtualenvs/zounds2/lib/python2.6/site-packages/ --master --module websearch --enable-threads --pyargv "--feature packed --searchclass ExhaustiveLshSearch --sounddir /home/john/Test2 --nresults 75"
+	
+5. Ensure that /tmp/webpy.sock is readable and writable by the nginx and uwsgi processes. 
+
+
