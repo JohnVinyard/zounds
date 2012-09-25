@@ -410,7 +410,7 @@ class zoundsapp(object):
         results = search.search(addr, nresults = args.nresults)
         r = Results(qid,addr,results,tic)
         render = web.template.render('static/templates')
-        return render.zoundsapp(r)
+        return render.zoundsapp(r,web)
             
             
             

@@ -1,4 +1,4 @@
-$def with (results)
+$def with (results,web)
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -12,8 +12,16 @@ $def with (results)
 	<script type="text/javascript" src="static/js/websearch.js"></script>
 </head>
 <body id="home">
+
+	<!-- Playhead -->
 	<canvas width="2" height="200" id="playhead"></canvas>
-	<h1>$results.brag</h1>
+	
+	<!-- Brag about search time --> 
+	
+	
+	
+	<!-- Query -->
+	<h1>Query Sound</h1>
 	<div class="snippet query shadow" tabindex="1">
 		$ addr = results.query_address
 		<div class="spectrogram">
@@ -27,7 +35,13 @@ $def with (results)
 		</audio>
 	</div>
 	<div style="clear:both;"/>
+	<a href="${web.ctx.homepath}" class="linkbutton">Random Search</a>
+	<input type="text" readonly="true">HAI!</input>
+	<div style="clear:both;"/>
+	
+	
 	<hr/>
+	<h1>$results.brag</h1>
 	$for r in results.results:
 		
 		<div class="snippet shadow" tabindex="${loop.index + 1}">
