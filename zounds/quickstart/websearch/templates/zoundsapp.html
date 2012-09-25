@@ -16,9 +16,6 @@ $def with (results,web)
 	<!-- Playhead -->
 	<canvas width="2" height="200" id="playhead"></canvas>
 	
-	<!-- Brag about search time --> 
-	
-	
 	
 	<!-- Query -->
 	<h1>Query Sound</h1>
@@ -34,10 +31,12 @@ $def with (results,web)
 		  Your browser does not support the audio tag.
 		</audio>
 	</div>
-	<div style="clear:both;"/>
-	<a href="${web.ctx.homepath}" class="linkbutton">Random Search</a>
-	<input type="text" readonly="true">HAI!</input>
-	<div style="clear:both;"/>
+	<div style="clear:both;"></div>
+	<a href="${web.ctx.homepath + web.ctx.path}" class="linkbutton">Random Search</a>
+	<div style="clear:both;"></div>
+	<h1 id="bookmark_text">Bookmark this search:</h1>
+	<input id="bookmark" class="link" type="text" readonly="true" value="$results.bookmark"></input>
+	<div style="clear:both;"></div>
 	
 	
 	<hr/>

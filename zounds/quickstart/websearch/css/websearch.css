@@ -12,7 +12,6 @@ body {
   	background-image: -webkit-linear-gradient(bottom, #ccccdd 0%, #ddddee 50%);
 }
 .snippet {
-	margin:10px;
 	background-color:#cfcfdf;
 	padding:12px;
 	float:left;
@@ -52,15 +51,30 @@ body {
   	cursor:pointer;
   	border-radius:7px;
   	whitespace:nowrap;
-  	line-height:24px;
   	font-size:2em;
   	font-weight:bold;
   	display:inline-block;
   	padding:20px;
   	margin:10px;
   	text-decoration:none;
+  	padding:20px;
 }
 .linkbutton:hover {
 	background-image: -moz-linear-gradient(bottom, #aabbee 0%, #bbccff 50%);
   	background-image: -webkit-linear-gradient(bottom, #aabbee 0%, #bbccff 50%);
+}
+.link,.linkbutton,#bookmark_text {
+	line-height:24px;
+}
+.link {
+	font-size:1.5em;
+	color:#444;
+	width:400px;
+	padding:10px;
+	margin:5px;
+}
+.snippet,.linkbutton,#bookmark_text {margin:10px;}
+#bookmark_text {
+	display:inline-block;
+	margin-right:0px;
 }

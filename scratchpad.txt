@@ -1,10 +1,10 @@
 TOOO:
 -------------
-- Bookmark searches
-
-- Button to reload page
-
 - Freesound attribution
+
+- About section
+
+- Keyboard help
 
 - Silence bug
 
@@ -16,7 +16,6 @@ TOOO:
   a directory
   	
 - Fix tile normalization problem
-
 
 - Limit search sizes
 

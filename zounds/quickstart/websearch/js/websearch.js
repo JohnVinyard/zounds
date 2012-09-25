@@ -102,4 +102,6 @@ $(function() {
 		var img = $(this).find('.spectrogram');
 		img.unbind('click');
 	});
+
+	$('#bookmark').click(function() {this.select();});
 });
