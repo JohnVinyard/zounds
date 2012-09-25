@@ -8,7 +8,7 @@ Importing Audio
 The ingest.py Script
 ------------------------------
 If all you need to do is analyze audio files that live on your machine, and you
-used the :code:`zounds-quickstart.py` script to start your application, there's
+used the :role:`quickstart script <quick-start>` to start your application, there's
 another script in your application directory called :code:`ingest.py`.  This
 script provides a convenient command-line interface to the 
 :py:class:`~zounds.acquire.acquirer.DiskAcquirer` class.  
