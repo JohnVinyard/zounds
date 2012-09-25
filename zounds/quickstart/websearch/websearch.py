@@ -174,6 +174,9 @@ class Tile(object):
         return ((self.stop - self.start) - self.start_offset - self.stop_offset)\
                  * self.tilescale
     
+    @property
+    def addr_str(self):
+        return addr_str(self.id,self.start,self.stop)
     
     def img_css(self,index):
         addr = addr_str(self.id,self.start,self.stop)
@@ -306,6 +309,10 @@ class Results(object):
              (human_friendly_db_length,self.search_time)
     
     @property
+    def bookmark(self):
+        return '%s%s?q=%s' % (web.ctx.home,web.ctx.path,self.querytile.addr_str)
+    
+    @property
     def query_address(self):
         return encode_address(build_address(self.query_id,self.query.start,self.query.stop))
 
@@ -393,18 +400,23 @@ class zoundsapp(object):
         object.__init__(self)
     
     def GET(self):
-        qid = choice(_ids)
-        addr = controller.address(qid)
-        start,stop = addr.start,addr.stop
-        l = len(addr)
-        minlength = Z.seconds_to_frames(args.minseconds)
-        maxlength = Z.seconds_to_frames(args.maxseconds)
-        qlength = np.random.randint(minlength,maxlength)
-        slack = l - qlength
-        if slack > 0:
-            qstart = np.random.randint(slack) + start
-            qstop = qlength + qstart
-            addr = build_address(qid,qstart,qstop)
+        try:
+            q = web.input().q
+            addr = decode_address(q)
+            qid = q.split(delimiter)[0]
+        except AttributeError:
+            qid = choice(_ids)
+            addr = controller.address(qid)
+            start,stop = addr.start,addr.stop
+            l = len(addr)
+            minlength = Z.seconds_to_frames(args.minseconds)
+            maxlength = Z.seconds_to_frames(args.maxseconds)
+            qlength = np.random.randint(minlength,maxlength)
+            slack = l - qlength
+            if slack > 0:
+                qstart = np.random.randint(slack) + start
+                qstop = qlength + qstart
+                addr = build_address(qid,qstart,qstop)
         
         tic = time()
         results = search.search(addr, nresults = args.nresults)
