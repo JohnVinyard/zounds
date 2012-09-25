@@ -11,12 +11,22 @@ from scikits.audiolab import Sndfile,Format
 from scipy.misc import imsave,imresize
 from matplotlib.cm import hot
 
-from config import *
+from config import FrameModel,Z
 from zounds.util import ensure_path_exists,SearchSetup
 
 import collections
 
+N_SUBDOMAINS = 4
+IMAGE = 'image'
+AUDIO = 'audio'
 
+def media_domain(index,mtype):
+    sub = index % N_SUBDOMAINS
+    return 'http://%s%i.%s/%s' % (mtype[0],sub,web.ctx.host,mtype)
+    
+def static_domain(index,mtype):
+    sub = index % N_SUBDOMAINS
+    return 'http://%s%i.%s' % (mtype[0],sub,web.ctx.host)
 
 KEY, PREV, NEXT = range(3)
 
@@ -89,6 +99,8 @@ audio_path = os.path.join(media_path,'audio')
 
 
 
+delimiter = ':'
+
 controller = Z.framecontroller
 args,search = SearchSetup(FrameModel).setup()
 
@@ -100,8 +112,8 @@ hours = (minutes // 60) / 60
 minutes = minutes % 60
 human_friendly_db_length = '%i hours and %i minutes' % (hours,minutes)
 
-urls = (r'/audio/(?P<addr>.+?)','audio',
-        r'/image/(?P<addr>.+?)/(?P<feature>[\w]+)','image',
+urls = (r'/audio/(?P<addr>.+?)',AUDIO,
+        r'/image/(?P<addr>.+?)/(?P<feature>[\w]+)',IMAGE,
         r'/zoundsapp','zoundsapp')
 
 
@@ -112,29 +124,42 @@ from zounds.data.frame.filesystem import FileSystemFrameController
 Address = Z.address_class
 if controller.__class__ == PyTablesFrameController:
     def decode_address(addr):
-        start,stop = [int(s) for s in addr.split(':')]
+        start,stop = [int(s) for s in addr.split(delimiter)]
         return Address(slice(start,stop))
     
+    def addr_str(self,start,stop):
+        return delimiter.join([start,stop])
+    
     def encode_address(addr):
-        return '%s:%s' % (addr.start,addr.stop)
+        return '%s%s%s' % (addr.start,delimiter,addr.stop)
     
     def build_address(_id,start,stop):
         return Address(slice(start,stop))
 
 elif controller.__class__ == FileSystemFrameController:
     def decode_address(addr):
-        _id,start,stop = addr.split(':')
+        _id,start,stop = addr.split(delimiter)
         return Address((_id,slice(int(start),int(stop))))
     
+    def addr_str(_id,start,stop):
+        return delimiter.join([_id,str(start),str(stop)])
+    
     def encode_address(addr):
-        return '%s:%s:%s' % (addr._id,addr.start,addr.stop)
+        return '%s%s%s%s%s' % (addr._id,delimiter,addr.start,delimiter,addr.stop)
     
     def build_address(_id,start,stop):
         return Address((_id,slice(start,stop)))
 else:
     raise RuntimeError('Cannot handle %s backend' % controller.__class__.__name__)
 
+
+def nested_path(addr):
+    return '%s/%s/%s' % (addr[0],addr[1],addr)
+
 class Tile(object):
+    
+    feature = 'bark'
+    
     
     def __init__(self,_id,start,stop,start_offset = 0,stop_offset = 0):
         self.id = _id
@@ -149,14 +174,23 @@ class Tile(object):
         return ((self.stop - self.start) - self.start_offset - self.stop_offset)\
                  * self.tilescale
     
-    def __repr__(self):
-        return '''background-image : url('image/%s/bark'); background-position : -%ipx 0px; width : %ipx;''' % \
-                 (encode_address(build_address(self.id,self.start,self.stop)),
+    
+    def img_css(self,index):
+        addr = addr_str(self.id,self.start,self.stop)
+        img_path = img_resource(addr,Tile.feature)
+        
+        if os.path.exists(img_path):
+            domain = static_domain(index,IMAGE)
+            url = '%s/%s' % (domain,img_path)
+        else:
+            domain = media_domain(index,IMAGE)
+            url = '%s/%s/%s' % (domain,addr,Tile.feature)
+        
+        
+        return '''background-image : url('%s'); background-position : -%ipx 0px; width : %ipx;''' % \
+                 (url,
                   self.start_offset * self.tilescale,
                   self.width)
-    
-    def __str__(self):
-        return self.__repr__()
 
 # TODO: I should be using the address class itself here!
 class Result(object):
@@ -231,9 +265,18 @@ class Result(object):
         [o.compute_tiles() for o in out]
         return out
     
-    @property
-    def encoded_address(self):
-        return encode_address(build_address(self.id,self.start,self.stop))
+    
+    
+    def audio_url(self,index):
+        addr = addr_str(self.id,self.start,self.stop)
+        audio_path = audio_resource(addr)
+        
+        if os.path.exists(audio_path):
+            domain = static_domain(index,AUDIO)
+            return '%s/%s' % (domain,audio_path)
+        else:
+            domain = media_domain(index,AUDIO)
+            return '%s/%s' % (domain,addr)
         
 
 class Results(object):
@@ -266,6 +309,9 @@ class Results(object):
     def query_address(self):
         return encode_address(build_address(self.query_id,self.query.start,self.query.stop))
 
+def audio_resource(addr):
+    return os.path.join(audio_path,'%s.ogg' % nested_path(addr))
+
 # TODO: Refactor common code out of audio and image classes
 class audio(object):
     
@@ -273,12 +319,13 @@ class audio(object):
         object.__init__(self)
     
     def filename(self,addr):
-        return os.path.join(audio_path,'%s.ogg' % addr)
+        return audio_resource(addr)
     
     def make_file(self,fn,addr):
         addr = decode_address(addr)
         frames = FrameModel[addr]
         fmt = Format('ogg','vorbis')
+        ensure_path_exists(fn)
         sndfile = Sndfile(fn,'w',fmt,1,Z.samplerate)
         print 'starting oggwrite of %s' % addr
         Z.synth(frames.audio,sndfile)
@@ -301,13 +348,17 @@ class audio(object):
         web.header('Content-Length',len(data))
         return data
 
+def img_resource(addr,feature):
+    return os.path.join(images_path,'%s%s%s.png' % (nested_path(addr),delimiter,feature))
+
+
 class image(object):
     
     def __init__(self):
         object.__init__(self)
     
     def filename(self,addr,feature):
-        return os.path.join(images_path,'%s_%s.png' % (addr,feature))
+        return img_resource(addr,feature)
     
     def make_file(self,fn,addr,feature):
         addr = decode_address(addr)
@@ -316,6 +367,7 @@ class image(object):
         f *= 1./ f.max()
         f = imresize(f,(f.shape[0] * 2, f.shape[1] * 2))
         color = hot(f)
+        ensure_path_exists(fn)
         imsave(fn,np.rot90(color))
     
     def GET(self,addr = None,feature = None):

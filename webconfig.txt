@@ -43,12 +43,40 @@ server configured.
 				alias /home/john/zoundsapps/filesystem/static;
 			}
 	
+			location /media {
+				alias /home/john/zoundsapps/filesystem/media;
+				expires 30d;
+	    		add_header Pragma public;
+			    add_header Cache-Control "public";
+			}
+	
 			location / {
 				include uwsgi_params;
 				uwsgi_pass unix:/tmp/webpy.sock;
 			}
 		}
 	}
+	
+	# mail {
+	#     # See sample authentication script at:
+	#     # http://wiki.nginx.org/NginxImapAuthenticateWithApachePhpScript
+	# 
+	#     # auth_http localhost/auth.php;
+	#     # pop3_capabilities "TOP" "USER";
+	#     # imap_capabilities "IMAP4rev1" "UIDPLUS";
+	# 
+	#     server {
+	#         listen     localhost:110;
+	#         protocol   pop3;
+	#         proxy      on;
+	#     }
+	# 
+	#     server {
+	#         listen     localhost:143;
+	#         protocol   imap;
+	#         proxy      on;
+	#     }
+	# }
 4. Start uwsgi with the following options (I need to figure out all the pythonpath shit)
 
 	 /home/john/.virtualenvs/zounds2/bin/uwsgi -p 4 -s /tmp/webpy.sock --pythonpath /home/john/.virtualenvs/zounds2/  --pythonpath /home/john/.virtualenvs/zounds2/lib/python2.6/site-packages/ --master --module websearch --enable-threads --pyargv "--feature packed --searchclass ExhaustiveLshSearch --sounddir /home/john/Test2 --nresults 75"

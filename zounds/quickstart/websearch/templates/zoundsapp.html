@@ -17,7 +17,7 @@ $def with (results)
 	<div class="snippet query shadow" tabindex="1">
 		$ addr = results.query_address
 		<div class="spectrogram">
-			<div class="tile" style="$results.querytile"></div>
+			<div class="tile" style="${results.querytile.img_css(0)}"></div>
 			<div style="clear:both;"></div>
 		</div>
 		<br/>
@@ -29,18 +29,23 @@ $def with (results)
 	<div style="clear:both;"/>
 	<hr/>
 	$for r in results.results:
-		$ addr = r.encoded_address
+		
 		<div class="snippet shadow" tabindex="${loop.index + 1}">
+			
+			<!-- Spectrogram Image -->
 			<div class="spectrogram">
 			$for t in r.tiles:
-				<div class="tile" style="$t"></div>
+				<div class="tile" style="${t.img_css(loop.index)}"></div>
 			<div style="clear:both;"></div>
 			</div>
 			
+			<!-- Audio -->
 			<audio>
-			  <source src="/audio/$addr" type="audio/ogg" />
+			  <source src="${r.audio_url(loop.index)}" type="audio/ogg" />
 			  Your browser does not support the audio tag.
 			</audio>
+			
+			<!-- Debug -->
 			<div>$r.id</div>
 			<div>$r.scores</div>
 		</div>
