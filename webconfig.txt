@@ -83,4 +83,5 @@ server configured.
 	
 5. Ensure that /tmp/webpy.sock is readable and writable by the nginx and uwsgi processes. 
 
+6. ensure that httplib2,poster,simplejson, and freesound packages are installed
 
