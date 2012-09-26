@@ -1,15 +1,30 @@
 var interval = null;
 
+function supports_html5_storage() {
+  try {
+    return 'localStorage' in window && window['localStorage'] !== null;
+  } catch (e) {
+    return false;
+  }
+}
+
 // We want the spacebar to play sounds. Keep it from paging down.
 window.onkeydown=function(e){
-  if(e.keyCode==32){
-   return false;
-  }
+	
+	if(e.keyCode == 32) {
+		return false;
+	}
+  
+	if(e.keyCode == 82) {
+		window.location.href = $('#random_search').attr('href'); 
+	}
+	
+	if(e.keyCode == 66) {
+		$('#bookmark').focus();
+	}
 };
 
-function focus_query() {
-	$('.snippet:first').focus();
-}
+
 
 function position_playhead(playhead,snippet) {
 	var a = snippet.find('audio')[0];
@@ -71,6 +86,10 @@ function draw_playhead(jqp) {
 }
 
 
+function give_query_focus() {
+	$('.snippet:first').focus();
+}
+
 $(function() {
 	var playhead = $('#playhead');
 	draw_playhead(playhead);
@@ -103,8 +122,10 @@ $(function() {
 		img.unbind('click');
 	});
 
+	// select all text when the bookmark input gets focus
 	$('#bookmark').click(function() {this.select();});
 	
+	// load the sound's freesound url when the attribution link is clicked
 	$('.attribution').click(function() {
 		var link = $(this);
 		var id = link.attr('zounds_id');
@@ -126,9 +147,25 @@ $(function() {
 		});
 	});
 	
-	$('#about .toggler').click(function() {
-		$('#about_text').slideToggle('fast');
+	$('.ok').click(function() {
+		$(this).parents('.help_text').slideToggle();
 	});
 	
+	give_query_focus();
+	$('#bookmark,.snippet:last').blur(give_query_focus);
 	
+	if(supports_html5_storage()) {
+		if(localStorage['about']) {
+			$('#about_text').hide();
+		}
+		
+		if(localStorage['keyboard']) {
+			$('#keyboard_text').hide();
+		}
+		
+		$('.help_text .ok').click(function() {
+			var key = $(this).parents('.help_text').attr('storage_key');
+			localStorage[key] = 1;
+		});
+	}
 });
