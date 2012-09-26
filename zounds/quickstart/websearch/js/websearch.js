@@ -106,11 +106,23 @@ $(function() {
 	$('#bookmark').click(function() {this.select();});
 	
 	$('.attribution').click(function() {
-		// TODO: some kind of animation indicating we're waiting for data
 		var link = $(this);
-		$.get('/freesound/' + link.attr('zounds_id'),function(data) {
-			var newlink = '<a target="_blank" href="' + data + '">' + data + '</a>'
-			link.replaceWith(newlink);
+		var id = link.attr('zounds_id');
+		var loading_id = 'loading_' + id;
+		link.replaceWith('<span id="' + loading_id + '">loading</span>');
+		var loading = $('#' + loading_id);
+		var interval = setInterval(function() {
+			loading.text(loading.text() + '.');
+			if(loading.text().indexOf('....') != -1) {
+				loading.text('loading');
+			}
+		},500);
+		
+		var loading = $('#' + loading_id);
+		$.get('/freesound/' + id,function(data) {
+			var newlink = '<a target="_blank" href="' + data + '">' + data + '</a>';
+			clearInterval(interval);
+			loading.replaceWith(newlink);
 		});
 	});
 });
