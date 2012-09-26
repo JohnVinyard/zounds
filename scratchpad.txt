@@ -1,6 +1,12 @@
 TOOO:
 -------------
 - Keyboard help
+	- DONE give query sound focus
+	- check for cookie. If not present:
+		show banner with keyboard help
+		when closed, set cookie
+	
+	- press 'r' key to do a random search
 
 - Handle malformed query paramters
 

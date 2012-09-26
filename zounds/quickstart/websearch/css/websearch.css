@@ -54,13 +54,13 @@ a {
   	cursor:pointer;
   	border-radius:7px;
   	whitespace:nowrap;
-  	font-size:2em;
+  	font-size:1.8em;
   	font-weight:bold;
   	display:inline-block;
-  	padding:20px;
-  	margin:10px;
+  	padding:15px;
+  	margin:5px;
+  	margin-right:0px;
   	text-decoration:none;
-  	padding:20px;
 }
 .linkbutton:hover {
 	background-image: -moz-linear-gradient(bottom, #aabbee 0%, #bbccff 50%);
@@ -81,5 +81,10 @@ a {
 	display:inline-block;
 	margin-right:0px;
 }
-#about {margin:10px;font-size:1.5em;}
-#about_text {display:none;}
+.help_text {
+	margin:10px;
+	font-size:1.5em;
+	background-color:#c6c6d7;
+	padding: 10px 20px;
+}
+.help_text .linkbutton {font-size:.8em;}
