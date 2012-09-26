@@ -125,4 +125,10 @@ $(function() {
 			loading.replaceWith(newlink);
 		});
 	});
+	
+	$('#about .toggler').click(function() {
+		$('#about_text').slideToggle('fast');
+	});
+	
+	
 });

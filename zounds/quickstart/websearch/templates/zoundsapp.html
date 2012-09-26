@@ -38,6 +38,25 @@ $def with (results,web)
 	<input id="bookmark" class="link" type="text" readonly="true" value="$results.bookmark"></input>
 	<div style="clear:both;"></div>
 	
+	<div id="about">
+		<a class="toggler" href="javascript:void(0);">About</a>
+		<div id="about_text">
+			<p>This audio search was built using the 
+			<a target="_blank" href="http://www.johnvinyard.com/zoundsdoc">Zounds</a> 
+			Python library.  Queries are drawn, at random, from snippets of
+			sound in the database.  Search results not only tell you which sounds
+			are relevant to the query, but <em>where</em> in those sounds the
+			relevant portions occur.</p>
+			
+			<p>All the sounds here are from 
+			<a target="_blank" href="http://www.freesound.org">Freesound.org</a>.
+			If you'd like to know more about a sound, or its author, just click
+			the "attribution" link below each sound snippet.
+			</p>
+			
+			<p><a class="toggler" href="javascript:void(0);">OK</a></p>
+		</div>
+	</div>
 	
 	<hr/>
 	<h1>$results.brag</h1>
