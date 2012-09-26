@@ -1,20 +1,19 @@
 TOOO:
 -------------
-- Keyboard help
-	- DONE give query sound focus
-	- check for cookie. If not present:
-		show banner with keyboard help
-		when closed, set cookie
+- Search results improvements
+	- What effect does the fine feature have on results?
+		- Hard to discern...
+	- What effect does inverse frequency weighting have on results?
+	- Should more codes be excluded entirely?
+	- What is the effect of "flattening" all frames?
 	
-	- press 'r' key to do a random search
+Bad Searches
+================
+http://localhost:8080/zoundsapp?q=bcdce3a074c24708bada301df9b764a2:0:124
+http://localhost:8080/zoundsapp?q=62c67ee8b3ad4d648e2b411a77f4e661:0:114
+http://localhost:8080/zoundsapp?q=e5acc136103245b2982506a2b37955bd:169:290
+http://localhost:8080/zoundsapp?q=f62dc6f1bdb04f5bad3b0984a1b3c0b9:0:95
 
-- Handle malformed query paramters
-
-- Silence bug
-
-- Tweak search results organization
-	- switch back to min value (or something better)
-	- try tf/idf again
 
 - Add option to search.py to draw sounds randomly from a database, or from
   a directory
@@ -24,8 +23,6 @@ TOOO:
 - Limit search sizes
 
 - Limit size of image and audio requests
-
-- Host images from a few different sub-domains
 
 - Move bugs and feature "requests" into bitbucket issue tracker
 

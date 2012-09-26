@@ -583,6 +583,7 @@ class ExhaustiveLshSearch(FrameSearch):
         self.nbits = nbits
         self._hashdtype = TypeCodes.np_dtype(nbits)
         self._structtype = TypeCodes.type_code(nbits)
+        
     
     def __repr__(self):
         return tostring(self,short = False,feature = self.feature,id = self._id,
@@ -621,19 +622,21 @@ class ExhaustiveLshSearch(FrameSearch):
         index = 0
         for address,frame in fc.iter_all(step = self.step):
             fv = self._feature_value(frame,self.feature)
+            
             if fv not in self._filter:
+                # only include codes that aren't included in self._filter.
+                # Similarity at those positions doesn't matter.
                 _id = frame['_id'][0]
-                # TODO: Consider excluding codes contained in self._filter from 
-                # the index entirely. This could significantly cut down on search
-                # time.
                 self._addrs[index] = (_id,address)
                 self._index[index] = fv
+                
                 if self._fine_feature:
-                    fv = self._feature_value(frame, self._fine_feature)
-                    if not fv.shape:
+                    # add the fine feature value to the fine feature index
+                    ffv = self._feature_value(frame, self._fine_feature)
+                    if not ffv.shape:
                         self._fine_index[index] = 0
                     else:
-                        self._fine_index[index] = self._packer(fv[np.newaxis,...])
+                        self._fine_index[index] = self._packer(ffv[np.newaxis,...])
                 print self._index[index]
                 index += 1
         
@@ -657,6 +660,7 @@ class ExhaustiveLshSearch(FrameSearch):
         # If any of the frames are valid, remove invalid frames, otherwise,
         # we have no choice but to use everything.
         feature = feature[valid] if some_valid else feature
+        
         if self._fine_feature:
             ff = frames[self._fine_feature][::self.step]
             ff = ff[valid] if some_valid else ff
@@ -669,8 +673,11 @@ class ExhaustiveLshSearch(FrameSearch):
         for i in range(lf):
             dist = hamming_distance(feature[i],self._index)
             srt = np.argsort(dist)
+            
             # TODO: Make this size configurable
+            # TODO: What effect does altering this size have?
             n = nresults * 10
+            
             if self._fine_feature:
                 finer = packed_hamming_distance(ff[i],self._fine_index[srt[:n]])
                 fsrt = np.argsort(finer)
