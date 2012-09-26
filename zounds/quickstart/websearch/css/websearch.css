@@ -3,6 +3,9 @@ body {
 	font-family:'Helvetica Neue',Helvetica,Arial,san-serif;
 	color:#444;
 }
+a {
+	color:#556699;
+}
 #playhead {
 	position:absolute;
 	display:none;
@@ -78,3 +81,5 @@ body {
 	display:inline-block;
 	margin-right:0px;
 }
+#about {margin:10px;font-size:1.5em;}
+#about_text {display:none;}

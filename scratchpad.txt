@@ -1,9 +1,5 @@
 TOOO:
 -------------
-- Animation when waiting for freesound attribution links
-
-- About section
-
 - Keyboard help
 
 - Handle malformed query paramters
