@@ -1,6 +1,6 @@
 TOOO:
 -------------
-- Freesound attribution
+- Animation when waiting for freesound attribution links
 
 - About section
 

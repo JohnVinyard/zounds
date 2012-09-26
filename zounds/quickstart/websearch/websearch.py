@@ -315,7 +315,7 @@ class Results(object):
         for v in d.itervalues():
             self.results.extend(Result.congeal(list(v)))
         
-        self.results = sorted(self.results,key = lambda a : np.mean(a.scores))
+        self.results = sorted(self.results,key = lambda a : np.min(a.scores))
 
         self.search_time = time() - tic
         self.brag = 'Searched %s of sound in %1.4f seconds' %\
