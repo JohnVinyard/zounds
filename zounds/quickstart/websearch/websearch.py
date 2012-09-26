@@ -19,9 +19,16 @@ from zounds.util import ensure_path_exists,SearchSetup
 
 import collections
 
+
+
+
 N_SUBDOMAINS = 4
 IMAGE = 'image'
 AUDIO = 'audio'
+BAD_REQUEST = 'Bad Request'
+NOT_FOUND = 'Not Found'
+
+
 
 def media_domain(index,mtype):
     sub = index % N_SUBDOMAINS
@@ -353,20 +360,29 @@ class audio(object):
             
     
     def GET(self,addr = None):
-        fn = self.filename(addr)
-        if not os.path.exists(fn):
-            self.make_file(fn,addr)
+        try:
+            fn = self.filename(addr)
+        except Exception:
+            web.badrequest()
+            return BAD_REQUEST
         
-        oggfile = Sndfile(fn,'r')
-        seconds = oggfile.nframes / oggfile.samplerate
-        oggfile.close()
-        web.header('Content-Type','audio/ogg')
-        web.header('X-Content-Duration',str(seconds))
-        web.header('Accept-Ranges','bytes')
-        with open(fn,'rb') as f:
-            data = f.read()
-        web.header('Content-Length',len(data))
-        return data
+        try:
+            if not os.path.exists(fn):
+                self.make_file(fn,addr)
+            
+            oggfile = Sndfile(fn,'r')
+            seconds = oggfile.nframes / oggfile.samplerate
+            oggfile.close()
+            web.header('Content-Type','audio/ogg')
+            web.header('X-Content-Duration',str(seconds))
+            web.header('Accept-Ranges','bytes')
+            with open(fn,'rb') as f:
+                data = f.read()
+            web.header('Content-Length',len(data))
+            return data
+        except Exception:
+            web.notfound()
+            return NOT_FOUND
 
 def img_resource(addr,feature):
     return os.path.join(images_path,'%s%s%s.png' % (nested_path(addr),delimiter,feature))
@@ -391,19 +407,29 @@ class image(object):
         imsave(fn,np.rot90(color))
     
     def GET(self,addr = None,feature = None):
-        fn = self.filename(addr,feature)
-        if not os.path.exists(fn):
-            self.make_file(fn, addr,feature)
+        try:
+            fn = self.filename(addr,feature)
+        except Exception:
+            web.badrequest()
+            return BAD_REQUEST
         
-        web.header('Content-Type','image/png')
-        web.header('Cache-Control','private')
+        try:
+            if not os.path.exists(fn):
+                self.make_file(fn, addr,feature)
+            
+            web.header('Content-Type','image/png')
+            web.header('Cache-Control','private')
+            
+            web.http.expires(60 * 60 * 24 * 30)
+            
+            with open(fn,'rb') as f:
+                data = f.read()
+            web.header('Content-Length',len(data))
+            return data
+        except Exception:
+            web.notfound()
+            return NOT_FOUND
         
-        web.http.expires(60 * 60 * 24 * 30)
-        
-        with open(fn,'rb') as f:
-            data = f.read()
-        web.header('Content-Length',len(data))
-        return data
  
 
 class attribution(object):
@@ -438,7 +464,7 @@ class zoundsapp(object):
             q = web.input().q
             addr = decode_address(q)
             qid = q.split(delimiter)[0]
-        except AttributeError:
+        except Exception:
             qid = choice(_ids)
             addr = controller.address(qid)
             start,stop = addr.start,addr.stop

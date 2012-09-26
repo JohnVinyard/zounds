@@ -318,13 +318,14 @@ class TypeCodes(object):
 
     @classmethod
     def _whichlist(cls,v):
+        
         if isinstance(v,int):
             return cls._bits
         
         if isinstance(v,str):
             return cls._type_codes
         
-        if isinstance(v,type):
+        if isinstance(v,np.dtype):
             return cls._np_types
         
         raise ValueError('%s is not a valid key' % v)
@@ -343,6 +344,7 @@ class TypeCodes(object):
         
     
 
+# TODO: Write tests
 def pack(a):
     '''
     Interpret an NxM numpy array as an N-length list of 32 or 64 bit numbers
@@ -356,6 +358,21 @@ def pack(a):
     b.extend(a.ravel())
     return np.fromstring(b.tobytes(),dtype = TypeCodes.np_dtype(tc))
 
+# TODO: Write tests
+def unpack(a):
+    '''
+    Expand a N-length list of 32 or 64 bit numbers into an Nx(32|64) boolean
+    numpy array 
+    '''
+    try:
+        bits = TypeCodes.bits(a.dtype)
+    except KeyError:
+        raise ValueError('a must have a 32 or 64 bit dtype')
+    
+    b = bitarray()
+    b.frombytes(a.tostring())
+    return np.array(b).reshape((a.size,bits))
+    
 
 class Packer(object):
     
