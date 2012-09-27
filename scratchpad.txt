@@ -1,5 +1,7 @@
 TOOO:
 -------------
+-  Ensure that quickstart/websearch/static is included in source distribution
+
 - Search results improvements
 	- What effect does the fine feature have on results?
 		- Hard to discern...
@@ -7,16 +9,6 @@ TOOO:
 	- Should more codes be excluded entirely?
 	- What is the effect of "flattening" all frames?
 	
-Bad Searches
-================
-http://localhost:8080/zoundsapp?q=bcdce3a074c24708bada301df9b764a2:0:124
-http://localhost:8080/zoundsapp?q=62c67ee8b3ad4d648e2b411a77f4e661:0:114
-http://localhost:8080/zoundsapp?q=e5acc136103245b2982506a2b37955bd:169:290
-http://localhost:8080/zoundsapp?q=f62dc6f1bdb04f5bad3b0984a1b3c0b9:0:95
-http://localhost:8080/zoundsapp?q=745f909faccd4cee98cab19139b5bb66:14:103
-http://localhost:8080/zoundsapp?q=1b902c831b564dbfb54055f7f29d1ea4:67:115
-http://localhost:8080/zoundsapp?q=b376c4575f6e41538e5b31d876215d6d:0:86 (need better resolution)
-
 Good Searches
 =================
 http://localhost/zoundsapp?q=8f906adb408f4475b68fee94447876af:31:178
@@ -44,6 +36,22 @@ TODO: Do another installation test run and move up a new dist package
 
 After job-hunt
 ========================================================================
+- instantiating an environment requires that jack is installed. See if this 
+  can be untangled
+
+
+- There's something wrong about the way I'm doing searches with the TemplateMatch
+  semantic hashing features. It's most obvious when silence (or near-silence) is
+  present in a query.  These searches demonstrate problems:
+  
+	http://localhost:8080/zoundsapp?q=bcdce3a074c24708bada301df9b764a2:0:124
+	http://localhost:8080/zoundsapp?q=62c67ee8b3ad4d648e2b411a77f4e661:0:114
+	http://localhost:8080/zoundsapp?q=e5acc136103245b2982506a2b37955bd:169:290
+	http://localhost:8080/zoundsapp?q=f62dc6f1bdb04f5bad3b0984a1b3c0b9:0:95
+	http://localhost:8080/zoundsapp?q=745f909faccd4cee98cab19139b5bb66:14:103
+	http://localhost:8080/zoundsapp?q=1b902c831b564dbfb54055f7f29d1ea4:67:115
+	http://localhost:8080/zoundsapp?q=b376c4575f6e41538e5b31d876215d6d:0:86 (need better resolution)
+  
 - More in-depth explanation of rbms in the documentation
 
  - Define appropriate, callable stopping condition classes for the different
@@ -66,10 +74,12 @@ After job-hunt
 
 - Store variable length data
 
+- TimeSeries class with static or variable sampling rate, interpolation, etc..
+
 - Don't store redundant data for features with a step size greater than 1
 
 - It's kinda clunky that frames storage and other storage backends are configured
-  in two seperate ways. Is there a good reason for this? Why can't all of them
+  in two seperate ways in config.py. Is there a good reason for this? Why can't all of them
   be treated equally? 
 
 - zounds.learn.nnet.autoencoder has a *lot* of cruft. Do some cleanup and 
@@ -234,3 +244,6 @@ Finish Scattering implementation
 	PickledController-derived classes
 
 - Try parallel exhaustive search with FileSystemFrameController
+
+- the installation process is a little *too* klunky.  Smooth it out as much as 
+  possible.

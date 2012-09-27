@@ -138,7 +138,7 @@ class Environment(object):
         # A synthesizer that can create raw audio samples from the encoding
         # stored in the 'audio' feature of frames.  Note that for now, the
         # "encoding" and "decoding" are really no-ops, except for the windowing
-        # function on the encoding side
+        # function on the encoding side, and the overlap/add on the decoding side
         self.synth = WindowedAudioSynthesizer(self.windowsize,self.stepsize)
         
         
