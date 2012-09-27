@@ -20,8 +20,6 @@ from zounds.util import ensure_path_exists,SearchSetup
 import collections
 
 
-
-
 N_SUBDOMAINS = 4
 IMAGE = 'image'
 AUDIO = 'audio'

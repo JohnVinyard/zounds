@@ -1,3 +1,13 @@
+Deployment
+===============================================================================
+1. get source distribution
+1. give dependencies.sh execute permissions
+1. run dependencies.sh
+1. sudo pip install numpy
+1. sudo pip install scipy
+1. run setup.py until "import zounds" works
+
+===============================================================================
 This document details the steps I've taken so far to get a working nginx + uwsgi
 server configured.
 
@@ -84,4 +94,6 @@ server configured.
 5. Ensure that /tmp/webpy.sock is readable and writable by the nginx and uwsgi processes. 
 
 6. ensure that httplib2,poster,simplejson, and freesound packages are installed
+
+7. install supervisor
 
