@@ -1,11 +1,37 @@
 Deployment
 ===============================================================================
+server name will be zoundssearch
+files will be in /home/john/zoundssearch
+
+
 1. get source distribution
+1. unpack source distribution
 1. give dependencies.sh execute permissions
 1. run dependencies.sh
 1. sudo pip install numpy
 1. sudo pip install scipy
-1. run setup.py until "import zounds" works
+1. run setup.py until "import zounds" works, (or it exits without an error?)
+1. run the tests
+1. copy up datastore, if it doesn't already exist
+1. copy up pipeline,search,freesound api key, config.py
+
+1. move websearch.py from source dist folder into www folder
+1. move quickstart/static from source dist to www folder
+
+
+1. pip install uwsgi
+1. sudo apt-get install libpcre3-dev
+1. get the latest nginx source and build it, if nginx isn't installed
+1. edit nginx config file
+1. ensure that httplib2,poster,simplejson, and freesound packages are installed
+1. ensure that /tmp/webpy.sock is readable and writable
+1. ensure that nginx executable has execute permissions
+1. get supervisor
+1. edit the supervisor config file to include nginx and uwsgi command lines
+1. start supervisorord
+
+
+
 
 ===============================================================================
 This document details the steps I've taken so far to get a working nginx + uwsgi
