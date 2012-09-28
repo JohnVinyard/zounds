@@ -43,76 +43,99 @@ server configured.
 3. Use the following as the nginx configuration
 
 	user www-data;
-	worker_processes  1;
-	
-	error_log  /var/log/nginx/error.log;
-	pid        /var/run/nginx.pid;
-	
-	events {
-	    worker_connections  1024;
-	    # multi_accept on;
-	}
-	
-	http {
-	    include       /etc/nginx/mime.types;
-	
-	    access_log	/var/log/nginx/access.log;
-	
-	    sendfile        on;
-	    #tcp_nopush     on;
-	
-	    #keepalive_timeout  0;
-	    keepalive_timeout  65;
-	    tcp_nodelay        on;
-	
-	    gzip  on;
-	    gzip_disable "MSIE [1-6]\.(?!.*SV1)";
-	
-	    include /etc/nginx/conf.d/*.conf;
-	    include /etc/nginx/sites-enabled/*;
-	
-		server {
-			listen       localhost:8080;
-			server_name  localhost;
-	
-			location /static {
-				alias /home/john/zoundsapps/filesystem/static;
-			}
-	
-			location /media {
-				alias /home/john/zoundsapps/filesystem/media;
-				expires 30d;
-	    		add_header Pragma public;
-			    add_header Cache-Control "public";
-			}
-	
-			location / {
-				include uwsgi_params;
-				uwsgi_pass unix:/tmp/webpy.sock;
-			}
+worker_processes  1;
+
+error_log  /var/log/nginx/error.log;
+pid        /var/run/nginx.pid;
+
+events {
+    worker_connections  1024;
+    # multi_accept on;
+}
+
+http {
+    include       /usr/local/nginx/conf/mime.types;
+
+    access_log	/var/log/nginx/access.log;
+
+    sendfile        on;
+    #tcp_nopush     on;
+
+    #keepalive_timeout  0;
+    keepalive_timeout  65;
+    tcp_nodelay        on;
+
+    gzip  on;
+    gzip_disable "MSIE [1-6]\.(?!.*SV1)";
+
+    include /etc/nginx/conf.d/*.conf;
+    include /etc/nginx/sites-enabled/*;
+
+	server {
+		listen       localhost:80;
+		server_name  localhost;
+
+		location /static {
+			alias /home/john/zoundsapps/filesystem/static;
+		}
+
+		location /media {
+			alias /home/john/zoundsapps/filesystem/media;
+			expires 30d;
+    		add_header Pragma public;
+		    add_header Cache-Control "public";
+		}
+
+		location / {
+			include uwsgi_params;
+			uwsgi_pass unix:/tmp/webpy.sock;
 		}
 	}
-	
-	# mail {
-	#     # See sample authentication script at:
-	#     # http://wiki.nginx.org/NginxImapAuthenticateWithApachePhpScript
-	# 
-	#     # auth_http localhost/auth.php;
-	#     # pop3_capabilities "TOP" "USER";
-	#     # imap_capabilities "IMAP4rev1" "UIDPLUS";
-	# 
-	#     server {
-	#         listen     localhost:110;
-	#         protocol   pop3;
-	#         proxy      on;
-	#     }
-	# 
-	#     server {
-	#         listen     localhost:143;
-	#         protocol   imap;
-	#         proxy      on;
-	#     }
-	# }
+
+	server {
+		listen       192.168.1.103:80;
+		server_name  192.168.1.103;
+
+		location /static {
+			alias /home/john/zoundsapps/filesystem/static;
+		}
+
+		location /media {
+			alias /home/john/zoundsapps/filesystem/media;
+			expires 30d;
+    		add_header Pragma public;
+		    add_header Cache-Control "public";
+		}
+
+		location / {
+			include uwsgi_params;
+			uwsgi_pass unix:/tmp/webpy.sock;
+		}
+	}
+}
+
+# mail {
+#     # See sample authentication script at:
+#     # http://wiki.nginx.org/NginxImapAuthenticateWithApachePhpScript
+# 
+#     # auth_http localhost/auth.php;
+#     # pop3_capabilities "TOP" "USER";
+#     # imap_capabilities "IMAP4rev1" "UIDPLUS";
+# 
+#     server {
+#         listen     localhost:110;
+#         protocol   pop3;
+#         proxy      on;
+#     }
+# 
+#     server {
+#         listen     localhost:143;
+#         protocol   imap;
+#         proxy      on;
+#     }
+# }
+
+
 4. Start uwsgi with the following options (I need to figure out all the pythonpath shit)
 
 	 /home/john/.virtualenvs/zounds2/bin/uwsgi -p 4 -s /tmp/webpy.sock --pythonpath /home/john/.virtualenvs/zounds2/  --pythonpath /home/john/.virtualenvs/zounds2/lib/python2.6/site-packages/ --master --module websearch --enable-threads --pyargv "--feature packed --searchclass ExhaustiveLshSearch --sounddir /home/john/Test2 --nresults 75"
