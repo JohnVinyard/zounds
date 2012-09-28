@@ -17,7 +17,7 @@ files will be in /home/john/zoundssearch
 
 1. move websearch.py from source dist folder into www folder
 1. move quickstart/static from source dist to www folder
-
+1. make log directory in zoundssearch
 
 1. pip install uwsgi
 1. sudo apt-get install libpcre3-dev

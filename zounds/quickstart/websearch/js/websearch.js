@@ -46,13 +46,14 @@ function audio_spacebar(e) {
 	var increment_px = pps * (update_freq_ms / 1000);
 	
 	audio.addEventListener('ended',function() {
+		console.log('audio ended');
 		this.pause();
 		this.currentTime = 0;
 		clearInterval(interval);
 		position_playhead(playhead,snippet);
 	},false);
 	
-	audio.addEventListener('timeupdate',function() {
+	function timeupdate() {
 		clearInterval(interval);
 		position_playhead(playhead,snippet);
 		if(!this.paused){
@@ -62,16 +63,19 @@ function audio_spacebar(e) {
 				playhead.offset(offset);
 			},update_freq_ms);
 		}
-	},false);
+	}
+	
+	audio.addEventListener('timeupdate',timeupdate,false);
 	
 	if(32 == e.keyCode) {
+		console.log('spacebar : audio paused : ' + audio.paused);
 		if(audio.paused) {
 			position_playhead(playhead,snippet);
 			audio.play();
 		}else {
 			audio.pause();
 			clearInterval(interval);
-			audio.removeEventListener('timeupdate');
+			audio.removeEventListener('timeupdate',timeupdate);
 		}
 		return false;
 	}
@@ -123,7 +127,9 @@ $(function() {
 	});
 
 	// select all text when the bookmark input gets focus
-	$('#bookmark').click(function() {this.select();});
+	$('#bookmark').focus(function() {
+		this.select();
+	});
 	
 	// load the sound's freesound url when the attribution link is clicked
 	$('.attribution').click(function() {
@@ -153,6 +159,11 @@ $(function() {
 	
 	give_query_focus();
 	$('#bookmark,.snippet:last').blur(give_query_focus);
+	
+	$('.toggler').click(function() {
+		$('#' + $(this).attr('opens')).slideToggle();
+	});
+	
 	
 	if(supports_html5_storage()) {
 		if(localStorage['about']) {

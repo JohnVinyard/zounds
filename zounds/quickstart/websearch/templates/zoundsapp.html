@@ -27,14 +27,14 @@ $def with (results,web)
 		</div>
 		<br/>
 		<audio>
-		  <source src="/audio/$addr" type="audio/ogg" />
+		  <source src="/audio/$addr" type="audio/ogg" preload="auto"/>
 		  Your browser does not support the audio tag.
 		</audio>
 	</div>
 	<div style="clear:both;"></div>
 	<a id="random_search" href="${web.ctx.homepath + web.ctx.path}" class="linkbutton">Random Search</a>
-	<a class="linkbutton toggler" href="javascript:jQuery('#about_text').slideToggle();">About</a>
-	<a class="linkbutton toggler" href="javascript:jQuery('#keyboard_text').slideToggle();">Keyboard Navigation</a>
+	<a class="linkbutton toggler" opens="about_text" href="javascript:void(0);;">About</a>
+	<a class="linkbutton toggler" opens="keyboard_text" href="javascript:void(0);">Keyboard Navigation</a>
 	
 	
 	<div class="help_text" id="about_text" storage_key="about">
@@ -90,7 +90,7 @@ $def with (results,web)
 			
 			<!-- Audio -->
 			<audio>
-			  <source src="${r.audio_url(loop.index)}" type="audio/ogg" />
+			  <source src="${r.audio_url(loop.index)}" type="audio/ogg" preload="auto"/>
 			  Your browser does not support the audio tag.
 			</audio>
 			
