@@ -1,4 +1,6 @@
 var interval = null;
+var update_freq_ms = 50;
+
 
 function supports_html5_storage() {
   try {
@@ -8,18 +10,23 @@ function supports_html5_storage() {
   }
 }
 
-// We want the spacebar to play sounds. Keep it from paging down.
+
+
+
 window.onkeydown=function(e){
 	
 	if(e.keyCode == 32) {
+		// We want the spacebar to play sounds. Keep it from paging down.
 		return false;
 	}
   
 	if(e.keyCode == 82) {
+		// the 'r' key was pressed. Do a random search
 		window.location.href = $('#random_search').attr('href'); 
 	}
 	
 	if(e.keyCode == 66) {
+		// the 'b' key was pressed. Select the bookmark url for this search
 		$('#bookmark').focus();
 	}
 };
@@ -28,12 +35,67 @@ window.onkeydown=function(e){
 
 function position_playhead(playhead,snippet) {
 	var a = snippet.find('audio')[0];
+	console.log(a);
 	var img = snippet.find('.spectrogram');
 	var offset = img.offset();
 	var width = img.width();
 	var ratio = a.currentTime / a.duration;
-	offset.left += width * ratio
+	if(ratio) {
+		offset.left += width * ratio;
+	}
 	playhead.show().offset(offset);
+}
+
+
+
+function timeupdate() {
+	var playhead = $('#playhead');
+	var snippet = $('.snippet.focus');
+	var img = snippet.find('.spectrogram');
+	var pps = img.width() / this.duration;
+	var increment_px = pps * (update_freq_ms / 1000);
+	clearInterval(interval);
+	position_playhead(playhead,snippet);
+	if(!this.paused){
+		interval = setInterval(function() {
+			var offset = playhead.offset();
+			offset.left += increment_px;
+			playhead.offset(offset);
+		},update_freq_ms);
+	}
+}
+
+function audio_ended(a) {
+	if(a.tagName && a.tagName == 'AUDIO') {
+		a.pause();
+		a.currentTime = 0;
+	}
+	clearInterval(interval);
+	var playhead = $('#playhead');
+	var snippet = $('.snippet.focus');
+	position_playhead(playhead,snippet);
+}
+
+var ff_interval = null;
+function ff_start_timer(audio) {
+	if(!$.browser.mozilla) {
+		return;
+	}
+	
+	var ms = ((audio.duration - audio.currentTime) * 1000);
+	ff_interval = setTimeout(function() {
+		console.log('ff!')
+		audio_ended(audio);
+		audio.removeEventListener('timeupdate',timeupdate);
+	},ms);
+}
+
+function ff_stop_timer() {
+	if(!$.browser.mozilla) {
+		return;
+	}
+	
+	clearTimeout(ff_interval);
 }
 
 function audio_spacebar(e) {
@@ -41,52 +103,23 @@ function audio_spacebar(e) {
 	var audio = snippet.find('audio')[0];
 	var img = snippet.find('.spectrogram');
 	var playhead = $('#playhead');
-	var pps = img.width() / audio.duration;
-	var update_freq_ms = 50;
-	var increment_px = pps * (update_freq_ms / 1000);
 	
-	function audio_ended(a) {
-		var ae = a ? a : this;
-		console.log('audio ended');
-		ae.pause();
-		ae.currentTime = 0;
-		clearInterval(interval);
-		position_playhead(playhead,snippet);
-	}
 	
-	audio.addEventListener('ended',audio_ended,false);
 	
-	function timeupdate() {
-		clearInterval(interval);
-		position_playhead(playhead,snippet);
-		if(!this.paused){
-			interval = setInterval(function() {
-				var offset = playhead.offset();
-				offset.left += increment_px;
-				playhead.offset(offset);
-			},update_freq_ms);
-		}
-	}
 	
+	
+	audio.addEventListener('ended',audio_ended,false);	
 	audio.addEventListener('timeupdate',timeupdate,false);
 	
-	var killAudio = null;
+	//
 	
 	if(32 == e.keyCode) {
 		if(audio.paused) {
-			console.log(audio.duration);
-			var cp = audio.currentPosition ? audio.currentPosition : 0;
-			var ms = ((audio.duration - cp) * 1000) + 100;
-			console.log(ms);
-			killAudio = setTimeout(function() {
-				audio_ended(audio);
-				audio.removeEventListener('timeupdate',timeupdate);
-			},ms);
-			
+			ff_start_timer(audio);
 			position_playhead(playhead,snippet);
 			audio.play();
 		}else {
-			clearTimeout(killAudio);
+			ff_stop_timer();
 			audio.pause();
 			clearInterval(interval);
 			audio.removeEventListener('timeupdate',timeupdate);
@@ -120,7 +153,9 @@ $(function() {
 			.addClass('focus')
 			.keyup(audio_spacebar);
 		var img = snippet.find('.spectrogram');
+		
 		img.click(function(e) {
+			ff_stop_timer();
 			var offset = playhead.offset();
 			offset.left = e.pageX;
 			var img_offset = $(this).offset();
@@ -128,6 +163,7 @@ $(function() {
 			var audio = snippet.find('audio')[0];
 			audio.currentTime = ratio * audio.duration;
 			position_playhead(playhead,snippet);
+			ff_start_timer(audio);
 		});
 	});
 	
@@ -172,7 +208,7 @@ $(function() {
 		$(this).parents('.help_text').slideToggle();
 	});
 	
-	give_query_focus();
+	
 	$('#bookmark,.snippet:last').blur(give_query_focus);
 	
 	$('.toggler').click(function() {
@@ -194,4 +230,6 @@ $(function() {
 			localStorage[key] = 1;
 		});
 	}
+	
+	give_query_focus();
 });
