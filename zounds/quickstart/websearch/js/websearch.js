@@ -45,13 +45,16 @@ function audio_spacebar(e) {
 	var update_freq_ms = 50;
 	var increment_px = pps * (update_freq_ms / 1000);
 	
-	audio.addEventListener('ended',function() {
+	function audio_ended(a) {
+		var ae = a ? a : this;
 		console.log('audio ended');
-		this.pause();
-		this.currentTime = 0;
+		ae.pause();
+		ae.currentTime = 0;
 		clearInterval(interval);
 		position_playhead(playhead,snippet);
-	},false);
+	}
+	
+	audio.addEventListener('ended',audio_ended,false);
 	
 	function timeupdate() {
 		clearInterval(interval);
@@ -67,15 +70,27 @@ function audio_spacebar(e) {
 	
 	audio.addEventListener('timeupdate',timeupdate,false);
 	
+	var killAudio = null;
+	
 	if(32 == e.keyCode) {
-		console.log('spacebar : audio paused : ' + audio.paused);
 		if(audio.paused) {
+			console.log(audio.duration);
+			var cp = audio.currentPosition ? audio.currentPosition : 0;
+			var ms = ((audio.duration - cp) * 1000) + 100;
+			console.log(ms);
+			killAudio = setTimeout(function() {
+				audio_ended(audio);
+				audio.removeEventListener('timeupdate',timeupdate);
+			},ms);
+			
 			position_playhead(playhead,snippet);
 			audio.play();
 		}else {
+			clearTimeout(killAudio);
 			audio.pause();
 			clearInterval(interval);
 			audio.removeEventListener('timeupdate',timeupdate);
+			
 		}
 		return false;
 	}
