@@ -2,13 +2,6 @@ TOOO:
 -------------
 -  Ensure that quickstart/websearch/static is included in source distribution
 
-- FF. playhead animation continues after sound is done (late ended event)
-	- My workaround should only be active in FF
-	- the timeout must be adjusted anytime the playhead is moved
-	- the timeout must be cancelled when the playhed is stopped by the user, otherwise,
-	  the playhead will eventually jump back to the home position
-
-
 
 - Search results improvements
 	- What effect does the fine feature have on results?
