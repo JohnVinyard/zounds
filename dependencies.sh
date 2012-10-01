@@ -27,5 +27,5 @@ python-pip \
 libfreetype6-dev \
 libpng-dev \
 g++ \
-jackd1 \
+jackd \
 libjack-dev \

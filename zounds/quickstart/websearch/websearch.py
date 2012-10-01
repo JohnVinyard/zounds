@@ -474,7 +474,7 @@ class zoundsapp(object):
             if slack > 0:
                 qstart = np.random.randint(slack) + start
                 qstop = qlength + qstart
-                addr = build_address(qid,qstart,qstop)
+                addr = build_address(qid,int(qstart),int(qstop))
         
         tic = time()
         results = search.search(addr, nresults = args.nresults)

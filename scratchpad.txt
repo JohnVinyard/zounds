@@ -37,6 +37,10 @@ TODO: Do another installation test run and move up a new dist package
 
 After job-hunt
 ========================================================================
+- Does using the l1 norm give comparable results to l2 norm for template 
+  match?  If so, use it, because it is less computationally intensive.
+
+
 - instantiating an environment requires that jack is installed. See if this 
   can be untangled
 

@@ -12,6 +12,7 @@ files will be in /home/john/zoundssearch
 1. sudo pip install scipy
 1. run setup.py until "import zounds" works, (or it exits without an error?)
 1. run the tests
+
 1. copy up datastore, if it doesn't already exist
 1. copy up pipeline,search,freesound api key, config.py
 
@@ -20,12 +21,16 @@ files will be in /home/john/zoundssearch
 1. make log directory in zoundssearch
 
 1. pip install uwsgi
+
 1. sudo apt-get install libpcre3-dev
 1. get the latest nginx source and build it, if nginx isn't installed
 1. edit nginx config file
+
 1. ensure that httplib2,poster,simplejson, and freesound packages are installed
+
+1. start uwsgi
 1. ensure that /tmp/webpy.sock is readable and writable
-1. ensure that nginx executable has execute permissions
+
 
 
 
@@ -39,7 +44,7 @@ server configured.
 2. get the latest nginx source (1.2.6), build it, and install in the zounds2 virtualenv
 3. Use the following as the nginx configuration
 
-	user www-data;
+user www-data;
 worker_processes  1;
 
 error_log  /var/log/nginx/error.log;
