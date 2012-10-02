@@ -18,7 +18,7 @@ $def with (results,web)
 	
 	
 	<!-- Query -->
-	<h1>Query Sound</h1>
+	<h2 id="query_heading">Query Sound</h2>
 	<div class="snippet query shadow" tabindex="1">
 		$ addr = results.query_address
 		<div class="spectrogram">
@@ -31,17 +31,25 @@ $def with (results,web)
 		  Your browser does not support the audio tag.
 		</audio>
 	</div>
-	<div style="clear:both;"></div>
+	
+	<div style="float:left">
 	<a id="random_search" href="${web.ctx.homepath + web.ctx.path}" class="linkbutton">Random Search</a>
 	<a class="linkbutton toggler" opens="about_text" href="javascript:void(0);;">About</a>
 	<a class="linkbutton toggler" opens="keyboard_text" href="javascript:void(0);">Keyboard Navigation</a>
+	<div style="clear:both;"></div>
+	<h2 id="bookmark_text">Bookmark url:</h2>
+	<input id="bookmark" class="link" type="text" readonly="true" value="$results.bookmark"></input>
+	</div>
+	
+	<div style="clear:both;"></div>
+	
 	
 	
 	<div class="help_text" id="about_text" storage_key="about">
 		<h2>About</h2>
 		<p>This audio search was built using the 
 		<a target="_blank" href="http://www.johnvinyard.com/zoundsdoc">Zounds</a> 
-		Python library.  Queries are drawn, at random, from snippets of
+		Python library.  Queries are drawn, at random, from segments of
 		sound in the database.  Search results not only tell you which sounds
 		are relevant to the query, but <em>where</em> in those sounds the
 		relevant portions occur.</p>
@@ -70,13 +78,12 @@ $def with (results,web)
 		<p><a class="linkbutton ok" href="javascript:void(0);">OK</a></p>
 	</div>
 	
-	<div style="clear:both;"></div>
-	<h1 id="bookmark_text">Bookmark this search:</h1>
-	<input id="bookmark" class="link" type="text" readonly="true" value="$results.bookmark"></input>
+	
+	
 	<div style="clear:both;"></div>
 	
 	<hr/>
-	<h1>$results.brag</h1>
+	<h2 id="brag">$results.brag</h2>
 	$for r in results.results:
 		
 		<div class="snippet shadow" tabindex="${loop.index + 1}">
@@ -96,7 +103,6 @@ $def with (results,web)
 			
 			<!-- Debug -->
 			<div>$r.id</div>
-			<div>$r.scores</div>
 			<div><a class="attribution" href="javascript:void(0);" zounds_id="$r.id">attribution</a></div>
 		</div>
 </body>

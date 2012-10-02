@@ -1,7 +1,5 @@
 TOOO:
 -------------
--  Ensure that quickstart/websearch/static is included in source distribution
-
 
 - Search results improvements
 	- What effect does the fine feature have on results?
@@ -12,7 +10,8 @@ TOOO:
 	
 Good Searches
 =================
-http://localhost/zoundsapp?q=8f906adb408f4475b68fee94447876af:31:178
+http://localhost/?q=8f906adb408f4475b68fee94447876af:31:178
+http://localhost/?q=087744117a6b40b2ac40a17802b2968c:14:65
 
 
 - Add option to search.py to draw sounds randomly from a database, or from

@@ -131,7 +131,7 @@ human_friendly_db_length = '%i hours and %i minutes' % (hours,minutes)
 
 urls = (r'/audio/(?P<addr>.+?)',AUDIO,
         r'/image/(?P<addr>.+?)/(?P<feature>[\w]+)',IMAGE,
-        r'/zoundsapp','zoundsapp',
+        r'/','zoundsapp',
         r'/freesound/(?P<zid>.+?)','attribution')
 
 
@@ -197,7 +197,7 @@ class Tile(object):
         return addr_str(self.id,self.start,self.stop)
     
     def img_css(self,index):
-        addr = addr_str(self.id,self.start,self.stop)
+        addr = addr_str(self.id,int(self.start),int(self.stop))
         img_path = img_resource(addr,Tile.feature)
         
         if os.path.exists(img_path):
@@ -289,7 +289,7 @@ class Result(object):
     
     
     def audio_url(self,index):
-        addr = addr_str(self.id,self.start,self.stop)
+        addr = addr_str(self.id,int(self.start),int(self.stop))
         audio_path = audio_resource(addr)
         
         if os.path.exists(audio_path):
@@ -332,7 +332,7 @@ class Results(object):
     
     @property
     def query_address(self):
-        return encode_address(build_address(self.query_id,self.query.start,self.query.stop))
+        return encode_address(build_address(self.query_id,int(self.query.start),int(self.query.stop)))
 
 def audio_resource(addr):
     return os.path.join(audio_path,'%s.ogg' % nested_path(addr))
@@ -474,7 +474,7 @@ class zoundsapp(object):
             if slack > 0:
                 qstart = np.random.randint(slack) + start
                 qstop = qlength + qstart
-                addr = build_address(qid,int(qstart),int(qstop))
+                addr = build_address(qid,qstart,qstop)
         
         tic = time()
         results = search.search(addr, nresults = args.nresults)

@@ -178,7 +178,7 @@ $(function() {
 	});
 
 	// select all text when the bookmark input gets focus
-	$('#bookmark').focus(function() {
+	$('#bookmark').bind($.browser.mozilla ? 'focus' : 'click',function() {
 		this.select();
 	});
 	

@@ -54,11 +54,11 @@ a {
   	cursor:pointer;
   	border-radius:7px;
   	whitespace:nowrap;
-  	font-size:1.8em;
+  	font-size:1.5em;
   	font-weight:bold;
   	display:inline-block;
-  	padding:15px;
-  	margin:5px;
+  	padding:10px;
+  	margin:2px;
   	margin-right:0px;
   	text-decoration:none;
 }
@@ -70,9 +70,8 @@ a {
 	line-height:24px;
 }
 .link {
-	font-size:1.5em;
 	color:#444;
-	width:400px;
+	width:405px;
 	padding:10px;
 	margin:5px;
 }
@@ -83,8 +82,8 @@ a {
 }
 .help_text {
 	margin:10px;
-	font-size:1.5em;
 	background-color:#c6c6d7;
 	padding: 10px 20px;
 }
 .help_text .linkbutton {font-size:.8em;}
+#query_heading,#brag {margin-left:10px;}
