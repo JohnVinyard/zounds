@@ -24,7 +24,7 @@ def make_ext(modname, pyxfilename):
     libflags = ' '.join(['-l' + lib for lib in jacklibs])
     cfile = os.path.join(dir,'cplay.c')
     output = os.path.join(dir,'cplay.o')
-    cmd = 'gcc %s -I%s -c %s -o %s' % (libflags,dir,cfile,output)
+    cmd = 'gcc -fPIC %s -I%s -c %s -o %s' % (libflags,dir,cfile,output)
     p = subprocess.Popen(cmd,shell = True)
     p.wait()
 	    

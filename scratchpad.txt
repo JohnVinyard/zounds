@@ -1,6 +1,8 @@
 TOOO:
 -------------
 
+
+
 - Search results improvements
 	- What effect does the fine feature have on results?
 		- Hard to discern...
@@ -36,6 +38,15 @@ TODO: Do another installation test run and move up a new dist package
 
 After job-hunt
 ========================================================================
+- Websearch.py is a mess, and contains FileSystemFramesController-specific
+  code
+
+- Memory error in tests with 1GB RAM
+
+- Wrap up the installation process into a signal script, a la the fabfile
+  install_zounds method
+
+
 - Does using the l1 norm give comparable results to l2 norm for template 
   match?  If so, use it, because it is less computationally intensive.
 
