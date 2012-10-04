@@ -483,8 +483,9 @@ class zoundsapp(object):
         return render.zoundsapp(r,web)
             
             
-            
+
 ensure_path_exists(images_path)
 ensure_path_exists(audio_path)
+web.config.debug = False
 app = web.application(urls, globals())
 application = app.wsgifunc()    

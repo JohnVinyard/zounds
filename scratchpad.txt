@@ -1,6 +1,7 @@
 TOOO:
 -------------
-
+- turn off debug mode
+- favicon
 
 
 - Search results improvements
