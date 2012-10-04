@@ -194,7 +194,7 @@ class Tile(object):
     
     @property
     def addr_str(self):
-        return addr_str(self.id,self.start,self.stop)
+        return addr_str(self.id,int(self.start),int(self.stop))
     
     def img_css(self,index):
         addr = addr_str(self.id,int(self.start),int(self.stop))
