@@ -2,6 +2,8 @@
 
 from __future__ import division
 import web
+web.config.debug = False
+
 import os
 from time import time
 from random import choice
@@ -18,6 +20,7 @@ from config import FrameModel,Z
 from zounds.util import ensure_path_exists,SearchSetup
 
 import collections
+
 
 
 N_SUBDOMAINS = 4
@@ -486,6 +489,5 @@ class zoundsapp(object):
 
 ensure_path_exists(images_path)
 ensure_path_exists(audio_path)
-web.config.debug = False
 app = web.application(urls, globals())
 application = app.wsgifunc()    
