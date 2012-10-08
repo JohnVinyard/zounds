@@ -1,8 +1,5 @@
 TOOO:
 -------------
-- turn off debug mode
-- favicon
-
 
 - Search results improvements
 	- What effect does the fine feature have on results?
