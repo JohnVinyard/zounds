@@ -1,58 +1,10 @@
-TOOO:
--------------
-
-- Search results improvements
-	- What effect does the fine feature have on results?
-		- Hard to discern...
-	- What effect does inverse frequency weighting have on results?
-	- Should more codes be excluded entirely?
-	- What is the effect of "flattening" all frames?
-	
-Good Searches
-=================
-http://localhost/?q=8f906adb408f4475b68fee94447876af:31:178
-http://localhost/?q=087744117a6b40b2ac40a17802b2968c:14:65
-
-
-- Add option to search.py to draw sounds randomly from a database, or from
-  a directory
-  	
-- Fix tile normalization problem
-
-- Limit search sizes
-
-- Limit size of image and audio requests
-
-- Move bugs and feature "requests" into bitbucket issue tracker
-
-- start a planning document for the higher level/ more abstract stuff
-
-- Temporarily disable two failing tests, or switch to unittest2 so they can
-be ignored
-
-TODO: Do another installation test run and move up a new dist package
-
-- cplay.o permissions error on the VM?
-
-After job-hunt
-========================================================================
-- Websearch.py is a mess, and contains FileSystemFramesController-specific
-  code
-
-- Memory error in tests with 1GB RAM
-
-- Wrap up the installation process into a signal script, a la the fabfile
-  install_zounds method
-
-
-- Does using the l1 norm give comparable results to l2 norm for template 
-  match?  If so, use it, because it is less computationally intensive.
-
-
-- instantiating an environment requires that jack is installed. See if this 
-  can be untangled
-
-
+TemplateMatch tweaks
+====================================
+- 2d fft performance (as compared to TemplateMatch)?
+- Try RBM and autoencoder for learning patch centroids, instead of KMeans
+- Multiscale kmeans, i.e., do TemplateMatch on multiple scales
+- Expectation-Maximization clustering
+- Try lowpass filter subtraction method for spectrogram sharpening
 - There's something wrong about the way I'm doing searches with the TemplateMatch
   semantic hashing features. It's most obvious when silence (or near-silence) is
   present in a query.  These searches demonstrate problems:
@@ -65,198 +17,22 @@ After job-hunt
 	http://localhost:8080/zoundsapp?q=1b902c831b564dbfb54055f7f29d1ea4:67:115
 	http://localhost:8080/zoundsapp?q=b376c4575f6e41538e5b31d876215d6d:0:86 (need better resolution)
   
-- More in-depth explanation of rbms in the documentation
+Good Searches
+=================
+http://localhost/?q=8f906adb408f4475b68fee94447876af:31:178
+http://localhost/?q=087744117a6b40b2ac40a17802b2968c:14:65
 
- - Define appropriate, callable stopping condition classes for the different
-  learning algorithms
 
-- Document the pattern module
+- Add option to search.py to draw sounds randomly from a database, or from
+  a directory
+  	
+- Limit search sizes
 
-- Document the nputil module
+- Limit size of image and audio requests
 
-- Document the visualize module
+- start a planning document for the higher level/ more abstract stuff
 
-- Error checking for search implementations, ensuring they have all the keyword
-  args they need.  This is especially important, since the command-line tool
-  is the most likely way users will perform a search.
 
-- BUG: totally unhelpful error message when calling aggregate function on
-  an unstored feature, e.g. FrameModel.fft.std()
+
+
  
-- TODO: Ensure that minhash search implementation is working
-
-- Store variable length data
-
-- TimeSeries class with static or variable sampling rate, interpolation, etc..
-
-- Don't store redundant data for features with a step size greater than 1
-
-- It's kinda clunky that frames storage and other storage backends are configured
-  in two seperate ways in config.py. Is there a good reason for this? Why can't all of them
-  be treated equally? 
-
-- zounds.learn.nnet.autoencoder has a *lot* of cruft. Do some cleanup and 
-  "modernization"
-
-- TODO: KMeansStoppingCondition class, which has n_iterations and threshold
-attributes to pass along to scipy.cluster.vq.kmeans
-
-BUG: For MeanStd-type preprocessors, if the axis arg = 1 (meaning normalization
-should happen example-wise) the value should never be "remembered", since there
-will be a different number of examples each time, and the stats computed from
-one set of data won't be applicable to the next.
-
-- How can docstrings be inherited?
-
-- How do I put brackets around optional arguments in the documentation using
-.. autoclass::?
-
-- Documentation punt on the p.train() call about stopping condition in the 
- zounds.learn module documentation
-
-
-- Good, efficient, cached and computed-on-demand stats implementations for
- both PyTables and FileSystem that are robust to very large data stores.
-
-
-- FrameModel.extract() method, to get a Frames instance directly, without
-  appending it to the database. Also, FrameModel.append(), and FrameModel.nframes().
-
-- FrameModel.append() method, which does the same thing as FrameController.append()
-
-
-- BarkBands have artifacts when nbands > 150
-
-- PrecomputedPatch limits itself to the same number of samples as PrecomputedFeature,
-  even if there might be an opportunity to gather many more samples.
-
-- zounds.learn.fetch.Patch should implement the __iter__ method, so it can
-  be used interchangeably with an NDPatch with one Patch argument
- 
-
-Why is search slower?  I think it's the fetching of the frames,FileSystem-style
-	- Hint, I'm not seeing the longer times in search.py, only websearch
-	- Hint 2- it's about reading from the file!
-
-- How do I know when the jack server is ready? (get rid of sleep() call)
-
-- How do I shut things down so that JACK doesn't complain about xruns, etc...
-
-- JACK player doesn't do any resampling. If Environment.samplerate and
-  JACK's samplerate disagree, all buffers must be resampled
- 
-- For __str__ and __repr__ methods, nice printing for dictionaries 
-  (maybe using pprint.format)?
-
-- FileSystemFrameController.stat implementation sucks (see TODO notes)
-
-- KMeans++ implementation
-
-Anyplace where I'm using len(a.shape), I should be using ndim
-
-PyTables.stat() array is too big bug.
-
-PrecomputedPatch tests
-
-TODO: extractors using multiprocessing hang when updating database 
-	(Is this the case with FileSystemFrameController?) - Use PoolX in Template.py
-	and see if the problem persists
-
-- Get rid of binary incompatibility warning from pyx files
-
-- tests for all extractors
-
-- TODO: Pooled doesn't do chunk-based processing
-
-- BUG: Pooled doesn't work for nested Pooled features
-
-- Is it possible to cache the extractor chain so it doesn't have to be rebuilt for
-  each new incoming pattern. Will this require a flush() or reset() method?
-
-- BUG: It's possible to add duplicates to the database because of external_id
-	truncation
-
-TODO: "TODO" and "KLUDGE" sweep for low-hanging fruit
-
-Finish Constant-Q implementation
-
-- TODO: Pass an id or a (source,external_id) argument to search.py as the query 
-
-- TODO: Tile method should work with any extractor, not just a Pipeline 
-
-- TODO: Visualize Exhaustive search results (features and distances)
-
-- TODO: Ensure that quickstart/ab.py works with a few different algorithms
-
-- Configurable setup.py depending on choice of backing store
-
-- In websearch, templates shouldn't live in the same directory as js and css.
-  This makes it accessible to the outside world
- 
-- More descriptive error when you try to use a search implementation for which
-  no back-end is configured in config.py
-  
-- Add psychoacoustics module.  Add mel scale and refactor some code in analyze.bark
-
-- mmap "cannot allocate memory error"? when doing update with FileSystemFrameController?
-
-- zounds.pattern pyxbld file builds cplay.c and cplay.h in a non-cross-platform way
-
-- play.pyx uses uint64 type instead of jack_time_t. How do I use the proper type?
-
-- 2d fft performance (as compared to TemplateMatch)?
-
-- Try RBM and autoencoder for learning patch centroids, instead of KMeans
-
-PrecomputedFeature with filter (e.g. sum() > n) tests
-
-- Why is FrameModel.extractor_chain() so slow?
-
-- Multiscale kmeans, i.e., do TemplateMatch on multiple scales
-
-- Expectation-Maximization clustering
-
-- Precomputed Feature and PrecomputedPatch are slow, because they read the entire
- frame instance into memory before sampling
-
-TODO: The idea behind some of the FrameController.Address methods is
-	seriously broken
-	
-- BUG : Address equivalence bug: [1,4,10] and [1,6,10] are considered equivalent.  This
-  is incorrect
- 
-- Figure out how to deal with two failing tests.
-
-- Allow features to "expand", so that an extractor with nframes = 60 and step = 60
-  can be written to the database like a feature with nframes = stepsize = 1.
-  E.g., sharpening a spectrogram in 2d would require this.
-  
-- Fetch class to gather samples from non-stored features
-
-- Write LearnedFeature tests
-
-- mp3 -> wav conversion by acquirers
-
-- Configurable encoder and decoder for the "audio" feature, making it possible
-	to store mp3, ogg vorbis, or some other audio-encoding, instead of just
-	raw audio.  It'd be great if I could store lots of useful features AND
-	compress the data. It'd be even better if the encoding and the root feature
-	were the same thing!
-
-- Automatically parallelize independent branches of an extractor tree
-
-- FEATURE : Automatic rebuilding of search indices after data is added
-
-- Is storing features in row major order the best way?
-
-TODO:  Try lowpass filter subtraction method for spectrogram sharpening
-
-Finish Scattering implementation
-
-- Bug: It's possible to load controllers of the wrong type with 
-	PickledController-derived classes
-
-- Try parallel exhaustive search with FileSystemFrameController
-
-- the installation process is a little *too* klunky.  Smooth it out as much as 
-  possible.
