@@ -3,13 +3,12 @@ from __future__ import division
 import numpy as np
 from scipy.stats.mstats import gmean
 from scipy.stats import kurtosis
-from scipy.signal import triang,lfilter
+from scipy.signal import lfilter
 from scipy.signal.filter_design import butter
 from scipy.fftpack import dct
 
 from zounds.environment import Environment
 from zounds.analyze.extractor import SingleInput
-import zounds.analyze.bark as bark
 from zounds.analyze.psychoacoustics import Bark
 from zounds.nputil import safe_log,flatten2d,sliding_window
 
