@@ -1,5 +1,10 @@
 TemplateMatch tweaks
 ====================================
+- Once the Templates are learned, take the DCT of each and sparsify to speed
+  up analysis?
+  
+- How about the distance between random samples of the patches?
+
 - 2d fft performance (as compared to TemplateMatch)?
 - Try RBM and autoencoder for learning patch centroids, instead of KMeans
 - Multiscale kmeans, i.e., do TemplateMatch on multiple scales
