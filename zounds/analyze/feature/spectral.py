@@ -10,6 +10,7 @@ from scipy.fftpack import dct
 from zounds.environment import Environment
 from zounds.analyze.extractor import SingleInput
 import zounds.analyze.bark as bark
+from zounds.analyze.psychoacoustics import Bark
 from zounds.nputil import safe_log,flatten2d,sliding_window
 
 
@@ -196,56 +197,19 @@ class BarkBands(SingleInput):
         '''
         
         SingleInput.__init__(self,needs=needs, nframes=1, step=1, key=key)
-        
-        self.nbands = nbands
         self.env = Environment.instance
-        self.samplerate = self.env.samplerate
-        self.windowsize = self.env.windowsize
-        
-        self.start_freq_hz = start_freq_hz
-        self.stop_freq_hz = stop_freq_hz
-        self.start_bark = bark.hz_to_barks(self.start_freq_hz)
-        self.stop_bark = bark.hz_to_barks(self.stop_freq_hz)
-        self.bark_bandwidth = (self.stop_bark - self.start_bark) / self.nbands
-        self._build_data()
+        self.bark = Bark(self.env.samplerate,self.env.windowsize,nbands,
+                         start_freq_hz,stop_freq_hz)
 
     def dim(self,env):
-        return self.nbands
+        return self.bark.n_bands
     
     @property
     def dtype(self):
         return np.float32
     
-    def _build_data(self):
-        # slices of fft coefficients
-        self._slices = []
-        # triangle windows to multiply the fft slices by
-        self._triwins = []
-        for i in xrange(1,self.nbands + 1):
-            b = i * self.bark_bandwidth
-            hz = bark.barks_to_hz(b)
-            _herb = bark.erb(hz) / 2.
-            start_hz = hz - _herb
-            start_hz = 0 if start_hz < 0 else start_hz
-            stop_hz = hz + _herb
-            s_index,e_index = bark.fft_span(\
-                            start_hz,stop_hz,self.windowsize,self.samplerate)
-            triang_size = e_index - s_index
-            triwin = triang(triang_size)
-            self._slices.append(slice(s_index,e_index))
-            self._triwins.append(triwin)
-    
     def _process(self):
-        fft = self.in_data
-        return bark.bark_bands(self.samplerate, 
-                               self.windowsize, 
-                               self.nbands, 
-                               self.start_freq_hz, 
-                               self.stop_freq_hz, 
-                               fft, 
-                               fft.shape[0],
-                               self._slices,
-                               self._triwins)
+        return self.bark.transform(self.in_data)
 
 class Loudness(SingleInput):
     '''
