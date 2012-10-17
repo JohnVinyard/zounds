@@ -1,5 +1,10 @@
 TemplateMatch tweaks
 ====================================
+- How few samples can I take and still get the same kmeans results?
+
+
+- What kind of micro-patches get learned?
+
 - Once the Templates are learned, take the DCT of each and sparsify to speed
   up analysis?
   

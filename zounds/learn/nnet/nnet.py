@@ -10,7 +10,50 @@ def stochastic_binary(a):
     return a > np.random.random_sample(a.shape)
 
 
+class Stopping(object):
+    '''
+    Stopping condition for neural network derived classes.  During training, 
+    instances of this class will be called periodically and asked to evaluate
+    whether training is complete, given the current epoch and reconstruction
+    error.
+    '''
+    
+    def __init__(self,epoch = None,error = None):
+        '''__init__
+        
+        :param epoch:  The number of epochs (full passes over the data) to train\
+        for (inclusive).  If `None`, only `error` will be evaluated.
+        
+        :param error: A reconstruction error deemed acceptable.  If `None`, only `epoch` \
+        will be evaluated. 
+        '''
+        
+        if not epoch and not error:
+            raise ValueError('one or both of epoch and error must be provided')
+        
+        object.__init__(self)
+        self._epoch = epoch
+        self._error = error
+        
+        
+    def __call__(self,epoch,error):
+        '''__call__
+        
+        :param epoch: The current epoch
+        
+        :param error: The current reconstruction error.
+        
+        :returns: `True` if either or both conditions are met, otherwise `False`.
+        '''
+        if (epoch and epoch > self._epoch) or (error and error < self._error):
+            return True
+        
+        return False
 
+
+# KLUDGE: "NeuralNetwork" is too general a name.  This class and its derived classes
+# all do something like Autoencoders, i.e. the output is expected to equal the
+# input.
 class NeuralNetwork(object):
 
     def __init__(self):
