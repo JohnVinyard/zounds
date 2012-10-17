@@ -6,6 +6,25 @@ from scipy.spatial.distance import cdist
 from zounds.learn.learn import Learn
 from zounds.util import tostring
 
+class Stopping(object):
+    '''
+    Stopping condition for self-organizing map training
+    '''
+    
+    def __init__(self,epoch):
+        '''__init__
+        
+        :param epoch: The epoch (one full pass over the data) after which \ 
+        training is considered complete
+        '''
+        self._epoch = epoch
+    
+    def __call__(self,epoch):
+        if epoch > self._epoch:
+            return True
+        
+        return False
+
 class Som(Learn):
     '''
     A two-dimensional 

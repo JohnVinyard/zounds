@@ -77,3 +77,11 @@ Now, we can incorporate the learned feature into our
                          dim = 500, dtype = np.uint8, needs = bark)
 '''
 
+class StoppingNoOp(object):
+    
+    def __init__(self):
+        object.__init__(self)
+    
+    def __call__(self):
+        return False
+

@@ -9,6 +9,40 @@ from zounds.nputil import flatten2d
 from zounds.util import tostring
 from zounds.visualize import plot_series
 
+
+
+class Stopping(object):
+    '''
+    Stopping condition for K-Means training.  
+    '''
+    
+    def __init__(self,iterations = None, thresh = None):
+        '''__init__
+        
+        :param iterations:  The number of times to run K-Means to convergence
+        
+        :param thresh: The threshold below which training will be terminated
+        '''
+        object.__init__(self)
+        self._iter = iterations
+        self._thresh = thresh
+    
+    def args(self,data,k_or_guess):
+        a = (data,k_or_guess)
+        if self._iter:
+            a += self._iter
+        if self._thresh:
+            a += self._thresh
+        return a
+        
+    def __call__(self):
+        '''
+        Stopping conditions are based on iterations and thresh, which will
+        be passed to scipy.vq.cluster.kmeans, so this method is a no-op.
+        '''
+        return False
+
+
 # KLUDGE: I've added indim and hdim so this class can be used 
 # as a NeuralNetwork-derived class
 class KMeans(Learn):
@@ -61,7 +95,8 @@ class KMeans(Learn):
         '''
         self._indim = data.shape[1]
         centroids = self.guess if None is not self.guess else self.n_centroids
-        codebook,distortion = kmeans(data,centroids)
+        args = stopping_condition.args(data,centroids)
+        codebook,distortion = kmeans(*args)
         self._hdim = len(codebook)
         self.codebook = codebook
     
@@ -162,7 +197,8 @@ class ConvolutionalKMeans(KMeans):
         # take an n-dimensional fft of each data example
         f = np.fft.rfftn(data,axes = axes)
         # compute k-means on the real-valued (discarded phase) fft coefficients
-        codebook,distortion = kmeans(flatten2d(abs(f)),self.n_centroids)
+        args = stopping_condition.args(flatten2d(abs(f)),self.n_centroids)
+        codebook,distortion = kmeans(*args)
         self._hdim = len(codebook)
         if self.fft_codebook:
             self.codebook = codebook
@@ -192,6 +228,7 @@ class TopNKMeans(KMeans):
         dist[o[0],srt[:,self.topn:]] = 0
         return dist
 
+# TODO: This implementation isn't complete / doesn't work.
 class KMeansPP(SoftKMeans):
     '''
     A simpler KMeans++ variant that simply maximizes the distance from all
