@@ -706,7 +706,7 @@ class ExhaustiveLshSearch(FrameSearch):
     
 
 class LshSearch(FrameSearch):
-    
+    # TODO: Replace this with the TypeCodes class in nputil
     _DTYPE_MAPPING = {
                       8  : np.uint8,
                       16 : np.uint16,

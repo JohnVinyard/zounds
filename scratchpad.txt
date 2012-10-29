@@ -1,10 +1,14 @@
 TemplateMatch tweaks
 ====================================
-- How few samples can I take and still get the same kmeans results?
+- Upload/record query sounds in websearch.py
 
+- dragger/slider for playhead positioning
 
-- What kind of micro-patches get learned?
+- Display timecodes in websearch interface
 
+- How does correlation compare with euclidean distance once all patches have
+  unit norm, both in terms of speed and
+  
 - Once the Templates are learned, take the DCT of each and sparsify to speed
   up analysis?
   
@@ -15,10 +19,13 @@ TemplateMatch tweaks
 - Multiscale kmeans, i.e., do TemplateMatch on multiple scales
 - Expectation-Maximization clustering
 - Try lowpass filter subtraction method for spectrogram sharpening
+
 - There's something wrong about the way I'm doing searches with the TemplateMatch
   semantic hashing features. It's most obvious when silence (or near-silence) is
   present in a query.  These searches demonstrate problems:
   
+    http://zounds.co/?q=107750bfe7774f9aa1f8b778944b4ca7:130:260
+    
 	http://localhost:8080/zoundsapp?q=bcdce3a074c24708bada301df9b764a2:0:124
 	http://localhost:8080/zoundsapp?q=62c67ee8b3ad4d648e2b411a77f4e661:0:114
 	http://localhost:8080/zoundsapp?q=e5acc136103245b2982506a2b37955bd:169:290
@@ -26,6 +33,30 @@ TemplateMatch tweaks
 	http://localhost:8080/zoundsapp?q=745f909faccd4cee98cab19139b5bb66:14:103
 	http://localhost:8080/zoundsapp?q=1b902c831b564dbfb54055f7f29d1ea4:67:115
 	http://localhost:8080/zoundsapp?q=b376c4575f6e41538e5b31d876215d6d:0:86 (need better resolution)
+	
+Audio Encoding
+===================================
+Why is FFT resolution insufficient at low frequencies?
+Why does VQ coding work so poorly?
+How can upsampling be performed without aliasing?
+How does the human brain represent noise?
+
+
+Music
+=================================
+upload or record query sounds
+ogg vorbis or mp3 storage?
+Audio hosted elsewhere, i.e., I store the features, but the audio is hosted on SoundCloud, e.g.
+Pattern data structure
+Update indexes on-the-fly
+onset detection
+pitch
+chroma
+loudness
+"effects" - amplitude, time and pitch stretch, reverb
+client and at-home player
+
+
   
 Good Searches
 =================

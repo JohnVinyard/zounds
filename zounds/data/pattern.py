@@ -1,5 +1,6 @@
 from abc import ABCMeta,abstractmethod
 from controller import Controller
+ 
 
 
 class PatternController(Controller):
@@ -17,7 +18,13 @@ class InMemory(PatternController):
     
     def __init__(self):
         PatternController.__init__(self)
-        self.store = {}
+        self._store = {}
+    
+    def __getitem__(self,_id):
+        return self._store[_id]
+    
+    def store(self,pattern):
+        self._store[pattern._id] = pattern
         
         
 

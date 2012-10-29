@@ -439,6 +439,13 @@ class FileSystemFrameController(FrameController):
                 raise ValueError(\
                     'key must be a two-tuple of (_id,int, iterable of ints, or slice)')
         
+        def todict(self):
+            raise NotImplemented()
+        
+        @classmethod
+        def fromdict(cls,d):
+            raise NotImplemented()
+        
         # BUG: The following two methods only work/make sense if the key is a
         # slice.    
         @property

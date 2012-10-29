@@ -431,6 +431,13 @@ class Address(object):
     def stop(self):
         pass
     
+    def todict(self):
+        pass
+    
+    @classmethod
+    def fromdict(cls,d):
+        pass
+    
     
 
 class MetaFrame(type):

@@ -84,6 +84,13 @@ class PyTablesFrameController(FrameController):
                         'key must be an int, a list of ints, or a slice')
             
             self._span = self.max - self.min
+        
+        def todict(self):
+            raise NotImplemented()
+        
+        @classmethod
+        def fromdict(cls,d):
+            raise NotImplemented()
             
         @property
         def start(self):
