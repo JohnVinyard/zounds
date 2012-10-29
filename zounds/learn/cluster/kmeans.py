@@ -126,9 +126,12 @@ class KMeans(Learn):
     def __str__(self):
         return self.__repr__()
     
-    def view_codes(self,path):
+    def view_codes(self,path,shape = None,gray = True):
         import os
-        plot_series(self.codebook,os.path.join(path,'codes'))
+        shape = shape or (self.codebook.shape[1],)
+        shape = (self.codebook.shape[0],) + shape
+        plot_series(\
+            self.codebook.reshape(shape),os.path.join(path,'codes'),gray = gray)
 
 
 # TODO: Add a sparsify option which will zero out values below the row's mean,
