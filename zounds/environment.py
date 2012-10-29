@@ -235,6 +235,13 @@ class Environment(object):
         '''
         return self.audio.window
     
+    @property
+    def overlap(self):
+        '''
+        The number of samples by which successive frames of audio overlap
+        '''
+        return self.windowsize - self.stepsize
+    
     def seconds_to_frames(self,secs):
         '''seconds_to_frames
         
@@ -259,9 +266,19 @@ class Environment(object):
         if not nframes:
             return 0
         
-        overlap = self.windowsize - self.stepsize
-        return (nframes * (self.stepsize / self.samplerate)) +\
-                 (overlap / self.samplerate)
+        return self.frames_to_samples(nframes) / self.samplerate
+    
+    def frames_to_samples(self,nframes):
+        '''frames_to_samples
+        
+        Convert a number of frames, i.e., windows of audio, to samples using the\
+        current audio settings
+        
+        :param nframes: The number of frames to convert to audio samples
+        :returns: The number of samples corresponding to nframes, given the \
+        current audio settings
+        '''
+        return (nframes * self.stepsize) + self.overlap
     
     def newid(self):
         return uuid4().hex

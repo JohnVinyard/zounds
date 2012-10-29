@@ -5,6 +5,94 @@ from threading import Thread
 from time import sleep
 
 
+# KLUDGE: All these transforms should be written in C, so they can be used with
+# the realtime JACK player as well
+class Transform(object):
+    '''
+    Transform some audio
+    '''
+    
+    _impl = {}
+    
+    def __init__(self):
+        object.__init__(self)
+        self._impl[self.__class__.__name__] = self.__class__
+    
+    @property
+    def args(self):
+        return ()
+    
+    def todict(self):
+        return (self.__class__.__name__ ,self.args)
+    
+    @classmethod
+    def fromdict(cls,d):
+        return transformers[d[0]](*d[1])
+    
+    def _transform(self,audio):
+        raise NotImplemented()
+    
+    def __call__(self,audio):
+        return self._transform(audio)
+
+class NoOp(Transform):
+    
+    def __init__(self):
+        Transform.__init__(self)
+    
+    def _transform(self,audio):
+        return audio
+        
+
+#TODO: This should accept constant and variable rate amplitude data too
+class Amplitude(Transform):
+    '''
+    Adjust the amplitude of audio
+    '''
+    def __init__(self,amp):
+        Transform.__init__(self)
+        self.amp = amp
+        
+    @property
+    def args(self):
+        return (self.amp,)
+    
+    def _transform(self,audio):
+        return audio * self.amp
+    
+# TODO: Dirac-based time and pitch stretch
+
+# TODO: Basic low and high-pass filters
+
+# TODO: Freeverb
+
+class TransformChain(Transform):
+    
+    def __init__(self,transformers):
+        Transform.__init__(self)
+        self._chain = transformers
+    
+    def _transform(self,audio):
+        ac = audio.copy()
+        for c in self._chain:
+            ac = c(ac)
+        return ac
+
+    def __iter__(self):
+        return self._chain.__iter__()
+    
+    def todict(self):
+        return [c.todict() for c in self]
+    
+    @classmethod
+    def fromdict(cls,d):
+        return TransformChain([Transform.fromdict(z) for z in d])
+
+# KLUDGE: There's gotta be a better way than this
+transformers = {
+    'Amplitude' : Amplitude
+}
+
 class BufferBabysitter(Thread):
     '''
     This class is for internal use only.  This class solves the problem, albeit
@@ -77,13 +165,13 @@ class WindowedAudioSynthesizer(object):
     def _stop_audio_engine(self):
         stop()
     
-    def _vorbis_write(self,frames,sndfile,output):
+    def _vorbis_write(self,frames,sndfile,output,transformer):
         cs = self.vorbis_chunk_size
         waypoint = 0
         for i,f in enumerate(frames):
             start = i * self.stepsize
             stop = start + self.windowsize
-            output[start : stop] += f
+            output[start : stop] += transformer(f)
             if (stop - waypoint) > cs:
                 # a sndfile was passed in, and we have enough data to write
                 # a chunk of audio to the file
@@ -97,7 +185,7 @@ class WindowedAudioSynthesizer(object):
         
         return output
     
-    def __call__(self,frames,sndfile = None):
+    def __call__(self,frames,sndfile = None,transformer = NoOp()):
         '''
         Parameters
             frames  - a two dimensional array containing frames of audio samples
@@ -114,13 +202,13 @@ class WindowedAudioSynthesizer(object):
             # The caller has requested that output audio be written to an ogg
             # vorbis file.  libvorbis 1.3.1 is currently causing segmentation faults
             # for larger files, so we'll need to handle this specially.
-            return self._vorbis_write(frames, sndfile, output)
+            return self._vorbis_write(frames, sndfile, output,transformer)
     
         
         for i,f in enumerate(frames):
             start = i * self.stepsize
             stop = start + self.windowsize
-            output[start : stop] += f
+            output[start : stop] += transformer(f)
 
     
         if sndfile:
@@ -166,3 +254,5 @@ class WindowedAudioSynthesizer(object):
 # TODO: FFT synthesizer
 # TODO: DCT synthesizer
 # TODO: ConstantQ synthesizer
+
+
