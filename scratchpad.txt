@@ -44,6 +44,17 @@ How does the human brain represent noise?
 
 Music
 =================================
+
+TODO:
+===========
+TimeSeries class
+Transforms (make sure that transforms are an ordered list, and not a dictionary!)
+Pattern tests
+Heuristic for deciding when a Pattern must be rendered, analyzed, and stored in the
+frames database
+Handle mp3 files
+
+
 upload or record query sounds
 ogg vorbis or mp3 storage?
 Audio hosted elsewhere, i.e., I store the features, but the audio is hosted on SoundCloud, e.g.

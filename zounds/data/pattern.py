@@ -21,7 +21,11 @@ class InMemory(PatternController):
         self._store = {}
     
     def __getitem__(self,_id):
-        return self._store[_id]
+        try:
+            return self._store[_id]
+        except TypeError:
+            # _id is a list of _ids
+            return dict((i,self._store[_id]) for i in _id)
     
     def store(self,pattern):
         self._store[pattern._id] = pattern
