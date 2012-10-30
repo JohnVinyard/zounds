@@ -1,28 +1,32 @@
 '''
+Ann - The user
+Client - A client application. Maybe a html+javascript app, a user in the python
+repl, or a native GUI application.
+
+Ann finds a portion of sound she'd like to use: one kick drum hit.
+
 Pattern from the outside world, i.e., just some sound file
 {
-    _id : 'wholesound'self
-    source : 
-    external_id : 
+    _id : 'leaf'
+    source : Ann
+    external_id : 'leaf' 
     address : (100,200) // A PyTables address
 }
 
-A slice of a sound file
-{
-    _id : 'slice'
-    source : 
-    external_id : 
-    address : (150:160)
-}
+She store()s the pattern.
+
+Ann then arranges the kick pattern into one in which the drum plays four times
+in succession. She store()s this pattern.
+
 A pattern using that slice
 {
     _id : 'fourquarter'    
-    source : 
-    external_id : 
-    address : None // this pattern isn't stored as frames, so it isn't searchable
+    source : Ann
+    external_id : 'fourquarter' 
+    address : None
     all_ids : ['slice'],
     data : {
-        'slice' : [
+        'leaf' : [
             (0, [{'amp' : (1,)}]),
             (1, [{'amp' : (.5,)}]),
             (2, [{'amp' : (1,)}]),
@@ -30,21 +34,131 @@ A pattern using that slice
         ]
     }
 }
-A pattern using the previous pattern
+
+The client is returned a data structure like the one above.  Notice that address
+is None.  'fourquarter' has been placed into a queue to be analyzed, and doesn't
+yet have a home in the frames database.  
+
+Ann closes the application, and comes back later.  She fetches 'fourquarter' from
+the database.  Note that 'fourquarter' now has an address.  This means
+it has been analyzed, and is a candidate for audio-similarity results.  Ann 
+decides she'd like the beats to play only on the 1 and 3.  Note that the 
+'fourquarter' pattern is returned to the client, as well as all patterns it 
+references.
+
+** IDEA ** Note that patterns are an example of an audio encoding.  They can
+be interpreted by a synthesizer. It would be very space efficient to store the
+JSON or BSON data instead of raw audio, in most cases.  
+
 {
-    _id : 'fourmeasure',
-    source : 
-    external_id : 
-    address : (1000,2000) // This pattern is stored, so we can just play it outright
-    all_ids : ['fourquarter','slice']
+    _id : 'leaf'
+    source : Ann
+    external_id : 'leaf' 
+    address : (100,200) // A PyTables address
+}
+
+{
+    _id : 'fourquarter'    
+    source : Ann
+    external_id : 'fourquarter' 
+    address : (100,500)
+    all_ids : ['slice'],
     data : {
-        'fourquarter' : [(0,{'amp' : .9}),
-                         (1,{'amp' : .8})],
-                         
-        'slice'       : [(0.1,{'amp' : .01})]
+        'leaf' : [
+            (0, [{'amp' : (1,)}]),
+            (2, [{'amp' : (1,)}]),
+        ]
     }
 }
+
+She calls store() on this pattern.  When the data is sent back to the server, 
+leaf's hash value is the same, but 'fourquarter's hash value has changed.  'fourquarter'
+is stored as a new pattern 'twoquarter'.  The client is informed that.
+
+Ann returns to the client later, and fetches the 'twoquarter' pattern.
+
+{
+    _id : 'leaf'
+    source : Ann
+    external_id : 'leaf' 
+    address : (100,200) // A PyTables address
+}
+
+{
+    _id : 'twoquarter'    
+    source : Ann
+    external_id : 'twoquarter' 
+    address : (100,500)
+    all_ids : ['leaf'],
+    data : {
+        'leaf' : [
+            (0, [{'amp' : (1,)}]),
+            (2, [{'amp' : (1,)}]),
+        ]
+    }
+}
+
+She decides that the second beat should be shorter than the first.  This changes
+the 'leaf' pattern from
+
+{
+    _id : 'leaf'
+    source : Ann
+    external_id : 'leaf' 
+    address : (100,200) // A PyTables address
+}
+
+to 
+
+{
+    _id : 'leaf'
+    source : Ann
+    external_id : 'leaf' 
+    address : (100,180) // A PyTables address
+}
+
+When she alters the already stored leaf pattern, the client makes a copy of the
+pattern. When she store()s 'twoquarter', three patterns are sent back to the 
+server:
+
+{
+    _id : 'leaf'
+    source : Ann
+    external_id : 'leaf' 
+    address : (100,200) // A PyTables address
+}
+
+{
+    _id : 'leaf'
+    source : Ann
+    external_id : 'leaf2' 
+    address : (100,180) // A PyTables address
+}
+
+{
+    _id : 'twoquarter'    
+    source : Ann
+    external_id : 'twoquarter' 
+    address : (100,500)
+    all_ids : ['leaf','leaf2'],
+    data : {
+        'leaf' : [
+            (0, [{'amp' : (1,)}])
+        ],
+        'leaf2' : [
+            (2, [{'amp' : (1,)}])
+        ]
+    }
+}
+
+The second leaf pattern has a different hash value than it was sent with, and
+so a new leaf pattern is created.
+
+QUESTION: If the client changes leaf.address directly, how does the "leaf" object
+know to make a copy?
 '''
+
+
 import numpy as np
 
 from zounds.model.model import Model
@@ -133,6 +247,8 @@ class MetaZound2(type):
 # saving a "copy" of the pattern?
 
 # TODO: Add created date
+# TODO: Add a changed() method, which determines whether the pattern has changed
+# in any way and should be saved as a new pattern
 class Zound2(Pattern):
     
     __metaclass__ = MetaZound2
@@ -262,6 +378,9 @@ class Zound2(Pattern):
         
         :param events: a list of two-tuples of (time_secs,transformations)
         '''
+        if pattern._id == self._id:
+            raise ValueError('Patterns cannot contain themselves!')
+        
         try:
             l = self.data[pattern._id]
         except KeyError:
