@@ -131,6 +131,8 @@ class MetaZound2(type):
         
 # KLUDGE: What if I alter the volume of an event slightly?  Does that warrant
 # saving a "copy" of the pattern?
+
+# TODO: Add created date
 class Zound2(Pattern):
     
     __metaclass__ = MetaZound2
@@ -300,85 +302,3 @@ class Zound2(Pattern):
             d['address'] = None
         
         return Zound2(**d)
-        
-    
-    
-
-        
-class Zound(Pattern,list):
-    
-    
-    
-    class Event(object):
-        
-        def __init__(self,time_secs,data):
-            '''
-            time_secs is the time at which this event occurs
-            
-            data may be an address, or the id of another pattern. 
-            '''
-            self.time_secs = np.array(time_secs)
-            self._time_samples = self.time_secs * self.env().sample_rate
-            self.pattern = data
-    
-    def __init__(self,_id,source,external_id, address = None):
-        Pattern.__init__(self,_id,source,external_id)
-        list.__init__(self)
-        # the frames backend-specific address of this pattern, if it has
-        # been stored as a contiguous block in the frames database
-        self.address = address
-        self.created_date = None
-        
-        self._changed = False
-    
-    # TODO: An audio from db extractor
-    def audio_extractor(self, needs = None):
-        e = self.__class__.env()
-        self._data['samples'] = self.render()
-        return AudioFromMemory(e.samplerate,
-                               e.windowsize,
-                               e.stepsize,
-                               needs = needs)
-    
-        
-    def add(self,time_secs,data):
-        try:
-            list.extend(self,[Zound.Event(t,data) for t in time_secs])
-        except TypeError:
-            list.append(self,Zound.Event(time_secs,data))
-    
-    def _should_store_frames(self):
-        '''
-        True if this pattern should be persisted to the frames database because
-        it isn't contiguous, or contains more than one event.
-        '''
-        return len(self) > 1
-    
-    # TODO: Move this into the base Pattern class
-    def length_samples(self):
-        '''
-        The length of this pattern in samples, when rendered as raw audio
-        '''
-        raise NotImplemented()
-    
-    # TODO: Move this into the base Pattern class
-    def length_seconds(self):
-        '''
-        The length of this pattern in seconds, when rendered as raw audio
-        '''
-        raise NotImplemented()
-    
-    # TODO: Move this into the base Pattern class
-    def render(self):
-        '''
-        Returns a numpy array of audio samples
-        '''
-        # If address isn't None, then we can just read a contiguous block and
-        # play it.
-        
-        # If address is None, then we have to follow pattern "links" to 
-        # reconstruct everything
-        raise NotImplemented()
-    
-    
-        
