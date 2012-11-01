@@ -63,8 +63,8 @@ class SumExtractor(Extractor):
         # take the sum, example-wise
         return self._sum(combined)
 
-def filename():
-    return '%s.wav' % str(uuid4())
+def filename(extension = '.wav'):
+    return '%s%s' % (str(uuid4()),extension)
 
 def make_signal(length,winsize):
     '''
