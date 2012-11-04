@@ -8,7 +8,7 @@ from zounds.analyze.feature.spectral import FFT,BarkBands
 from zounds.data.frame.filesystem import FileSystemFrameController
 
 from zounds.data.pattern import InMemory
-from zounds.model.pattern import Zound
+from zounds.model.pattern import Zound,Event
 
 class FrameModel(Frames):
     fft = Feature(FFT)
@@ -114,10 +114,40 @@ class PatternTest(object):
         self.assertTrue(z.is_leaf)
     
     def test_leaf_addr(self):
-        self.fail()
+        # KLUDGE: This is a FileSystemFrameController specific test
+        
+        # the first ten frames of the analyzed audio 
+        addr = self.env.address_class((self._frame_id,slice(0,10)))
+        z = Zound.leaf(addr)
+        self.assertEqual(addr,z.address)
+        self.assertTrue(z.is_leaf)
     
     def test_frame_instance(self):
+        addr = self.env.address_class((self._frame_id,slice(0,10)))
+        frames = FrameModel(address = addr)
+        z = Zound.leaf(frames)
+        self.assertEqual(addr,z.address)
+        self.assertTrue(z.is_leaf)
+    
+    def test_frame_instance_no_address(self):
+        # This test demonstrates that sliced Frames-derived instances no longer
+        # have an address attribute.  This is really a bug, but it's expected
+        # behavior, for now.
+        frames = FrameModel.random()[:10]
+        self.assertRaises(ValueError,lambda : Zound.leaf(frames))
+    
+    def test_append(self):
+        pid = self.make_leaf_pattern(2, self._frame_id)
+        leaf = Zound[pid]
+        n = Zound(source = 'Test')
+        self.assertFalse(n.is_leaf)
+        n.append(leaf,[Event(i) for i in range(4)])
+        self.assertTrue(pid in n.all_ids)
+        self.assertEqual(4,len(n.data[pid]))
+    
+    def test_append_stored(self):
         self.fail()
+        
 
 
 class InMemoryTest(unittest.TestCase,PatternTest):

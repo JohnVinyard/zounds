@@ -282,8 +282,22 @@ class DataPattern(Pattern):
                                needs = needs)
 
 
+
+class Event(object):
     
+    def __init__(self,time_secs,**kwargs):
+        '''__init__
         
+        :param time_secs: The time in seconds at which the event should occur
+        
+        :param kwargs: A dictionary mapping zounds.analyze.synthesize.Transform \
+        derived class names to the parameters for that transform
+        '''
+        object.__init__(self)
+        self.time = time_secs
+        self.params = kwargs
+        
+    
 # KLUDGE: What if I alter the volume of an event slightly?  Does that warrant
 # saving a "copy" of the pattern?
 
@@ -342,23 +356,26 @@ class Zound(Pattern):
         _id = e.newid()
         source = source or e.source
         
-        try:
-            a = e.address_class(addr)
-            return Zound(source = source,address = a,is_leaf = True)
-        except ValueError:
-            pass
+        if isinstance(addr,e.address_class):
+            # addr is a backend-specific address
+            return Zound(source = source,address = addr,is_leaf = True)
         
         try:
+            # address is a Frames id
             a = e.framecontroller.address(addr)
             return Zound(source = source,address = a,is_leaf = True) 
         except KeyError:
             pass
         
         try:
-            a = addr.address
-            return Zound(source = source,address = a,is_leaf = True)
+            if addr.address:
+                return Zound(\
+                        source = source,address = addr.address,is_leaf = True)
         except AttributeError:
-            raise ValueError('addr must be a Zounds address, a Zounds frame _id, or a Frames instance with the address property set')
+            pass
+        
+        raise ValueError('addr must be a Zounds address, a Zounds frame _id, or a Frames instance with the address property set')
+            
         
         
     @property
