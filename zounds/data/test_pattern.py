@@ -7,6 +7,9 @@ from zounds.analyze.feature.spectral import FFT,BarkBands
 
 from zounds.data.frame.filesystem import FileSystemFrameController
 
+from zounds.data.pattern import InMemory
+from zounds.model.pattern import Zound
+
 class FrameModel(Frames):
     fft = Feature(FFT)
     bark = Feature(BarkBands,needs = fft)
@@ -22,6 +25,36 @@ class PatternTest(object):
     def __init__(self):
         object.__init__(self)
     
+    
+    def make_leaf_pattern(self,length_seconds,frames_id, store = True):
+        
+        # create an audio file
+        fn = make_sndfile(AudioConfig.samplerate * length_seconds,
+                          AudioConfig.windowsize,
+                          AudioConfig.samplerate)
+        self.to_cleanup.append(fn)
+        
+        
+        
+        # analyze it and insert it into the frames database
+        src = 'Test'
+        fp = FilePattern(frames_id,src,frames_id,fn)
+        ec = FrameModel.extractor_chain(fp)
+        self.env.framecontroller.append(ec)
+        
+        # get the address of the pattern
+        addr = self.env.framecontroller.address(frames_id)
+        
+        # create a new leaf pattern
+        z = Zound(source = src, external_id = frames_id, _id=frames_id,
+                  address = addr, is_leaf = True)
+        if store:
+            # store it
+            z.store()
+            return z._id
+        
+        return z
+    
     def set_up(self):
         self.to_cleanup = []
         Environment._test = True
@@ -32,62 +65,71 @@ class PatternTest(object):
                                FrameModel,
                                FileSystemFrameController,
                                (FrameModel,dr),
-                               {Zound2 : self._pattern_controller},
+                               {Zound : self._pattern_controller},
                                audio = AudioConfig)
+        
+        
         self.to_cleanup.append(dr)
+        self._frame_id = 'ID'
+        self._pattern_id = self.make_leaf_pattern(2, self._frame_id)
+        return self._pattern_id
         
-        # create a single audio file
-        fn = make_sndfile(\
-                    44100 * 2, AudioConfig.windowsize,AudioConfig.samplerate)
-        self._pattern_id = 'ID'
-        
-        # analyze the file
-        fp = FilePattern(self._pattern_id,'Test',self._pattern_id,fn)
-        ec = FrameModel.extractor_chain(fp)
-        self.env.framecontroller.append(ec)
-        self.to_cleanup.append(fn)
-    
-    
+
     def tear_down(self):
         for c in self.to_cleanup:
             remove(c)
         Environment._test = False
     
     def test_bad_id(self):
-        self.assertRaises(KeyError,lambda : Zound2['BAD_ID'])
+        self.assertRaises(KeyError,lambda : Zound['BAD_ID'])
     
     def test_bad_id_list(self):
-        self.assertRaises(KeyError,lambda : Zound2[['BAD_ID_1,BAD_ID2']])
+        self.assertRaises(KeyError,lambda : Zound[['BAD_ID_1,BAD_ID2']])
     
     def test_good_id(self):
-        z = Zound2[self._pattern_id]
-        self.assertTrue(isinstance(z,Zound2))
+        z = Zound[self._pattern_id]
+        self.assertTrue(isinstance(z,Zound))
+    
+    def test_recovered(self):
+        z = self.make_leaf_pattern(3, 'fid', store = False)
+        z.store()
+        z2 = Zound[z._id]
+        self.assertFalse(z is z2)
+        self.assertEqual(z,z2)
     
     def test_good_id_list(self):
-        # create a single audio file
-        fn = make_sndfile(\
-                    44100 * 1, AudioConfig.windowsize,AudioConfig.samplerate)
-        _id = 'ID2'
-        
-        # analyze the file
-        fp = FilePattern(_id,'Test',_id,fn)
-        ec = FrameModel.extractor_chain(fp)
-        self.env.framecontroller.append(ec)
-        self.to_cleanup.append(fn)
-        
-        z = Zound2[[self._pattern_id,_id]]
+        frame_id = 'ID2'
+        pattern_id2 = self.make_leaf_pattern(1, frame_id)
+        z = Zound[[self._pattern_id,pattern_id2]]
         self.assertEqual(2,len(z))
-        self.assertTrue(all([isinstance(x,Zound2) for x in z]))
+        self.assertTrue(all([isinstance(x,Zound) for x in z]))
+    
+    def test_leaf_bad_value(self):
+        self.assertRaises(ValueError,lambda : Zound.leaf('BAD ID'))
+    
+    def test_leaf_frame_id(self):
+        z = Zound.leaf(self._frame_id)
+        addr = self.env.framecontroller.address(self._frame_id)
+        self.assertEqual(addr,z.address)
+        self.assertTrue(z.is_leaf)
+    
+    def test_leaf_addr(self):
+        self.fail()
+    
+    def test_frame_instance(self):
+        self.fail()
 
-
-from zounds.data.pattern import InMemory
-from zounds.model.pattern import Zound2
 
 class InMemoryTest(unittest.TestCase,PatternTest):
     
     def setUp(self):
         self._pattern_controller = InMemory()
-        self.set_up()
+        try:
+            self.set_up()
+        except:
+            # KLUDGE: This is a stop-gap solution for when set_up fails.  Get
+            # rid of this.
+            print 'SETUP FAILED'
     
     def tearDown(self):
         self.tear_down()

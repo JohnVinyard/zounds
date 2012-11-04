@@ -440,11 +440,33 @@ class FileSystemFrameController(FrameController):
                     'key must be a two-tuple of (_id,int, iterable of ints, or slice)')
         
         def todict(self):
-            raise NotImplemented()
+            d = {'_id' : self._id}
+            
+            if hasattr(self._index,'__iter__'):
+                d['_index'] = self._index.tostring()
+                return d
+            
+            if hasattr(self._index,'start'):
+                d['_index'] = (self._index.start,self._index.stop)
+                return d
+            
+            d['_index'] = self._index
+            return d 
         
         @classmethod
         def fromdict(cls,d):
-            raise NotImplemented()
+            idx = d['_index']
+            try:
+                d['_index'] = np.fromstring(idx)
+                return d
+            except TypeError:
+                pass
+            
+            if isinstance(idx,tuple):
+                d['_index'] = slice(*idx)
+                return d
+            
+            return d
         
         # BUG: The following two methods only work/make sense if the key is a
         # slice.    
