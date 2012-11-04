@@ -44,7 +44,8 @@ class NoOp(Transform):
         return audio
         
 
-#TODO: This should accept constant and variable rate amplitude data too
+#TODO: This should accept constant and variable rate amplitude data too, defined
+# by a zounds.timeseries.TimeSeries-derived class
 class Amplitude(Transform):
     '''
     Adjust the amplitude of audio

@@ -648,10 +648,13 @@ class Frames(Model):
                 # set. Treat this as a KeyError
                 raise KeyError(key)
         elif isinstance(key,int):
+            # BUG: sliced data won't have an address
             return self.__class__(data = self._data[key:key+1])
         elif isinstance(key,slice):
+            # BUG: sliced data won't have an address
             return self.__class__(data = self._data[key])
         elif isinstance(key,list) or isinstance(key,np.ndarray):
+            # BUG: sliced data won't have an address
             return self.__class__(data = self._data[key])
         else:
             raise ValueError('key must be a string, Feature, int, or slice')
