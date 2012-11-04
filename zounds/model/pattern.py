@@ -195,8 +195,23 @@ import numpy as np
 
 from zounds.model.model import Model
 from zounds.analyze.feature.rawaudio import AudioFromDisk,AudioFromMemory
-from zounds.analyze.synthesize import transformers,TransformChain
-from zounds.environment import Environment
+from zounds.analyze.synthesize import TransformChain
+from zounds.util import tostring
+
+class MetaPattern(type):
+    
+    def __init__(self,name,bases,attrs):
+        super(MetaPattern,self).__init__(name,bases,attrs)
+    
+    def __getitem__(self,key):
+        item = self.controller()[key]
+        try:
+            return self.fromdict(item)
+        except AttributeError:
+            return [self.fromdict(i) for i in item]
+    
+    def _store(self,pattern):
+        self.controller().store(pattern.todict())
 
 class Pattern(Model):
     '''
@@ -204,6 +219,8 @@ class Pattern(Model):
     a "leaf" pattern represents a list of ids which point to audio frames.
     A "branch" pattern points to other patterns.
     '''
+    __metaclass__ = MetaPattern
+    
     def __init__(self,_id,source,external_id):
         Model.__init__(self)
         
@@ -264,16 +281,7 @@ class DataPattern(Pattern):
                                self.samples,
                                needs = needs)
 
-class MetaZound2(type):
-    
-    def __init__(self,name,bases,attrs):
-        super(MetaZound2,self).__init__(name,bases,attrs)
-    
-    def __getitem__(self,key):
-        return self.fromdict(self.controller()[key])
-    
-    def store(self):
-        self.controller().store(self.todict())
+
     
         
 # KLUDGE: What if I alter the volume of an event slightly?  Does that warrant
@@ -282,11 +290,7 @@ class MetaZound2(type):
 # TODO: Add created date
 # TODO: Add a changed() method, which determines whether the pattern has changed
 # in any way and should be saved as a new pattern
-class Zound2(Pattern):
-    
-    __metaclass__ = MetaZound2
-    
-    env = Environment.instance
+class Zound(Pattern):
     
     def __init__(self,source = None,external_id = None,_id = None,
                  address = None,data = None,all_ids = None,is_leaf = False):
@@ -298,21 +302,34 @@ class Zound2(Pattern):
         # external_id is the _id assigned to the pattern by the application or
         # user that created it
         self.external_id = external_id or self._id
-        Pattern.__init__(_id,source,external_id)
-        
-        
-        if not address:
-            raise ValueError('specify one of address or data')
-        
-
+        Pattern.__init__(self,self._id,self.source,self.external_id)
         self.address = address
         self.data = data or dict()
         self._sort_events()
-        self.all_ids = set(all_ids) or set()
+        self.all_ids = set(all_ids or [])
         self._patterns = None
         self._is_leaf = is_leaf
+    
+    def __repr__(self):
+        return self.__str__()
+    
+    def __str__(self):
+        return tostring(self,_id = self._id,source = self.source,
+                        external_id = self.external_id,all_ids = self.all_ids,
+                        _is_leaf = self._is_leaf)
+    
+    def __hash__(self):
+        return self._id
+    
+    def __eq__(self,other):
+        if self is other:
+            return True
         
-        self.env = self.env()
+        return (self._id == other._id) and \
+               (self.source == other.source) and \
+               (self.external_id == other.external_id) and \
+               (self.all_ids == other.all_ids) and \
+               (self._is_leaf == other._is_leaf) 
     
     @classmethod
     def leaf(cls,addr,source = None):
@@ -321,25 +338,32 @@ class Zound2(Pattern):
         :param addr: Address can be a Zounds frame id, a Zounds frame address, or \
         a Frames-derived instance with the address property set
         '''
-        _id = cls.env.newid()
+        e = cls.env()
+        _id = e.newid()
+        source = source or e.source
+        
         try:
-            a = cls.env.address_class(addr)
+            a = e.address_class(addr)
+            return Zound(source = source,address = a,is_leaf = True)
         except ValueError:
             pass
         
         try:
-            a = cls.env.framecontroller.address(addr)
+            a = e.framecontroller.address(addr)
+            return Zound(source = source,address = a,is_leaf = True) 
         except KeyError:
             pass
         
         try:
             a = addr.address
+            return Zound(source = source,address = a,is_leaf = True)
         except AttributeError:
             raise ValueError('addr must be a Zounds address, a Zounds frame _id, or a Frames instance with the address property set')
         
-        source = source or cls.env.source
-        return Zound2(source = source,address = a,is_leaf = True)
-            
+        
+    @property
+    def is_leaf(self):
+        return self._is_leaf 
         
     # TODO: Move this into the base Pattern class
     # BUG: What if a transform changes the length of the samples?
@@ -351,7 +375,7 @@ class Zound2(Pattern):
         try:
             # this pattern has been analyzed and is in the frames database,
             # so it's trivial to find out its length in samples
-            return self.env.frames_to_samples(len(self.address))
+            return self.env().frames_to_samples(len(self.address))
         except AttributeError:
             # this pattern hasn't yet been analyzed, so we have to calculate
             # its length in samples
@@ -379,7 +403,7 @@ class Zound2(Pattern):
         # render the pattern as audio
         # KLUDGE: Maybe _render should be an iterator, for very long patterns
         
-        env = self.env
+        env = self.env()
         if not self.data:
             # this is a "leaf" pattern that has already been rendered and analyzed,
             # so it can just be retrieved from the data store
@@ -456,11 +480,9 @@ class Zound2(Pattern):
         d = {
              '_id' : self._id,
              'source' : self.source,
-             'external_id' : self.external_id
+             'external_id' : self.external_id,
+             'is_leaf' : self._is_leaf
              }
-        
-        if self.bpm:
-            d['bpm'] = self.bpm
         
         if self.address:
             d['address'] = self.address.todict()
@@ -476,8 +498,11 @@ class Zound2(Pattern):
         if d.has_key('address'):
             d['all_ids'] = None
             d['data'] = None
-            d['address'] = cls.env.address_class.fromdict(d['address'])
+            d['address'] = cls.env().address_class.fromdict(d['address'])
         else:
             d['address'] = None
         
-        return Zound2(**d)
+        return Zound(**d)
+    
+    def store(self):
+        self.__class__._store(self)

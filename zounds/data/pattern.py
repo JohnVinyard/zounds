@@ -25,10 +25,10 @@ class InMemory(PatternController):
             return self._store[_id]
         except TypeError:
             # _id is a list of _ids
-            return dict((i,self._store[_id]) for i in _id)
+            return [self._store[i] for i in _id]
     
     def store(self,pattern):
-        self._store[pattern._id] = pattern
+        self._store[pattern['_id']] = pattern
         
         
 
