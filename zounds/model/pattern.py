@@ -47,6 +47,10 @@ A pattern using that slice
             (1, [{'amp' : (.5,)}]),
             (2, [{'amp' : (1,)}]),
             (3, [{'amp' : (.5,)}]),
+        ],
+        
+        'branch' : [
+            (4, [{'amp' : (1)}])
         ]
     }
 }
@@ -300,6 +304,19 @@ class Event(object):
     
     def __copy__(self):
         return Event(self.time,**deepcopy(self.params))
+    
+    def todict(self):
+        raise NotImplemented()
+    
+    def fromdict(self):
+        raise NotImplemented()
+
+
+class Transform(dict):
+    
+    def __init__(self,**kwargs):
+        dict.__init__(self)
+        
         
     
 # TODO: Add created date
@@ -557,10 +574,36 @@ class Zound(Pattern):
         # TODO: be sure to remove items from all_ids and _to_store, when necessary
         raise NotImplemented()
     
+    
+    def iter_patterns(self):
+        p = self.patterns
+        for k,e in self.data.iteritems():
+            yield p[k],e
+    
     # TODO: Tests
-    def transform(self):
-        n = self.copy()
-        # do stuff to n
+    def transform(self,transform):
+        # create a new, empty pattern
+        n = self.__class__(source = self.source)
+        
+        # TODO: Ensure that transform isn't None, and has at least one
+        # transformation defined
+        
+        
+        for pattern,events in self.iter_patterns():
+            p,e = pattern,events
+            try:
+                # there's a transform defined for this pattern
+                p,e = transform(pattern,events)
+                if not e:
+                    # no events were returned
+                    continue
+            except AttributeError:
+                # there was no transform defined for this pattern
+                pass
+            
+            # append the possibly transformed events to the new pattern
+            n.append(p,e)
+        
         return n
     
     

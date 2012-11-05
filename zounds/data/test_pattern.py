@@ -277,7 +277,7 @@ class PatternTest(object):
         
         # setUp creates and stores a pattern, so we expect there to be four
         # patterns in the db
-        self.assertEqual(4,len(Zound.controller()))
+        self.assertEqual(1 + 3,len(Zound.controller()))
         
         r2 = Zound[root._id]
         self.assertFalse(r2 is root)
@@ -364,6 +364,23 @@ class PatternTest(object):
         self.assertFalse(b2.stored)
         self.assertFalse(branch._id == b2._id)
         self.assertTrue(self._almost_equal(b2,branch))
+    
+    # TRANSFORM
+    # remove leaf, alter leaf, or alter leaf's event's list
+    # 
+    '''
+    transform() takes a dictionary-like object in the form
+    {key(s) : action}
+    
+    key can be a wildcard, a key, or a list of keys that the action should be
+    taken on
+    
+    action is a callable in the form
+    action(pattern,events)
+    
+    action can alter the pattern, the events list, or both
+    '''
+    
     
         
         
