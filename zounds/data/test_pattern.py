@@ -1,4 +1,6 @@
 import unittest
+from random import randint
+
 from zounds.environment import Environment
 from zounds.testhelper import make_sndfile,remove,filename
 from zounds.model.frame import Frames,Feature
@@ -8,7 +10,8 @@ from zounds.analyze.feature.spectral import FFT,BarkBands
 from zounds.data.frame.filesystem import FileSystemFrameController
 
 from zounds.data.pattern import InMemory
-from zounds.model.pattern import Zound,Event
+from zounds.model.pattern import \
+    Zound,Event,BaseTransform,ExplicitTransform,CriterionTransform,IndiscriminateTransform
 
 class FrameModel(Frames):
     fft = Feature(FFT)
@@ -103,6 +106,16 @@ class PatternTest(object):
         z = Zound[[self._pattern_id,pattern_id2]]
         self.assertEqual(2,len(z))
         self.assertTrue(all([isinstance(x,Zound) for x in z]))
+    
+    def test_fetch_by_single_id_and_list(self):
+        '''
+        demonstrate that fetching a pattern with Zound[_id] and Zound[[_id]]
+        yields identical results
+        '''
+        l1 = Zound[self._pattern_id]
+        l2 = Zound[[self._pattern_id]][0]
+        self.assertFalse(l1 is l2)
+        self.assertTrue(l1 == l2)
     
     def test_leaf_bad_value(self):
         self.assertRaises(ValueError,lambda : Zound.leaf('BAD ID'))
@@ -220,6 +233,49 @@ class PatternTest(object):
         
         self.assertEqual(r.patterns[pid],leaf)
     
+    def test_extend_single_pattern_multiple_events(self):
+        leaf = Zound[self._pattern_id]
+        b = Zound(source = 'Test')
+        b.extend(leaf,[Event(i) for i in range(4)])
+        
+        self.assertEqual(1,len(b.data))
+        self.assertTrue(leaf._id in b.all_ids)
+        self.assertEqual(4,len(b.data[leaf._id]))
+    
+    def test_extend_single_pattern_no_events(self):
+        leaf = Zound[self._pattern_id]
+        b = Zound(source = 'Test')
+        b.extend(leaf,None)
+        
+        self.assertEqual(0,len(b.data))
+        self.assertFalse(leaf._id in b.all_ids)
+    
+    def test_extend_multiple_patterns_one_event_each(self):
+        leaf = Zound[self._pattern_id]
+        l2 = self.make_leaf_pattern(3, 'fid2', store = False)
+        
+        b = Zound(source = 'Test')
+        b.extend([leaf,l2],[Event(1),Event(2)])
+        
+        self.assertEqual(2,len(b.data))
+        self.assertTrue(all([1 == len(e) for e in b.data.itervalues()]))
+    
+    def test_extend_multiple_patterns_one_event(self):
+        leaf = Zound[self._pattern_id]
+        l2 = self.make_leaf_pattern(3, 'fid2', store = False)
+        
+        b = Zound(source = 'Test')
+        b.extend([leaf,l2],Event(1))
+        
+        self.assertEqual(2,len(b.data))
+        self.assertTrue(all([1 == len(e) for e in b.data.itervalues()]))
+    
+    def test_extend_multiple_patterns_multiple_events_each(self):
+        self.fail()
+    
+    def test_multiples_patterns_multiple_events_mismatched_lengths(self):
+        self.fail()
+        
     def test_append_stored_nested(self):
         '''
         Similar to test_append_stored(), but with two levels of nesting
@@ -379,7 +435,135 @@ class PatternTest(object):
     action(pattern,events)
     
     action can alter the pattern, the events list, or both
+    
+    KLUDGE: What if I want to turn a single pattern with multiple events into
+    many patterns, each with one event?
     '''
+    
+    def test_transform_leaf(self):
+        '''
+        Change the address of a leaf pattern
+        '''
+        leaf = Zound[self._pattern_id]
+        
+        def shorten(leaf,events):
+            addr = leaf.address
+            sl = slice(addr._index.start,addr._index.stop - 5)
+            new_addr = self.env.address_class((addr._id,sl))
+            leaf.address = new_addr
+            return leaf
+            
+        t = IndiscriminateTransform(shorten)
+        
+        nl = leaf.transform(t)
+        
+        self.assertFalse(nl is leaf)
+        self.assertFalse(nl == leaf)
+        self.assertFalse(nl.stored)
+        self.assertFalse(leaf.address == nl.address)
+    
+    def test_transform_branch_remove(self):
+        '''
+        Remove a leaf pattern entirely from a branch pattern
+        '''
+        leaf = Zound[self._pattern_id]
+        l2_id = self.make_leaf_pattern(2, 'fid2')
+        l2 = Zound[l2_id]
+        
+        branch = Zound(source = 'Test')
+        branch.append(leaf,[Event(i) for i in range(4)])
+        branch.append(l2,[Event(i) for i in range(6,8)])
+        
+        def remove(pattern,events):
+            return pattern,None
+        
+        t = ExplicitTransform({leaf._id : remove})
+        
+        b2 = branch.transform(t)
+        
+        self.assertFalse(b2 is branch)
+        self.assertFalse(leaf._id in b2.all_ids)
+        self.assertTrue(l2._id in b2.all_ids)
+    
+    def test_transform_branch_events_to_patterns(self):
+        '''
+        Alter each occurrence of a pattern so that each of its events becomes a
+        new pattern with one event
+        '''
+        leaf = Zound[self._pattern_id]
+        branch = Zound(source = 'Test')
+        branch.append(leaf,[Event(i) for i in range(4)])
+        
+        def change_slice(leaf):
+            leaf = leaf.copy()
+            addr = leaf.address
+            sl = slice(addr._index.start,addr._index.stop - randint(0,10))
+            new_addr = self.env.address_class((addr._id,sl))
+            leaf.address = new_addr
+            return leaf
+        
+        def alter(pattern,events):
+            p = []
+            ev = []
+            for e in events:
+                p.append(change_slice(pattern))
+                ev.append(e)
+            return p,ev
+        
+        t = ExplicitTransform({leaf._id : alter})
+        
+        b2 = branch.transform(t)
+        
+        self.assertFalse(b2 is branch)
+        self.assertFalse(b2 == branch)
+        self.assertFalse(leaf._id in b2.all_ids)
+        self.assertEqual(4,len(b2.data))
+        self.assertTrue(all([1 == len(v) for v in b2.data.values()]))
+        
+    
+    def test_transform_remove_events(self):
+        '''
+        Remove events meeting some criteria from a pattern's events list
+        '''
+        leaf = Zound[self._pattern_id]
+        l2 = self.make_leaf_pattern(4, 'fid2',store = False)
+        
+        # BUG: Why do I have to call store() on the l2 pattern for this to work?
+        self.fail('There is no reason I should have to make the store() call on the following line!')
+        l2.store()
+        
+        b1 = Zound(source = 'Test')
+        b1.append(leaf,[Event(i) for i in range(4)])
+        b1.append(l2,[Event(i) for i in range(4)])
+        
+        def multiples_of_two(pattern,events):
+            return pattern,filter(lambda e : e.time % 2,events)
+        
+        t = IndiscriminateTransform(multiples_of_two)
+        
+        b2 = b1.transform(t)
+        
+        
+        self.assertFalse(b2 is b1)
+        self.assertFalse(b2 == b1)
+        self.assertTrue(leaf._id in b2.all_ids)
+        self.assertTrue(l2._id in b2.all_ids)
+        self.assertEqual(2,len(b2.data[leaf._id]))
+        self.assertEqual(2,len(b2.data[l2._id]))
+        
+        
+    
+    def test_transform_add_events(self):
+        '''
+        Add events whose parameters depend on existing events
+        '''
+        self.fail()
+    
+    def test_nested_transform(self):
+        '''
+        Alter a pattern at multiple levels of nesting
+        '''
+        self.fail()
     
     
         

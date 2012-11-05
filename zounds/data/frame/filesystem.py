@@ -443,30 +443,34 @@ class FileSystemFrameController(FrameController):
             d = {'_id' : self._id}
             
             if hasattr(self._index,'__iter__'):
+                # index is an iterable, e.g., a list or numpy array
                 d['_index'] = self._index.tostring()
                 return d
             
             if hasattr(self._index,'start'):
+                # index is a slice
                 d['_index'] = (self._index.start,self._index.stop)
                 return d
             
+            # index is a single frame number
             d['_index'] = self._index
             return d 
         
         @classmethod
         def fromdict(cls,d):
             idx = d['_index']
-            try:
-                d['_index'] = np.fromstring(idx)
-                return d
+            _id = d['_id']
+            
+            try: 
+                return cls((_id,np.fromstring(idx)))
             except TypeError:
                 pass
             
-            if isinstance(idx,tuple):
-                d['_index'] = slice(*idx)
-                return d
+            if isinstance(idx,tuple): 
+                return cls((_id,slice(*idx)))
             
-            return d
+            raise ValueError(\
+                    'could not convert dict to %s instance' % cls.__name__)
         
         # BUG: The following two methods only work/make sense if the key is a
         # slice.    
