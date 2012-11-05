@@ -145,8 +145,65 @@ class PatternTest(object):
         self.assertTrue(pid in n.all_ids)
         self.assertEqual(4,len(n.data[pid]))
     
-    def test_append_stored(self):
+    def test_append_nested(self):
         self.fail()
+    
+    def test_append_stored(self):
+        pid = self.make_leaf_pattern(2, self._frame_id)
+        leaf = Zound[pid]
+        n = Zound(source = 'Test')
+        n.append(leaf,[Event(i) for i in range(4)])
+        n.store()
+        
+        r = Zound[n._id]
+        self.assertEqual(n,r)
+        self.assertFalse(r.is_leaf)
+        self.assertTrue(pid in r.all_ids)
+        self.assertEqual(4,len(n.data[pid]))
+        
+        self.assertEqual(r.patterns[pid],leaf)
+    
+    def test_store_unstored_nested_patterns(self):
+        '''
+        1) create leaf pattern
+        2) append it to a new pattern
+        3) when the top-level pattern is stored, ensure that the nested pattern
+           is stored too.
+        '''
+        leaf = self.make_leaf_pattern(2, 'fid', store = False)
+        branch = Zound(source = 'Test')
+        branch.append(leaf,[Event(i) for i in range(4)])
+        branch.store()
+        
+        r = Zound[branch._id]
+        self.assertEqual(branch,r)
+        self.assertFalse(r.is_leaf)
+        self.assertTrue(leaf._id in r.all_ids)
+        self.assertEqual(4,len(r.data[leaf._id]))
+        
+        lr = Zound[leaf._id]
+        self.assertEqual(leaf,lr)
+        self.assertTrue(lr.is_leaf)
+        
+    
+    def test_append_stored_nested(self):
+        '''
+        Similar to test_append_stored(), but with two levels of nesting
+        '''
+        self.fail()
+    
+    def test_length_samples(self):
+        self.fail()
+    
+    def test_length_seconds(self):
+        self.fail()
+    
+    def test_length_samples_nested(self):
+        self.fail()
+    
+    def test_length_seconds_nested(self):
+        self.fail()
+        
         
 
 
