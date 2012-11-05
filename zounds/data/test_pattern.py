@@ -145,8 +145,65 @@ class PatternTest(object):
         self.assertTrue(pid in n.all_ids)
         self.assertEqual(4,len(n.data[pid]))
     
-    def test_append_nested(self):
-        self.fail()
+    def test_empty_leaf(self):
+        leaf = Zound[self._pattern_id]
+        self.assertFalse(leaf.empty)
+    
+    def test_empty_branch(self):
+        b = Zound(source = 'Test')
+        self.assertTrue(b.empty)
+    
+    def test_empty_branch_with_events(self):
+        leaf = Zound[self._pattern_id]
+        b = Zound(source = 'Test')
+        b.append(leaf,[Event(i) for i in range(4)])
+        self.assertFalse(b.empty)
+    
+    def test_store_empty(self):
+        '''
+        try to store an empty pattern
+        '''
+        b = Zound(source = 'Test')
+        self.assertRaises(Exception,lambda : b.store())
+    
+    def test_store_twice(self):
+        '''
+        create a pattern and call store() twice. The second call should raise an
+        exception
+        '''
+        leaf = Zound[self._pattern_id]
+        self.assertRaises(Exception,lambda : leaf.store())
+    
+    def test_append_after_store(self):
+        '''
+        try to append() to a pattern that has already been stored
+        '''
+        pid = self.make_leaf_pattern(2, self._frame_id)
+        leaf = Zound[pid]
+        n = Zound(source = 'Test')
+        n.append(leaf,[Event(i) for i in range(4)])
+        n.store()
+        self.assertRaises(Exception,lambda : n.append(leaf,[Event(5)]))
+    
+    def test_remove_after_store(self):
+        '''
+        try to remove() from a pattern that has already been stored
+        '''
+        pid = self.make_leaf_pattern(2, self._frame_id)
+        leaf = Zound[pid]
+        n = Zound(source = 'Test')
+        n.append(leaf,[Event(i) for i in range(4)])
+        n.store()
+        self.assertRaises(Exception,lambda : n.remove())
+    
+    def test_append_nothing(self):
+        '''
+        Call append() with an empty list for the events argument
+        '''
+        pid = self.make_leaf_pattern(2, self._frame_id)
+        leaf = Zound[pid]
+        n = Zound(source = 'Test')
+        self.assertRaises(ValueError,lambda : n.append(leaf,[]))
     
     def test_append_stored(self):
         pid = self.make_leaf_pattern(2, self._frame_id)
@@ -163,34 +220,82 @@ class PatternTest(object):
         
         self.assertEqual(r.patterns[pid],leaf)
     
+    def test_append_stored_nested(self):
+        '''
+        Similar to test_append_stored(), but with two levels of nesting
+        '''
+        self.fail()
+    
     def test_store_unstored_nested_patterns(self):
         '''
-        1) create leaf pattern
-        2) append it to a new pattern
-        3) when the top-level pattern is stored, ensure that the nested pattern
-           is stored too.
+        A pattern containing unstored patterns should store its "children" as
+        well as itself
         '''
+        # create a leaf pattern, but don't store it
         leaf = self.make_leaf_pattern(2, 'fid', store = False)
+        
+        # create a branch pattern
         branch = Zound(source = 'Test')
+        # append the leaf pattern a few times
         branch.append(leaf,[Event(i) for i in range(4)])
+        # store the branch
         branch.store()
         
+        # retrieve the branch and ensure that it looks as expected
         r = Zound[branch._id]
         self.assertEqual(branch,r)
         self.assertFalse(r.is_leaf)
         self.assertTrue(leaf._id in r.all_ids)
         self.assertEqual(4,len(r.data[leaf._id]))
         
+        # retrieve the leaf. Oops!  The leaf was never stored
         lr = Zound[leaf._id]
         self.assertEqual(leaf,lr)
         self.assertTrue(lr.is_leaf)
-        
     
-    def test_append_stored_nested(self):
+    def test_store_unstored_nested_patterns_2(self):
         '''
-        Similar to test_append_stored(), but with two levels of nesting
+        Just like test_store_unstored_nested_patterns, but nested two levels deep
         '''
-        self.fail()
+        # create a leaf pattern, but don't store it
+        leaf = self.make_leaf_pattern(2, 'fid', store = False)
+        
+        # create a branch pattern
+        branch = Zound(source = 'Test')
+        
+        # append the leaf pattern a few times
+        branch.append(leaf,[Event(i) for i in range(4)])
+        
+        # create the top level pattern
+        root = Zound(source = 'Test')
+        
+        # append the branch pattern a few times
+        root.append(branch,[Event(i) for i in range(0,16,4)])
+        
+        # calling store() on root should store the leaf and branch patterns too
+        root.store()
+        
+        # setUp creates and stores a pattern, so we expect there to be four
+        # patterns in the db
+        self.assertEqual(4,len(Zound.controller()))
+        
+        r2 = Zound[root._id]
+        self.assertFalse(r2 is root)
+        self.assertEqual(root,r2)
+        self.assertEqual(2,len(r2.all_ids))
+        self.assertTrue(leaf._id in r2.all_ids)
+        self.assertTrue(branch._id in r2.all_ids)
+        
+        b2 = Zound[branch._id]
+        self.assertFalse(b2 is branch)
+        self.assertEqual(b2,branch)
+        self.assertEqual(1,len(b2.all_ids))
+        self.assertTrue(leaf._id in r2.all_ids)
+        
+        l2 = Zound[leaf._id]
+        self.assertFalse(l2 is leaf)
+        self.assertEqual(l2,leaf)
+    
     
     def test_length_samples(self):
         self.fail()
@@ -203,6 +308,63 @@ class PatternTest(object):
     
     def test_length_seconds_nested(self):
         self.fail()
+        
+    def test_append_nested(self):
+        self.fail()
+        
+    # COPY #######################################################
+    def _almost_equal(self,z1,z2):
+        '''
+        Compare copied Zound patterns, ensuring that they're equivalent
+        '''
+        source = z1.source == z2.source
+        addr = z1.address == z2.address
+        all_ids = z1.all_ids == z2.all_ids
+        leaf = z1.is_leaf == z2.is_leaf
+        _to_store = z1._to_store == z2._to_store
+        
+        if not (source and addr and all_ids and leaf and _to_store):
+            return False
+        
+        for k,v in z1.data.iteritems():
+            # KLUDGE: This doesn't guarantee equivalence, but it's probably
+            # good enough
+            if len(z2.data[k]) != len(v):
+                return False
+        
+        return True
+    
+    def test_copy_leaf_stored(self):
+        leaf = Zound[self._pattern_id]
+        lc = leaf.copy()
+        self.assertFalse(lc.stored)
+        self.assertFalse(leaf._id == lc._id)
+        self.assertTrue(self._almost_equal(leaf, lc))
+    
+    def test_copy_branch_unstored(self):
+        leaf = Zound[self._pattern_id]
+        branch = Zound(source = 'Test')
+        branch.append(leaf,[Event(i) for i in range(4)])
+        b2 = branch.copy()
+        self.assertFalse(branch._id == b2._id)
+        self.assertTrue(self._almost_equal(b2,branch))
+    
+    def test_copy_leaf_unstored(self):
+        leaf = self.make_leaf_pattern(2, 'fid', store = False)
+        lc = leaf.copy()
+        self.assertFalse(leaf._id == lc._id)
+        self.assertTrue(self._almost_equal(leaf, lc))
+    
+    def test_copy_branch_stored(self):
+        leaf = Zound[self._pattern_id]
+        branch = Zound(source = 'Test')
+        branch.append(leaf,[Event(i) for i in range(4)])
+        branch.store()
+        b2 = branch.copy()
+        self.assertFalse(b2.stored)
+        self.assertFalse(branch._id == b2._id)
+        self.assertTrue(self._almost_equal(b2,branch))
+    
         
         
 

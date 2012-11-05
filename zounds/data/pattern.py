@@ -5,11 +5,21 @@ from controller import Controller
 
 class PatternController(Controller):
     
+    __metaclass__ = ABCMeta
+    
     def __init__(self):
         Controller.__init__(self)
 
     @abstractmethod        
     def __getitem__(self):
+        raise NotImplemented()
+    
+    @abstractmethod
+    def store(self,pattern):
+        raise NotImplemented()
+    
+    @abstractmethod
+    def __len__(self):
         raise NotImplemented()
     
     
@@ -29,6 +39,9 @@ class InMemory(PatternController):
     
     def store(self,pattern):
         self._store[pattern['_id']] = pattern
+    
+    def __len__(self):
+        return self._store.__len__()
         
         
 

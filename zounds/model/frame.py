@@ -364,6 +364,9 @@ class Address(object):
     def key(self):
         return self._key
     
+    def copy(self):
+        return self.__class__(self.key)
+    
     @abstractmethod
     def __str__(self):
         pass
