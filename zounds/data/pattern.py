@@ -32,9 +32,11 @@ class InMemory(PatternController):
     
     def __getitem__(self,_id):
         try:
+            # _id is a single _id. return a dictionary representing one pattern
             return self._store[_id]
         except TypeError:
-            # _id is a list of _ids
+            # _id is a list of _ids. return a list of dictionaries representing
+            # multiple patterns
             return [self._store[i] for i in _id]
     
     def store(self,pattern):

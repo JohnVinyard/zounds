@@ -194,6 +194,8 @@ No direct acess to the underlying data structures should be made. Maybe the
 last operation Ann executes would happen like so: 
 '''
 from copy import deepcopy
+from abc import ABCMeta,abstractmethod
+from itertools import izip,repeat
 
 import numpy as np
 
@@ -209,6 +211,8 @@ class MetaPattern(type):
     
     def __getitem__(self,key):
         item = self.controller()[key]
+        print item
+        
         try:
             return self.fromdict(item,stored = True)
         except AttributeError:
@@ -305,6 +309,9 @@ class Event(object):
     def __copy__(self):
         return Event(self.time,**deepcopy(self.params))
     
+    def __iter__(self):
+        yield self
+    
     def todict(self):
         raise NotImplemented()
     
@@ -312,10 +319,62 @@ class Event(object):
         raise NotImplemented()
 
 
-class Transform(dict):
+class BaseTransform(object):
     
-    def __init__(self,**kwargs):
-        dict.__init__(self)
+    __metaclass__ = ABCMeta
+    
+    def __init__(self):
+        object.__init__(self)
+    
+    @abstractmethod
+    def _get_transform(self,pattern,events = None):
+        '''
+        Try to get a transform for the pattern and events.  If one doesn't
+        exist, throw a KeyError
+        '''
+        raise NotImplemented()
+    
+    def __call__(self,pattern,events = None):
+            
+        # check if there's a transform defined for this pattern
+        t = self._get_transform(pattern, events)
+        
+        if isinstance(t,BaseTransform):
+            return [t(pattern)],[events]
+        
+        # t will return a two-tuple of pattern,events
+        return t(pattern,events)
+
+class IndiscriminateTransform(BaseTransform):
+    
+    def __init__(self,transform):
+        BaseTransform.__init__(self)
+        self.transform = transform
+    
+    def _get_transform(self,pattern,events = None):
+        return self.transform
+
+class ExplicitTransform(BaseTransform,dict):
+    
+    def __init__(self,transforms):
+        BaseTransform.__init__(self)
+        dict.__init__(self,transforms)
+    
+    def _get_transform(self,pattern,events = None):
+        return self[pattern._id]
+
+class CriterionTransform(BaseTransform):
+    
+    def __init__(self,predicate,transform):
+        BaseTransform.__init__(self)
+        self.predicate = predicate
+        self.transform = transform
+    
+    def _get_transform(self,pattern,events = None):
+        if self.predicate(pattern,events):
+            return self.transform
+        
+        raise KeyError()        
         
         
     
@@ -366,13 +425,41 @@ class Zound(Pattern):
         z._to_store = self._to_store.copy()
         return z
     
+    # TODO: Test
+    def __add__(self,other):
+        '''
+        overlay two patterns
+        '''
+        raise NotImplemented()
+    
+    # TODO: Test
+    def __radd__(self,other):
+        '''
+        implemented so lists of patterns can be sum()-med
+        '''
+        raise NotImplemented()
+    
+    # TODO: Test
+    def __shift__(self):
+        '''
+        Shift all times by n seconds
+        '''
+        raise NotImplemented()
+    
+    # TODO: Test
+    def dilate(self):
+        '''
+        Multiply all times by factor n
+        '''
+        raise NotImplemented()
+    
     def __repr__(self):
         return self.__str__()
     
     def __str__(self):
         return tostring(self,_id = self._id,source = self.source,
                         external_id = self.external_id,all_ids = self.all_ids,
-                        _is_leaf = self._is_leaf)
+                        _is_leaf = self._is_leaf,address = self.address)
     
     def __hash__(self):
         return self._id.__hash__()
@@ -569,6 +656,38 @@ class Zound(Pattern):
             self._to_store.add(pattern)
     
     # TODO: Tests
+    def extend(self,patterns,events):
+        '''
+        single pattern, multiple events -> pattern,[]
+        multi pattern, single event each -> [],[]
+        multi pattern, multi event each -> [],[]
+        '''
+        try:
+            l = patterns.__len__()
+        except AttributeError:
+            # patterns is single pattern instance
+            if events:
+                self.append(patterns,events)
+            return
+        
+        if isinstance(events,Event):
+            # events is a single Event instance. Create an infinite generator,
+            # so this event will be added once for every pattern
+            events = repeat(events)  
+        elif l != len(events):
+            raise ValueError(\
+            'If patterns is an iterable, patterns and events must have the same length')
+        
+        
+        for args in izip(patterns,events):
+            if not args[1]:
+                # skip patterns with no events
+                continue
+            
+            self.append(*args)
+    
+    # TODO: Tests
+    # TODO: Is this method necessary, or is it made superfluous by transform()
     def remove(self,pattern_id = None, criteria = None):
         self._check_stored()
         # TODO: be sure to remove items from all_ids and _to_store, when necessary
@@ -580,31 +699,42 @@ class Zound(Pattern):
         for k,e in self.data.iteritems():
             yield p[k],e
     
+    def __iter__(self):
+        yield self
+    
     # TODO: Tests
     def transform(self,transform):
-        # create a new, empty pattern
-        n = self.__class__(source = self.source)
-        
         # TODO: Ensure that transform isn't None, and has at least one
         # transformation defined
+        if self.is_leaf:
+            n = self.__class__(source = self.source,
+                               address = self.address,
+                               is_leaf = self.is_leaf)
+            return transform(n)
         
+        # create a new, empty pattern
+        n = self.__class__(source = self.source)
         
         for pattern,events in self.iter_patterns():
             p,e = pattern,events
             try:
                 # there's a transform defined for this pattern
                 p,e = transform(pattern,events)
+                
                 if not e:
-                    # no events were returned
                     continue
-            except AttributeError:
+            except KeyError:
                 # there was no transform defined for this pattern
                 pass
             
             # append the possibly transformed events to the new pattern
-            n.append(p,e)
+            n.extend(p,e)
         
         return n
+    
+    # TODO: Tests
+    def __getitem__(self):
+        raise NotImplemented()
     
     
     def todict(self):
@@ -618,7 +748,6 @@ class Zound(Pattern):
         
         if self.address:
             d['address'] = self.address.todict()
-            return d
         
         d['all_ids'] = self.all_ids
         d['data'] = self.data
@@ -627,6 +756,12 @@ class Zound(Pattern):
     
     @classmethod
     def fromdict(cls,d,stored = False):
+        
+        # KLUDGE: Given the following implementation, this copy() is necessary for
+        # the InMemory controller implementation, but is probably unnecessary
+        # and inefficient for "real" implementations 
+        d = d.copy()
+        
         if d.has_key('address'):
             d['all_ids'] = None
             d['data'] = None
