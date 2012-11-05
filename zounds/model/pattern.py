@@ -206,12 +206,13 @@ class MetaPattern(type):
     def __getitem__(self,key):
         item = self.controller()[key]
         try:
-            return self.fromdict(item)
+            return self.fromdict(item,stored = True)
         except AttributeError:
-            return [self.fromdict(i) for i in item]
+            return [self.fromdict(i,stored = True) for i in item]
     
     def _store(self,pattern):
         self.controller().store(pattern.todict())
+        pattern.stored = True
 
 class Pattern(Model):
     '''
@@ -307,7 +308,7 @@ class Event(object):
 class Zound(Pattern):
     
     def __init__(self,source = None,external_id = None,_id = None,
-                 address = None,data = None,all_ids = None,is_leaf = False):
+                 address = None,data = None,all_ids = None,is_leaf = False,stored = False):
         
         # source is the name of the application or user that created this pattern
         self.source = source or self.env().source
@@ -323,6 +324,7 @@ class Zound(Pattern):
         self.all_ids = set(all_ids or [])
         self._patterns = None
         self._is_leaf = is_leaf
+        self.stored = stored
     
     def __repr__(self):
         return self.__str__()
@@ -458,13 +460,15 @@ class Zound(Pattern):
     def patterns(self):
         
         if None is self._patterns:
-            self._patterns = self.__class__[self.all_ids]
+            plist = self.__class__[self.all_ids]
+            self._patterns = dict((p._id,p) for p in plist)
             return self._patterns
         
         
         for _id in self.all_ids:
             if not self._patterns.has_key(_id):
-                self._patterns[_id] = self.__class__[_id]
+                p = self.__class__[_id]
+                self._patterns[p._id] = p 
         
         return self._patterns
     
@@ -498,7 +502,8 @@ class Zound(Pattern):
              '_id' : self._id,
              'source' : self.source,
              'external_id' : self.external_id,
-             'is_leaf' : self._is_leaf
+             'is_leaf' : self._is_leaf,
+             'stored' : self.stored
              }
         
         if self.address:
@@ -511,7 +516,7 @@ class Zound(Pattern):
         
     
     @classmethod
-    def fromdict(cls,d):
+    def fromdict(cls,d,stored = False):
         if d.has_key('address'):
             d['all_ids'] = None
             d['data'] = None
@@ -519,6 +524,7 @@ class Zound(Pattern):
         else:
             d['address'] = None
         
+        d['stored'] = stored
         return Zound(**d)
     
     def store(self):
