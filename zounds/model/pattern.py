@@ -189,7 +189,7 @@ All changes to a pattern should happen by calling methods on the Pattern class.
 No direct acess to the underlying data structures should be made. Maybe the
 last operation Ann executes would happen like so: 
 '''
-
+from copy import deepcopy
 
 import numpy as np
 
@@ -297,18 +297,18 @@ class Event(object):
         object.__init__(self)
         self.time = time_secs
         self.params = kwargs
+    
+    def __copy__(self):
+        return Event(self.time,**deepcopy(self.params))
         
     
-# KLUDGE: What if I alter the volume of an event slightly?  Does that warrant
-# saving a "copy" of the pattern?
-
 # TODO: Add created date
 # TODO: Add a changed() method, which determines whether the pattern has changed
 # in any way and should be saved as a new pattern
 class Zound(Pattern):
     
-    def __init__(self,source = None,external_id = None,_id = None,
-                 address = None,data = None,all_ids = None,is_leaf = False,stored = False):
+    def __init__(self,source = None,external_id = None,_id = None, address = None,
+                 data = None,all_ids = None,is_leaf = False,stored = False):
         
         # source is the name of the application or user that created this pattern
         self.source = source or self.env().source
@@ -325,6 +325,29 @@ class Zound(Pattern):
         self._patterns = None
         self._is_leaf = is_leaf
         self.stored = stored
+        # keep track of unstored nested patterns that should be stored when
+        # self.store() is called
+        self._to_store = set()
+    
+    # TODO: Tests
+    def copy(self):
+        '''
+        Create an exact duplicate of this pattern with a new id.  copy() should
+        always be called before modifying a stored pattern. 
+        '''
+        _id = self.env().newid()
+        addr = None if self.address is None else self.address.copy()
+        z = Zound(source = self.source,
+                  external_id = _id,
+                  _id = _id,
+                  address = addr,
+                  data = deepcopy(self.data),
+                  all_ids = self.all_ids.copy(),
+                  is_leaf = self.is_leaf,
+                  stored = False)
+        
+        z._to_store = self._to_store.copy()
+        return z
     
     def __repr__(self):
         return self.__str__()
@@ -335,7 +358,7 @@ class Zound(Pattern):
                         _is_leaf = self._is_leaf)
     
     def __hash__(self):
-        return self._id
+        return self._id.__hash__()
     
     def __eq__(self,other):
         if self is other:
@@ -383,7 +406,8 @@ class Zound(Pattern):
     @property
     def is_leaf(self):
         return self._is_leaf 
-        
+    
+    # TODO: Tests
     # TODO: Move this into the base Pattern class
     # BUG: What if a transform changes the length of the samples?
     @property
@@ -409,6 +433,7 @@ class Zound(Pattern):
             
             return last
     
+    # TODO: Tests
     # TODO: Move this into the base Pattern class
     @property
     def length_seconds(self):
@@ -417,7 +442,7 @@ class Zound(Pattern):
         '''
         return self.length_samples / self.env.samplerate
     
-    
+    # TODO: Tests
     def _render(self):
         # render the pattern as audio
         # KLUDGE: Maybe _render should be an iterator, for very long patterns
@@ -444,6 +469,7 @@ class Zound(Pattern):
             
         return audio
     
+    # TODO: Tests
     def audio_extractor(self,needs = None):
         e = self.env
         return AudioFromMemory(e.samplerate,
@@ -456,6 +482,7 @@ class Zound(Pattern):
         for v in self.data.itervalues():
             v.sort()
     
+    # TODO: Tests
     @property
     def patterns(self):
         
@@ -473,6 +500,19 @@ class Zound(Pattern):
         return self._patterns
     
     
+    def _check_stored(self):
+        if self.stored:
+            raise Exception('Cannot modify a stored pattern')
+    
+    # TODO: Tests
+    @property
+    def empty(self):
+        
+        if self.is_leaf:
+            return False
+        
+        return not bool(sum([len(v) for v in self.data.itervalues()]))
+    
     
     def append(self,pattern,events):
         '''append
@@ -483,8 +523,15 @@ class Zound(Pattern):
         
         :param events: a list of two-tuples of (time_secs,transformations)
         '''
+        
+        # raise an exception if this pattern has already been stored
+        self._check_stored()
+        
         if pattern._id == self._id:
             raise ValueError('Patterns cannot contain themselves!')
+        
+        if not events:
+            raise ValueError('events was empty')
         
         try:
             l = self.data[pattern._id]
@@ -492,10 +539,30 @@ class Zound(Pattern):
             l = []
             self.data[pattern._id] = l
         
+        # add events and sort them in ascending distance from "now"
         l.extend(events)
         l.sort()
+        
+        # update the flat list of all ids required to render this pattern
         self.all_ids.add(pattern._id)
         self.all_ids.update(pattern.all_ids)
+        
+        # update the list of nested patterns which have not yet been stored
+        if not pattern.stored:
+            self._to_store.add(pattern)
+    
+    # TODO: Tests
+    def remove(self,pattern_id = None, criteria = None):
+        self._check_stored()
+        # TODO: be sure to remove items from all_ids and _to_store, when necessary
+        raise NotImplemented()
+    
+    # TODO: Tests
+    def transform(self):
+        n = self.copy()
+        # do stuff to n
+        return n
+    
     
     def todict(self):
         d = {
@@ -527,5 +594,20 @@ class Zound(Pattern):
         d['stored'] = stored
         return Zound(**d)
     
+    # TODO: Should this be asynchronous ?
     def store(self):
+        
+        if self.stored:
+            # KLUDGE: Should I define a custom exception for this?
+            raise Exception('Zound %s is already stored' % self._id)
+    
+        if self.empty:
+            # KLUDGE: Should I define a custom exception for this?
+            raise Exception('Cannot store an empty pattern')
+        
+        # store any nested unstored patterns 
+        for p in self._to_store:
+            p.store()
+        
+        # store self
         self.__class__._store(self)
