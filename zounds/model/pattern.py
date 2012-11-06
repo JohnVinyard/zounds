@@ -211,7 +211,6 @@ class MetaPattern(type):
     
     def __getitem__(self,key):
         item = self.controller()[key]
-        print item
         
         try:
             return self.fromdict(item,stored = True)
@@ -309,6 +308,24 @@ class Event(object):
     def __copy__(self):
         return Event(self.time,**deepcopy(self.params))
     
+    def __eq__(self,other):
+        return self.time == other.time
+    
+    def __ne__(self,other):
+        return self.time != other.time
+    
+    def __lt__(self,other):
+        return self.time < other.time
+    
+    def __lte__(self,other):
+        return self.time <= other.time
+    
+    def __gt__(self,other):
+        return self.time > other.time
+    
+    def __gte__(self,other):
+        return self.time >= other.time
+    
     def __iter__(self):
         yield self
     
@@ -319,6 +336,7 @@ class Event(object):
         raise NotImplemented()
 
 
+# TODO: Composable types with different atomic behaviors
 class BaseTransform(object):
     
     __metaclass__ = ABCMeta
@@ -344,6 +362,23 @@ class BaseTransform(object):
         
         # t will return a two-tuple of pattern,events
         return t(pattern,events)
+
+class RecursiveTransform(BaseTransform):
+    
+    def __init__(self,transform):
+        BaseTransform.__init__(self)
+        self.transform = transform
+    
+    def _get_transform(self,pattern,events = None):
+        return self.transform
+    
+    def __call__(self,pattern,events = None):
+        p,e = self.transform(pattern,events)
+        
+        if events is None:
+            return p,e
+        
+        return p.transform(self),e
 
 class IndiscriminateTransform(BaseTransform):
     
@@ -591,7 +626,11 @@ class Zound(Pattern):
     def patterns(self):
         
         if None is self._patterns:
-            plist = self.__class__[self.all_ids]
+            # fetch all the ids that are stored at once
+            plist = self.__class__[self.all_ids - set((p._id for p in self._to_store))]
+            # add unstored patterns
+            plist.extend(self._to_store)
+            # create a dictionary mapping pattern id -> pattern
             self._patterns = dict((p._id,p) for p in plist)
             return self._patterns
         
@@ -599,7 +638,7 @@ class Zound(Pattern):
         for _id in self.all_ids:
             if not self._patterns.has_key(_id):
                 p = self.__class__[_id]
-                self._patterns[p._id] = p 
+                self._patterns[p._id] = p
         
         return self._patterns
     
@@ -654,6 +693,40 @@ class Zound(Pattern):
         # update the list of nested patterns which have not yet been stored
         if not pattern.stored:
             self._to_store.add(pattern)
+            if self._patterns is not None:
+                self._patterns[pattern._id] = pattern
+    
+    
+    # TODO: Tests
+    def transform(self,transform):
+        # TODO: Ensure that transform isn't None, and has at least one
+        # transformation defined
+        if self.is_leaf:
+            n = self.__class__(source = self.source,
+                               address = self.address,
+                               is_leaf = self.is_leaf)
+            return transform(n)
+        
+        # create a new, empty pattern
+        n = self.__class__(source = self.source)
+        
+        for pattern,events in self.iter_patterns():
+            p,e = pattern,events
+            try:
+                # there's a transform defined for this pattern
+                p,e = transform(pattern,events)
+                
+                if not e:
+                    # there are no events to add
+                    continue
+            except KeyError:
+                # there was no transform defined for this pattern
+                pass
+            
+            # append the possibly transformed events to the new pattern
+            n.extend(p,e)
+        
+        return n
     
     # TODO: Tests
     def extend(self,patterns,events):
@@ -702,35 +775,7 @@ class Zound(Pattern):
     def __iter__(self):
         yield self
     
-    # TODO: Tests
-    def transform(self,transform):
-        # TODO: Ensure that transform isn't None, and has at least one
-        # transformation defined
-        if self.is_leaf:
-            n = self.__class__(source = self.source,
-                               address = self.address,
-                               is_leaf = self.is_leaf)
-            return transform(n)
-        
-        # create a new, empty pattern
-        n = self.__class__(source = self.source)
-        
-        for pattern,events in self.iter_patterns():
-            p,e = pattern,events
-            try:
-                # there's a transform defined for this pattern
-                p,e = transform(pattern,events)
-                
-                if not e:
-                    continue
-            except KeyError:
-                # there was no transform defined for this pattern
-                pass
-            
-            # append the possibly transformed events to the new pattern
-            n.extend(p,e)
-        
-        return n
+    
     
     # TODO: Tests
     def __getitem__(self):

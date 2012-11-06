@@ -11,7 +11,9 @@ from zounds.data.frame.filesystem import FileSystemFrameController
 
 from zounds.data.pattern import InMemory
 from zounds.model.pattern import \
-    Zound,Event,BaseTransform,ExplicitTransform,CriterionTransform,IndiscriminateTransform
+    Zound,Event,BaseTransform,ExplicitTransform, \
+    CriterionTransform,IndiscriminateTransform, \
+    RecursiveTransform
 
 class FrameModel(Frames):
     fft = Feature(FFT)
@@ -134,6 +136,13 @@ class PatternTest(object):
         z = Zound.leaf(addr)
         self.assertEqual(addr,z.address)
         self.assertTrue(z.is_leaf)
+    
+    def test_leaf_attributes(self):
+        leaf = Zound[self._pattern_id]
+        self.assertFalse(leaf.all_ids)
+        self.assertFalse(leaf.data)
+        self.assertFalse(leaf.patterns)
+        self.assertFalse(list(leaf.iter_patterns()))
     
     def test_frame_instance(self):
         addr = self.env.address_class((self._frame_id,slice(0,10)))
@@ -271,10 +280,30 @@ class PatternTest(object):
         self.assertTrue(all([1 == len(e) for e in b.data.itervalues()]))
     
     def test_extend_multiple_patterns_multiple_events_each(self):
-        self.fail()
+        leaf = Zound[self._pattern_id]
+        l2 = self.make_leaf_pattern(3, 'fid2', store = False)
+        
+        b = Zound(source = 'Test')
+        e1 = [Event(i) for i in range(4)]
+        e2 = [Event(i) for i in range(10,12)]
+        b.extend([leaf,l2],[e1,e2])
+        
+        
+        self.assertEqual(2,len(b.data))
+        self.assertTrue(leaf._id in b.all_ids)
+        self.assertTrue(l2._id in b.all_ids)
+        self.assertEqual(4,len(b.data[leaf._id]))
+        self.assertEqual(2,len(b.data[l2._id]))
     
     def test_multiples_patterns_multiple_events_mismatched_lengths(self):
-        self.fail()
+        leaf = Zound[self._pattern_id]
+        l2 = self.make_leaf_pattern(3, 'fid2', store = False)
+        
+        b = Zound(source = 'Test')
+        e1 = [Event(i) for i in range(4)]
+        e2 = [Event(i) for i in range(10,12)]
+        self.assertRaises(ValueError,lambda : b.extend([leaf,l2],[e1,e2,e2]))
+        
         
     def test_append_stored_nested(self):
         '''
@@ -528,9 +557,6 @@ class PatternTest(object):
         leaf = Zound[self._pattern_id]
         l2 = self.make_leaf_pattern(4, 'fid2',store = False)
         
-        # BUG: Why do I have to call store() on the l2 pattern for this to work?
-        self.fail('There is no reason I should have to make the store() call on the following line!')
-        l2.store()
         
         b1 = Zound(source = 'Test')
         b1.append(leaf,[Event(i) for i in range(4)])
@@ -557,12 +583,78 @@ class PatternTest(object):
         '''
         Add events whose parameters depend on existing events
         '''
-        self.fail()
+        leaf = Zound[self._pattern_id]
+        b1 = Zound(source = 'Test')
+        b1.append(leaf,[Event(i) for i in range(4)])
+        
+        def double(pattern,events):
+            ne = []
+            for e in events:
+                ne.extend([e,Event(e.time + .5,**e.params)])
+            return pattern,ne
+        
+        t = IndiscriminateTransform(double)
+        
+        b2 = b1.transform(t)
+        
+        self.assertFalse(b2 is b1)
+        self.assertFalse(b2 == b1)
+        self.assertEqual(1,len(b2.data))
+        self.assertEqual(8,len(b2.data[leaf._id]))
+        
+        expected = [0.5 * i for i in range(8)]
+        self.assertEqual(set(expected),set([e.time for e in b2.data[leaf._id]]))
     
-    def test_nested_transform(self):
+    def test_transform_nested_all_levels(self):
         '''
         Alter a pattern at multiple levels of nesting
         '''
+        leaf = Zound[self._pattern_id]
+        b1 = Zound(source = 'Test')
+        b1.append(leaf,[Event(i) for i in range(4)])
+        
+        b2 = Zound(source = 'Test')
+        b2.append(b1,[Event(i) for i in range(0,16,4)])
+        
+        # move each event forward .1 seconds in time
+        def transform(pattern,events):
+            
+            if not events:
+                return pattern,events
+            
+            return pattern,[Event(e.time + .1,**e.params) for e in events]
+        
+        t = RecursiveTransform(transform)
+        
+        b3 = b2.transform(t)
+        
+        
+        # check that things are expected at the top level
+        self.assertFalse(b3 is b2)
+        self.assertFalse(b3 == b2)
+        self.assertEqual(1,len(b3.data))
+        self.assertEqual(2,len(b3.all_ids))
+        self.assertTrue(leaf._id in b3.all_ids)
+        self.assertFalse(b1._id in b3.all_ids)
+        
+        n1_id = b3.data.keys()[0]
+        expected = set([i + .1 for i in range(0,16,4)])
+        actual = set([e.time for e in b3.data[n1_id]])
+        self.assertEqual(expected,actual)
+        
+    
+    def test_transform_nested_just_leaves(self):
+        '''
+        Apply a transform to a pattern that should only affect the leaves
+        '''
+        leaf = Zound[self._pattern_id]
+        b1 = Zound(source = 'Test')
+        b1.append(leaf,[Event(i) for i in range(4)])
+        
+        b2 = Zound(source = 'Test')
+        b2.append(b1,[Event(i) for i in range(0,16,4)])
+        
+        # double b1
         self.fail()
     
     
