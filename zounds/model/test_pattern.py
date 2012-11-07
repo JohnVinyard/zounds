@@ -14,14 +14,5 @@ class EventTests(unittest.TestCase):
         # of diff will always be positive
         diff = np.diff([e.time for e in events])
         self.assertTrue(np.all(diff > 0))
-
-class PatternTests(unittest.TestCase):
-    
-    def setUp(self):
-        # setup the environment
-        pass
-    
-    def tearDown(self):
-        pass
     
     
