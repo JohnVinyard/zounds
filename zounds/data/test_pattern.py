@@ -924,7 +924,107 @@ class PatternTest(object):
         self.assertTrue(l1._id in s.all_ids)
         self.assertTrue(l2._id in s.all_ids)
         self.assertTrue(l3._id in s.all_ids)
+    
+    ## SHIFT #########################################################
+    def test_shift_leaf(self):
+        leaf = Zound[self._pattern_id]
+        self.assertRaises(Exception,lambda : leaf.shift(1))
         
+    def test_shift(self):
+        leaf = Zound[self._pattern_id]
+        
+        p1 = Zound(source = 'Test',_id = 'p1')
+        p1.append(leaf,[Event(i) for i in range(4)])
+        
+        root = Zound(source = 'Test',_id = 'root')
+        root.append(p1,[Event(i) for i in range(0,16,4)])
+        
+        r2 = root.shift(1)
+        
+        self.assertFalse(r2 is root)
+        self.assertFalse(r2 == root)
+        self.assertEqual(1,len(r2.data))
+        
+        expected = range(1,17,4)
+        actual = [e.time for e in r2.data.values()[0]]
+        self.assertEqual(expected,actual)
+        
+        expected = range(4)
+        p = r2.patterns[p1._id]
+        actual = [e.time for e in p.data.values()[0]]
+        self.assertEqual(expected,actual)
+    
+    def test_shift_recursive(self):
+        leaf = Zound[self._pattern_id]
+        
+        p1 = Zound(source = 'Test',_id = 'p1')
+        p1.append(leaf,[Event(i) for i in range(4)])
+        
+        root = Zound(source = 'Test',_id = 'root')
+        root.append(p1,[Event(i) for i in range(0,16,4)])
+        
+        r2 = root.shift(1,recurse = True)
+        
+        self.assertFalse(r2 is root)
+        self.assertFalse(r2 == root)
+        self.assertEqual(1,len(r2.data))
+        
+        expected = range(1,17,4)
+        actual = [e.time for e in r2.data.values()[0]]
+        self.assertEqual(expected,actual)
+        
+        expected = range(1,5)
+        p = r2.patterns[r2.data.keys()[0]]
+        actual = [e.time for e in p.data.values()[0]]
+        self.assertEqual(expected,actual)
+    
+    def test_lshift(self):
+        leaf = Zound[self._pattern_id]
+        
+        p1 = Zound(source = 'Test',_id = 'p1')
+        p1.append(leaf,[Event(i) for i in range(1,5)])
+        
+        root = Zound(source = 'Test',_id = 'root')
+        root.append(p1,[Event(i) for i in range(1,17,4)])
+        
+        r2 = root << 1
+        
+        self.assertFalse(r2 is root)
+        self.assertFalse(r2 == root)
+        self.assertEqual(1,len(r2.data))
+        
+        expected = range(0,16,4)
+        actual = [e.time for e in r2.data.values()[0]]
+        self.assertEqual(expected,actual)
+        
+        expected = range(1,5)
+        p = r2.patterns[p1._id]
+        actual = [e.time for e in p.data.values()[0]]
+        self.assertEqual(expected,actual)
+    
+    def test_rshift(self):
+        leaf = Zound[self._pattern_id]
+        
+        p1 = Zound(source = 'Test',_id = 'p1')
+        p1.append(leaf,[Event(i) for i in range(4)])
+        
+        root = Zound(source = 'Test',_id = 'root')
+        root.append(p1,[Event(i) for i in range(0,16,4)])
+        
+        r2 = root >> 1
+        
+        self.assertFalse(r2 is root)
+        self.assertFalse(r2 == root)
+        self.assertEqual(1,len(r2.data))
+        
+        expected = range(1,17,4)
+        actual = [e.time for e in r2.data.values()[0]]
+        self.assertEqual(expected,actual)
+        
+        expected = range(4)
+        p = r2.patterns[p1._id]
+        actual = [e.time for e in p.data.values()[0]]
+        self.assertEqual(expected,actual)
         
     
     
