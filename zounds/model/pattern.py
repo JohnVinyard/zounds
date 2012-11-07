@@ -352,7 +352,7 @@ class BaseTransform(object):
         '''
         raise NotImplemented()
     
-    def __call__(self,pattern,events = None):
+    def __call__(self,pattern,events = None, changed = False, top = True):
             
         # check if there's a transform defined for this pattern
         t = self._get_transform(pattern, events)
@@ -365,20 +365,30 @@ class BaseTransform(object):
 
 class RecursiveTransform(BaseTransform):
     
-    def __init__(self,transform):
+    def __init__(self,transform,predicate = None):
         BaseTransform.__init__(self)
         self.transform = transform
+        self.predicate = predicate or (lambda p,e: True)
     
     def _get_transform(self,pattern,events = None):
         return self.transform
     
-    def __call__(self,pattern,events = None):
-        p,e = self.transform(pattern,events)
+    def __call__(self,pattern,events = None,changed = False, top = True):
+        
+        if self.predicate(pattern,events):
+            p,e = self.transform(pattern,events)
+            changed = True
+        else:
+            p,e = pattern,events
         
         if events is None:
-            return p,e
+            # this is a leaf pattern
+            if not changed:
+                # no patterns in this branch have changed
+                raise KeyError
+            return p
         
-        return p.transform(self),e
+        return p.transform(self, changed = changed, top = top),e
 
 class IndiscriminateTransform(BaseTransform):
     
@@ -440,7 +450,6 @@ class Zound(Pattern):
         # self.store() is called
         self._to_store = set()
     
-    # TODO: Tests
     def copy(self):
         '''
         Create an exact duplicate of this pattern with a new id.  copy() should
@@ -503,11 +512,17 @@ class Zound(Pattern):
         if self is other:
             return True
         
-        return (self._id == other._id) and \
-               (self.source == other.source) and \
-               (self.external_id == other.external_id) and \
-               (self.all_ids == other.all_ids) and \
-               (self._is_leaf == other._is_leaf) 
+        eq = (self._id == other._id) and \
+             (self.source == other.source) and \
+             (self.external_id == other.external_id) and \
+             (self.all_ids == other.all_ids) and \
+             (self._is_leaf == other._is_leaf)
+        
+        if self.is_leaf:
+            return eq and (self.address == other.address)
+        
+        return eq
+             
     
     @classmethod
     def leaf(cls,addr,source = None):
@@ -640,6 +655,7 @@ class Zound(Pattern):
                 p = self.__class__[_id]
                 self._patterns[p._id] = p
         
+        
         return self._patterns
     
     
@@ -647,7 +663,6 @@ class Zound(Pattern):
         if self.stored:
             raise Exception('Cannot modify a stored pattern')
     
-    # TODO: Tests
     @property
     def empty(self):
         
@@ -693,19 +708,33 @@ class Zound(Pattern):
         # update the list of nested patterns which have not yet been stored
         if not pattern.stored:
             self._to_store.add(pattern)
-            if self._patterns is not None:
-                self._patterns[pattern._id] = pattern
+            if self._patterns is None:
+                self._patterns = dict()
+            
+            self._patterns[pattern._id] = pattern
+            self._patterns.update(pattern.patterns)
     
+    
+    def _leaf_compare(self,other):
+        if not self.is_leaf:
+            raise Exception('%s is not a leaf' % self)
+        
+        return self.address == other.address
     
     # TODO: Tests
-    def transform(self,transform):
+    def transform(self,transform,changed = False,top = True):
+        
         # TODO: Ensure that transform isn't None, and has at least one
         # transformation defined
+        
         if self.is_leaf:
             n = self.__class__(source = self.source,
                                address = self.address,
                                is_leaf = self.is_leaf)
-            return transform(n)
+            t = transform(n, changed = changed)
+            # this is a leaf pattern, and it wasn't altered in any way, so
+            # return self. Otherwise, return the modified pattern
+            return self if self._leaf_compare(t) else t
         
         # create a new, empty pattern
         n = self.__class__(source = self.source)
@@ -714,12 +743,14 @@ class Zound(Pattern):
             p,e = pattern,events
             try:
                 # there's a transform defined for this pattern
-                p,e = transform(pattern,events)
-                
+                p,e = transform(pattern,events,changed = changed, top = False)
                 if not e:
-                    # there are no events to add
+                    # the pattern is being removed
                     continue
-            except KeyError:
+            except KeyError as ke:
+                if not top:
+                    raise ke
+                
                 # there was no transform defined for this pattern
                 pass
             
@@ -728,7 +759,6 @@ class Zound(Pattern):
         
         return n
     
-    # TODO: Tests
     def extend(self,patterns,events):
         '''
         single pattern, multiple events -> pattern,[]
@@ -776,9 +806,8 @@ class Zound(Pattern):
         yield self
     
     
-    
     # TODO: Tests
-    def __getitem__(self):
+    def __getitem__(self,key):
         raise NotImplemented()
     
     
