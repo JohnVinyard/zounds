@@ -424,8 +424,6 @@ class CriterionTransform(BaseTransform):
         
     
 # TODO: Add created date
-# TODO: Add a changed() method, which determines whether the pattern has changed
-# in any way and should be saved as a new pattern
 class Zound(Pattern):
     
     def __init__(self,source = None,external_id = None,_id = None, address = None,
@@ -474,14 +472,23 @@ class Zound(Pattern):
         '''
         overlay two patterns
         '''
-        raise NotImplemented()
+        if not other:
+            return self.copy()
+        
+        rn = self.copy()
+        p = other.patterns
+        for k,v in other.data.iteritems():
+            rn.append(p[k],v)
+        return rn
     
-    # TODO: Test
     def __radd__(self,other):
         '''
-        implemented so lists of patterns can be sum()-med
+        Implemented so sum([p1,p2,...]) can be called on a list of patterns
         '''
-        raise NotImplemented()
+        if not other:
+            return self.copy()
+        
+        return self + other
     
     # TODO: Test
     def __shift__(self):

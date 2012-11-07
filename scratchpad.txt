@@ -1,3 +1,7 @@
+Pattern tests
+====================================
+Move tests that have nothing to do with data storage/access into the model package
+
 TemplateMatch tweaks
 ====================================
 - Upload/record query sounds in websearch.py

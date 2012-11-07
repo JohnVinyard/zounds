@@ -227,6 +227,13 @@ class PatternTest(object):
         n = Zound(source = 'Test')
         self.assertRaises(ValueError,lambda : n.append(leaf,[]))
     
+    def test_append_self(self):
+        '''
+        Attempt to append a pattern to itself
+        '''
+        p = Zound(source = 'Test')
+        self.assertRaises(ValueError,lambda : p.append(p,[Event(i) for i in range(4)])) 
+    
     def test_append_stored(self):
         pid = self.make_leaf_pattern(2, self._frame_id)
         leaf = Zound[pid]
@@ -380,7 +387,6 @@ class PatternTest(object):
         l2 = Zound[leaf._id]
         self.assertFalse(l2 is leaf)
         self.assertEqual(l2,leaf)
-    
     
     def test_length_samples(self):
         self.fail()
@@ -639,6 +645,19 @@ class PatternTest(object):
         self.assertEqual(1,len(n1.all_ids))
         self.assertTrue(leaf._id in n1.all_ids)
     
+    def test_transform_change_single_instance(self):
+        '''
+        Alter only the last occurrence of b1 do it only has 3 beats. The first
+        three occurrences should continue to have four beats.
+        '''
+        leaf = Zound[self._pattern_id]
+        b1 = Zound(source = 'Test')
+        b1.append(leaf,[Event(i) for i in range(4)])
+        
+        b2 = Zound(source = 'Test')
+        b2.append(b1,[Event(i) for i in range(0,16,4)])
+        self.fail()
+    
     def test_transform_nested_all(self):
         '''
         Alter a pattern at multiple levels of nesting, including the leaf patterns
@@ -811,20 +830,15 @@ class PatternTest(object):
         root.append(p2,[Event(1)])
         
         def alter(pattern,events):
-            print 'alter'
             addr = pattern.address
             sl = slice(addr._index.start,addr._index.stop - 2)
             new_addr = self.env.address_class((addr._id,sl))
             pattern.address = new_addr
             return pattern,events
         
-        
         t = RecursiveTransform(alter,predicate = lambda p,e : e is None and l2._leaf_compare(p))
-        
         r2 = root.transform(t)
         
-        # TODO: Copies should have been made of root,p2, and l2.  r2 should have
-        # a reference to the *original* l1 pattern, since none of it was modified.
         self.assertFalse(r2 is root)
         self.assertFalse(r2 == root)
         
@@ -855,11 +869,65 @@ class PatternTest(object):
         self.assertEqual(1,len(p.data))
         self.assertEqual(3,len(p.data.values()[0]))
     
+    ## ADD ###########################################################
+    def test_add(self):
+        l1 = Zound[self._pattern_id]
+        l2 = self.make_leaf_pattern(3, 'fid2', store = False)
+        
+        p1 = Zound(source = 'Test',_id = 'p1')
+        p1.append(l1,[Event(i) for i in range(5)])
+        
+        p2 = Zound(source = 'Test',_id = 'p2')
+        p2.append(l2,[Event(i) for i in range(4)])
+        
+        r1 = Zound(source = 'Test',_id = 'r1')
+        r1.append(p1,[Event(i) for i in range(7)])
+        
+        r2 = Zound(source = 'Test',_id = 'r2')
+        r2.append(p2,[Event(i) for i in range(8)]) 
+        
+        p3 = r1 + r2
+        
+        self.assertFalse(p3 is r2)
+        self.assertFalse(p3 is r1)
+        self.assertFalse(p3 == r1)
+        self.assertFalse(p3 == r2)
+        
+        self.assertEqual(2,len(p3.data))
+        self.assertEqual(4,len(p3.all_ids))
+        self.assertTrue(l1._id in p3.all_ids)
+        self.assertTrue(l2._id in p3.all_ids)
+        self.assertTrue(p2._id in p3.all_ids)
+        self.assertTrue(p1._id in p3.all_ids)
+        
+        
     
+    ## SUM ###########################################################
+    def test_sum(self):
+        l1 = self.make_leaf_pattern(1, 'l1', store = False)
+        l2 = self.make_leaf_pattern(2, 'l2', store = False)
+        l3 = self.make_leaf_pattern(3, 'l3', store = False)
+        
+        p1 = Zound(source = 'Test', _id = 'p1')
+        p1.append(l1,[Event(i) for i in range(1)])
+        
+        p2 = Zound(source = 'Test', _id = 'p2')
+        p2.append(l2,[Event(i) for i in range(1)])
+        
+        p3 = Zound(source = 'Test', _id = 'p3')
+        p3.append(l3,[Event(i) for i in range(1)])
+        
+        s = sum([p1,p2,p3])
+        
+        self.assertEqual(3,len(s.data))
+        self.assertEqual(3,len(s.all_ids))
+        self.assertTrue(l1._id in s.all_ids)
+        self.assertTrue(l2._id in s.all_ids)
+        self.assertTrue(l3._id in s.all_ids)
         
         
-
-
+    
+    
 class InMemoryTest(unittest.TestCase,PatternTest):
     
     def setUp(self):
