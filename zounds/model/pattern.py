@@ -326,6 +326,15 @@ class Event(object):
     def __gte__(self,other):
         return self.time >= other.time
     
+    def shift(self,amt):
+        return Event(self.time + amt,**deepcopy(self.params))
+        
+    def __lshift__(self,amt):
+        return self.shift(-amt)
+    
+    def __rshift__(self,amt):
+        return self.shift(amt)
+    
     def __iter__(self):
         yield self
     
@@ -467,7 +476,7 @@ class Zound(Pattern):
         z._to_store = self._to_store.copy()
         return z
     
-    # TODO: Test
+    
     def __add__(self,other):
         '''
         overlay two patterns
@@ -491,14 +500,39 @@ class Zound(Pattern):
         return self + other
     
     # TODO: Test
-    def __shift__(self):
+    def shift(self,amt,recurse = False):
         '''
-        Shift all times by n seconds
+        Shift events in time by amt.  By default, only top-level patterns are
+        altered.  If recurse is True, the transformation is applied at each
+        level of nesting
         '''
-        raise NotImplemented()
+        if self.is_leaf:
+            raise Exception('cannot call shift() on a leaf pattern')
+        
+        def s(pattern,events):
+            if None is events:
+                return pattern,events
+            return pattern,[e >> amt for e in events]
+        
+        t = RecursiveTransform(s) if recurse else IndiscriminateTransform(s)
+        return self.transform(t)
     
     # TODO: Test
-    def dilate(self):
+    def __lshift__(self,amt):
+        '''
+        Shift all times by n seconds, non-recursively
+        '''
+        return self.shift(-amt)
+    
+    # TODO: Test
+    def __rshift__(self,amt):
+        '''
+        Shift all times by n seconds, non-recursively
+        '''
+        return self.shift(amt)
+    
+    # TODO: Test
+    def dilate(self,amt,recurse = True):
         '''
         Multiply all times by factor n
         '''

@@ -15,4 +15,36 @@ class EventTests(unittest.TestCase):
         diff = np.diff([e.time for e in events])
         self.assertTrue(np.all(diff > 0))
     
+    def test_shift_forward(self):
+        e = Event(1)
+        e2 = e.shift(.5)
+        
+        self.assertFalse(e2 is e)
+        self.assertFalse(e2 == e)
+        self.assertEqual(1.5,e2.time)
+    
+    def test_shift_backward(self):
+        e = Event(1)
+        e2 = e.shift(-.5)
+        
+        self.assertFalse(e2 is e)
+        self.assertFalse(e2 == e)
+        self.assertEqual(.5,e2.time)
+    
+    def test_rshift(self):
+        e = Event(1)
+        e2 = e >> .5
+        
+        self.assertFalse(e2 is e)
+        self.assertFalse(e2 == e)
+        self.assertEqual(1.5,e2.time)
+    
+    def test_lshift(self):
+        e = Event(1)
+        e2 = e << .5
+        
+        self.assertFalse(e2 is e)
+        self.assertFalse(e2 == e)
+        self.assertEqual(.5,e2.time)
+    
     
