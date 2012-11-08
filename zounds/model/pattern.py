@@ -293,7 +293,7 @@ class DataPattern(Pattern):
 
 class Event(object):
     
-    def __init__(self,time_secs,**kwargs):
+    def __init__(self,time_secs,*args):
         '''__init__
         
         :param time_secs: The time in seconds at which the event should occur
@@ -303,10 +303,10 @@ class Event(object):
         '''
         object.__init__(self)
         self.time = time_secs
-        self.params = kwargs
+        self.transforms = args
     
     def __copy__(self):
-        return Event(self.time,**deepcopy(self.params))
+        return Event(self.time,*deepcopy(self.transforms))
     
     def __eq__(self,other):
         return self.time == other.time
@@ -327,7 +327,7 @@ class Event(object):
         return self.time >= other.time
     
     def shift(self,amt):
-        return Event(self.time + amt,**deepcopy(self.params))
+        return Event(self.time + amt,*deepcopy(self.transforms))
         
     def __lshift__(self,amt):
         return self.shift(-amt)
@@ -336,7 +336,7 @@ class Event(object):
         return self.shift(amt)
     
     def __mul__(self,amt):
-        return Event(self.time * amt,**deepcopy(self.params))
+        return Event(self.time * amt,*deepcopy(self.transforms))
     
     def __iter__(self):
         yield self
@@ -346,6 +346,15 @@ class Event(object):
     
     def fromdict(self):
         raise NotImplemented()
+    
+    def length_samples(self,pattern):
+        
+        # TODO: This should check the pattern against all transforms to decide
+        # if the transform might shorten or lengthen the pattern
+        
+        # TODO: Are there situations where the pattern must be rendered with the
+        # transform to calculate its new length?
+        return pattern.length_samples
 
 
 # TODO: Composable types with different atomic behaviors
@@ -532,7 +541,6 @@ class Zound(Pattern):
         '''
         return self.shift(amt)
     
-    # TODO: Test
     def dilate(self,amt,recurse = True):
         '''
         Multiply all times by factor n
@@ -613,7 +621,7 @@ class Zound(Pattern):
     def is_leaf(self):
         return self._is_leaf 
     
-    # TODO: Tests
+    
     # TODO: Move this into the base Pattern class
     # BUG: What if a transform changes the length of the samples?
     @property
@@ -621,25 +629,26 @@ class Zound(Pattern):
         '''
         The length of this pattern in samples, when rendered as raw audio
         '''
+        
         try:
             # this pattern has been analyzed and is in the frames database,
             # so it's trivial to find out its length in samples
             return self.env().frames_to_samples(len(self.address))
-        except AttributeError:
+        except TypeError:
+            sr = self.env().samplerate
             # this pattern hasn't yet been analyzed, so we have to calculate
             # its length in samples
             last = 0
             for k,v in self.data.iteritems():
-                # get the length of the sub-pattern in samples
-                l = self._patterns[k].length_samples
-                st = v[-1][1] * self.env().samplerate
-                total = l + st
+                pattern = self._patterns[k]
+                # get the latest end time of all the events
+                total = \
+                    max([(e.time * sr) + e.length_samples(pattern) for e in v])
                 if total > last:
                     last = total
             
             return last
     
-    # TODO: Tests
     # TODO: Move this into the base Pattern class
     @property
     def length_seconds(self):
@@ -654,7 +663,7 @@ class Zound(Pattern):
         # KLUDGE: Maybe _render should be an iterator, for very long patterns
         
         env = self.env()
-        if not self.data:
+        if self._is_leaf:
             # this is a "leaf" pattern that has already been rendered and analyzed,
             # so it can just be retrieved from the data store
             return env.synth(env.framemodel[self.address].audio)
@@ -668,12 +677,21 @@ class Zound(Pattern):
             a = p._render()
             for event in v:
                 # render each occurrence of the sub-pattern
-                time,tc = event[0],TransformChain.fromdict(event[1])
+                # TODO: Don't perform the same transformation twice!
+                time,tc = event.time,TransformChain.fromdict(event.transforms)
                 ts = int(time * env.samplerate)
+                transformed = tc(a)
                 # apply any transformations and add the result to the output
-                audio[ts : ts + len(a)] += tc(a)
+                audio[ts : ts + len(transformed)] += transformed
             
         return audio
+    
+    def play(self,time = 0):
+        '''
+        play this pattern in realtime, starting time seconds from now
+        '''
+        raise NotImplemented()
+    
     
     # TODO: Tests
     def audio_extractor(self,needs = None):
@@ -773,7 +791,7 @@ class Zound(Pattern):
         
         return self.address == other.address
     
-    # TODO: Tests
+    
     def transform(self,transform,changed = False,top = True):
         
         # TODO: Ensure that transform isn't None, and has at least one
@@ -860,6 +878,9 @@ class Zound(Pattern):
     
     # TODO: Tests
     def __getitem__(self,key):
+        '''
+        get specific patterns, or time slices
+        '''
         raise NotImplemented()
     
     
