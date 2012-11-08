@@ -141,7 +141,7 @@ class PatternTest(object):
     def test_leaf_attributes(self):
         leaf = Zound[self._pattern_id]
         self.assertFalse(leaf.all_ids)
-        self.assertFalse(leaf.data)
+        self.assertFalse(leaf.pdata)
         self.assertFalse(leaf.patterns)
         self.assertFalse(list(leaf.iter_patterns()))
     
@@ -166,7 +166,7 @@ class PatternTest(object):
         self.assertFalse(n.is_leaf)
         n.append(leaf,[Event(i) for i in range(4)])
         self.assertTrue(pid in n.all_ids)
-        self.assertEqual(4,len(n.data[pid]))
+        self.assertEqual(4,len(n.pdata[pid]))
     
     def test_empty_leaf(self):
         leaf = Zound[self._pattern_id]
@@ -246,7 +246,7 @@ class PatternTest(object):
         self.assertEqual(n,r)
         self.assertFalse(r.is_leaf)
         self.assertTrue(pid in r.all_ids)
-        self.assertEqual(4,len(n.data[pid]))
+        self.assertEqual(4,len(n.pdata[pid]))
         
         self.assertEqual(r.patterns[pid],leaf)
     
@@ -255,16 +255,16 @@ class PatternTest(object):
         b = Zound(source = 'Test')
         b.extend(leaf,[Event(i) for i in range(4)])
         
-        self.assertEqual(1,len(b.data))
+        self.assertEqual(1,len(b.pdata))
         self.assertTrue(leaf._id in b.all_ids)
-        self.assertEqual(4,len(b.data[leaf._id]))
+        self.assertEqual(4,len(b.pdata[leaf._id]))
     
     def test_extend_single_pattern_no_events(self):
         leaf = Zound[self._pattern_id]
         b = Zound(source = 'Test')
         b.extend(leaf,None)
         
-        self.assertEqual(0,len(b.data))
+        self.assertEqual(0,len(b.pdata))
         self.assertFalse(leaf._id in b.all_ids)
     
     def test_extend_multiple_patterns_one_event_each(self):
@@ -274,8 +274,8 @@ class PatternTest(object):
         b = Zound(source = 'Test')
         b.extend([leaf,l2],[Event(1),Event(2)])
         
-        self.assertEqual(2,len(b.data))
-        self.assertTrue(all([1 == len(e) for e in b.data.itervalues()]))
+        self.assertEqual(2,len(b.pdata))
+        self.assertTrue(all([1 == len(e) for e in b.pdata.itervalues()]))
     
     def test_extend_multiple_patterns_one_event(self):
         leaf = Zound[self._pattern_id]
@@ -284,8 +284,8 @@ class PatternTest(object):
         b = Zound(source = 'Test')
         b.extend([leaf,l2],Event(1))
         
-        self.assertEqual(2,len(b.data))
-        self.assertTrue(all([1 == len(e) for e in b.data.itervalues()]))
+        self.assertEqual(2,len(b.pdata))
+        self.assertTrue(all([1 == len(e) for e in b.pdata.itervalues()]))
     
     def test_extend_multiple_patterns_multiple_events_each(self):
         leaf = Zound[self._pattern_id]
@@ -297,11 +297,11 @@ class PatternTest(object):
         b.extend([leaf,l2],[e1,e2])
         
         
-        self.assertEqual(2,len(b.data))
+        self.assertEqual(2,len(b.pdata))
         self.assertTrue(leaf._id in b.all_ids)
         self.assertTrue(l2._id in b.all_ids)
-        self.assertEqual(4,len(b.data[leaf._id]))
-        self.assertEqual(2,len(b.data[l2._id]))
+        self.assertEqual(4,len(b.pdata[leaf._id]))
+        self.assertEqual(2,len(b.pdata[l2._id]))
     
     def test_multiples_patterns_multiple_events_mismatched_lengths(self):
         leaf = Zound[self._pattern_id]
@@ -339,7 +339,7 @@ class PatternTest(object):
         self.assertEqual(branch,r)
         self.assertFalse(r.is_leaf)
         self.assertTrue(leaf._id in r.all_ids)
-        self.assertEqual(4,len(r.data[leaf._id]))
+        self.assertEqual(4,len(r.pdata[leaf._id]))
         
         # retrieve the leaf. Oops!  The leaf was never stored
         lr = Zound[leaf._id]
@@ -406,10 +406,10 @@ class PatternTest(object):
         if not (source and addr and all_ids and leaf and _to_store):
             return False
         
-        for k,v in z1.data.iteritems():
+        for k,v in z1.pdata.iteritems():
             # KLUDGE: This doesn't guarantee equivalence, but it's probably
             # good enough
-            if len(z2.data[k]) != len(v):
+            if len(z2.pdata[k]) != len(v):
                 return False
         
         return True
@@ -535,8 +535,8 @@ class PatternTest(object):
         self.assertFalse(b2 is branch)
         self.assertFalse(b2 == branch)
         self.assertFalse(leaf._id in b2.all_ids)
-        self.assertEqual(4,len(b2.data))
-        self.assertTrue(all([1 == len(v) for v in b2.data.values()]))
+        self.assertEqual(4,len(b2.pdata))
+        self.assertTrue(all([1 == len(v) for v in b2.pdata.values()]))
         
     
     def test_transform_remove_events(self):
@@ -560,8 +560,8 @@ class PatternTest(object):
         self.assertFalse(b2 == b1)
         self.assertTrue(leaf._id in b2.all_ids)
         self.assertTrue(l2._id in b2.all_ids)
-        self.assertEqual(2,len(b2.data[leaf._id]))
-        self.assertEqual(2,len(b2.data[l2._id]))
+        self.assertEqual(2,len(b2.pdata[leaf._id]))
+        self.assertEqual(2,len(b2.pdata[l2._id]))
         
         
     
@@ -585,11 +585,11 @@ class PatternTest(object):
         
         self.assertFalse(b2 is b1)
         self.assertFalse(b2 == b1)
-        self.assertEqual(1,len(b2.data))
-        self.assertEqual(8,len(b2.data[leaf._id]))
+        self.assertEqual(1,len(b2.pdata))
+        self.assertEqual(8,len(b2.pdata[leaf._id]))
         
         expected = [0.5 * i for i in range(8)]
-        self.assertEqual(set(expected),set([e.time for e in b2.data[leaf._id]]))
+        self.assertEqual(set(expected),set([e.time for e in b2.pdata[leaf._id]]))
     
     def test_transform_nested_all_but_leaf(self):
         '''
@@ -617,20 +617,20 @@ class PatternTest(object):
         # check that things are as expected at the top level
         self.assertFalse(b3 is b2)
         self.assertFalse(b3 == b2)
-        self.assertEqual(1,len(b3.data))
+        self.assertEqual(1,len(b3.pdata))
         self.assertEqual(2,len(b3.all_ids))
         self.assertTrue(leaf._id in b3.all_ids)
         self.assertFalse(b1._id in b3.all_ids)
         
-        n1_id = b3.data.keys()[0]
+        n1_id = b3.pdata.keys()[0]
         expected = set([i + .1 for i in range(0,16,4)])
-        actual = set([e.time for e in b3.data[n1_id]])
+        actual = set([e.time for e in b3.pdata[n1_id]])
         self.assertEqual(expected,actual)
         
         n1 = b3.patterns[n1_id]
         self.assertFalse(n1 is b1)
         self.assertFalse(n1 == b1)
-        self.assertEqual(1,len(n1.data))
+        self.assertEqual(1,len(n1.pdata))
         self.assertEqual(1,len(n1.all_ids))
         self.assertTrue(leaf._id in n1.all_ids)
     
@@ -679,23 +679,23 @@ class PatternTest(object):
         # check that things are as expected at the top level
         self.assertFalse(b3 is b2)
         self.assertFalse(b3 == b2)
-        self.assertEqual(1,len(b3.data))
+        self.assertEqual(1,len(b3.pdata))
         self.assertEqual(2,len(b3.all_ids))
         self.assertFalse(leaf._id in b3.all_ids)
         self.assertFalse(b1._id in b3.all_ids)
-        n1_id = b3.data.keys()[0]
+        n1_id = b3.pdata.keys()[0]
         expected = set([i + .1 for i in range(0,16,4)])
-        actual = set([e.time for e in b3.data[n1_id]])
+        actual = set([e.time for e in b3.pdata[n1_id]])
         self.assertEqual(expected,actual)
         
         n1 = b3.patterns[n1_id]
         self.assertFalse(n1 is b1)
         self.assertFalse(n1 == b1)
-        self.assertEqual(1,len(n1.data))
+        self.assertEqual(1,len(n1.pdata))
         self.assertEqual(1,len(n1.all_ids))
         self.assertFalse(leaf._id in n1.all_ids)
         
-        n2_id = n1.data.keys()[0]
+        n2_id = n1.pdata.keys()[0]
         n2 = n1.patterns[n2_id]
         self.assertFalse(n2 is leaf)
         self.assertFalse(n2 == leaf)
@@ -727,27 +727,27 @@ class PatternTest(object):
         
         self.assertFalse(r2 is root)
         self.assertFalse(r2 == root)
-        self.assertTrue(2,len(r2.data))
+        self.assertTrue(2,len(r2.pdata))
         self.assertTrue(3,len(r2.all_ids))
         
-        keys = r2.data.keys()
+        keys = r2.pdata.keys()
         self.assertFalse(p1._id in keys)
         self.assertFalse(p2._id in keys)
         
-        self.assertTrue(all(2 == len(v) for v in r2.data.values()))
+        self.assertTrue(all(2 == len(v) for v in r2.pdata.values()))
         patterns = [r2.patterns[k] for k in keys]
         self.assertFalse(p1 in patterns)
         self.assertFalse(p2 in patterns)
         
-        self.assertTrue(all([1 == len(p.data) for p in patterns]))
+        self.assertTrue(all([1 == len(p.pdata) for p in patterns]))
         
         expected = [2,4]
-        events = patterns[0].data[leaf._id]
+        events = patterns[0].pdata[leaf._id]
         self.assertTrue(len(events) in expected)
         
         expected.remove(len(events))
         
-        events = patterns[1].data[leaf._id]
+        events = patterns[1].pdata[leaf._id]
         self.assertTrue(len(events) in expected)
     
     def test_transform_drill_down_change_branch(self):
@@ -783,16 +783,16 @@ class PatternTest(object):
         self.assertTrue(l1._id in r2.all_ids)
         self.assertTrue(l2._id in r2.all_ids)
         
-        self.assertEqual(2,len(r2.data))
-        self.assertEqual(1,len(r2.data[p1._id]))
-        self.assertEqual(4,len(r2.patterns[p1._id].data[l1._id]))
+        self.assertEqual(2,len(r2.pdata))
+        self.assertEqual(1,len(r2.pdata[p1._id]))
+        self.assertEqual(4,len(r2.patterns[p1._id].pdata[l1._id]))
         
-        keys = r2.data.keys()
+        keys = r2.pdata.keys()
         keys.remove(p1._id)
         k = keys[0]
         
-        self.assertEqual(1,len(r2.data[k]))
-        self.assertEqual(3,len(r2.patterns[k].data[l2._id]))
+        self.assertEqual(1,len(r2.pdata[k]))
+        self.assertEqual(3,len(r2.patterns[k].pdata[l2._id]))
         
     
     def test_transform_drill_down_change_leaf(self):
@@ -833,30 +833,30 @@ class PatternTest(object):
         
         # this branch didn't change
         self.assertTrue(l1._id in r2.patterns)
-        self.assertTrue(p1._id in r2.data)
+        self.assertTrue(p1._id in r2.pdata)
         self.assertTrue(l1._id in r2.all_ids)
         self.assertTrue(p1._id in r2.all_ids)
         # this branch did
         self.assertFalse(l2._id in r2.patterns)
-        self.assertFalse(p2._id in r2.data)
+        self.assertFalse(p2._id in r2.pdata)
         self.assertFalse(l2._id in r2.all_ids)
         self.assertFalse(p2._id in r2.all_ids)
         
-        self.assertEqual(2,len(r2.data))
+        self.assertEqual(2,len(r2.pdata))
         self.assertEqual(4,len(r2.all_ids))
-        self.assertEqual(1,len(r2.data[p1._id]))
+        self.assertEqual(1,len(r2.pdata[p1._id]))
         p = r2.patterns[p1._id]
-        self.assertEqual(1,len(p.data))
-        self.assertEqual(4,len(p.data[l1._id]))
+        self.assertEqual(1,len(p.pdata))
+        self.assertEqual(4,len(p.pdata[l1._id]))
         
         
-        keys = r2.data.keys()
+        keys = r2.pdata.keys()
         keys.remove(p1._id)
         k = keys[0]
         
         p = r2.patterns[k]
-        self.assertEqual(1,len(p.data))
-        self.assertEqual(3,len(p.data.values()[0]))
+        self.assertEqual(1,len(p.pdata))
+        self.assertEqual(3,len(p.pdata.values()[0]))
     
     ## ADD ###########################################################
     def test_add(self):
@@ -882,7 +882,7 @@ class PatternTest(object):
         self.assertFalse(p3 == r1)
         self.assertFalse(p3 == r2)
         
-        self.assertEqual(2,len(p3.data))
+        self.assertEqual(2,len(p3.pdata))
         self.assertEqual(4,len(p3.all_ids))
         self.assertTrue(l1._id in p3.all_ids)
         self.assertTrue(l2._id in p3.all_ids)
@@ -908,7 +908,7 @@ class PatternTest(object):
         
         s = sum([p1,p2,p3])
         
-        self.assertEqual(3,len(s.data))
+        self.assertEqual(3,len(s.pdata))
         self.assertEqual(3,len(s.all_ids))
         self.assertTrue(l1._id in s.all_ids)
         self.assertTrue(l2._id in s.all_ids)
@@ -932,15 +932,15 @@ class PatternTest(object):
         
         self.assertFalse(r2 is root)
         self.assertFalse(r2 == root)
-        self.assertEqual(1,len(r2.data))
+        self.assertEqual(1,len(r2.pdata))
         
         expected = range(1,17,4)
-        actual = [e.time for e in r2.data.values()[0]]
+        actual = [e.time for e in r2.pdata.values()[0]]
         self.assertEqual(expected,actual)
         
         expected = range(4)
         p = r2.patterns[p1._id]
-        actual = [e.time for e in p.data.values()[0]]
+        actual = [e.time for e in p.pdata.values()[0]]
         self.assertEqual(expected,actual)
     
     def test_shift_recursive(self):
@@ -956,15 +956,15 @@ class PatternTest(object):
         
         self.assertFalse(r2 is root)
         self.assertFalse(r2 == root)
-        self.assertEqual(1,len(r2.data))
+        self.assertEqual(1,len(r2.pdata))
         
         expected = range(1,17,4)
-        actual = [e.time for e in r2.data.values()[0]]
+        actual = [e.time for e in r2.pdata.values()[0]]
         self.assertEqual(expected,actual)
         
         expected = range(1,5)
-        p = r2.patterns[r2.data.keys()[0]]
-        actual = [e.time for e in p.data.values()[0]]
+        p = r2.patterns[r2.pdata.keys()[0]]
+        actual = [e.time for e in p.pdata.values()[0]]
         self.assertEqual(expected,actual)
     
     def test_lshift(self):
@@ -980,15 +980,15 @@ class PatternTest(object):
         
         self.assertFalse(r2 is root)
         self.assertFalse(r2 == root)
-        self.assertEqual(1,len(r2.data))
+        self.assertEqual(1,len(r2.pdata))
         
         expected = range(0,16,4)
-        actual = [e.time for e in r2.data.values()[0]]
+        actual = [e.time for e in r2.pdata.values()[0]]
         self.assertEqual(expected,actual)
         
         expected = range(1,5)
         p = r2.patterns[p1._id]
-        actual = [e.time for e in p.data.values()[0]]
+        actual = [e.time for e in p.pdata.values()[0]]
         self.assertEqual(expected,actual)
     
     def test_rshift(self):
@@ -1004,15 +1004,15 @@ class PatternTest(object):
         
         self.assertFalse(r2 is root)
         self.assertFalse(r2 == root)
-        self.assertEqual(1,len(r2.data))
+        self.assertEqual(1,len(r2.pdata))
         
         expected = range(1,17,4)
-        actual = [e.time for e in r2.data.values()[0]]
+        actual = [e.time for e in r2.pdata.values()[0]]
         self.assertEqual(expected,actual)
         
         expected = range(4)
         p = r2.patterns[p1._id]
-        actual = [e.time for e in p.data.values()[0]]
+        actual = [e.time for e in p.pdata.values()[0]]
         self.assertEqual(expected,actual)
     
     ## DILATE ##############################################
@@ -1034,16 +1034,16 @@ class PatternTest(object):
         self.assertFalse(r2 is root)
         self.assertFalse(r2 == root)
         self.assertFalse(p1._id in r2.all_ids)
-        events = r2.data.values()[0]
+        events = r2.pdata.values()[0]
         
         expected = range(0,8,2)
         actual = [e.time for e in events]
         self.assertEqual(expected,actual)
         
-        _id = r2.data.keys()[0]
+        _id = r2.pdata.keys()[0]
         p = r2.patterns[_id]
         
-        events = p.data.values()[0]
+        events = p.pdata.values()[0]
         expected = [0,.5,1,1.5]
         actual = [e.time for e in events]
         self.assertEqual(expected,actual)
@@ -1062,16 +1062,16 @@ class PatternTest(object):
         self.assertFalse(r2 is root)
         self.assertFalse(r2 == root)
         self.assertTrue(p1._id in r2.all_ids)
-        events = r2.data.values()[0]
+        events = r2.pdata.values()[0]
         
         expected = range(0,8,2)
         actual = [e.time for e in events]
         self.assertEqual(expected,actual)
         
-        _id = r2.data.keys()[0]
+        _id = r2.pdata.keys()[0]
         p = r2.patterns[_id]
         
-        events = p.data.values()[0]
+        events = p.pdata.values()[0]
         expected = range(4)
         actual = [e.time for e in events]
         self.assertEqual(expected,actual)
@@ -1128,8 +1128,25 @@ class PatternTest(object):
         
     ## AUDIO_EXTRACTOR ###################################################
     
-    def test_audio_extractor(self):
-        self.fail()
+    def test_analyze_pattern(self):
+        leaf = Zound[self._pattern_id]
+        root = Zound(source = 'Test',_id = 'root',external_id = 'eid')
+        root.append(leaf,[Event(i) for i in range(4)])
+        root.store()
+        
+        ec = FrameModel.extractor_chain(root)
+        FrameModel.controller().append(ec)
+        
+        self.assertEqual(2,len(FrameModel.list_ids()))
+        self.assertTrue('root' in FrameModel.list_ids())
+        eid = FrameModel.controller().external_id('root')
+        self.assertEqual(('Test','eid'),eid)
+        
+        frames = FrameModel['root']
+        ls = root.length_samples
+        audio = self.env.synth(frames.audio)
+        self.assert_approx_equal(ls, len(audio), self.env.windowsize)
+        
     
     ## __GETITEM__ ########################################################
     

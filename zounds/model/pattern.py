@@ -251,6 +251,7 @@ class Pattern(Model):
     def audio_extractor(self,needs = None):
         raise NotImplemented()
     
+    
     def data(self):
         return self._data
 
@@ -448,7 +449,7 @@ class CriterionTransform(BaseTransform):
 class Zound(Pattern):
     
     def __init__(self,source = None,external_id = None,_id = None, address = None,
-                 data = None,all_ids = None,is_leaf = False,stored = False):
+                 pdata = None,all_ids = None,is_leaf = False,stored = False):
         
         # source is the name of the application or user that created this pattern
         self.source = source or self.env().source
@@ -459,7 +460,7 @@ class Zound(Pattern):
         self.external_id = external_id or self._id
         Pattern.__init__(self,self._id,self.source,self.external_id)
         self.address = address
-        self.data = data or dict()
+        self.pdata = pdata or dict()
         self._sort_events()
         self.all_ids = set(all_ids or [])
         self._patterns = None
@@ -480,7 +481,7 @@ class Zound(Pattern):
                   external_id = _id,
                   _id = _id,
                   address = addr,
-                  data = deepcopy(self.data),
+                  pdata = deepcopy(self.pdata),
                   all_ids = self.all_ids.copy(),
                   is_leaf = self.is_leaf,
                   stored = False)
@@ -498,7 +499,7 @@ class Zound(Pattern):
         
         rn = self.copy()
         p = other.patterns
-        for k,v in other.data.iteritems():
+        for k,v in other.pdata.iteritems():
             rn.append(p[k],v)
         return rn
     
@@ -639,8 +640,9 @@ class Zound(Pattern):
             # this pattern hasn't yet been analyzed, so we have to calculate
             # its length in samples
             last = 0
-            for k,v in self.data.iteritems():
-                pattern = self._patterns[k]
+            patterns = self.patterns
+            for k,v in self.pdata.iteritems():
+                pattern = patterns[k]
                 # get the latest end time of all the events
                 total = \
                     max([(e.time * sr) + e.length_samples(pattern) for e in v])
@@ -657,7 +659,7 @@ class Zound(Pattern):
         '''
         return self.length_samples / self.env.samplerate
     
-    # TODO: Tests
+    
     def _render(self):
         # render the pattern as audio
         # KLUDGE: Maybe _render should be an iterator, for very long patterns
@@ -674,9 +676,10 @@ class Zound(Pattern):
         # allocate memory to hold the entire pattern
         audio = np.zeros(self.length_samples,dtype = np.float32)
         
-        for k,v in self.data.iteritems():
+        patterns = self.patterns
+        for k,v in self.pdata.iteritems():
             # render the sub-pattern
-            p = self._patterns[k]
+            p = patterns[k]
             a = p._render()
             for event in v:
                 # render each occurrence of the sub-pattern
@@ -698,7 +701,7 @@ class Zound(Pattern):
     
     # TODO: Tests
     def audio_extractor(self,needs = None):
-        e = self.env
+        e = self.env()
         return AudioFromMemory(e.samplerate,
                                e.windowsize,
                                e.stepsize,
@@ -706,7 +709,7 @@ class Zound(Pattern):
                                needs = needs)
     
     def _sort_events(self):
-        for v in self.data.itervalues():
+        for v in self.pdata.itervalues():
             v.sort()
     
     # TODO: Tests
@@ -742,7 +745,7 @@ class Zound(Pattern):
         if self.is_leaf:
             return False
         
-        return not bool(sum([len(v) for v in self.data.itervalues()]))
+        return not bool(sum([len(v) for v in self.pdata.itervalues()]))
     
     
     def append(self,pattern,events):
@@ -765,10 +768,10 @@ class Zound(Pattern):
             raise ValueError('events was empty')
         
         try:
-            l = self.data[pattern._id]
+            l = self.pdata[pattern._id]
         except KeyError:
             l = []
-            self.data[pattern._id] = l
+            self.pdata[pattern._id] = l
         
         # add events and sort them in ascending distance from "now"
         l.extend(events)
@@ -872,7 +875,7 @@ class Zound(Pattern):
     
     def iter_patterns(self):
         p = self.patterns
-        for k,e in self.data.iteritems():
+        for k,e in self.pdata.iteritems():
             yield p[k],e
     
     def __iter__(self):
@@ -900,7 +903,7 @@ class Zound(Pattern):
             d['address'] = self.address.todict()
         
         d['all_ids'] = self.all_ids
-        d['data'] = self.data
+        d['pdata'] = self.pdata
         return d
         
     
@@ -914,7 +917,7 @@ class Zound(Pattern):
         
         if d.has_key('address'):
             d['all_ids'] = None
-            d['data'] = None
+            d['pdata'] = None
             d['address'] = cls.env().address_class.fromdict(d['address'])
         else:
             d['address'] = None
