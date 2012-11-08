@@ -144,6 +144,7 @@ class WindowedAudioSynthesizer(object):
         object.__init__(self)
         self.windowsize = windowsize
         self.stepsize = stepsize
+        self._overlap = self.windowsize - self.stepsize
         
         # libvoribs 1.3.1 is causing a segmentation fault when writing samples
         # near this number (regardless of sample rate)
@@ -196,8 +197,16 @@ class WindowedAudioSynthesizer(object):
         Returns
             output - a 1D array containing the rendered audio
         '''
-        output = np.zeros(\
-                    self.windowsize + (len(frames) * self.stepsize),np.float32)
+        
+        # TODO: logic to translate frames to samples is already defined in 
+        # Environment.frames_to_samples.  It'd be better to use that method 
+        # here, but that would introduce a circular depenency, since the
+        # Environment module imports this one.  This code should be factored out
+        # to a common location.
+        nsamples = self._overlap + (len(frames) * self.stepsize)
+        
+        # allocate memory for the samples
+        output = np.zeros(nsamples,np.float32)
         
         if sndfile and 'ogg' == sndfile.file_format:
             # The caller has requested that output audio be written to an ogg

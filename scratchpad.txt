@@ -1,6 +1,11 @@
 Pattern tests
 ====================================
+finish tests
+add MongoDB controller and ensure all tests are passing
+Buffer management scheme
+"live" JACK tests
 Move tests that have nothing to do with data storage/access into the model package
+
 
 TemplateMatch tweaks
 ====================================

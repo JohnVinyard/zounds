@@ -662,6 +662,9 @@ class Zound(Pattern):
         # render the pattern as audio
         # KLUDGE: Maybe _render should be an iterator, for very long patterns
         
+        if self.empty:
+            raise Exception('Cannot render an empty pattern')
+        
         env = self.env()
         if self._is_leaf:
             # this is a "leaf" pattern that has already been rendered and analyzed,
