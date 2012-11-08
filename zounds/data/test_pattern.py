@@ -387,18 +387,6 @@ class PatternTest(object):
         l2 = Zound[leaf._id]
         self.assertFalse(l2 is leaf)
         self.assertEqual(l2,leaf)
-    
-    def test_length_samples(self):
-        self.fail()
-    
-    def test_length_seconds(self):
-        self.fail()
-    
-    def test_length_samples_nested(self):
-        self.fail()
-    
-    def test_length_seconds_nested(self):
-        self.fail()
         
     def test_append_nested(self):
         self.fail()
@@ -1086,7 +1074,39 @@ class PatternTest(object):
         expected = range(4)
         actual = [e.time for e in events]
         self.assertEqual(expected,actual)
+    
+    ## LENGTH_SAMPLES ##################################################
+    def assert_approx_equal(self,a,b,tolerance = 1):
+        self.assertTrue(abs(a-b) <= tolerance)
         
+    def expected_samples(self,seconds):
+        frames = self.env.seconds_to_frames(seconds)
+        return self.env.frames_to_samples(frames)
+    
+    def test_length_samples_leaf(self):
+        leaf = self.make_leaf_pattern(3, 'fid', store = False)
+        self.assertEqual(self.expected_samples(3),leaf.length_samples)
+    
+    
+    def test_length_samples_nested(self):
+        leaf = self.make_leaf_pattern(3, 'fid', store = False)
+        root = Zound(source = 'Test',_id = 'root')
+        root.append(leaf,[Event(i) for i in range(4)])
+        # the last event starts at 3 seconds, and lasts three seconds
+        self.assert_approx_equal(self.expected_samples(3 + 3),
+                                 root.length_samples,
+                                 tolerance = AudioConfig.windowsize)
+    
+    ## RENDER ############################################################
+    
+    def test_render_empty(self):
+        self.fail()
+    
+    def test_render_leaf(self):
+        self.fail() 
+    
+    def test_render_nested(self):
+        self.fail()   
     
     
 class InMemoryTest(unittest.TestCase,PatternTest):
