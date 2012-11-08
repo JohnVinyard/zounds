@@ -1,5 +1,6 @@
 import unittest
 from random import randint
+import numpy as np
 
 from zounds.environment import Environment
 from zounds.testhelper import make_sndfile,remove,filename
@@ -575,7 +576,7 @@ class PatternTest(object):
         def double(pattern,events):
             ne = []
             for e in events:
-                ne.extend([e,Event(e.time + .5,**e.params)])
+                ne.extend([e,e >> .5])
             return pattern,ne
         
         t = IndiscriminateTransform(double)
@@ -607,7 +608,7 @@ class PatternTest(object):
             if not events:
                 return pattern,events
             
-            return pattern,[Event(e.time + .1,**e.params) for e in events]
+            return pattern,[e >> .1 for e in events]
         
         t = RecursiveTransform(transform)
         
@@ -669,7 +670,7 @@ class PatternTest(object):
                 return pattern,events
             
             # this is a branch pattern
-            return pattern,[Event(e.time + .1,**e.params) for e in events]
+            return pattern,[e >> .1 for e in events]
         
         t = RecursiveTransform(transform)
         
@@ -718,7 +719,7 @@ class PatternTest(object):
             if not events:
                 return pattern,events
             
-            return pattern,[Event(e.time + .1,**e.params) for e in events]
+            return pattern,[e >> .1 for e in events]
         
         t = RecursiveTransform(transform)
         
@@ -768,7 +769,7 @@ class PatternTest(object):
         root.append(p2,[Event(1)])
         
         def alter(pattern,events):
-            return pattern,[Event(e.time + 1) for e in events]
+            return pattern,[e >> 1 for e in events]
         
         t = RecursiveTransform(alter,predicate = lambda p,e : p._id == p2._id)
         
@@ -1076,6 +1077,7 @@ class PatternTest(object):
         self.assertEqual(expected,actual)
     
     ## LENGTH_SAMPLES ##################################################
+    
     def assert_approx_equal(self,a,b,tolerance = 1):
         self.assertTrue(abs(a-b) <= tolerance)
         
@@ -1100,13 +1102,42 @@ class PatternTest(object):
     ## RENDER ############################################################
     
     def test_render_empty(self):
-        self.fail()
+        p = Zound(source = 'Test')
+        self.assertRaises(Exception, lambda : p._render())
     
     def test_render_leaf(self):
-        self.fail() 
+        leaf = self.make_leaf_pattern(2, 'fid', store = False)
+        audio = leaf._render()
+        
+        es = self.expected_samples(2)
+        self.assertEqual(es,audio.size)
+        # this is a smoke test to make sure something was written
+        self.assertTrue(np.abs(audio).sum() > 0)
     
     def test_render_nested(self):
-        self.fail()   
+        leaf = self.make_leaf_pattern(2, 'fid', store = False)
+        root = Zound(source = 'Test',_id = 'root')
+        root.append(leaf,[Event(i) for i in range(4)])
+        audio = root._render()
+        # the last event starts at 3 seconds, and lasts two seconds
+        self.assert_approx_equal(self.expected_samples(3 + 2),
+                                 len(audio),
+                                 tolerance = AudioConfig.windowsize)
+        # this is a smoke test to make sure something was written
+        self.assertTrue(np.abs(audio).sum() > 0)
+        
+    ## AUDIO_EXTRACTOR ###################################################
+    
+    def test_audio_extractor(self):
+        self.fail()
+    
+    ## __GETITEM__ ########################################################
+    
+    def test_get_item_pattern(self):
+        self.fail()
+    
+    def test_get_item_time_slice(self):
+        self.fail()
     
     
 class InMemoryTest(unittest.TestCase,PatternTest):
