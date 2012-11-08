@@ -47,4 +47,12 @@ class EventTests(unittest.TestCase):
         self.assertFalse(e2 == e)
         self.assertEqual(.5,e2.time)
     
+    def test_multiply(self):
+        e = Event(10)
+        e2 = e * 5
+        
+        self.assertFalse(e2 is e)
+        self.assertFalse(e2 == e)
+        self.assertEqual(50,e2.time)
+    
     

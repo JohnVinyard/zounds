@@ -335,6 +335,9 @@ class Event(object):
     def __rshift__(self,amt):
         return self.shift(amt)
     
+    def __mul__(self,amt):
+        return Event(self.time * amt,**deepcopy(self.params))
+    
     def __iter__(self):
         yield self
     
@@ -517,14 +520,12 @@ class Zound(Pattern):
         t = RecursiveTransform(s) if recurse else IndiscriminateTransform(s)
         return self.transform(t)
     
-    # TODO: Test
     def __lshift__(self,amt):
         '''
         Shift all times by n seconds, non-recursively
         '''
         return self.shift(-amt)
     
-    # TODO: Test
     def __rshift__(self,amt):
         '''
         Shift all times by n seconds, non-recursively
@@ -536,7 +537,17 @@ class Zound(Pattern):
         '''
         Multiply all times by factor n
         '''
-        raise NotImplemented()
+        if self.is_leaf:
+            raise Exception('cannot call dilate() on a leaf pattern')
+        
+        def s(pattern,events):
+            if None is events:
+                return pattern,events
+            
+            return pattern,[e * amt for e in events]
+        
+        t = RecursiveTransform(s) if recurse else IndiscriminateTransform(s)
+        return self.transform(t)
     
     def __repr__(self):
         return self.__str__()

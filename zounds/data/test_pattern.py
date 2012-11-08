@@ -1025,6 +1025,67 @@ class PatternTest(object):
         p = r2.patterns[p1._id]
         actual = [e.time for e in p.data.values()[0]]
         self.assertEqual(expected,actual)
+    
+    ## DILATE ##############################################
+    def test_dilate_leaf(self):
+        leaf = Zound[self._pattern_id]
+        self.assertRaises(Exception,lambda : leaf.dilate(2))
+    
+    def test_dilate_recursive(self):
+        leaf = Zound[self._pattern_id]
+        
+        p1 = Zound(source = 'Test',_id = 'p1')
+        p1.append(leaf,[Event(i) for i in range(4)])
+        
+        root = Zound(source = 'Test',_id = 'root')
+        root.append(p1,[Event(i) for i in range(0,16,4)])
+        
+        r2 = root.dilate(.5)
+        
+        self.assertFalse(r2 is root)
+        self.assertFalse(r2 == root)
+        self.assertFalse(p1._id in r2.all_ids)
+        events = r2.data.values()[0]
+        
+        expected = range(0,8,2)
+        actual = [e.time for e in events]
+        self.assertEqual(expected,actual)
+        
+        _id = r2.data.keys()[0]
+        p = r2.patterns[_id]
+        
+        events = p.data.values()[0]
+        expected = [0,.5,1,1.5]
+        actual = [e.time for e in events]
+        self.assertEqual(expected,actual)
+        
+    def test_dilate(self):
+        leaf = Zound[self._pattern_id]
+        
+        p1 = Zound(source = 'Test',_id = 'p1')
+        p1.append(leaf,[Event(i) for i in range(4)])
+        
+        root = Zound(source = 'Test',_id = 'root')
+        root.append(p1,[Event(i) for i in range(0,16,4)])
+        
+        r2 = root.dilate(.5,recurse = False)
+        
+        self.assertFalse(r2 is root)
+        self.assertFalse(r2 == root)
+        self.assertTrue(p1._id in r2.all_ids)
+        events = r2.data.values()[0]
+        
+        expected = range(0,8,2)
+        actual = [e.time for e in events]
+        self.assertEqual(expected,actual)
+        
+        _id = r2.data.keys()[0]
+        p = r2.patterns[_id]
+        
+        events = p.data.values()[0]
+        expected = range(4)
+        actual = [e.time for e in events]
+        self.assertEqual(expected,actual)
         
     
     
