@@ -88,7 +88,7 @@ class MongoDbPatternController(PatternController):
         return self.collection.count()
     
     def _cleanup(self):
-        self.connection.drop_database(self._dbname)
+        self.db.drop_collection(self._collection_name)
         
         
 
