@@ -59,6 +59,7 @@ def setup_jack_audio():
     
 
 if install:
+    # TODO: Run the setup.sh script from here
     force_manual_numpy_scipy_install()
 
 # build up the list of packages
@@ -85,7 +86,7 @@ def read(fname):
 
 python_packages = ['bitarray','tables','cython','numexpr',
                    'nose','scikits.audiolab',
-                   'matplotlib','web.py','scipy','numpy']
+                   'matplotlib','web.py','scipy','numpy','pymongo']
 
 # argparse was introduced into the standard library in python 2.7. Instead of
 # checking the python version, just try to import it. If the import fails, add

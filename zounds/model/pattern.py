@@ -196,6 +196,8 @@ last operation Ann executes would happen like so:
 from copy import deepcopy
 from abc import ABCMeta,abstractmethod
 from itertools import izip,repeat
+from threading import Thread
+from time import sleep,time
 
 import numpy as np
 
@@ -203,6 +205,8 @@ from zounds.model.model import Model
 from zounds.analyze.feature.rawaudio import AudioFromDisk,AudioFromMemory
 from zounds.analyze.synthesize import TransformChain
 from zounds.util import tostring
+from zounds.environment import Environment
+from zounds.pattern import usecs,put
 
 class MetaPattern(type):
     
@@ -290,8 +294,86 @@ class DataPattern(Pattern):
                                self.samples,
                                needs = needs)
 
+# KLUDGE: I'm not sure where this class belongs
+# TODO: It'd probably be better to do a max size in bytes, rather than an 
+# expiration time in minutes
 
-
+class Buffers(Thread):
+    
+    def __init__(self,expire_time_minutes = 5):
+        Thread.__init__(self)
+        self.setDaemon(True)
+        self._should_run = True
+        self._buffers = dict()
+        self._expire_seconds = expire_time_minutes * 60
+        self.start()
+    
+    @property
+    def env(self):
+        return Environment.instance
+    
+    def has_key(self,key):
+        return self._buffers.has_key(key)
+    
+    def _update(self,key):
+        _,audio = self._buffers[key]
+        self._buffers[key] = (time(),audio)
+        return audio
+    
+    def __getitem__(self,key):
+        return self._update(key)
+    
+    def allocate(self,p):
+        
+        try:
+            self._update(p._id)
+            return
+        except KeyError:
+            pass
+        
+        t = time()
+        
+        try:
+            # p is a FrameModel-derived instance
+            audio = self.env.synth(p.audio)
+            self._buffers[p._id] = (t,audio)
+            return
+        except AttributeError as e:
+            print e
+            pass
+        
+        try:
+            # p is a leaf pattern, or a pattern that has been analyzed
+            fm = self.env.framemodel
+            frames = fm[p.address]
+            audio = self.env.synth(frames.audio)
+            self._buffers[p._id] = (t,audio)
+            return
+        except AttributeError as e:
+            print e
+            pass
+        
+        raise ValueError('p must be a FrameModel-derived instance or a Zound')
+    
+    def run(self):
+        while self._should_run:
+            keys = self._buffers.keys()
+            tm = time()
+            for k in keys:
+                t,_ = self._buffers[k]
+                if tm - t > self._expire_seconds:
+                    print 'expiring %s' % k
+                    del self._buffers[k]
+            
+            # check for expired buffers once a minute
+            sleep(1000 * 60)
+                
+    
+    def stop(self):
+        self._should_run = False
+    
+BUFFERS = Buffers()
+    
 class Event(object):
     
     def __init__(self,time_secs,*args):
@@ -356,8 +438,6 @@ class Event(object):
     @staticmethod
     def decode_custom(doc):
         return Event(doc['time'])
-    
-    
     
     def length_samples(self,pattern):
         
@@ -455,7 +535,6 @@ class CriterionTransform(BaseTransform):
         raise KeyError()        
         
         
-    
 # TODO: Add created date
 class Zound(Pattern):
     
@@ -703,12 +782,60 @@ class Zound(Pattern):
             
         return audio
     
+    # TODO: Test
+    def _leaves_absolute(self,d = None,patterns = None,offset = 0):
+        '''
+        Get a dictionary mapping leaf patterns to events with *absolute* times
+        '''
+        if self.is_leaf:
+            return {self._id : [Event(offset)]}
+        
+        if not d:
+            d = dict()
+        
+        if not patterns:
+            patterns = self.patterns
+        
+        # BLEGH!! This is ugly!
+        for k,v in self.pdata.iteritems():
+            p = patterns[k]
+            for e in v:
+                l = p._leaves_absolute(\
+                        d = d, patterns = patterns,offset = offset + e.time)
+                for _id,events in l.iteritems():
+                    try:
+                        d[_id].extend(events)
+                    except KeyError:
+                        d[_id] = events
+            
+        return d
+    
     def play(self,time = 0):
         '''
         play this pattern in realtime, starting time seconds from now
         '''
-        raise NotImplemented()
-    
+        # get all leaf patterns with *Absolute* times
+        leaves = self._leaves_absolute()
+        print len(leaves)
+        patterns = self.patterns
+        # allocate buffers for them
+        if self.is_leaf:
+            BUFFERS.allocate(self)
+        else:
+            for k in leaves.iterkeys():
+                BUFFERS.allocate(patterns[k])
+        
+        # schedule them
+        now = usecs()
+        # TODO: Stress test/profile the play method and find out what an 
+        # acceptable latency value is
+        latency = .25 * 1e6
+        for k,v in leaves.iteritems():
+            audio = BUFFERS[k]
+            la = len(audio)
+            for e in v:
+                put(audio,0,la,now + latency + (e.time * 1e6))
+        
     
     # TODO: Tests
     def audio_extractor(self,needs = None):

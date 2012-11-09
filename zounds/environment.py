@@ -290,6 +290,9 @@ class Environment(object):
         ec = self.extractor_chain(pattern)
         self.framecontroller.append(ec)
     
+    def start_audio_engine(self):
+        self.synth._start_audio_engine()
+    
     # KLUDGE: This is specific to PyTables, i.e., there are lots of problems
     # with concurrent reads.  This should be handled some other way.
     def unique_controller(self):
