@@ -2,9 +2,11 @@ Pattern tests
 ====================================
 finish tests
 add MongoDB controller and ensure all tests are passing
+add pymongo to setup.py
 Buffer management scheme
 Implement Zound.play() method
 "live" JACK tests
+How do I update FrameSearch indexes continually?
 Move tests that have nothing to do with data storage/access into the model package
 
 
