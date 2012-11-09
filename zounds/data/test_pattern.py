@@ -1175,7 +1175,7 @@ class InMemoryTest(unittest.TestCase,PatternTest):
 class MongoDbTest(unittest.TestCase,PatternTest):
     
     def setUp(self):
-        self._pattern_controller = MongoDbPatternController()
+        self._pattern_controller = MongoDbPatternController(dbname = 'zounds_test')
         try:
             self.set_up()
         except Exception as e:
