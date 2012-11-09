@@ -6,12 +6,10 @@ latency = 0.25 * 1e6
 interval = 1. * 1e6
 
 def schedule(buf,ss,sts,times):
-
     now = usecs()
     times = times.astype(np.float32)
     times.sort()
     times = (times * 1e6) + latency + now
-
 
     cutoff = now + interval + latency
     index = times.searchsorted(cutoff)
@@ -33,7 +31,6 @@ def schedule(buf,ss,sts,times):
         if not times.size:
             break
     
- 
 if __name__ == '__main__':
     
     a = np.random.random_sample(256)

@@ -5,7 +5,7 @@ from threading import Thread
 from time import sleep
 
 
-# KLUDGE: All these transforms should be written in C, so they can be used with
+# KLUDGE: All these transforms should be written in C/C++, so they can be used with
 # the realtime JACK player as well
 class Transform(object):
     '''

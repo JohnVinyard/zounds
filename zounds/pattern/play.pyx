@@ -21,12 +21,18 @@ def stop():
     teardown()
 
 def usecs():
+    '''
+    Get the current time in microseconds, according to JACK
+    '''
     return get_time();
 
 def put(np.ndarray[FLOAT_DTYPE_t,ndim = 1] n,int starts, int stops,UINT64_DTYPE_t time):
     put_event(<float*>n.data,starts,stops,time,0)
 
 def cancel_all():
+    '''
+    Cancel all pending events
+    '''
     cancel_all_events()
     
     

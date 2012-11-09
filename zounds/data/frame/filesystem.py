@@ -410,7 +410,9 @@ class FileSystemFrameController(FrameController):
         '''
         def __init__(self,key):
             zounds.model.frame.Address.__init__(self,key)
-            self._id,self._index = self.key
+            self._id = str(self.key[0])
+            self._index = self.key[1]
+            
             try:
                 # try to treat index as an iterable of ints
                 self._len = len(self._index)
@@ -523,6 +525,7 @@ class FileSystemFrameController(FrameController):
             return self._id == other._id
         
         def __hash__(self):
+            # BUG: What about arbitrary lists of frame numbers?
             return hash((self._id,self._len,self.min,self.max))
         
         def __ne__(self,other):
