@@ -457,7 +457,7 @@ class FileSystemFrameController(FrameController):
             return d 
         
         @classmethod
-        def fromdict(cls,d):
+        def fromdict(cls,d):    
             idx = d['_index']
             _id = d['_id']
             
@@ -466,7 +466,7 @@ class FileSystemFrameController(FrameController):
             except TypeError:
                 pass
             
-            if isinstance(idx,tuple): 
+            if hasattr(idx,'__iter__'): 
                 return cls((_id,slice(*idx)))
             
             raise ValueError(\

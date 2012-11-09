@@ -10,7 +10,7 @@ from zounds.analyze.feature.spectral import FFT,BarkBands
 
 from zounds.data.frame.filesystem import FileSystemFrameController
 
-from zounds.data.pattern import InMemory
+from zounds.data.pattern import InMemory,MongoDbPatternController
 from zounds.model.pattern import \
     Zound,Event,BaseTransform,ExplicitTransform, \
     CriterionTransform,IndiscriminateTransform, \
@@ -1156,7 +1156,7 @@ class PatternTest(object):
     def test_get_item_time_slice(self):
         self.fail()
     
-    
+   
 class InMemoryTest(unittest.TestCase,PatternTest):
     
     def setUp(self):
@@ -1171,4 +1171,19 @@ class InMemoryTest(unittest.TestCase,PatternTest):
     def tearDown(self):
         self.tear_down()
 
+
+class MongoDbTest(unittest.TestCase,PatternTest):
     
+    def setUp(self):
+        self._pattern_controller = MongoDbPatternController()
+        try:
+            self.set_up()
+        except Exception as e:
+            # KLUDGE: This is a stop-gap solution for when set_up fails.  Get
+            # rid of this.
+            print 'SETUP FAILED'
+            print e
+    
+    def tearDown(self):
+        self._pattern_controller._cleanup()
+        self.tear_down()

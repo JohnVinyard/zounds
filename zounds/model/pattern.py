@@ -343,10 +343,21 @@ class Event(object):
         yield self
     
     def todict(self):
-        raise NotImplemented()
+        return Event.encode_custom(self)
     
-    def fromdict(self):
-        raise NotImplemented()
+    @classmethod
+    def fromdict(cls,d):
+        return Event.decode_custom(d) 
+    
+    @staticmethod
+    def encode_custom(event):
+        return {'time' : event.time}
+    
+    @staticmethod
+    def decode_custom(doc):
+        return Event(doc['time'])
+    
+    
     
     def length_samples(self,pattern):
         
@@ -717,8 +728,11 @@ class Zound(Pattern):
     def patterns(self):
         
         if None is self._patterns:
+            
             # fetch all the ids that are stored at once
-            plist = self.__class__[self.all_ids - set((p._id for p in self._to_store))]
+            plist = self.__class__\
+                [self.all_ids - set((p._id for p in self._to_store))]
+            
             # add unstored patterns
             plist.extend(self._to_store)
             # create a dictionary mapping pattern id -> pattern
@@ -887,7 +901,25 @@ class Zound(Pattern):
         '''
         get specific patterns, or time slices
         '''
-        raise NotImplemented()
+        exc_msg = 'key must be a string or a slice'
+        if not key:
+            raise ValueError(exc_msg)
+        
+        try:
+            # treat key as a pattern key
+            return self.patterns[key]
+        except KeyError:
+            pass
+        
+        try:
+            # treat key as a slice of time with start and stop seconds defined
+            # start and stop must both be positive
+            # TODO: What happens if the slice bisects a pattern?  Should events
+            # be flattened first, or does preserving the hierachical structure
+            # make sense?
+            pass
+        except AttributeError:
+            raise ValueError(exc_msg)
     
     
     def todict(self):
@@ -902,10 +934,14 @@ class Zound(Pattern):
         if self.address:
             d['address'] = self.address.todict()
         
-        d['all_ids'] = self.all_ids
-        d['pdata'] = self.pdata
-        return d
+        d['all_ids'] = list(self.all_ids)
+        #d['pdata'] = dict()
         
+        pdata = dict()
+        for k,v in self.pdata.iteritems():
+            pdata[k] = [e.todict() for e in v]
+        d['pdata'] = pdata
+        return d
     
     @classmethod
     def fromdict(cls,d,stored = False):

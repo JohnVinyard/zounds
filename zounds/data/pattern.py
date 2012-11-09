@@ -1,7 +1,9 @@
 from abc import ABCMeta,abstractmethod
+
+from pymongo import Connection
+
 from controller import Controller
  
-
 
 class PatternController(Controller):
     
@@ -21,7 +23,6 @@ class PatternController(Controller):
     @abstractmethod
     def __len__(self):
         raise NotImplemented()
-    
     
     
 class InMemory(PatternController):
@@ -44,6 +45,50 @@ class InMemory(PatternController):
     
     def __len__(self):
         return self._store.__len__()
+
+
+
+class MongoDbPatternController(PatternController):
+    
+    def __init__(self,host = 'localhost',port = None,
+                 dbname = 'zounds',collection_name = 'patterns'):
+        
+        self.connection = Connection(*filter(lambda arg : arg,[host,port]))
+        self.db = self.connection[dbname]
+        self.collection = self.db[collection_name]
+        self._dbname = dbname
+        self._collection_name = collection_name
+        # TODO: Which values should have MongoDb indexes ?
+    
+    def __getitem__(self,_id):
+        if isinstance(_id,(str,unicode)):
+            d = self.collection.find_one(_id)
+            if None is d:
+                raise KeyError(_id)
+            return d
+        
+        if hasattr(_id,'__iter__'):
+            # TODO: Is there a better way to fetch multiple documents by id?
+            # _id is probably a set, so turn it into a list
+            d = list(self.collection.find({'_id' : {'$in' : list(_id)}}))
+            
+            if len(d) != len(_id):
+                # some of the ids were missing
+                raise KeyError(_id)
+            
+            return d
+
+        
+        raise ValueError('_id must be a single _id or a list of them')
+    
+    def store(self,pattern):
+        self.collection.save(pattern)
+    
+    def __len__(self):
+        return self.collection.count()
+    
+    def _cleanup(self):
+        self.connection.drop_database(self._dbname)
         
         
 
