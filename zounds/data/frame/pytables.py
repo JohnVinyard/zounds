@@ -427,6 +427,9 @@ class PyTablesFrameController(FrameController):
         rowns = self.db_read.getWhereList(self._query(_id = _id))
         return PyTablesFrameController.Address(slice(rowns[0],rowns[-1] + 1))
     
+    def pattern_length(self,_id):
+        return len(self.db_read.getWhereList(self._query(_id = _id)))
+    
     def list_ids(self):
         l = self.db_read.readWhere(self._query(framen = 0))['_id']
         s = set(l)

@@ -1007,6 +1007,9 @@ class FileSystemFrameController(FrameController):
     def address(self,_id):
         return self.address_class((_id,slice(0,self._lengths[_id])))
     
+    def pattern_length(self,_id):
+        return self._lengths[_id]
+    
     def get(self,key):
         _id = None
         if isinstance(key,str):

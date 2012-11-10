@@ -1,18 +1,25 @@
-Pattern tests
+Musical Pattern game
 ====================================
-finish tests
-DONE add MongoDB controller and ensure all tests are passing
-DONE add pymongo dependency to setup.py
-DONE Buffer management scheme
-DONE Implement Zound.play() method
-DONE How do I exit from a thread gracefully?
-"live" JACK tests
-	- DONE Why doesn't Zound.play() work for multiple levels of nesting?
-	- Bug: Adding snare and kick patterns and trying to play() them results in a KeyError
-	- __add__ should be __and__
-	- tryout render method too
-
+finish failing Pattern tests
 How do I update FrameSearch indexes continually?
+	- works for all currently existing frame searches
+	- Should work for a web app and a local session
+		- webapp - as soon as new audio is analyzed, it should be added to the index
+		- local - 
+	- index building can be time-consuming, so it isn't acceptable to fully rebuild
+	  indexes when new patterns become available
+
+Since leaf patterns aren't re-analyzed and inserted into the frames database, they
+get no special treatment, i.e., leaf patterns aren't really searchable!!!
+
+Zound-derived MusicPattern class
+Coffeescript implementation of MusicPattern code
+DONE How do I queue and analyze incoming patterns?
+YIN implementation
+Chroma implementation
+Stupid onset detection
+Stupid BPM estimation
+Pattern construction is cumbersome
 Simple transformations : Time stretch, pitch shift, reverb, high and lowpass filters
 Move tests that have nothing to do with data storage/access into the model package
 
@@ -60,18 +67,11 @@ Why does VQ coding work so poorly?
 How can upsampling be performed without aliasing?
 How does the human brain represent noise?
 
-
-Music
-=================================
-
 TODO:
 ===========
 TimeSeries class
 Transforms (make sure that transforms are an ordered list, and not a dictionary!)
-Pattern tests
-Heuristic for deciding when a Pattern must be rendered, analyzed, and stored in the
-frames database
-Handle mp3 files
+Handle mp3 files using the FFMpeg library
 
 
 upload or record query sounds
