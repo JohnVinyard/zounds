@@ -1206,6 +1206,22 @@ class PatternTest(object):
         events = la[leaf._id]
         self.assertEqual(16,len(events))
     
+    def test_leaves_absolute_all_unstored(self):
+        l1 = self.make_leaf_pattern(1,'l1',store = False)
+        l2 = self.make_leaf_pattern(2,'l2',store = False)
+        b1 = Zound(source = 'Test',_id = 'b1')
+        b1.append(l1,[Event(i) for i in range(4)])
+        b2 = Zound(source = 'Test',_id = 'b2')
+        b2.append(l2,[Event(i) for i in range(4)])
+        
+        combined = b1 + b2
+        la = combined._leaves_absolute()
+        self.assertEqual(2,len(la))
+        self.assertTrue(l1._id in la)
+        self.assertTrue(l2._id in la)
+        self.assertEqual(4,len(la[l1._id]))
+        self.assertEqual(4,len(la[l2._id]))
+    
    
 class InMemoryTest(unittest.TestCase,PatternTest):
     

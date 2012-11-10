@@ -5,11 +5,15 @@ DONE add MongoDB controller and ensure all tests are passing
 DONE add pymongo dependency to setup.py
 DONE Buffer management scheme
 DONE Implement Zound.play() method
-How do I exit from a thread gracefully?
+DONE How do I exit from a thread gracefully?
 "live" JACK tests
-	- Why doesn't Zound.play() work for multiple levels of nesting?
+	- DONE Why doesn't Zound.play() work for multiple levels of nesting?
+	- Bug: Adding snare and kick patterns and trying to play() them results in a KeyError
 	- __add__ should be __and__
+	- tryout render method too
+
 How do I update FrameSearch indexes continually?
+Simple transformations : Time stretch, pitch shift, reverb, high and lowpass filters
 Move tests that have nothing to do with data storage/access into the model package
 
 

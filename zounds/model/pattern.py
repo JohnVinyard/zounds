@@ -583,8 +583,15 @@ class Zound(Pattern):
                   stored = False)
         
         z._to_store = self._to_store.copy()
+        if self._patterns:
+            z._patterns = self._patterns.copy()
         return z
     
+    def __and__(self,other):
+        '''
+        Overlay two patterns
+        '''
+        raise NotImplemented()
     
     def __add__(self,other):
         '''
@@ -596,6 +603,8 @@ class Zound(Pattern):
         rn = self.copy()
         p = other.patterns
         for k,v in other.pdata.iteritems():
+            # BUG: What if other contains a pattern that this pattern contains?
+            # The events in self will be overwritten by the events in other.
             rn.append(p[k],v)
         return rn
     
@@ -608,7 +617,6 @@ class Zound(Pattern):
         
         return self + other
     
-    # TODO: Test
     def shift(self,amt,recurse = False):
         '''
         Shift events in time by amt.  By default, only top-level patterns are
@@ -811,7 +819,10 @@ class Zound(Pattern):
             for e in v:
                 l = p._leaves_absolute(\
                         d = d, patterns = patterns,offset = offset + e.time)
-                print k,e.time,l
+                
+                if not p.is_leaf:
+                    continue
+                
                 for _id,events in l.iteritems():
                     try:
                         d[_id].extend(events)
