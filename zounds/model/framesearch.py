@@ -165,6 +165,12 @@ class FrameSearch(Model):
         '''
         pass
     
+    def _add_id(self,_id):
+        '''
+        Add _id to the index
+        '''
+        raise NotImplemented()
+    
     def build_index(self):
         '''
         Build data structures need for this search and persist them for future
@@ -399,6 +405,12 @@ class ExhaustiveSearch(FrameSearch):
         return self._search_single_process(frames, nresults)
         
     
+    def _add_id(self,_id):
+        '''
+        This search has no in-memory index, so this method is a no-op
+        '''
+        pass
+    
     def _build_index(self):
         if self._normalize:
             self._std = self.feature.std()
@@ -592,7 +604,6 @@ class ExhaustiveLshSearch(FrameSearch):
     def __str__(self):
         return tostring(self,id = self._id,feature = self.feature,
                         step = self.step,nbits= self.nbits)
-        
     
     @property
     def feature(self):
@@ -604,10 +615,65 @@ class ExhaustiveLshSearch(FrameSearch):
         except IndexError:
             return frame[feature]
     
+    # TODO: There's a ton of duplicated logic in self._build_index. Factor some
+    # of it out.
+    def _add_index(self,_id):
+        # allocate enough memory for an index over just this _id
+        # iterate over the frames, populating the single id index
+        # concatenate the single _id index with the existing one
+        # swap out the indexes
+        env = self.env()
+        fc = env.framecontroller
+        l = np.ceil(fc.pattern_length(_id) / self.step)
+        new_index = np.ndarray(l,self._hashdtype)
+        if self._fine_feature:
+            # KLUDGE: This is duplicated exactly in _build_index()
+            dim = fc.get_dim(self._fine_feature)
+            self._packer = Packer(dim[0])
+            new_fine_index = self._packer.allocate(l)
+        
+        new_addrs = np.ndarray(l,object)
+        chunksize = env.chunksize_frames
+        index = 0
+        
+        for address,frame in fc.iter_id(_id,chunksize,step = self.step):
+            fv = self._feature_value(frame, self.feature)
+            if fv not in self._filter:
+                new_addrs[index] = (_id,address)
+                new_index[index] = fv
+                
+                if self._fine_feature:
+                    # add the fine feature value to the fine feature index
+                    ffv = self._feature_value(frame, self._fine_feature)
+                    if not ffv.shape:
+                        new_fine_index[index] = 0
+                    else:
+                        new_fine_index[index] = self._packer(ffv[np.newaxis,...])
+                print new_index[index]
+                index += 1
+        
+        
+        # lop off any unused indices
+        if self._fine_feature:
+            new_fine_index = new_fine_index[:index + 1]
+            self._fine_index = np.concatenate(self._fine_index,new_fine_index)
+        
+        new_addrs = new_addrs[:index + 1]
+        self._addrs = np.concatenate(self._addrs,new_addrs)
+        
+        # update the main index last, as this is the first index consulted by
+        # calls to _search.  This should mostly avoid problems caused by
+        # searches using out-of-sync indices.
+        new_index = new_index[:index + 1]
+        self._index = np.concatenate(self._index,new_index)
+        
+    
     def _build_index(self):
         env = self.env()
         fc = env.framecontroller
         l = int(len(fc) / self.step)
+        
+        # get the id for every frame instance
         nids = len(fc.list_ids())
         # An index that will hold the primary binary feature
         self._index = np.ndarray(l+nids,self._hashdtype)
@@ -707,6 +773,7 @@ class ExhaustiveLshSearch(FrameSearch):
 
 class LshSearch(FrameSearch):
     # TODO: Replace this with the TypeCodes class in nputil
+    # TODO: Implement the _add_index() method
     _DTYPE_MAPPING = {
                       8  : np.uint8,
                       16 : np.uint16,
@@ -755,6 +822,7 @@ class LshSearch(FrameSearch):
             ba2.extend(np.roll(ba,i))
             p[i] = struct.unpack(self._structtype,ba2.tobytes())[0]
         return p
+    
     
     def _build_index(self):
         '''

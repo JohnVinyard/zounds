@@ -30,6 +30,13 @@ class FrameController(Controller):
         '''
         pass
     
+    @abstractmethod
+    def pattern_length(self,_id):
+        '''
+        Return the length, in frames, of the pattern with _id
+        '''
+        pass
+    
     @abstractproperty
     def concurrent_reads_ok(self):
         '''

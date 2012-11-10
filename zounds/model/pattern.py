@@ -587,13 +587,8 @@ class Zound(Pattern):
             z._patterns = self._patterns.copy()
         return z
     
-    def __and__(self,other):
-        '''
-        Overlay two patterns
-        '''
-        raise NotImplemented()
     
-    def __add__(self,other):
+    def __and__(self,other):
         '''
         overlay two patterns
         '''
@@ -608,14 +603,14 @@ class Zound(Pattern):
             rn.append(p[k],v)
         return rn
     
-    def __radd__(self,other):
-        '''
-        Implemented so sum([p1,p2,...]) can be called on a list of patterns
-        '''
-        if not other:
-            return self.copy()
-        
-        return self + other
+#    def __radd__(self,other):
+#        '''
+#        Implemented so sum([p1,p2,...]) can be called on a list of patterns
+#        '''
+#        if not other:
+#            return self.copy()
+#        
+#        return self + other
     
     def shift(self,amt,recurse = False):
         '''
@@ -704,6 +699,8 @@ class Zound(Pattern):
             # addr is a backend-specific address
             return Zound(source = source,address = addr,is_leaf = True)
         
+        
+        
         try:
             # address is a Frames id
             a = e.framecontroller.address(addr)
@@ -767,6 +764,9 @@ class Zound(Pattern):
     def _render(self):
         # render the pattern as audio
         # KLUDGE: Maybe _render should be an iterator, for very long patterns
+        # TODO: rendering should happen *just like* realtime playing, i.e.,
+        # audio rendering should be handled by the audio back-end in 
+        # "free-wheeling" mode.
         
         if self.empty:
             raise Exception('Cannot render an empty pattern')

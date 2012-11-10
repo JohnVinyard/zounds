@@ -858,8 +858,8 @@ class PatternTest(object):
         self.assertEqual(1,len(p.pdata))
         self.assertEqual(3,len(p.pdata.values()[0]))
     
-    ## ADD ###########################################################
-    def test_add(self):
+    ## AND ###########################################################
+    def test_and(self):
         l1 = Zound[self._pattern_id]
         l2 = self.make_leaf_pattern(3, 'fid2', store = False)
         
@@ -875,7 +875,7 @@ class PatternTest(object):
         r2 = Zound(source = 'Test',_id = 'r2')
         r2.append(p2,[Event(i) for i in range(8)]) 
         
-        p3 = r1 + r2
+        p3 = r1 & r2
         
         self.assertFalse(p3 is r2)
         self.assertFalse(p3 is r1)
@@ -892,27 +892,27 @@ class PatternTest(object):
         
     
     ## SUM ###########################################################
-    def test_sum(self):
-        l1 = self.make_leaf_pattern(1, 'l1', store = False)
-        l2 = self.make_leaf_pattern(2, 'l2', store = False)
-        l3 = self.make_leaf_pattern(3, 'l3', store = False)
-        
-        p1 = Zound(source = 'Test', _id = 'p1')
-        p1.append(l1,[Event(i) for i in range(1)])
-        
-        p2 = Zound(source = 'Test', _id = 'p2')
-        p2.append(l2,[Event(i) for i in range(1)])
-        
-        p3 = Zound(source = 'Test', _id = 'p3')
-        p3.append(l3,[Event(i) for i in range(1)])
-        
-        s = sum([p1,p2,p3])
-        
-        self.assertEqual(3,len(s.pdata))
-        self.assertEqual(3,len(s.all_ids))
-        self.assertTrue(l1._id in s.all_ids)
-        self.assertTrue(l2._id in s.all_ids)
-        self.assertTrue(l3._id in s.all_ids)
+#    def test_sum(self):
+#        l1 = self.make_leaf_pattern(1, 'l1', store = False)
+#        l2 = self.make_leaf_pattern(2, 'l2', store = False)
+#        l3 = self.make_leaf_pattern(3, 'l3', store = False)
+#        
+#        p1 = Zound(source = 'Test', _id = 'p1')
+#        p1.append(l1,[Event(i) for i in range(1)])
+#        
+#        p2 = Zound(source = 'Test', _id = 'p2')
+#        p2.append(l2,[Event(i) for i in range(1)])
+#        
+#        p3 = Zound(source = 'Test', _id = 'p3')
+#        p3.append(l3,[Event(i) for i in range(1)])
+#        
+#        s = sum([p1,p2,p3])
+#        
+#        self.assertEqual(3,len(s.pdata))
+#        self.assertEqual(3,len(s.all_ids))
+#        self.assertTrue(l1._id in s.all_ids)
+#        self.assertTrue(l2._id in s.all_ids)
+#        self.assertTrue(l3._id in s.all_ids)
     
     ## SHIFT #########################################################
     def test_shift_leaf(self):
@@ -1214,7 +1214,7 @@ class PatternTest(object):
         b2 = Zound(source = 'Test',_id = 'b2')
         b2.append(l2,[Event(i) for i in range(4)])
         
-        combined = b1 + b2
+        combined = b1 & b2
         la = combined._leaves_absolute()
         self.assertEqual(2,len(la))
         self.assertTrue(l1._id in la)
