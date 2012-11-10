@@ -700,7 +700,6 @@ class Zound(Pattern):
             return Zound(source = source,address = addr,is_leaf = True)
         
         
-        
         try:
             # address is a Frames id
             a = e.framecontroller.address(addr)
@@ -1083,7 +1082,6 @@ class Zound(Pattern):
             d['address'] = self.address.todict()
         
         d['all_ids'] = list(self.all_ids)
-        #d['pdata'] = dict()
         
         pdata = dict()
         for k,v in self.pdata.iteritems():
@@ -1126,3 +1124,105 @@ class Zound(Pattern):
         
         # store self
         self.__class__._store(self)
+
+
+class MusicPattern(Zound):
+    '''
+    Things to think about:
+    
+    - Does changing a pattern's tempo mean that it should be copied and re-analyzed?
+      This seems like it might lead to lots of nearly-identical copies of patterns
+    
+    - Should "wrap" be an instance-level attribute?
+    
+    - Should leaf patterns be instances of Zound, or MusicPattern.  bpm might
+      make sense for some leaf patterns (a drum loop), but not for others
+      (strumming a guitar chord and letting it sustain)
+    
+    - What else?
+    '''
+    
+    def __init__(self,source = None,external_id = None, _id = None,address = None,
+                 pdata = None,all_ids = None,is_leaf = False,stored = False,
+                 bpm = 120,length_beats = 4):
+        
+        Zound.__init__(self,source = source,external_id = external_id,address = address,
+                       pdata = pdata, all_ids = all_ids, is_leaf = is_leaf,
+                       stored = stored)
+        self.bpm = bpm
+        self.length_beats = length_beats
+        
+    
+    def __add__(self,other):
+        '''
+        Concatenate two patterns so that other occurs immediately after self
+        '''
+        pass
+    
+    def __radd__(self,other):
+        '''
+        Implemented so that an iterable of patterns can be sum()-ed
+        '''
+        pass
+    
+    def __mul__(self,n):
+        '''
+        Repeat this pattern n times 
+        '''
+        pass
+    
+    def __invert__(self):
+        '''
+        Reverse a pattern with the ~ operator
+        '''
+        pass
+    
+    def __shift__(self,amt,recurse = False,wrap = True):
+        '''
+        Shift pattern by a number of beats, wrapping beats that overflow in
+        either direction
+        
+        BUG: What happens if some beats from a pattern wrap to the beginning
+        of a pattern, but others don't.  How can that be represented without
+        flattening the pattern and losing all hierarchical structure?
+        
+        One solution might be to allow beat numbers that are negative, or greater
+        than the length of the pattern in beats.  This suggests defining wrap
+        as an instance attribute, rather than just as an argument to this method
+        '''
+        pass
+    
+    @property
+    def length_seconds(self):
+        '''
+        Determined by the tempo
+        '''
+        pass
+    
+    @property
+    def length_samples(self):
+        '''
+        Determined by the tempo
+        '''
+        pass
+    
+    def _leaves_absolute(self):
+        '''
+        Override Zound._leaves_absolute so that times returned are calculated
+        using beats and the current tempo
+        '''
+        pass
+    
+    def todict(self):
+        '''
+        Include bpm and length_beats data
+        '''
+        pass
+    
+    @classmethod
+    def fromdict(cls,d):
+        '''
+        Construct a MusicPattern instance from the dictionary
+        '''
+        pass
+    

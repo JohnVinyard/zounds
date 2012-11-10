@@ -22,6 +22,8 @@ Stupid BPM estimation
 Pattern construction is cumbersome
 Simple transformations : Time stretch, pitch shift, reverb, high and lowpass filters
 Move tests that have nothing to do with data storage/access into the model package
+Address.contiguous() method which helps to answer the question: 
+  "Should this pattern be re-analyzed and stored in the frames database?"
 
 
 TemplateMatch tweaks
