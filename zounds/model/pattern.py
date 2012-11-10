@@ -448,6 +448,12 @@ class Event(object):
         # transform to calculate its new length?
         return pattern.length_samples
 
+    def __str__(self):
+        return tostring(self,time = self.time)
+    
+    def __repr__(self):
+        return self.__str__()
+
 
 # TODO: Composable types with different atomic behaviors
 class BaseTransform(object):
@@ -790,18 +796,22 @@ class Zound(Pattern):
         if self.is_leaf:
             return {self._id : [Event(offset)]}
         
-        if not d:
+        if None is d:
             d = dict()
         
         if not patterns:
             patterns = self.patterns
         
         # BLEGH!! This is ugly!
+        
+        # iterate over each child pattern
         for k,v in self.pdata.iteritems():
             p = patterns[k]
+            # iterate over the events for this pattern
             for e in v:
                 l = p._leaves_absolute(\
                         d = d, patterns = patterns,offset = offset + e.time)
+                print k,e.time,l
                 for _id,events in l.iteritems():
                     try:
                         d[_id].extend(events)
@@ -809,6 +819,7 @@ class Zound(Pattern):
                         d[_id] = events
             
         return d
+    
     
     def play(self,time = 0):
         '''
@@ -837,7 +848,6 @@ class Zound(Pattern):
                 put(audio,0,la,now + latency + (e.time * 1e6))
         
     
-    # TODO: Tests
     def audio_extractor(self,needs = None):
         e = self.env()
         return AudioFromMemory(e.samplerate,
