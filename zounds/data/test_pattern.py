@@ -1156,6 +1156,56 @@ class PatternTest(object):
     def test_get_item_time_slice(self):
         self.fail()
     
+    ## _LEAVES_ABSOLUTE ####################################################
+    
+    def test_leaves_absolute_leaf(self):
+        leaf = Zound[self._pattern_id]
+        la = leaf._leaves_absolute()
+        
+        self.assertEqual(1,len(la))
+        self.assertEqual(leaf._id,la.keys()[0])
+        self.assertEqual(1,len(la.values()[0]))
+    
+    def test_leaves_absolute_nested_one_level(self):
+        leaf = Zound[self._pattern_id]
+        branch = Zound(source = 'Test')
+        branch.append(leaf,[Event(i) for i in range(4)])
+        
+        la = branch._leaves_absolute()
+        self.assertEqual(1,len(la))
+        self.assertEqual(leaf._id,la.keys()[0])
+        self.assertEqual(4,len(la.values()[0]))
+    
+    def test_leaves_absolute_nested_one_level_two_patterns(self):
+        l1 = self.make_leaf_pattern(1, 'l1', store = False)
+        l2 = self.make_leaf_pattern(2, 'l2', store = False)
+        
+        branch = Zound(source = 'Test')
+        branch.append(l1,[Event(i) for i in range(4)])
+        branch.append(l2,[Event(i) for i in range(4,8)])
+        
+        la = branch._leaves_absolute()
+        
+        self.assertEqual(2,len(la))
+        self.assertTrue(l1._id in la)
+        self.assertTrue(l2._id in la)
+        self.assertEqual(4,len(la[l1._id]))
+        self.assertEqual(4,len(la[l2._id]))
+    
+    def test_leaves_absolute_nested_two(self):
+        leaf = Zound[self._pattern_id]
+        b = Zound(source = 'Test',_id = 'branch')
+        b.append(leaf,[Event(i) for i in range(4)])
+        r = Zound(source = 'Test',_id = 'root')
+        r.append(b,[Event(i) for i in range(0,16,4)])
+        
+        la = r._leaves_absolute()
+        
+        self.assertEqual(1,len(la))
+        self.assertTrue(leaf._id in la)
+        events = la[leaf._id]
+        self.assertEqual(16,len(events))
+    
    
 class InMemoryTest(unittest.TestCase,PatternTest):
     
