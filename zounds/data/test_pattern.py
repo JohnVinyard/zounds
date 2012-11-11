@@ -14,7 +14,7 @@ from zounds.data.pattern import InMemory,MongoDbPatternController
 from zounds.model.pattern import \
     Zound,Event,BaseTransform,ExplicitTransform, \
     CriterionTransform,IndiscriminateTransform, \
-    RecursiveTransform
+    RecursiveTransform,MusicPattern
 
 class FrameModel(Frames):
     fft = Feature(FFT)
@@ -1087,7 +1087,7 @@ class PatternTest(object):
     
     def test_length_samples_leaf(self):
         leaf = self.make_leaf_pattern(3, 'fid', store = False)
-        self.assertEqual(self.expected_samples(3),leaf.length_samples)
+        self.assertEqual(self.expected_samples(3),leaf.length_samples())
     
     
     def test_length_samples_nested(self):
@@ -1096,7 +1096,7 @@ class PatternTest(object):
         root.append(leaf,[Event(i) for i in range(4)])
         # the last event starts at 3 seconds, and lasts three seconds
         self.assert_approx_equal(self.expected_samples(3 + 3),
-                                 root.length_samples,
+                                 root.length_samples(),
                                  tolerance = AudioConfig.windowsize)
     
     ## RENDER ############################################################
@@ -1143,7 +1143,7 @@ class PatternTest(object):
         self.assertEqual(('Test','eid'),eid)
         
         frames = FrameModel['root']
-        ls = root.length_samples
+        ls = root.length_samples()
         audio = self.env.synth(frames.audio)
         self.assert_approx_equal(ls, len(audio), self.env.windowsize)
         
@@ -1223,11 +1223,84 @@ class PatternTest(object):
         self.assertEqual(4,len(la[l2._id]))
     
     def test_music_pattern_leaf(self):
-        self.fail()
+        frames = FrameModel.random()
+        leaf = MusicPattern.leaf(frames)
+        self.assertTrue(isinstance(leaf,Zound))
+        self.assertTrue(leaf.is_leaf)
+    
+    def test_music_pattern_shift_forward(self):
+        l1 = self.make_leaf_pattern(1,'l1',store = False)
+        l2 = self.make_leaf_pattern(2,'l2',store = False)
+        mp = MusicPattern(source = 'Test',length_beats = 4,bpm = 60)
+        mp.extend([l1,l2],[[Event(0),Event(1)],[Event(2),Event(3)]])
+        
+        shifted = mp >> 1
+        t1 = [e.time for e in shifted.pdata[l1._id]]
+        self.assertEqual([1,2],t1)
+        
+        t2 = [e.time for e in shifted.pdata[l2._id]]
+        self.assertEqual([3,4],t2)
+        
+        flat = shifted._leaves_absolute()
+        self.assertEqual(2,len(flat))
+        
+        # demonstrate that the events "wrapped"
+        l1t = flat[l1._id]
+        self.assertEqual([1,2],[e.time for e in l1t])
+        
+        l2t = flat[l2._id]
+        self.assertEqual([3,0],[e.time for e in l2t])
+    
+    def test_music_pattern_shift_backward(self):
+        l1 = self.make_leaf_pattern(1,'l1',store = False)
+        l2 = self.make_leaf_pattern(2,'l2',store = False)
+        mp = MusicPattern(source = 'Test',length_beats = 4,bpm = 60)
+        mp.extend([l1,l2],[[Event(0),Event(1)],[Event(2),Event(3)]])
+        
+        shifted = mp << 1
+        t1 = [e.time for e in shifted.pdata[l1._id]]
+        self.assertEqual([-1,0],t1)
+        
+        t2 = [e.time for e in shifted.pdata[l2._id]]
+        self.assertEqual([1,2],t2)
+        
+        flat = shifted._leaves_absolute()
+        self.assertEqual(2,len(flat))
+        
+        # demonstrate that the events "wrapped"
+        l1t = flat[l1._id]
+        self.assertEqual([3,0],[e.time for e in l1t])
+        
+        l2t = flat[l2._id]
+        self.assertEqual([1,2],[e.time for e in l2t])
     
     def test_music_pattern_length_samples(self):
-        self.fail()
+        '''
+        The value returned by length_samples() responds to changes in the 
+        pattern's bpm value.
+        '''
+        leaf = self.make_leaf_pattern(1,'l1',store = False)
+        mp = MusicPattern(source = 'Test', length_beats = 4, bpm = 60)
+        mp.append(leaf,[Event(i) for i in range(4)])
+        
+        orig = mp.length_samples()
+        self.assert_approx_equal(\
+                    AudioConfig.samplerate * 4, orig, AudioConfig.windowsize)
+        
+        mp.bpm = 120
+        faster = mp.length_samples()
+        # the length at 120 bpm should be half of the original, plus the amount
+        # by which the last event overflows
+        expected = (orig * .5) + (.5 * AudioConfig.samplerate)
+        self.assert_approx_equal(expected, faster, AudioConfig.windowsize)
     
+        mp.bpm = 30
+        slower = mp.length_samples()
+        # the length at 30 bpm should be twice the original, minus the amount
+        # by which the last event underflows
+        expected = (orig * 2) - (1 * AudioConfig.samplerate)
+        self.assert_approx_equal(expected, slower, AudioConfig.windowsize)
+        
     def test_music_pattern_and(self):
         self.fail()
     
@@ -1240,7 +1313,26 @@ class PatternTest(object):
     def test_music_pattern_multiply(self):
         self.fail()
     
-    def test_music_pattern_invert(self):
+    def test_music_pattern_invert_one_level(self):
+        leaves = [self.make_leaf_pattern(1,'l%i'%i,store = False) for i in range(4)]
+        mp = MusicPattern(source = 'Test', bpm = 60, length_beats = 4)
+        mp.extend(leaves,[[Event(i)] for i in range(len(leaves))])
+        
+        # invert the pattern
+        bw = ~mp
+        
+        self.assertEqual(4,len(bw.pdata))
+        for i,l in enumerate(leaves):
+            event = bw.pdata[l._id][0]
+            self.assertEqual(3 - i,event.time)
+        
+        la = bw._leaves_absolute()
+        self.assertEqual(4,len(la))
+        for i,l in enumerate(leaves):
+            event = la[l._id][0]
+            self.assertEqual(3 - i,event.time)
+    
+    def test_music_pattern_invert_two_levels(self):
         self.fail()
     
    
