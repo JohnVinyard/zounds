@@ -1,28 +1,21 @@
 Musical Pattern game
 ====================================
-finish failing Pattern tests
-How do I update FrameSearch indexes continually?
-	- works for all currently existing frame searches
-	- Should work for a web app and a local session
-		- webapp - as soon as new audio is analyzed, it should be added to the index
-		- local - 
-	- index building can be time-consuming, so it isn't acceptable to fully rebuild
-	  indexes when new patterns become available
+- finish failing Pattern tests
+- Since leaf patterns aren't re-analyzed and inserted into the frames database, they
+	get no special treatment, i.e., leaf patterns aren't really searchable!!!
 
-Since leaf patterns aren't re-analyzed and inserted into the frames database, they
-get no special treatment, i.e., leaf patterns aren't really searchable!!!
-
-Zound-derived MusicPattern class
-Coffeescript implementation of MusicPattern code
-DONE How do I queue and analyze incoming patterns?
-YIN implementation
-Chroma implementation
-Stupid onset detection
-Stupid BPM estimation
-Pattern construction is cumbersome
-Simple transformations : Time stretch, pitch shift, reverb, high and lowpass filters
-Move tests that have nothing to do with data storage/access into the model package
-Address.contiguous() method which helps to answer the question: 
+- Zound-derived MusicPattern class
+- Coffeescript implementation of MusicPattern code
+- How do I queue and analyze incoming patterns?
+- YIN implementation
+- Chroma implementation
+- Stupid onset detection
+- Stupid BPM estimation
+- Pattern construction is cumbersome
+- Simple transformations : Time stretch, pitch shift, reverb, high and lowpass filters
+- _render() and play() should use the exact same code; transformations should be implemented in C/C++
+- Move tests that have nothing to do with data storage/access into the model package
+- Address.contiguous() method which helps to answer the question: 
   "Should this pattern be re-analyzed and stored in the frames database?"
 
 

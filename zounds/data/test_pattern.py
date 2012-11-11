@@ -1222,6 +1222,27 @@ class PatternTest(object):
         self.assertEqual(4,len(la[l1._id]))
         self.assertEqual(4,len(la[l2._id]))
     
+    def test_music_pattern_leaf(self):
+        self.fail()
+    
+    def test_music_pattern_length_samples(self):
+        self.fail()
+    
+    def test_music_pattern_and(self):
+        self.fail()
+    
+    def test_music_pattern_add(self):
+        self.fail()
+    
+    def test_music_pattern_sum(self):
+        self.fail()
+    
+    def test_music_pattern_multiply(self):
+        self.fail()
+    
+    def test_music_pattern_invert(self):
+        self.fail()
+    
    
 class InMemoryTest(unittest.TestCase,PatternTest):
     

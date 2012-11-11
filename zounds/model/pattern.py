@@ -1,198 +1,4 @@
-'''
-Ann - The user
-Client - A client application. Maybe a html+javascript app, a user in the python
-repl, or a native GUI application.
-
-Ann finds a portion of sound she'd like to use: one kick drum hit.
-
-Pattern from the outside world, i.e., just some sound file
-{
-    _id : 'leaf'
-    source : Ann
-    external_id : 'leaf' 
-    address : (100,200) // A PyTables address
-}
-
- >>> p = Pattern.leaf(addr) // addr can be a frames instance, an address, or a frame id
- >>> p.store()
-
-She store()s the pattern.
-
-Ann then arranges the kick pattern into one in which the drum plays four times
-in succession. She store()s this pattern.
-
-  >>> p2 = Pattern()
-  >>> p2.append(p,[Event(0,amp = 1),Event(1,amp = .5),...])
-  >>> p2.store()
-  >>> _id = p2._id
-
-
-{
-    _id : 'leaf'
-    source : Ann
-    external_id : 'leaf' 
-    address : (100,200) // A PyTables address
-}
-
-A pattern using that slice
-{
-    _id : 'fourquarter'    
-    source : Ann
-    external_id : 'fourquarter' 
-    address : None
-    all_ids : ['leaf'],
-    data : {
-        'leaf' : [
-            (0, [{'amp' : (1,)}]),
-            (1, [{'amp' : (.5,)}]),
-            (2, [{'amp' : (1,)}]),
-            (3, [{'amp' : (.5,)}]),
-        ],
-        
-        'branch' : [
-            (4, [{'amp' : (1)}])
-        ]
-    }
-}
-
- 
-
-The client is returned a data structure like the one above.  Notice that address
-is None.  'fourquarter' has been placed into a queue to be analyzed, and doesn't
-yet have a home in the frames database.  Notice that 'leaf' is also returned,
-so the pattern can be rendered by the client.  
-
-Ann closes the client application, and comes back later.  She fetches 'fourquarter' from
-the database.  Note that 'fourquarter' now has an address.  This means
-it has been analyzed, and is a candidate for audio-similarity results.  Ann 
-decides she'd like the beats to play only on the 1 and 3.  Note that the 
-'fourquarter' pattern is returned to the client, as well as all patterns it 
-references.
-
-
-** IDEA ** Note that patterns are an example of an audio encoding.  They can
-be interpreted by a synthesizer. It would be very space efficient to store the
-JSON or BSON data instead of raw audio, in most cases.  
-
-{
-    _id : 'leaf'
-    source : Ann
-    external_id : 'leaf' 
-    address : (100,200) // A PyTables address
-}
-
-{
-    _id : 'fourquarter'    
-    source : Ann
-    external_id : 'fourquarter' 
-    address : (100,500)
-    all_ids : ['slice'],
-    data : {
-        'leaf' : [
-            (0, [{'amp' : (1,)}]),
-            (2, [{'amp' : (1,)}]),
-        ]
-    }
-}
-
- >>> p3 = Pattern[_id]
- >>> p4 = p3.remove('leaf',[1,3])
- >>> p4.store()
- >>> _id = p4._id
-
-She calls store() on this pattern.  When the data is sent back to the server, 
-leaf's hash value is the same, but 'fourquarter's hash value has changed.  'fourquarter'
-is stored as a new pattern 'twoquarter'.
-
-Ann returns to the client later, and fetches the 'twoquarter' pattern.
-
-{
-    _id : 'leaf'
-    source : Ann
-    external_id : 'leaf' 
-    address : (100,200) // A PyTables address
-}
-
-{
-    _id : 'twoquarter'    
-    source : Ann
-    external_id : 'twoquarter' 
-    address : (100,500)
-    all_ids : ['leaf'],
-    data : {
-        'leaf' : [
-            (0, [{'amp' : (1,)}]),
-            (2, [{'amp' : (1,)}]),
-        ]
-    }
-}
-
-She decides that the second beat should be shorter than the first.  This changes
-the 'leaf' pattern from
-
-{
-    _id : 'leaf'
-    source : Ann
-    external_id : 'leaf' 
-    address : (100,200) // A PyTables address
-}
-
-to 
-
-{
-    _id : 'leaf'
-    source : Ann
-    external_id : 'leaf' 
-    address : (100,180) // A PyTables address
-}
-
- >>> p4 = Pattern[_id]
- >>> leaf = p4.get('leaf',2)[0]
- >>> leaf_shorter = leaf.change_address((100,180))
- >>> p4 = p4.replace((leaf,2),leaf_shorter)
- >>> p4.store()
-
-When she alters the already stored leaf pattern, the client makes a copy of the
-pattern. When she store()s 'twoquarter', three patterns are sent back to the 
-server:
-
-{
-    _id : 'leaf'
-    source : Ann
-    external_id : 'leaf' 
-    address : (100,200) // A PyTables address
-}
-
-{
-    _id : 'leaf'
-    source : Ann
-    external_id : 'leaf2' 
-    address : (100,180) // A PyTables address
-}
-
-{
-    _id : 'twoquarter'    
-    source : Ann
-    external_id : 'twoquarter' 
-    address : (100,500)
-    all_ids : ['leaf','leaf2'],
-    data : {
-        'leaf' : [
-            (0, [{'amp' : (1,)}])
-        ],
-        'leaf2' : [
-            (2, [{'amp' : (1,)}])
-        ]
-    }
-}
-
-The second leaf pattern has a different hash value than it was sent with, and
-so a new leaf pattern is created.
-
-All changes to a pattern should happen by calling methods on the Pattern class.
-No direct acess to the underlying data structures should be made. Maybe the
-last operation Ann executes would happen like so: 
-'''
+from __future__ import division
 from copy import deepcopy
 from abc import ABCMeta,abstractmethod
 from itertools import izip,repeat
@@ -376,7 +182,7 @@ BUFFERS = Buffers()
     
 class Event(object):
     
-    def __init__(self,time_secs,*args):
+    def __init__(self,time,*args):
         '''__init__
         
         :param time_secs: The time in seconds at which the event should occur
@@ -385,7 +191,7 @@ class Event(object):
         derived class names to the parameters for that transform
         '''
         object.__init__(self)
-        self.time = time_secs
+        self.time = time
         self.transforms = args
     
     def __copy__(self):
@@ -420,6 +226,14 @@ class Event(object):
     
     def __mul__(self,amt):
         return Event(self.time * amt,*deepcopy(self.transforms))
+    
+    def __neg__(self):
+        '''
+        Negate the time at which this event occurs.  Note that the interpretation
+        of a negative time value is up to the containing pattern, and may not
+        always be valid.
+        '''
+        return Event(-self.time,*deepcopy(self.transforms))
     
     def __iter__(self):
         yield self
@@ -565,6 +379,16 @@ class Zound(Pattern):
         # keep track of unstored nested patterns that should be stored when
         # self.store() is called
         self._to_store = set()
+        
+    def _copy(self,_id,addr):
+        return Zound(source = self.source,
+                  external_id = _id,
+                  _id = _id,
+                  address = addr,
+                  pdata = deepcopy(self.pdata),
+                  all_ids = self.all_ids.copy(),
+                  is_leaf = self.is_leaf,
+                  stored = False)
     
     def copy(self):
         '''
@@ -573,15 +397,7 @@ class Zound(Pattern):
         '''
         _id = self.env().newid()
         addr = None if self.address is None else self.address.copy()
-        z = Zound(source = self.source,
-                  external_id = _id,
-                  _id = _id,
-                  address = addr,
-                  pdata = deepcopy(self.pdata),
-                  all_ids = self.all_ids.copy(),
-                  is_leaf = self.is_leaf,
-                  stored = False)
-        
+        z = self._copy(_id,addr)
         z._to_store = self._to_store.copy()
         if self._patterns:
             z._patterns = self._patterns.copy()
@@ -745,7 +561,8 @@ class Zound(Pattern):
                 pattern = patterns[k]
                 # get the latest end time of all the events
                 total = \
-                    max([(e.time * sr) + e.length_samples(pattern) for e in v])
+                    max([(self.interpret_time(e.time) * sr) + e.length_samples(pattern) \
+                          for e in v])
                 if total > last:
                     last = total
             
@@ -795,8 +612,17 @@ class Zound(Pattern):
             
         return audio
     
+    def interpret_time(self,time):
+        '''
+        Patterns might interpret time values in different ways.  The default
+        interpretation is the identity function.  Times are expressed in seconds.
+        '''
+        return time
+    
     # TODO: Test
-    def _leaves_absolute(self,d = None,patterns = None,offset = 0):
+    # TODO: Since patterns are immutable, is it safe to store the result of
+    # this once it has been run once?  I *think* so.
+    def _leaves_absolute(self,d = None,patterns = None,offset = 0,**kwargs):
         '''
         Get a dictionary mapping leaf patterns to events with *absolute* times
         '''
@@ -816,8 +642,9 @@ class Zound(Pattern):
             p = patterns[k]
             # iterate over the events for this pattern
             for e in v:
+                time = self.interpret_time(e.time,**kwargs)
                 l = p._leaves_absolute(\
-                        d = d, patterns = patterns,offset = offset + e.time)
+                        d = d, patterns = patterns,offset = offset + time,**kwargs)
                 
                 if not p.is_leaf:
                     continue
@@ -849,7 +676,7 @@ class Zound(Pattern):
         # schedule them
         now = usecs()
         # TODO: Stress test/profile the play method and find out what an 
-        # acceptable latency value is
+        # acceptable latency value is. I think this value is too high.
         latency = .25 * 1e6
         for k,v in leaves.iteritems():
             audio = BUFFERS[k]
@@ -907,6 +734,10 @@ class Zound(Pattern):
             return False
         
         return not bool(sum([len(v) for v in self.pdata.itervalues()]))
+    
+    def _empty_pattern(self):
+        p = Zound(source = self.source)
+        return p
     
     
     def append(self,pattern,events):
@@ -974,7 +805,7 @@ class Zound(Pattern):
             return self if self._leaf_compare(t) else t
         
         # create a new, empty pattern
-        n = self.__class__(source = self.source)
+        n = self._empty_pattern()
         
         for pattern,events in self.iter_patterns():
             p,e = pattern,events
@@ -1105,7 +936,7 @@ class Zound(Pattern):
             d['address'] = None
         
         d['stored'] = stored
-        return Zound(**d)
+        return cls(**d)
     
     # TODO: Should this be asynchronous ?
     def store(self):
@@ -1130,14 +961,19 @@ class MusicPattern(Zound):
     '''
     Things to think about:
     
-    - Does changing a pattern's tempo mean that it should be copied and re-analyzed?
+    - Q: Does changing a pattern's tempo mean that it should be copied and re-analyzed?
       This seems like it might lead to lots of nearly-identical copies of patterns
+      A: No. Changing tempo doesn't cause a copy to be made.
     
-    - Should "wrap" be an instance-level attribute?
+    - Q: Should "wrap" be an instance-level attribute?
+      A: Wrap will be the default, for now.  This means that there's an underlying
+      assumption that patterns are loops, which I'm not sure I like, totally, 
+      but it's ok for now.
     
-    - Should leaf patterns be instances of Zound, or MusicPattern.  bpm might
+    - Q: Should leaf patterns be instances of Zound, or MusicPattern.  bpm might
       make sense for some leaf patterns (a drum loop), but not for others
       (strumming a guitar chord and letting it sustain)
+      A: For now, all leaf patterns will be Zound instances
     
     - What else?
     '''
@@ -1151,78 +987,104 @@ class MusicPattern(Zound):
                        stored = stored)
         self.bpm = bpm
         self.length_beats = length_beats
-        
+    
+    def _copy(self,_id,addr):
+        return MusicPattern(source = self.source,
+                  external_id = _id,
+                  _id = _id,
+                  address = addr,
+                  pdata = deepcopy(self.pdata),
+                  all_ids = self.all_ids.copy(),
+                  is_leaf = self.is_leaf,
+                  stored = False,
+                  length_beats = self.length_beats,
+                  bpm = self.bpm)
+    
+    def __and__(self,other):
+        mp = Zound.__and__(self,other)
+        mp.length_beats = max(self.length_beats,other.length_beats)
     
     def __add__(self,other):
         '''
-        Concatenate two patterns so that other occurs immediately after self
+        Concatenate two patterns so that other occurs immediately after self.  If
+        the two patterns have different tempos, the tempo of the left-hand side
+        is kept.
         '''
-        pass
+        # TODO: What if self and/or other are leaf patterns
+        # TODO: A new length in beats must be calculated
+        # TODO: What if the two patterns have different tempos?
+        if not other:
+            return self.copy()
+        
+        rn = self.copy()
+        p = other.patterns
+        for k,v in other.pdata.iteritems():
+            # BUG: What if other contains a pattern that this pattern contains?
+            # The events in self will be overwritten by the events in other.
+            rn.append(p[k],[Event(e.time + rn.length_beats) for e in v])
+        rn.length_beats += other.length_beats
+        return rn
     
     def __radd__(self,other):
         '''
         Implemented so that an iterable of patterns can be sum()-ed
         '''
-        pass
+        # TODO: A new length in beats must be calculated
+        # TODO: What if the two patterns have different tempos?
+        if not other:
+            return self.copy()
+        
+        return self + other
     
     def __mul__(self,n):
         '''
         Repeat this pattern n times 
         '''
-        pass
+        # TODO: A new length in beats must be calculated
+        # TODO: What if the two patterns have different tempos?
+        if self.is_leaf:
+            raise Exception('cannot multiply a leaf pattern')
+        
+        container = MusicPattern(source = self.source,
+                                 bpm = self.bpm,
+                                 length_beats = self.length_beats * n)
+        container.append(self,[Event(i * self.length_beats) for i in xrange(n)])
+        return container
     
     def __invert__(self):
         '''
-        Reverse a pattern with the ~ operator
+        Reverse a pattern with the ~ operator.  This should only operate on 
+        leaf patterns
         '''
-        pass
-    
-    def __shift__(self,amt,recurse = False,wrap = True):
-        '''
-        Shift pattern by a number of beats, wrapping beats that overflow in
-        either direction
+        if self.is_leaf:
+            raise Exception('cannot invert a leaf pattern')
         
-        BUG: What happens if some beats from a pattern wrap to the beginning
-        of a pattern, but others don't.  How can that be represented without
-        flattening the pattern and losing all hierarchical structure?
-        
-        One solution might be to allow beat numbers that are negative, or greater
-        than the length of the pattern in beats.  This suggests defining wrap
-        as an instance attribute, rather than just as an argument to this method
-        '''
-        pass
+        def s(pattern,events):
+            if None is events or not pattern.is_leaf:
+                return pattern,events
+            return pattern,[-e for e in events]
+         
+        return self.transform(RecursiveTransform(s))
     
-    @property
-    def length_seconds(self):
-        '''
-        Determined by the tempo
-        '''
-        pass
+    def interpret_time(self,time,**kwargs):
+        bpm = kwargs['bpm']
+        actual_beats = time % self.length_beats
+        return actual_beats * (1 / (bpm / 60))
     
-    @property
-    def length_samples(self):
-        '''
-        Determined by the tempo
-        '''
-        pass
+    def _leaves_absolute(self,d = None,patterns = None,offset = 0):
+        return Zound._leaves_absolute(\
+            self, d = d, patterns = patterns, offset = offset, bpm = self.bpm)
     
-    def _leaves_absolute(self):
-        '''
-        Override Zound._leaves_absolute so that times returned are calculated
-        using beats and the current tempo
-        '''
-        pass
+    def _empty_pattern(self):
+        return MusicPattern(source = self.source,
+                            length_beats = self.length_beats,
+                            bpm = self.bpm) 
     
     def todict(self):
         '''
         Include bpm and length_beats data
         '''
-        pass
-    
-    @classmethod
-    def fromdict(cls,d):
-        '''
-        Construct a MusicPattern instance from the dictionary
-        '''
-        pass
-    
+        d = Zound.todict(self)
+        d['length_beats'] = self.length_beats
+        d['bpm'] = self.bpm
+        return d    
