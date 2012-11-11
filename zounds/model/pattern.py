@@ -996,7 +996,7 @@ class MusicPattern(Zound):
         
         Zound.__init__(self,source = source,external_id = external_id,address = address,
                        pdata = pdata, all_ids = all_ids, is_leaf = is_leaf,
-                       stored = stored)
+                       stored = stored,_id = _id)
         self.bpm = bpm
         self.length_beats = length_beats
     
@@ -1077,22 +1077,31 @@ class MusicPattern(Zound):
     
     def __invert__(self):
         '''
-        Reverse a pattern with the ~ operator.  This should only operate on 
-        leaf patterns
+        Reverse a pattern with the ~ operator.
         '''
         if self.is_leaf:
             raise Exception('cannot invert a leaf pattern')
         
         def s(pattern,events):
-            if None is events or not pattern.is_leaf:
+            if None is events:
                 return pattern,events
-            return pattern,[self.length_beats - 1 - e for e in events]
+            
+            try:
+                lb = pattern.length_beats
+                ev = [-(e + lb) for e in events]
+            except AttributeError:
+                ev = [-(e + 1) for e in events]
+        
+            return pattern,ev
          
         return self.transform(RecursiveTransform(s))
     
     def interpret_time(self,time,**kwargs):
         bpm = kwargs['bpm']
         actual_beats = time % self.length_beats
+        if actual_beats < 0:
+            actual_beats = self.length_beats - actual_beats
+        print actual_beats
         return actual_beats * (1 / (bpm / 60))
     
     def _leaves_absolute(self,d = None,patterns = None,offset = 0,**kwargs):
