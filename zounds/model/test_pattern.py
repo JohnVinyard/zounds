@@ -55,4 +55,20 @@ class EventTests(unittest.TestCase):
         self.assertFalse(e2 == e)
         self.assertEqual(50,e2.time)
     
+    def test_add(self):
+        e = Event(10)
+        e2 = e + 2
+        
+        self.assertFalse(e2 is e)
+        self.assertFalse(e2 == e)
+        self.assertEqual(12,e2.time)
+    
+    def test_radd(self):
+        e = Event(10)
+        e2 = 2 + e
+        
+        self.assertFalse(e2 is e)
+        self.assertFalse(e2 == e)
+        self.assertEqual(12,e2.time)
+    
     

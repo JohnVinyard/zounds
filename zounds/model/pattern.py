@@ -224,6 +224,18 @@ class Event(object):
     def __rshift__(self,amt):
         return self.shift(amt)
     
+    def __add__(self,amt):
+        return self.shift(amt)
+    
+    def __radd__(self,amt):
+        return Event(amt + self.time,*deepcopy(self.transforms))
+    
+    def __sub__(self,amt):
+        return self.shift(-amt)
+    
+    def __rsub__(self,amt):
+        return Event(amt - self.time,*deepcopy(self.transforms))
+    
     def __mul__(self,amt):
         return Event(self.time * amt,*deepcopy(self.transforms))
     
@@ -253,14 +265,14 @@ class Event(object):
     def decode_custom(doc):
         return Event(doc['time'])
     
-    def length_samples(self,pattern):
+    def length_samples(self,pattern,**kwargs):
         
         # TODO: This should check the pattern against all transforms to decide
         # if the transform might shorten or lengthen the pattern
         
         # TODO: Are there situations where the pattern must be rendered with the
         # transform to calculate its new length?
-        return pattern.length_samples
+        return pattern.length_samples(**kwargs)
 
     def __str__(self):
         return tostring(self,time = self.time)
@@ -541,8 +553,7 @@ class Zound(Pattern):
     
     # TODO: Move this into the base Pattern class
     # BUG: What if a transform changes the length of the samples?
-    @property
-    def length_samples(self):
+    def length_samples(self,**kwargs):
         '''
         The length of this pattern in samples, when rendered as raw audio
         '''
@@ -550,6 +561,9 @@ class Zound(Pattern):
         try:
             # this pattern has been analyzed and is in the frames database,
             # so it's trivial to find out its length in samples
+            
+            # BUG: This won't work for stored MusicPattern instances if
+            # their bpm value has changed!
             return self.env().frames_to_samples(len(self.address))
         except TypeError:
             sr = self.env().samplerate
@@ -561,7 +575,7 @@ class Zound(Pattern):
                 pattern = patterns[k]
                 # get the latest end time of all the events
                 total = \
-                    max([(self.interpret_time(e.time) * sr) + e.length_samples(pattern) \
+                    max([(self.interpret_time(e.time,**kwargs) * sr) + e.length_samples(pattern,**kwargs) \
                           for e in v])
                 if total > last:
                     last = total
@@ -569,15 +583,14 @@ class Zound(Pattern):
             return last
     
     # TODO: Move this into the base Pattern class
-    @property
-    def length_seconds(self):
+    def length_seconds(self,**kwargs):
         '''
         The length of this pattern in seconds, when rendered as raw audio
         '''
-        return self.length_samples / self.env.samplerate
+        return self.length_samples(**kwargs) / self.env().samplerate
     
     
-    def _render(self):
+    def _render(self,**kwargs):
         # render the pattern as audio
         # KLUDGE: Maybe _render should be an iterator, for very long patterns
         # TODO: rendering should happen *just like* realtime playing, i.e.,
@@ -594,7 +607,7 @@ class Zound(Pattern):
             return env.synth(env.framemodel[self.address].audio)
     
         # allocate memory to hold the entire pattern
-        audio = np.zeros(self.length_samples,dtype = np.float32)
+        audio = np.zeros(self.length_samples(**kwargs),dtype = np.float32)
         
         patterns = self.patterns
         for k,v in self.pdata.iteritems():
@@ -664,7 +677,6 @@ class Zound(Pattern):
         '''
         # get all leaf patterns with *Absolute* times
         leaves = self._leaves_absolute()
-        print len(leaves)
         patterns = self.patterns
         # allocate buffers for them
         if self.is_leaf:
@@ -988,6 +1000,18 @@ class MusicPattern(Zound):
         self.bpm = bpm
         self.length_beats = length_beats
     
+    def _render(self,**kwargs):
+        bpm = kwargs['bpm'] if 'bpm' in kwargs else self.bpm
+        return Zound._render(self,bpm = bpm)
+    
+    def length_samples(self,**kwargs):
+        bpm = kwargs['bpm'] if 'bpm' in kwargs else self.bpm
+        return Zound.length_samples(self,bpm = bpm)
+    
+    def length_seconds(self,**kwargs):
+        bpm = kwargs['bpm'] if 'bpm' in kwargs else self.bpm
+        return Zound.length_seconds(self,bpm = bpm)
+    
     def _copy(self,_id,addr):
         return MusicPattern(source = self.source,
                   external_id = _id,
@@ -1062,7 +1086,7 @@ class MusicPattern(Zound):
         def s(pattern,events):
             if None is events or not pattern.is_leaf:
                 return pattern,events
-            return pattern,[-e for e in events]
+            return pattern,[self.length_beats - 1 - e for e in events]
          
         return self.transform(RecursiveTransform(s))
     
@@ -1071,9 +1095,10 @@ class MusicPattern(Zound):
         actual_beats = time % self.length_beats
         return actual_beats * (1 / (bpm / 60))
     
-    def _leaves_absolute(self,d = None,patterns = None,offset = 0):
+    def _leaves_absolute(self,d = None,patterns = None,offset = 0,**kwargs):
+        bpm = kwargs['bpm'] if 'bpm' in kwargs else self.bpm
         return Zound._leaves_absolute(\
-            self, d = d, patterns = patterns, offset = offset, bpm = self.bpm)
+            self, d = d, patterns = patterns, offset = offset, bpm = bpm)
     
     def _empty_pattern(self):
         return MusicPattern(source = self.source,
