@@ -58,13 +58,16 @@ class DictFrameController(FrameController):
         raise NotImplementedError
     
     def stat(self,feature,aggregate,axis = 0, step = 1):
-        pass
+        raise NotImplemented()
     
     def update_index(self):
-        pass
+        raise NotImplemented()
         
     def list_external_ids(self):
-        pass
+        raise NotImplemented()
     
     def address(self,_id):
-        pass
+        raise NotImplemented()
+    
+    def pattern_length(self,_id):
+        raise NotImplemented()
