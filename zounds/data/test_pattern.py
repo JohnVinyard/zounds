@@ -1324,7 +1324,7 @@ class PatternTest(object):
         self.assertEqual(4,len(bw.pdata))
         for i,l in enumerate(leaves):
             event = bw.pdata[l._id][0]
-            self.assertEqual(3 - i,event.time)
+            self.assertEqual(-(i + 1),event.time)
         
         la = bw._leaves_absolute()
         self.assertEqual(4,len(la))
@@ -1333,9 +1333,36 @@ class PatternTest(object):
             self.assertEqual(3 - i,event.time)
     
     def test_music_pattern_invert_two_levels(self):
-        self.fail()
-    
-   
+        leaves = [self.make_leaf_pattern(1,'l%i'%i,store = False) for i in range(4)]
+        b1 = MusicPattern(source = 'Test', bpm = 60, length_beats = 4,_id = 'b1')
+        b1.extend(leaves,[[Event(i)] for i in [0,3,2,1]])
+        
+        b2 = MusicPattern(source = 'Test', bpm = 60, length_beats = 4,_id = 'b2')
+        b2.extend(leaves,[[Event(i)] for i in [3,2,0,1]])
+        
+        root = MusicPattern(source = 'Test', bpm = 60, length_beats = 8,_id = 'root')
+        root.append(b1,[Event(0)])
+        root.append(b2,[Event(4)])
+        
+        bw = ~root
+        self.assertEqual(8,bw.length_beats)
+        la = bw._leaves_absolute()
+        self.assertEqual(4,len(la))
+        
+        l0 = set([e.time for e in la[leaves[0]._id]])
+        self.assertEqual(set([0,7]),l0)
+        
+        l1 = set([e.time for e in la[leaves[1]._id]])
+        self.assertEqual(set([1,4]),l1)
+        
+        l2 = set([e.time for e in la[leaves[2]._id]])
+        self.assertEqual(set([3,5]),l2)
+        
+        l3 = set([e.time for e in la[leaves[3]._id]])
+        self.assertEqual(set([2,6]),l3)
+        
+        
+        
 class InMemoryTest(unittest.TestCase,PatternTest):
     
     def setUp(self):
