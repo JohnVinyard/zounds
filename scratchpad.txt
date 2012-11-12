@@ -5,6 +5,7 @@ Musical Pattern game
 	get no special treatment, i.e., leaf patterns aren't really searchable!!!
 
 - Zound-derived MusicPattern class
+- Transformations and JACK rendering
 - Coffeescript implementation of MusicPattern code
 - How do I queue and analyze incoming patterns?
 - YIN implementation

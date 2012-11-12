@@ -71,7 +71,8 @@ class PatternTest(object):
                                FrameModel,
                                FileSystemFrameController,
                                (FrameModel,dr),
-                               {Zound : self._pattern_controller},
+                               {Zound : self._pattern_controller,
+                                MusicPattern : self._pattern_controller},
                                audio = AudioConfig)
         
         
@@ -636,15 +637,62 @@ class PatternTest(object):
     
     def test_transform_change_single_instance(self):
         '''
-        Alter only the last occurrence of b1 do it only has 3 beats. The first
+        Alter only the last occurrence of b1 so it only has 3 beats. The first
         three occurrences should continue to have four beats.
+        
+        b2 --------------------
+        | b1   b1   b1   b1   |   
+        | xxxx|xxxx|xxxx|xxxx |
+        -----------------------
+        ->
+        
+        n2 --------------------
+        | b1   b1   b1   n1   |   
+        | xxxx|xxxx|xxxx|xxx- |
+        -----------------------
         '''
         leaf = Zound[self._pattern_id]
-        b1 = Zound(source = 'Test')
+        b1 = Zound(source = 'Test',_id = 'b1')
         b1.append(leaf,[Event(i) for i in range(4)])
         
-        b2 = Zound(source = 'Test')
+        b2 = Zound(source = 'Test',_id = 'b2')
         b2.append(b1,[Event(i) for i in range(0,16,4)])
+        
+        def s(pattern,events):
+            print pattern._id
+            print events
+            last = pattern.copy()
+            last.pdata[leaf._id] = last.pdata[leaf._id][:-1]
+             
+            return [pattern,last],[events[:-1],events[-1:]]
+        
+        t = RecursiveTransform(s, lambda p,e: p._id == b1._id)
+        b3 = b2.transform(t)
+        print b3.pdata
+        for k in b3.pdata.iterkeys():
+            print b3.patterns[k].pdata 
+        self.assertFalse(b3 is b2)
+        self.assertFalse(b3 == b2)
+        self.assertTrue(b1._id in b3.pdata)
+        self.assertEqual(2,len(b3.pdata))
+        self.assertEqual(3,len(b3.pdata[b1._id]))
+            
+    def test_alter_only_leaf_patterns_in_specific_pattern(self):
+        '''
+        Alter only the b1 patterns that are children of b2.
+        
+        b2----------b3-----
+        | b1   b1  | b1   |
+        | xxxx|xxxx| xxxx |
+        -------------------
+        
+        ->
+        
+        n2----------b3-----
+        | n3   n3  | b1   |
+        | x-x-|x-x-| xxxx |
+        -------------------
+        '''
         self.fail()
     
     def test_transform_nested_all(self):
@@ -888,31 +936,6 @@ class PatternTest(object):
         self.assertTrue(l2._id in p3.all_ids)
         self.assertTrue(p2._id in p3.all_ids)
         self.assertTrue(p1._id in p3.all_ids)
-        
-        
-    
-    ## SUM ###########################################################
-#    def test_sum(self):
-#        l1 = self.make_leaf_pattern(1, 'l1', store = False)
-#        l2 = self.make_leaf_pattern(2, 'l2', store = False)
-#        l3 = self.make_leaf_pattern(3, 'l3', store = False)
-#        
-#        p1 = Zound(source = 'Test', _id = 'p1')
-#        p1.append(l1,[Event(i) for i in range(1)])
-#        
-#        p2 = Zound(source = 'Test', _id = 'p2')
-#        p2.append(l2,[Event(i) for i in range(1)])
-#        
-#        p3 = Zound(source = 'Test', _id = 'p3')
-#        p3.append(l3,[Event(i) for i in range(1)])
-#        
-#        s = sum([p1,p2,p3])
-#        
-#        self.assertEqual(3,len(s.pdata))
-#        self.assertEqual(3,len(s.all_ids))
-#        self.assertTrue(l1._id in s.all_ids)
-#        self.assertTrue(l2._id in s.all_ids)
-#        self.assertTrue(l3._id in s.all_ids)
     
     ## SHIFT #########################################################
     def test_shift_leaf(self):
@@ -1150,11 +1173,13 @@ class PatternTest(object):
     
     ## __GETITEM__ ########################################################
     
-    def test_get_item_pattern(self):
-        self.fail()
-    
-    def test_get_item_time_slice(self):
-        self.fail()
+    # TODO: Implement the __getitem__ method, and/or switch to unittest2 so
+    # that tests can be ignored 
+#    def test_get_item_pattern(self):
+#        self.fail()
+#    
+#    def test_get_item_time_slice(self):
+#        self.fail()
     
     ## _LEAVES_ABSOLUTE ####################################################
     
@@ -1301,17 +1326,85 @@ class PatternTest(object):
         expected = (orig * 2) - (1 * AudioConfig.samplerate)
         self.assert_approx_equal(expected, slower, AudioConfig.windowsize)
         
-    def test_music_pattern_and(self):
-        self.fail()
+    def test_music_pattern_and_same_length(self):
+        leaf = Zound[self._pattern_id]
+        
+        b1 = MusicPattern(source = 'Test', bpm = 173, length_beats = 4)
+        b1.append(leaf,[Event(i) for i in range(4)])
+        b2 = MusicPattern(source = 'Test', bpm = 120, length_beats = 4)
+        b2.append(leaf,[Event(i) for i in range(4)])
+        
+        b3 = b1 & b2
+        
+        self.assertEqual(173,b3.bpm)
+        self.assertEqual(4,b3.length_beats)
+        self.assertEqual(1,len(b3.pdata))
+        self.assertEqual(8,len(b3.pdata[leaf._id]))
+        
+    
+    def test_music_pattern_different_lengths(self):
+        leaf = Zound[self._pattern_id]
+        
+        b1 = MusicPattern(source = 'Test', bpm = 173, length_beats = 4)
+        b1.append(leaf,[Event(i) for i in range(4)])
+        b2 = MusicPattern(source = 'Test', bpm = 120, length_beats = 8)
+        b2.append(leaf,[Event(i) for i in range(8)])
+        
+        b3 = b1 & b2
+        
+        self.assertEqual(173,b3.bpm)
+        self.assertEqual(8,b3.length_beats)
+        self.assertEqual(1,len(b3.pdata))
+        self.assertEqual(12,len(b3.pdata[leaf._id]))
     
     def test_music_pattern_add(self):
-        self.fail()
+        leaf = Zound[self._pattern_id]
+        
+        b1 = MusicPattern(source = 'Test', bpm = 173, length_beats = 2)
+        b1.append(leaf,[Event(i) for i in range(2)])
+        b2 = MusicPattern(source = 'Test', bpm = 120, length_beats = 4)
+        b2.append(leaf,[Event(i) for i in range(4)])
+        
+        b3 = b1 + b2
+        self.assertEqual(173,b3.bpm)
+        self.assertEqual(6,b3.length_beats)
+        self.assertEqual(1,len(b3.pdata))
+        self.assertEqual(6,len(b3.pdata[leaf._id]))
     
     def test_music_pattern_sum(self):
-        self.fail()
+        leaf = Zound[self._pattern_id]
+        
+        b1 = MusicPattern(source = 'Test', bpm = 173, length_beats = 2)
+        b1.append(leaf,[Event(i) for i in range(2)])
+        b2 = MusicPattern(source = 'Test', bpm = 120, length_beats = 4)
+        b2.append(leaf,[Event(i) for i in range(4)])
+        b3 = MusicPattern(source = 'Test', bpm = 200, length_beats = 6)
+        b3.append(leaf,[Event(i) for i in range(6)])
+        
+        b4 = sum([b1,b2,b3])
+        
+        self.assertEqual(173,b4.bpm)
+        self.assertEqual(12,b4.length_beats)
+        self.assertEqual(1,len(b4.pdata))
+        self.assertEqual(12,len(b4.pdata[leaf._id]))
     
     def test_music_pattern_multiply(self):
-        self.fail()
+        leaf = Zound[self._pattern_id]
+        
+        b1 = MusicPattern(source = 'Test', bpm = 173, length_beats = 4)
+        b1.append(leaf,[Event(i) for i in range(4)])
+        
+        b2 = b1 * 5
+        
+        self.assertEqual(173,b2.bpm)
+        self.assertEqual(20,b2.length_beats)
+        self.assertEqual(1,len(b2.pdata))
+        
+        key = b2.pdata.keys()[0]
+        
+        self.assertTrue(key != leaf._id)
+        
+        self.assertEqual(5,len(b2.pdata[key]))
     
     def test_music_pattern_invert_one_level(self):
         leaves = [self.make_leaf_pattern(1,'l%i'%i,store = False) for i in range(4)]

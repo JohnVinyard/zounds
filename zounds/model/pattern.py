@@ -322,6 +322,10 @@ class RecursiveTransform(BaseTransform):
         
         if self.predicate(pattern,events):
             p,e = self.transform(pattern,events)
+            print 'AFTER TRANSFORM'
+            print [x._id for x in p]
+            print e
+            print '++++++++++++++++++++++++++++++++++++++++++++'
             changed = True
         else:
             p,e = pattern,events
@@ -333,7 +337,19 @@ class RecursiveTransform(BaseTransform):
                 raise KeyError
             return p
         
-        return p.transform(self, changed = changed, top = top),e
+        try:
+            # a single pattern was returned by self.transform()
+            return p.transform(self, changed = changed, top = False),e
+        except AttributeError:
+            # self.transform() returned a list of patterns
+            ch = [ptrn != pattern for ptrn in p]
+            print 'Changed: ',ch
+            print 'Top: ',[not c for c in ch]
+            print 'Old Ids: ',[x._id for x in p]
+            new_patterns = [ptrn.transform(self,changed = ch[i], top = not ch[i]) \
+                            for i,ptrn in enumerate(p)]
+            print 'New Ids: ',[x._id for x in new_patterns]
+            return new_patterns,e
 
 class IndiscriminateTransform(BaseTransform):
     
@@ -430,15 +446,6 @@ class Zound(Pattern):
             # The events in self will be overwritten by the events in other.
             rn.append(p[k],v)
         return rn
-    
-#    def __radd__(self,other):
-#        '''
-#        Implemented so sum([p1,p2,...]) can be called on a list of patterns
-#        '''
-#        if not other:
-#            return self.copy()
-#        
-#        return self + other
     
     def shift(self,amt,recurse = False):
         '''
@@ -807,7 +814,10 @@ class Zound(Pattern):
         # TODO: Ensure that transform isn't None, and has at least one
         # transformation defined
         
+        print 'Pattern.transform() ',self._id
+        
         if self.is_leaf:
+            print 'LEAF'
             n = self.__class__(source = self.source,
                                address = self.address,
                                is_leaf = self.is_leaf)
@@ -820,6 +830,7 @@ class Zound(Pattern):
         n = self._empty_pattern()
         
         for pattern,events in self.iter_patterns():
+            print 'Pattern.transform() loop ',pattern._id
             p,e = pattern,events
             try:
                 # there's a transform defined for this pattern
@@ -829,8 +840,10 @@ class Zound(Pattern):
                     continue
             except KeyError as ke:
                 if not top:
+                    print 'Pattern.transform() KEY ERROR Bubble'
                     raise ke
                 
+                print 'Pattern.transform() KEY ERROR catch'
                 # there was no transform defined for this pattern
                 pass
             
@@ -891,6 +904,9 @@ class Zound(Pattern):
         '''
         get specific patterns, or time slices
         '''
+        
+        raise NotImplemented()
+        
         exc_msg = 'key must be a string or a slice'
         if not key:
             raise ValueError(exc_msg)
@@ -994,23 +1010,24 @@ class MusicPattern(Zound):
                  pdata = None,all_ids = None,is_leaf = False,stored = False,
                  bpm = 120,length_beats = 4):
         
-        Zound.__init__(self,source = source,external_id = external_id,address = address,
-                       pdata = pdata, all_ids = all_ids, is_leaf = is_leaf,
-                       stored = stored,_id = _id)
+        Zound.__init__(self,source = source,external_id = external_id,
+                       address = address, pdata = pdata, all_ids = all_ids, 
+                       is_leaf = is_leaf, stored = stored,_id = _id)
         self.bpm = bpm
         self.length_beats = length_beats
     
+    def _kwargs(self,**kwargs):
+        bpm = 'bpm'
+        return {bpm : kwargs[bpm] if bpm in kwargs else self.bpm}
+    
     def _render(self,**kwargs):
-        bpm = kwargs['bpm'] if 'bpm' in kwargs else self.bpm
-        return Zound._render(self,bpm = bpm)
+        return Zound._render(self,**self._kwargs(**kwargs))
     
     def length_samples(self,**kwargs):
-        bpm = kwargs['bpm'] if 'bpm' in kwargs else self.bpm
-        return Zound.length_samples(self,bpm = bpm)
+        return Zound.length_samples(self,**self._kwargs(**kwargs))
     
     def length_seconds(self,**kwargs):
-        bpm = kwargs['bpm'] if 'bpm' in kwargs else self.bpm
-        return Zound.length_seconds(self,bpm = bpm)
+        return Zound.length_seconds(self,**self._kwargs(**kwargs))
     
     def _copy(self,_id,addr):
         return MusicPattern(source = self.source,
@@ -1027,6 +1044,8 @@ class MusicPattern(Zound):
     def __and__(self,other):
         mp = Zound.__and__(self,other)
         mp.length_beats = max(self.length_beats,other.length_beats)
+        mp.bpm = self.bpm
+        return mp
     
     def __add__(self,other):
         '''
@@ -1101,13 +1120,11 @@ class MusicPattern(Zound):
         actual_beats = time % self.length_beats
         if actual_beats < 0:
             actual_beats = self.length_beats - actual_beats
-        print actual_beats
         return actual_beats * (1 / (bpm / 60))
     
     def _leaves_absolute(self,d = None,patterns = None,offset = 0,**kwargs):
-        bpm = kwargs['bpm'] if 'bpm' in kwargs else self.bpm
-        return Zound._leaves_absolute(\
-            self, d = d, patterns = patterns, offset = offset, bpm = bpm)
+        return Zound._leaves_absolute(self, d = d, patterns = patterns, 
+                                      offset = offset, **self._kwargs(**kwargs))
     
     def _empty_pattern(self):
         return MusicPattern(source = self.source,
