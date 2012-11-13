@@ -446,25 +446,8 @@ class PatternTest(object):
         self.assertFalse(branch._id == b2._id)
         self.assertTrue(self._almost_equal(b2,branch))
     
-    # TRANSFORM
-    # remove leaf, alter leaf, or alter leaf's event's list
-    # 
-    '''
-    transform() takes a dictionary-like object in the form
-    {key(s) : action}
-    
-    key can be a wildcard, a key, or a list of keys that the action should be
-    taken on
-    
-    action is a callable in the form
-    action(pattern,events)
-    
-    action can alter the pattern, the events list, or both
-    
-    KLUDGE: What if I want to turn a single pattern with multiple events into
-    many patterns, each with one event?
-    '''
-    
+    ## TRANSFORM ######################################################
+
     def test_transform_leaf(self):
         '''
         Change the address of a leaf pattern
@@ -635,16 +618,36 @@ class PatternTest(object):
         self.assertEqual(1,len(n1.all_ids))
         self.assertTrue(leaf._id in n1.all_ids)
     
-    def test_transform_change_single_instance(self):
+    def test_transform_shorten_single_leaf(self):
         '''
-        Alter only the last occurrence of b1 so it only has 3 beats. The first
-        three occurrences should continue to have four beats.
+        Alter the last occurrence of b1 so the last leaf is shorter than the 
+        others.  The first three occurrences should be unchanged.
         
         b2 --------------------
         | b1   b1   b1   b1   |   
         | xxxx|xxxx|xxxx|xxxx |
         -----------------------
-        ->
+        
+        -->
+        
+        n2 --------------------
+        | b1   b1   b1   n1   |   
+        | xxxx|xxxx|xxxx|xxxs |
+        -----------------------
+        '''
+        self.fail()
+    
+    def test_transform_change_single_instance(self):
+        '''
+        Alter the last occurrence of b1 so it only has 3 beats. The first
+        three occurrences should be unchanged.
+        
+        b2 --------------------
+        | b1   b1   b1   b1   |   
+        | xxxx|xxxx|xxxx|xxxx |
+        -----------------------
+        
+        -->
         
         n2 --------------------
         | b1   b1   b1   n1   |   
@@ -659,11 +662,13 @@ class PatternTest(object):
         b2.append(b1,[Event(i) for i in range(0,16,4)])
         
         def s(pattern,events):
-            print pattern._id
-            print events
+            
+            # make a copy of the pattern with the last beat omitted
             last = pattern.copy()
             last.pdata[leaf._id] = last.pdata[leaf._id][:-1]
              
+            # b1 should play thrice, and then the new pattern should play,
+            # which only has beats on [0,1,2]
             return [pattern,last],[events[:-1],events[-1:]]
         
         t = RecursiveTransform(s, lambda p,e: p._id == b1._id)
@@ -676,24 +681,101 @@ class PatternTest(object):
         self.assertTrue(b1._id in b3.pdata)
         self.assertEqual(2,len(b3.pdata))
         self.assertEqual(3,len(b3.pdata[b1._id]))
+    
+    def test_alter_one_of_two_leaves(self):
+        '''
+        Alter one of two nested leaf patterns, ensuring that the containing 
+        pattern is altered. Shorten only l1.
+        
+        b2-----------------
+        | b1------------- |
+        | | l1,l2,l1,l2 | |
+        | --------------- |
+        -------------------
+        
+        -->
+        
+        n2-----------------
+        | n1------------- |
+        | | n0,l2,n0,l2 | |
+        | --------------- |
+        -------------------
+        '''
+        self.fail()
             
     def test_alter_only_leaf_patterns_in_specific_pattern(self):
         '''
         Alter only the b1 patterns that are children of b2.
         
-        b2----------b3-----
-        | b1   b1  | b1   |
-        | xxxx|xxxx| xxxx |
-        -------------------
+        b4----------------------
+        |  b2----------b3----- |
+        |  | b1   b1  | b1   | |
+        |  | xxxx|xxxx| xxxx | |
+        |   ------------------ | 
+        ------------------------
         
-        ->
+        -->
         
-        n2----------b3-----
-        | n3   n3  | b1   |
-        | x-x-|x-x-| xxxx |
-        -------------------
+        n4----------------------
+        |  n2----------b3----- |
+        |  | n1   n1  | b1   | |
+        |  | x-x-|x-x-| xxxx | |
+        |   ------------------ | 
+        ------------------------
         '''
-        self.fail()
+        leaf = Zound[self._pattern_id]
+        b1 = Zound(source = 'Test',_id = 'b1')
+        b1.append(leaf,[Event(i) for i in range(4)])
+        
+        b2 = Zound(source = 'Test',_id = 'b2')
+        b2.append(b1,[Event(i) for i in range(0,8,4)])
+        
+        b3 = Zound(source = 'Test', _id = 'b3')
+        b3.append(b1,[Event(0)])
+        
+        b4 = Zound(source = 'Test', _id = 'b4')
+        b4.append(b2,[Event(0)])
+        b4.append(b3,Event(8))
+        
+        def s2(pattern,events):
+            return pattern,events[::2]
+        
+        inner = RecursiveTransform(s2,lambda p,e : p._id == leaf._id)
+        t = RecursiveTransform(inner,lambda p,e : p._id == b2._id)
+        b5 = b4.transform(t)
+        
+        known_ids = set([leaf._id,b1._id,b2._id,b3._id,b4._id])
+        
+        self.assertFalse(b5 is b4)
+        self.assertFalse(b5 == b4)
+        self.assertEqual(5,len(b5.all_ids))
+        self.assertTrue(leaf._id in b5.all_ids)
+        self.assertTrue(b1._id in b5.all_ids)
+        self.assertTrue(b3._id in b5.all_ids)
+        self.assertFalse(b2._id in b5.all_ids)
+        
+        self.assertEqual(2,len(b5.pdata))
+        self.assertTrue(b3._id in b5.pdata)
+        keys = b5.pdata.keys()
+        keys.remove(b3._id)
+        newkey = keys[0]
+        self.assertFalse(newkey in known_ids)
+        pattern = b5.patterns[newkey]
+        self.assertEqual(2,len(pattern.all_ids))
+        self.assertTrue(leaf._id in pattern.all_ids)
+        self.assertEqual(1,len(pattern.pdata))
+        self.assertEqual(2,len(pattern.pdata.values()[0]))
+        
+        nested = pattern.pdata.keys()[0]
+        self.assertFalse(nested in known_ids)
+        nested = b5.patterns[nested]
+        expected = set([0,2])
+        actual = set([e.time for e in nested.pdata.values()[0]])
+        self.assertEqual(expected,actual)
+        self.assertEqual(1,len(nested.pdata))
+        self.assertEqual(leaf._id,nested.pdata.keys()[0])
+        
+         
     
     def test_transform_nested_all(self):
         '''
