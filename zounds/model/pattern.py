@@ -314,26 +314,57 @@ class RecursiveTransform(BaseTransform):
         BaseTransform.__init__(self)
         self.transform = transform
         self.predicate = predicate or (lambda p,e: True)
+        self.recurse = True
     
     def _get_transform(self,pattern,events = None):
         return self.transform
     
+#    def __call__(self,pattern,events = None,changed = False, top = True):
+#        
+#        if self.predicate(pattern,events):
+#            # the predicate matched this pattern. transform it.
+#            p,e = self.transform(pattern,events)
+#            changed = True
+#        else:
+#            # the predicate didn't match. leave the pattern and its events
+#            # unaltered
+#            p,e = pattern,events
+#        
+#        if events is None:
+#            # this is a leaf pattern
+#            if not changed:
+#                # no patterns in this branch have changed
+#                print '%s raised key error' % pattern._id
+#                raise KeyError
+#            return p
+#        
+#        try:
+#            # a single pattern was returned by self.transform()
+#            return p.transform(self, changed = changed, top = False),e
+#        except AttributeError:
+#            # self.transform() returned a list of patterns
+#            print [ptrn._id for ptrn in p]
+#            new_patterns = [ptrn.transform(self, changed = changed, top = False) \
+#                            for i,ptrn in enumerate(p)]
+#            print [ptrn._id for ptrn in new_patterns]
+#            return new_patterns,e
+    
     def __call__(self,pattern,events = None,changed = False, top = True):
         
         if self.predicate(pattern,events):
+            # the predicate matched this pattern. transform it.
             p,e = self.transform(pattern,events)
-            print 'AFTER TRANSFORM'
-            print [x._id for x in p]
-            print e
-            print '++++++++++++++++++++++++++++++++++++++++++++'
             changed = True
         else:
+            # the predicate didn't match. leave the pattern and its events
+            # unaltered
             p,e = pattern,events
         
         if events is None:
             # this is a leaf pattern
             if not changed:
                 # no patterns in this branch have changed
+                print '%s raised key error' % pattern._id
                 raise KeyError
             return p
         
@@ -342,14 +373,12 @@ class RecursiveTransform(BaseTransform):
             return p.transform(self, changed = changed, top = False),e
         except AttributeError:
             # self.transform() returned a list of patterns
-            ch = [ptrn != pattern for ptrn in p]
-            print 'Changed: ',ch
-            print 'Top: ',[not c for c in ch]
-            print 'Old Ids: ',[x._id for x in p]
-            new_patterns = [ptrn.transform(self,changed = ch[i], top = not ch[i]) \
+            print [ptrn._id for ptrn in p]
+            new_patterns = [ptrn.transform(self, changed = changed, top = False) \
                             for i,ptrn in enumerate(p)]
-            print 'New Ids: ',[x._id for x in new_patterns]
+            print [ptrn._id for ptrn in new_patterns]
             return new_patterns,e
+            
 
 class IndiscriminateTransform(BaseTransform):
     
@@ -809,19 +838,60 @@ class Zound(Pattern):
         return self.address == other.address
     
     
+#    def transform(self,transform,changed = False,top = True):
+#        
+#        # TODO: Ensure that transform isn't None, and has at least one
+#        # transformation defined
+#        
+#        print '%s.transform()' % self._id
+#        
+#        if self.is_leaf:
+#            n = self.__class__(source = self.source,
+#                               address = self.address,
+#                               is_leaf = self.is_leaf)
+#            t = transform(n, changed = changed, top = top)
+#            # this is a leaf pattern, and it wasn't altered in any way, so
+#            # return self. Otherwise, return the modified pattern
+#            return self if self._leaf_compare(t) else t
+#        
+#        # create a new, empty pattern
+#        n = self._empty_pattern()
+#        
+#        for pattern,events in self.iter_patterns():
+#            p,e = pattern,events
+#            
+#            try:
+#                p,e = transform(pattern,events,changed = changed, top = False)
+#                if not e:
+#                    # the pattern is being removed
+#                    continue
+#            except KeyError as ke:
+#                if not top:
+#                    print '%s bubbled key error' % self._id
+#                    raise ke
+#                
+#                print '%s caught key error' % self._id
+#                # there was no transform defined for this pattern
+#                pass
+#            
+#            # append the possibly transformed events to the new pattern
+#            n.extend(p,e)
+#        
+#        print 'I was %s but now I am %s' % (self._id,n._id)
+#        return n
+            
     def transform(self,transform,changed = False,top = True):
         
         # TODO: Ensure that transform isn't None, and has at least one
         # transformation defined
         
-        print 'Pattern.transform() ',self._id
+        print '%s.transform()' % self._id
         
         if self.is_leaf:
-            print 'LEAF'
             n = self.__class__(source = self.source,
                                address = self.address,
                                is_leaf = self.is_leaf)
-            t = transform(n, changed = changed)
+            t = transform(n, changed = changed, top = top)
             # this is a leaf pattern, and it wasn't altered in any way, so
             # return self. Otherwise, return the modified pattern
             return self if self._leaf_compare(t) else t
@@ -829,27 +899,31 @@ class Zound(Pattern):
         # create a new, empty pattern
         n = self._empty_pattern()
         
-        for pattern,events in self.iter_patterns():
-            print 'Pattern.transform() loop ',pattern._id
+        ip = [pe for pe in self.iter_patterns()]
+        
+        while ip:
+            pattern,events = ip.pop()
             p,e = pattern,events
+            
             try:
-                # there's a transform defined for this pattern
                 p,e = transform(pattern,events,changed = changed, top = False)
                 if not e:
                     # the pattern is being removed
                     continue
+                
             except KeyError as ke:
                 if not top:
-                    print 'Pattern.transform() KEY ERROR Bubble'
+                    print '%s bubbled key error' % self._id
                     raise ke
                 
-                print 'Pattern.transform() KEY ERROR catch'
+                print '%s caught key error' % self._id
                 # there was no transform defined for this pattern
                 pass
             
             # append the possibly transformed events to the new pattern
             n.extend(p,e)
         
+        print 'I was %s but now I am %s' % (self._id,n._id)
         return n
     
     def extend(self,patterns,events):
