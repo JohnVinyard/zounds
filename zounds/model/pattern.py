@@ -905,11 +905,19 @@ class Zound(Pattern):
         
         :param pattern_queue: a list of patterns that are yet-to-be transformed
         '''
-        if isinstance(pt,Zound) and pt == p_orig:
-            # a single pattern was returned by the transform
-            return p_orig,et
+        if isinstance(pt,Zound):
+            if pt == p_orig:
+                # the original pattern was returned by the transform
+                return p_orig,et
+            
+            # a single pattern that wasn't the original was returned by the
+            # transform
+            pattern_queue.append((pt,et))
+            
+            # return None events for the original pattern so it will be removed
+            return p_orig,None
         
-        # assume that pt is a list
+        # pt wasn't a Zound.  Assume that pt is a list.
         po = p_orig
         eo = []
         
