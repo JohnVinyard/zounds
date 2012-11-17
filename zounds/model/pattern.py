@@ -307,6 +307,9 @@ class BaseTransform(object):
         
         # t will return a two-tuple of pattern,events
         return t(pattern,events)
+    
+    def _follow_up(self,pattern,events = None,changed = False,top = True):
+        return pattern,events
 
 class RecursiveTransform(BaseTransform):
     
@@ -314,7 +317,6 @@ class RecursiveTransform(BaseTransform):
         BaseTransform.__init__(self)
         self.transform = transform
         self.predicate = predicate or (lambda p,e: True)
-        self.recurse = True
     
     def _get_transform(self,pattern,events = None):
         return self.transform
@@ -348,37 +350,43 @@ class RecursiveTransform(BaseTransform):
 #                            for i,ptrn in enumerate(p)]
 #            print [ptrn._id for ptrn in new_patterns]
 #            return new_patterns,e
-    
-    def __call__(self,pattern,events = None,changed = False, top = True):
+
+    def __call__(self,pattern,events = None,changed = None, top = True):
         
         if self.predicate(pattern,events):
+            print pattern._id,' MATCHED'
             # the predicate matched this pattern. transform it.
             p,e = self.transform(pattern,events)
-            changed = True
+            changed[0] = True
         else:
+            print pattern._id, ' DID NOT MATCH'
             # the predicate didn't match. leave the pattern and its events
             # unaltered
             p,e = pattern,events
         
         if events is None:
             # this is a leaf pattern
-            if not changed:
+            if not changed[0]:
                 # no patterns in this branch have changed
                 print '%s raised key error' % pattern._id
                 raise KeyError
             return p
         
-        try:
-            # a single pattern was returned by self.transform()
-            return p.transform(self, changed = changed, top = False),e
-        except AttributeError:
-            # self.transform() returned a list of patterns
-            print [ptrn._id for ptrn in p]
-            new_patterns = [ptrn.transform(self, changed = changed, top = False) \
-                            for i,ptrn in enumerate(p)]
-            print [ptrn._id for ptrn in new_patterns]
-            return new_patterns,e
+        return p,e
+#        try:
+#            # a single pattern was returned by self.transform()
+#            return p.transform(self, changed = changed, top = False),e
+#        except AttributeError:
+#            # self.transform() returned a list of patterns
+#            print [ptrn._id for ptrn in p]
+#            new_patterns = [ptrn.transform(self, changed = changed, top = False) \
+#                            for i,ptrn in enumerate(p)]
+#            print [ptrn._id for ptrn in new_patterns]
+#            return new_patterns,e
+    
+    def _follow_up(self,pattern,events = None,changed = None,top = True):
             
+        return pattern.transform(self,changed = changed, top = top), events
 
 class IndiscriminateTransform(BaseTransform):
     
@@ -437,6 +445,9 @@ class Zound(Pattern):
         # self.store() is called
         self._to_store = set()
         
+        # INTERNAL USE ONLY!!!
+        self._ancestors = []
+        
     def _copy(self,_id,addr):
         return Zound(source = self.source,
                   external_id = _id,
@@ -458,6 +469,8 @@ class Zound(Pattern):
         z._to_store = self._to_store.copy()
         if self._patterns:
             z._patterns = self._patterns.copy()
+        
+        z._ancestors = list(self._ancestors)
         return z
     
     
@@ -879,11 +892,47 @@ class Zound(Pattern):
 #        
 #        print 'I was %s but now I am %s' % (self._id,n._id)
 #        return n
-            
-    def transform(self,transform,changed = False,top = True):
+    
+    def _interpret_transform_result(self,p_orig,pt,et,pattern_queue):
+        '''
+        :param p_orig: the pattern that was passed to the transform
+        
+        :param e_orig: the events list that was passed to the transform
+        
+        :param pt: the pattern or patterns that were returned by the transform
+        
+        :param et: the events list(s) that were returned by the transform
+        
+        :param pattern_queue: a list of patterns that are yet-to-be transformed
+        '''
+        if isinstance(pt,Zound) and pt == p_orig:
+            # a single pattern was returned by the transform
+            return p_orig,et
+        
+        # assume that pt is a list
+        po = p_orig
+        eo = []
+        
+        try:
+            index = pt.index(p_orig)
+            po = pt.pop(index)
+            eo = et.pop(index)
+        except ValueError:
+            pass
+        
+        # append any new patterns and events to the pattern queue
+        for i in xrange(len(pt)):
+            pattern_queue.append((pt[i],et[i]))
+        
+        return po,eo
+    
+    def transform(self,transform,changed = None,top = True):
         
         # TODO: Ensure that transform isn't None, and has at least one
         # transformation defined
+        
+        #if changed is None:
+        #    changed = [False]
         
         print '%s.transform()' % self._id
         
@@ -899,18 +948,26 @@ class Zound(Pattern):
         # create a new, empty pattern
         n = self._empty_pattern()
         
-        ip = [pe for pe in self.iter_patterns()]
+        pq = list(self.iter_patterns())
         
-        while ip:
-            pattern,events = ip.pop()
+        while pq:
+            changed = [False]
+            
+            pattern,events = pq.pop()
             p,e = pattern,events
+            
+            p._ancestors.append(self)
+            p._ancestors.extend(self._ancestors)
             
             try:
                 p,e = transform(pattern,events,changed = changed, top = False)
+                # Interpret the result of the transform
+                p,e = self._interpret_transform_result(pattern, p, e, pq)
                 if not e:
                     # the pattern is being removed
                     continue
-                
+                # Call _follow_up, if necessary
+                p,e = transform._follow_up(p,e,changed = changed,top = False)
             except KeyError as ke:
                 if not top:
                     print '%s bubbled key error' % self._id
@@ -920,11 +977,13 @@ class Zound(Pattern):
                 # there was no transform defined for this pattern
                 pass
             
-            # append the possibly transformed events to the new pattern
+            p._ancestors = []
             n.extend(p,e)
         
         print 'I was %s but now I am %s' % (self._id,n._id)
         return n
+            
+    
     
     def extend(self,patterns,events):
         '''
@@ -932,6 +991,7 @@ class Zound(Pattern):
         multi pattern, single event each -> [],[]
         multi pattern, multi event each -> [],[]
         '''
+        
         try:
             l = patterns.__len__()
         except AttributeError:
