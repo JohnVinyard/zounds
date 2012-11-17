@@ -251,6 +251,31 @@ class PatternTest(object):
         
         self.assertEqual(r.patterns[pid],leaf)
     
+    def test_append_stored_nested(self):
+        '''
+        Similar to test_append_stored(), but with two levels of nesting
+        '''
+        pid = self.make_leaf_pattern(2, self._frame_id)
+        leaf = Zound[pid]
+        n = Zound(source = 'Test')
+        n.append(leaf,[Event(i) for i in range(3)])
+        n.store()
+        
+        root = Zound(source = 'Test')
+        root.append(n,[Event(i) for i in range(0,16,4)])
+        root.store()
+        
+        r = Zound[root._id]
+        self.assertEqual(root,r)
+        self.assertFalse(root is r)
+        self.assertTrue(n._id in r.all_ids)
+        self.assertTrue(leaf._id in r.all_ids)
+        self.assertEqual(4,len(r.pdata[n._id]))
+        self.assertEqual(n,r.patterns[n._id])
+        
+        self.assertEqual(3,len(r.patterns[n._id].pdata[leaf._id]))
+        self.assertEqual(leaf,r.patterns[n._id].patterns[leaf._id])
+    
     def test_extend_single_pattern_multiple_events(self):
         leaf = Zound[self._pattern_id]
         b = Zound(source = 'Test')
@@ -313,12 +338,6 @@ class PatternTest(object):
         e2 = [Event(i) for i in range(10,12)]
         self.assertRaises(ValueError,lambda : b.extend([leaf,l2],[e1,e2,e2]))
         
-        
-    def test_append_stored_nested(self):
-        '''
-        Similar to test_append_stored(), but with two levels of nesting
-        '''
-        self.fail()
     
     def test_store_unstored_nested_patterns(self):
         '''
@@ -620,22 +639,54 @@ class PatternTest(object):
     
     def test_transform_shorten_single_leaf(self):
         '''
-        Alter the last occurrence of b1 so the last leaf is shorter than the 
+        Alter the last occurrence of b1 so the first leaf is shorter than the 
         others.  The first three occurrences should be unchanged.
         
         b2 --------------------
         | b1   b1   b1   b1   |   
-        | xxxx|xxxx|xxxx|xxxx |
+        | xxx-|xxx-|xxx-|xxx- |
         -----------------------
         
         -->
         
         n2 --------------------
         | b1   b1   b1   n1   |   
-        | xxxx|xxxx|xxxx|xxxs |
+        | xxx-|xxx-|xxx-|sxx- |
         -----------------------
         '''
-        self.fail()
+        leaf = Zound[self._pattern_id]
+        b1 = Zound(source = 'Test',_id = 'b1')
+        b1.append(leaf,[Event(i) for i in range(3)])
+        
+        b2 = Zound(source = 'Test',_id = 'b2')
+        b2.append(b1,[Event(i) for i in range(0,16,4)])
+        
+        def s(pattern,events):
+            
+            if pattern.is_leaf:
+                addr = pattern.address
+                sl = slice(addr._index.start,addr._index.stop - 2)
+                new_addr = self.env.address_class((addr._id,sl))
+                pattern.address = new_addr
+                return pattern,events
+        
+            # make a copy of the pattern
+            last = pattern.copy()
+            
+            if pattern._id == b1._id:
+                # b1 should play thrice, and then the new pattern should play,
+                # which has a shorter leaf pattern on 4.
+                return [pattern,last],[events[:-1],events[-1:]]
+            
+            if pattern._id == leaf._id:
+                return [last,pattern],[events[0],events[1:]]
+            
+        
+        t = RecursiveTransform(s,lambda p,e : \
+            p._id == b1._id or (p._id == leaf._id and b1 in p._ancestors))
+        
+        
+        
     
     def test_transform_change_single_instance(self):
         '''
@@ -702,6 +753,9 @@ class PatternTest(object):
         -------------------
         '''
         self.fail()
+    
+    def test_replace_all_leaf_instances_with_another_leaf(self):
+        self.fail()
             
     def test_alter_only_leaf_patterns_in_specific_pattern(self):
         '''
@@ -738,16 +792,18 @@ class PatternTest(object):
         b4.append(b3,Event(8))
         
         def s2(pattern,events):
+            print 's2'
             return pattern,events[::2]
         
-        inner = RecursiveTransform(s2,lambda p,e : p._id == leaf._id)
-        t = RecursiveTransform(inner,lambda p,e : p._id == b2._id)
+        
+        t = RecursiveTransform(s2,lambda p,e : p._id == leaf._id and b2 in p._ancestors)
         b5 = b4.transform(t)
         
         known_ids = set([leaf._id,b1._id,b2._id,b3._id,b4._id])
         
         self.assertFalse(b5 is b4)
         self.assertFalse(b5 == b4)
+        print b5.all_ids
         self.assertEqual(5,len(b5.all_ids))
         self.assertTrue(leaf._id in b5.all_ids)
         self.assertTrue(b1._id in b5.all_ids)
@@ -908,21 +964,27 @@ class PatternTest(object):
         self.assertFalse(r2 is root)
         self.assertFalse(r2 == root)
         
+        print r2.all_ids
         self.assertTrue(p1._id in r2.all_ids)
-        self.assertFalse(p2._id in r2.all_ids)
+        self.assertTrue(p2._id in r2.all_ids)
         self.assertTrue(l1._id in r2.all_ids)
         self.assertTrue(l2._id in r2.all_ids)
         
         self.assertEqual(2,len(r2.pdata))
         self.assertEqual(1,len(r2.pdata[p1._id]))
         self.assertEqual(4,len(r2.patterns[p1._id].pdata[l1._id]))
+        self.assertEqual(1,len(r2.pdata[p2._id]))
         
-        keys = r2.pdata.keys()
-        keys.remove(p1._id)
-        k = keys[0]
+        events = r2.patterns[p2._id].pdata[l2._id]
+        self.assertEqual(3,len(events))
+        expected = set([0,1,2])
+        self.assertEqual(expected,set([e.time for e in events])) 
         
-        self.assertEqual(1,len(r2.pdata[k]))
-        self.assertEqual(3,len(r2.patterns[k].pdata[l2._id]))
+        events = r2.pdata[p2._id]
+        self.assertEqual(1,len(events))
+        expected = set([2])
+        self.assertEqual(expected,set([e.time for e in events]))
+        
         
     
     def test_transform_drill_down_change_leaf(self):
