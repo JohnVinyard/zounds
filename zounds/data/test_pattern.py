@@ -662,7 +662,38 @@ class PatternTest(object):
         b2 = Zound(source = 'Test',_id = 'b2')
         b2.append(b1,[Event(i) for i in range(0,16,4)])
         
-        self.fail()
+        def s(pattern,events):
+            # transform new leaf
+            if None is events:
+                addr = pattern.address
+                sl = slice(addr._index.start,addr._index.stop - 2)
+                new_addr = self.env.address_class((addr._id,sl))
+                pattern.address = new_addr
+                return pattern,events
+            
+            # transform leaf
+            if pattern.is_leaf:
+                n = pattern.copy()
+                return [n,pattern],[events[0],events[1:]]
+            
+            # transform b1
+            n = pattern.copy()
+            return [pattern,n],[events[:-1],events[-1:]]
+            
+        t = RecursiveTransform(s,lambda p,e : \
+                               (p._id == b1._id) or
+                               (e and p._id == leaf._id and b1 not in p._ancestors) or
+                               (p.is_leaf and p._leaf_compare(leaf) and e is None))
+        
+        root = b2.transform(t)
+        print root.all_ids
+        self.assertFalse(root is b2)
+        self.assertFalse(root == b2)
+        self.assertEqual(4,len(root.all_ids))
+        self.assertTrue(b1._id in root.all_ids)
+        self.assertTrue(leaf._id in root.all_ids)
+        self.assertEqual(2,len(root.pdata))
+            
     
     def test_transform_change_single_instance(self):
         '''
@@ -747,7 +778,8 @@ class PatternTest(object):
             pattern.address = new_addr
             return pattern,events
         
-        t = RecursiveTransform(s,lambda p,e : p._id == l1._id and p.is_leaf)
+        t = RecursiveTransform(s,lambda p,e : \
+                               p.is_leaf and p._leaf_compare(l1) and e is None)
         
         root = b2.transform(t)
         print root.all_ids
@@ -771,8 +803,8 @@ class PatternTest(object):
         -->
         
         n6----------------------
-        |  n5----------n4----- |
-        |  | n1   n2  | n3   | |
+        |  n4----------n3----- |
+        |  | n1   n1  | n2   | |
         |  | yyyy|yyyy| yyyy | |
         |   ------------------ | 
         ------------------------
@@ -796,11 +828,11 @@ class PatternTest(object):
         def s(pattern,events):
             return new_leaf,None
         
-        t = RecursiveTransform(s,lambda p,e : p._id == leaf._id and p.is_leaf)
+        t = RecursiveTransform(s,lambda p,e : \
+                            p.is_leaf and p._leaf_compare(leaf) and e is None)
         
         root = b4.transform(t)
         
-        print root.all_ids
         self.assertFalse(root is b4)
         self.assertFalse(root == b4)
         self.assertFalse(leaf._id in root.all_ids)
@@ -809,7 +841,18 @@ class PatternTest(object):
         self.assertFalse(b2._id in root.all_ids)
         self.assertFalse(b3._id in root.all_ids)
         self.assertEqual(2,len(root.pdata))
+        self.assertEqual(5,len(root.all_ids))
         
+        keys = root.pdata.keys()
+        k1 = keys.pop()
+        self.assertEqual(1,len(root.patterns[k1].pdata))
+        sk1 = root.patterns[k1].pdata.keys()[0]
+        self.assertTrue(len(root.patterns[k1].pdata[sk1]) in [1,2])
+        
+        k2 = keys.pop()
+        self.assertEqual(1,len(root.patterns[k2].pdata))
+        sk2 = root.patterns[k2].pdata.keys()[0]
+        self.assertTrue(len(root.patterns[k2].pdata[sk2]) in [1,2])
             
     def test_alter_only_leaf_patterns_in_specific_pattern(self):
         '''
@@ -850,7 +893,9 @@ class PatternTest(object):
             return pattern,events[::2]
         
         
-        t = RecursiveTransform(s2,lambda p,e : p._id == leaf._id and b2 in p._ancestors)
+        t = RecursiveTransform(s2,lambda p,e : \
+                               p._id == leaf._id and b2 in p._ancestors)
+        
         b5 = b4.transform(t)
         
         known_ids = set([leaf._id,b1._id,b2._id,b3._id,b4._id])
