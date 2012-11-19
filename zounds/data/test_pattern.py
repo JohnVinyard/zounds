@@ -1682,6 +1682,24 @@ class PatternTest(object):
         
         l3 = set([e.time for e in la[leaves[3]._id]])
         self.assertEqual(set([2,6]),l3)
+    
+    def test_music_pattern_invert_two_levels_2(self):
+        # create a backbeat pattern
+        h = self.make_leaf_pattern(1,'hihat',store = False)
+        s = self.make_leaf_pattern(1,'snare',store = False)
+        k = self.make_leaf_pattern(1,'kick',store = False)
+        
+        hp = MusicPattern(source = 'Test',bpm = 60)
+        hp.append(h,[Event(i) for i in np.arange(0,4,.5)])
+        
+        sp = MusicPattern(source = 'Test',bpm = 60)
+        sp.append(s,[Event(1),Event(3)])
+        
+        kp = MusicPattern(source = 'Test',bpm = 60)
+        kp.append(k,[Event(0),Event(2)])
+        
+        la = (~sp)._leaves_absolute()
+        self.assertEqual([0,2],[e.time for e in la['snare']])
         
     def test_music_pattern_render(self):
         '''
