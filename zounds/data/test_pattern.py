@@ -1767,6 +1767,25 @@ class PatternTest(object):
         self.assertEqual(addr,p1.address)
         self.assertEqual(1,len(p1.pdata))
         self.assertEqual(1,len(p1.all_ids))
+    
+    
+    # MusicPattern.interpret_time
+    
+    def test_interpret_time_lt_length_beats(self):
+        mp = MusicPattern(source = 'Test',length_beats = 4, bpm = 60)
+        self.assertEqual(1,mp.interpret_time(1))
+    
+    def test_interpret_time_gt_length_beats(self):
+        mp = MusicPattern(source = 'Test',length_beats = 4, bpm = 60)
+        self.assertEqual(1,mp.interpret_time(5))
+    
+    def test_interpret_time_negative_lt_length_beats(self):
+        mp = MusicPattern(source = 'Test',length_beats = 4, bpm = 60)
+        self.assertEqual(3,mp.interpret_time(-1))
+    
+    def test_interpret_time_negative_gt_length_beats(self):
+        mp = MusicPattern(source = 'Test',length_beats = 4, bpm = 60)
+        self.assertEqual(3,mp.interpret_time(-5))
         
         
         

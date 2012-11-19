@@ -5,9 +5,13 @@ Musical Pattern game
 	get no special treatment, i.e., leaf patterns aren't really searchable!!!
 
 - invert() bug (e2e416ee99914d3b80fbfcbb8d834ec0)
-- Pattern controller list_ids() and random() methods
-- DONE Zound-derived MusicPattern class
+	- (p + (~p)).play() doesn't do what I expect. This is because the negative
+	  times are interpreted in the context of the new, longer pattern.
+	
+
 - Transformations and JACK rendering
+- Simple transformations : Time stretch, pitch shift, reverb, high and lowpass filters
+- _render() and play() should use the exact same code; transformations should be implemented in C/C++
 - Coffeescript implementation of MusicPattern code
 - How do I queue and analyze incoming patterns?
 - YIN implementation
@@ -15,8 +19,6 @@ Musical Pattern game
 - Stupid onset detection
 - Stupid BPM estimation
 - Pattern construction is cumbersome
-- Simple transformations : Time stretch, pitch shift, reverb, high and lowpass filters
-- _render() and play() should use the exact same code; transformations should be implemented in C/C++
 - Move tests that have nothing to do with data storage/access into the model package
 - Address.contiguous() method which helps to answer the question: 
   "Should this pattern be re-analyzed and stored in the frames database?"
