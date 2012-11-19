@@ -4,6 +4,8 @@ Musical Pattern game
 - Since leaf patterns aren't re-analyzed and inserted into the frames database, they
 	get no special treatment, i.e., leaf patterns aren't really searchable!!!
 
+- invert() bug (e2e416ee99914d3b80fbfcbb8d834ec0)
+- Pattern controller list_ids() and random() methods
 - DONE Zound-derived MusicPattern class
 - Transformations and JACK rendering
 - Coffeescript implementation of MusicPattern code

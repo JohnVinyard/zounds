@@ -1,4 +1,5 @@
 from abc import ABCMeta,abstractmethod
+from random import choice
 
 from pymongo import Connection
 
@@ -24,6 +25,13 @@ class PatternController(Controller):
     def __len__(self):
         raise NotImplemented()
     
+    @abstractmethod
+    def list_ids(self):
+        '''
+        Return a list of all pattern ids
+        '''
+        raise NotImplemented()
+    
     
 class InMemory(PatternController):
     
@@ -45,6 +53,9 @@ class InMemory(PatternController):
     
     def __len__(self):
         return self._store.__len__()
+    
+    def list_ids(self):
+        return set(self._store.keys())
 
 
 
@@ -77,7 +88,6 @@ class MongoDbPatternController(PatternController):
                 raise KeyError(_id)
             
             return d
-
         
         raise ValueError('_id must be a single _id or a list of them')
     
@@ -89,6 +99,12 @@ class MongoDbPatternController(PatternController):
     
     def _cleanup(self):
         self.db.drop_collection(self._collection_name)
+    
+    def _distinct_ids(self):
+        return self.collection.distinct('_id')
+    
+    def list_ids(self):
+        return set(self._distinct_ids())
         
         
 

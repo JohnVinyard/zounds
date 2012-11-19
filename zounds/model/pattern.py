@@ -409,6 +409,19 @@ class Zound(Pattern):
         # during transforms, keep track of the id this pattern was transformed
         # from
         self._was = None
+    
+    @classmethod
+    def list_ids(cls):
+        return cls.controller().list_ids()
+    
+    @classmethod
+    def random(cls):
+        '''random
+        
+        Return a random, stored instance
+        '''
+        _ids = list(cls.list_ids())
+        return cls[_ids[np.random.randint(0,len(_ids))]]
         
     def _copy(self,_id,addr):
         return Zound(source = self.source,
@@ -1124,8 +1137,6 @@ class MusicPattern(Zound):
         is kept.
         '''
         # TODO: What if self and/or other are leaf patterns
-        # TODO: A new length in beats must be calculated
-        # TODO: What if the two patterns have different tempos?
         if not other:
             return self.copy()
         
