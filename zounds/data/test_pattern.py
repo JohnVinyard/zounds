@@ -190,14 +190,6 @@ class PatternTest(object):
         b = Zound(source = 'Test')
         self.assertRaises(Exception,lambda : b.store())
     
-    def test_store_twice(self):
-        '''
-        create a pattern and call store() twice. The second call should raise an
-        exception
-        '''
-        leaf = Zound[self._pattern_id]
-        self.assertRaises(Exception,lambda : leaf.store())
-    
     def test_append_after_store(self):
         '''
         try to append() to a pattern that has already been stored
@@ -634,7 +626,7 @@ class PatternTest(object):
         self.assertEqual(1,len(n1.all_ids))
         self.assertTrue(leaf._id in n1.all_ids)
     
-    # KLUDGE: This operation has to happen in two steps, for now.
+
     def test_transform_shorten_single_leaf(self):
         '''
         Alter the last occurrence of b1 so the first leaf is shorter than the 
@@ -652,8 +644,6 @@ class PatternTest(object):
         | xxx-|xxx-|xxx-|sxx- |
         -----------------------
         '''
-        
-        
         
         leaf = Zound[self._pattern_id]
         b1 = Zound(source = 'Test',_id = 'b1')
@@ -683,6 +673,9 @@ class PatternTest(object):
         t = RecursiveTransform(s,lambda p,e : \
                                (p._id == b1._id) or
                                (e and p._id == leaf._id and b1 not in p._ancestors) or
+                               # BUG: all of this will be true for both the new
+                               # copy and the "old" leaf, since a copy is always
+                               # made
                                (p.is_leaf and p._leaf_compare(leaf) and e is None))
         
         root = b2.transform(t)
@@ -730,10 +723,7 @@ class PatternTest(object):
             return [pattern,last],[events[:-1],events[-1:]]
         
         t = RecursiveTransform(s, lambda p,e: p._id == b1._id)
-        b3 = b2.transform(t)
-        print b3.pdata
-        for k in b3.pdata.iterkeys():
-            print b3.patterns[k].pdata 
+        b3 = b2.transform(t) 
         self.assertFalse(b3 is b2)
         self.assertFalse(b3 == b2)
         self.assertTrue(b1._id in b3.pdata)
@@ -782,7 +772,6 @@ class PatternTest(object):
                                p.is_leaf and p._leaf_compare(l1) and e is None)
         
         root = b2.transform(t)
-        print root.all_ids
         self.assertFalse(root is b2)
         self.assertFalse(root == b2)
         self.assertFalse(l1._id in root.all_ids)
@@ -889,7 +878,6 @@ class PatternTest(object):
         b4.append(b3,Event(8))
         
         def s2(pattern,events):
-            print 's2'
             return pattern,events[::2]
         
         
@@ -902,7 +890,6 @@ class PatternTest(object):
         
         self.assertFalse(b5 is b4)
         self.assertFalse(b5 == b4)
-        print b5.all_ids
         self.assertEqual(5,len(b5.all_ids))
         self.assertTrue(leaf._id in b5.all_ids)
         self.assertTrue(b1._id in b5.all_ids)
@@ -1063,7 +1050,6 @@ class PatternTest(object):
         self.assertFalse(r2 is root)
         self.assertFalse(r2 == root)
         
-        print r2.all_ids
         self.assertTrue(p1._id in r2.all_ids)
         self.assertTrue(p2._id in r2.all_ids)
         self.assertTrue(l1._id in r2.all_ids)
@@ -1696,6 +1682,75 @@ class PatternTest(object):
         
         l3 = set([e.time for e in la[leaves[3]._id]])
         self.assertEqual(set([2,6]),l3)
+        
+    def test_music_pattern_render(self):
+        '''
+        This is really just a smoke test to make sure that _render doesn't
+        raise an exception
+        '''
+        leaf = Zound[self._pattern_id]
+        pattern = MusicPattern(source = 'Test',length_beats = 4)
+        pattern.append(leaf,[Event(0),Event(2)])
+        audio = pattern._render()
+        self.assertTrue(audio.dtype == np.float32)
+    
+    def test_store_pattern_from_leaf_method(self):
+        
+        # there's only one frames instance in the database, so we know what to
+        # expect here
+        
+        frames = FrameModel.random()
+        leaf = Zound.leaf(frames)
+        leaf.store()
+        
+        l2 = Zound[leaf._id]
+        self.assertFalse(l2 is leaf)
+        self.assertTrue(l2 == leaf)
+        self.assertTrue(l2.is_leaf)
+    
+    def test_render_nested_music_pattern(self):
+        frames = FrameModel.random()
+        leaf = Zound.leaf(frames)
+        p1 = MusicPattern(source = 'Test')
+        # eight notes
+        p1.append(leaf,[Event(i) for i in [0,.5,1,1.5,2,2.5,3,3.5]])
+        p1.store()
+        
+        # repeat p1 four times
+        p2 = p1 * 4
+        
+        # render the new pattern
+        audio = p2._render()
+        
+        
+    def test_retrieve_stored_and_analyzed_pattern(self):
+        # See note in model.pattern.Zound.fromdict(), line 1025
+        frames = FrameModel.random()
+        
+        # create a musical pattern and store it
+        leaf = Zound.leaf(frames)
+        p1 = MusicPattern(source = 'Test')
+        p1.append(leaf,[Event(i) for i in [0,.5,1,1.5,2,2.5,3,3.5]])
+        p1.store()
+        _id = p1._id
+        del p1
+        
+        # fetch it and analyze it
+        p1 = MusicPattern[_id]
+        self.assertTrue(p1.address is None)
+        ec = FrameModel.extractor_chain(p1)
+        addr = FrameModel.controller().append(ec)
+        p1.address = addr
+        p1.store()
+        
+        del p1
+        
+        p1 = MusicPattern[_id]
+        self.assertEqual(addr,p1.address)
+        self.assertEqual(1,len(p1.pdata))
+        self.assertEqual(1,len(p1.all_ids))
+        
+        
         
         
         

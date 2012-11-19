@@ -1,10 +1,10 @@
 Musical Pattern game
 ====================================
-- finish failing Pattern tests
+- DONE finish failing Pattern tests
 - Since leaf patterns aren't re-analyzed and inserted into the frames database, they
 	get no special treatment, i.e., leaf patterns aren't really searchable!!!
 
-- Zound-derived MusicPattern class
+- DONE Zound-derived MusicPattern class
 - Transformations and JACK rendering
 - Coffeescript implementation of MusicPattern code
 - How do I queue and analyze incoming patterns?
