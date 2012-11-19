@@ -259,14 +259,15 @@ class Event(object):
     
     @staticmethod
     def encode_custom(event):
+        # TODO: This should include transform data too
         return {'time' : event.time}
     
     @staticmethod
     def decode_custom(doc):
+        # TODO: This should include transform data too
         return Event(doc['time'])
     
     def length_samples(self,pattern,**kwargs):
-        
         # TODO: This should check the pattern against all transforms to decide
         # if the transform might shorten or lengthen the pattern
         
@@ -324,12 +325,10 @@ class RecursiveTransform(BaseTransform):
     def __call__(self,pattern,events = None,changed = None, top = True):
         
         if self.predicate(pattern,events):
-            print pattern._id,' MATCHED'
             # the predicate matched this pattern. transform it.
             p,e = self.transform(pattern,events)
             changed[0] = True
         else:
-            print pattern._id, ' DID NOT MATCH'
             # the predicate didn't match. leave the pattern and its events
             # unaltered
             p,e = pattern,events
@@ -338,7 +337,6 @@ class RecursiveTransform(BaseTransform):
             # this is a leaf pattern
             if not changed[0]:
                 # no patterns in this branch have changed
-                print '%s raised key error' % pattern._id
                 raise KeyError
             return p
         
@@ -533,7 +531,6 @@ class Zound(Pattern):
         a Frames-derived instance with the address property set
         '''
         e = cls.env()
-        _id = e.newid()
         source = source or e.source
         
         if isinstance(addr,e.address_class):
@@ -550,8 +547,13 @@ class Zound(Pattern):
         
         try:
             if addr.address:
+                # addr is a frames instance
+                if isinstance(addr.address,str):
+                    a = e.framecontroller.address(addr.address)
+                else:
+                    a = addr.address
                 return Zound(\
-                        source = source,address = addr.address,is_leaf = True)
+                        source = source,address = a,is_leaf = True)
         except AttributeError:
             pass
         
@@ -587,6 +589,7 @@ class Zound(Pattern):
             for k,v in self.pdata.iteritems():
                 pattern = patterns[k]
                 # get the latest end time of all the events
+                print v
                 total = \
                     max([(self.interpret_time(e.time,**kwargs) * sr) + e.length_samples(pattern,**kwargs) \
                           for e in v])
@@ -605,7 +608,9 @@ class Zound(Pattern):
     
     def _render(self,**kwargs):
         # render the pattern as audio
+        
         # KLUDGE: Maybe _render should be an iterator, for very long patterns
+        
         # TODO: rendering should happen *just like* realtime playing, i.e.,
         # audio rendering should be handled by the audio back-end in 
         # "free-wheeling" mode.
@@ -630,7 +635,8 @@ class Zound(Pattern):
             for event in v:
                 # render each occurrence of the sub-pattern
                 # TODO: Don't perform the same transformation twice!
-                time,tc = event.time,TransformChain.fromdict(event.transforms)
+                time,tc = self.interpret_time(event.time,**kwargs), \
+                          TransformChain.fromdict(event.transforms)
                 ts = int(time * env.samplerate)
                 transformed = tc(a)
                 # apply any transformations and add the result to the output
@@ -638,7 +644,7 @@ class Zound(Pattern):
             
         return audio
     
-    def interpret_time(self,time):
+    def interpret_time(self,time,**kwargs):
         '''
         Patterns might interpret time values in different ways.  The default
         interpretation is the identity function.  Times are expressed in seconds.
@@ -861,10 +867,8 @@ class Zound(Pattern):
         # TODO: Ensure that transform isn't None, and has at least one
         # transformation defined
         
-        print '%s.transform()' % self._id
         
         if self.is_leaf:
-            print 'LEAF %s.transform()' % self._id
             n = self.__class__(source = self.source,
                                address = self.address,
                                is_leaf = self.is_leaf)
@@ -889,7 +893,6 @@ class Zound(Pattern):
             p._ancestors.append(self)
             p._ancestors.extend(self._ancestors)
             
-            print 'CHANGED ',changed
             try:
                 p,e = transform(pattern,events,changed = changed, top = False)
                 # Interpret the result of the transform
@@ -901,17 +904,14 @@ class Zound(Pattern):
                 p,e = transform._follow_up(p,e,changed = changed,top = False)
             except KeyError as ke:
                 if not top:
-                    print '%s bubbled key error' % self._id
                     raise ke
                 
-                print '%s caught key error' % self._id
                 # there was no transform defined for this pattern
                 pass
             
             p._ancestors = []
             n.extend(p,e)
         
-        print 'I was %s but now I am %s' % (self._id,n._id)
         return n
             
     
@@ -1022,11 +1022,20 @@ class Zound(Pattern):
         d = d.copy()
         
         if d.has_key('address'):
+            d['address'] = cls.env().address_class.fromdict(d['address'])
+        
+        if d['is_leaf']:
+            # BUG: The presence of an addreess is being used to decide if the
+            # pattern is a leaf pattern, but all patterns will be analyzed and
+            # given an address.  This is broken for non-leaf patterns that have
+            # been analyzed.
             d['all_ids'] = None
             d['pdata'] = None
-            d['address'] = cls.env().address_class.fromdict(d['address'])
         else:
-            d['address'] = None
+            pdata = {}
+            for k,v in d['pdata'].iteritems():
+                pdata[k] = [Event.fromdict(e) for e in v]
+            d['pdata'] = pdata
         
         d['stored'] = stored
         return cls(**d)
@@ -1034,10 +1043,6 @@ class Zound(Pattern):
     # TODO: Should this be asynchronous ?
     def store(self):
         
-        if self.stored:
-            # KLUDGE: Should I define a custom exception for this?
-            raise Exception('Zound %s is already stored' % self._id)
-    
         if self.empty:
             # KLUDGE: Should I define a custom exception for this?
             raise Exception('Cannot store an empty pattern')
