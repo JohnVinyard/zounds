@@ -292,6 +292,9 @@ class Environment(object):
     
     def start_audio_engine(self):
         self.synth._start_audio_engine()
+        
+    def stop_audio_engine(self):
+        self.synth._stop_audio_engine()
     
     # KLUDGE: This is specific to PyTables, i.e., there are lots of problems
     # with concurrent reads.  This should be handled some other way.

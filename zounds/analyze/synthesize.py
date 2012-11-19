@@ -167,6 +167,7 @@ class WindowedAudioSynthesizer(object):
     def _stop_audio_engine(self):
         stop()
     
+    
     def _vorbis_write(self,frames,sndfile,output,transformer):
         cs = self.vorbis_chunk_size
         waypoint = 0

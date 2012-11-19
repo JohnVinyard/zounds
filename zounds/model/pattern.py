@@ -1183,21 +1183,30 @@ class MusicPattern(Zound):
             raise Exception('cannot invert a leaf pattern')
         
         def s(pattern,events):
+            
             if None is events:
                 return pattern,events
             
-            try:
-                lb = pattern.length_beats
-                ev = [-(e + lb) for e in events]
-            except AttributeError:
-                ev = [-(e + 1) for e in events]
-        
+            #try:
+            #    # BUG: What matters here is the length in beats of the *parent*
+            #    # pattern, not the pattern that's passed to the transform
+            #    lb = pattern.length_beats
+            #    ev = [lb - e for e in events]
+            #except AttributeError:
+            #    # this is a leaf pattern
+            #    ev = [-(e + 1) for e in events]
+            ev = [-(e + 1) for e in events]
+            
             return pattern,ev
          
         return self.transform(RecursiveTransform(s))
     
     def interpret_time(self,time,**kwargs):
-        bpm = kwargs['bpm']
+        if kwargs:
+            bpm = kwargs['bpm']
+        else:
+            bpm = self.bpm
+        
         actual_beats = time % self.length_beats
         if actual_beats < 0:
             actual_beats = self.length_beats - actual_beats
