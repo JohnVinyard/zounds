@@ -1769,7 +1769,7 @@ class PatternTest(object):
         self.assertEqual(1,len(p1.all_ids))
     
     
-    # MusicPattern.interpret_time
+    ## MusicPattern.interpret_time #######################################
     
     def test_interpret_time_lt_length_beats(self):
         mp = MusicPattern(source = 'Test',length_beats = 4, bpm = 60)
@@ -1786,6 +1786,36 @@ class PatternTest(object):
     def test_interpret_time_negative_gt_length_beats(self):
         mp = MusicPattern(source = 'Test',length_beats = 4, bpm = 60)
         self.assertEqual(3,mp.interpret_time(-5))
+    
+    
+    def test_add_pattern_and_inverted(self):
+        leaf = Zound[self._pattern_id]
+        p = MusicPattern(source = 'Test',length_beats = 4, bpm = 60)
+        p.append(leaf,[Event(i) for i in range(4)])
+        # This should be an eight beat long pattern with an event on every whole
+        # beat
+        p2 = (p + (~p))
+        
+        expected = set(range(8))
+        actual = set([e.time for e in p2._leaves_absolute()[leaf._id]])
+        
+        self.assertEqual(expected,actual)
+    
+    def test_add_lhs_leaf(self):
+        l1 = self.make_leaf_pattern(1,'l1',store = False)
+        l2 = self.make_leaf_pattern(2,'l2',store = False)
+        p = MusicPattern(source = 'Test')
+        p.append(l2,[Event(i) for i in range(4)])
+        
+        self.assertRaises(ValueError,lambda : l1 + p)
+    
+    def test_add_rhs_leaf(self):
+        l1 = self.make_leaf_pattern(1,'l1',store = False)
+        l2 = self.make_leaf_pattern(2,'l2',store = False)
+        p = MusicPattern(source = 'Test')
+        p.append(l2,[Event(i) for i in range(4)])
+        
+        self.assertRaises(ValueError,lambda : p + l1)
         
         
         
