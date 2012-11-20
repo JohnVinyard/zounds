@@ -187,8 +187,8 @@ class Event(object):
         
         :param time_secs: The time in seconds at which the event should occur
         
-        :param kwargs: A dictionary mapping zounds.analyze.synthesize.Transform \
-        derived class names to the parameters for that transform
+        :param args: A list of zounds.analyze.synthesize.Transform \
+        derived instances
         '''
         object.__init__(self)
         self.time = time
@@ -1149,7 +1149,7 @@ class MusicPattern(Zound):
             # BUG: What if other contains a pattern that this pattern contains?
             # The events in self will be overwritten by the events in other.
             
-            # BUG: What if self has negative or wrapped event times? The same
+            # BUG: What if *self* has negative or wrapped event times? The same
             # problems apply.
             
             pattern = p[k]

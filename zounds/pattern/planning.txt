@@ -1,0 +1,65 @@
+Delay ** NOTES HAVE UNKNOWN LENGTH **
+	PARAM float32 delay seconds
+	PARAM float32 feedback
+	PARAM float32 effect level
+
+Convolution (need a small set of impulse responses) ** NOTES HAVE UNKNOWN LENGTH **
+	float32 buffer
+	boolean normalize
+	PARAM float32 mix
+
+Gain
+	gain - float32
+
+BiQuad Filter
+	// Filter type.
+    const unsigned short LOWPASS = 0;
+    const unsigned short HIGHPASS = 1;
+    const unsigned short BANDPASS = 2;
+    const unsigned short LOWSHELF = 3;
+    const unsigned short HIGHSHELF = 4;
+    const unsigned short PEAKING = 5;
+    const unsigned short NOTCH = 6;
+    const unsigned short ALLPASS = 7;
+
+    attribute unsigned short type;
+    PARAM readonly attribute AudioParam frequency; // in Hertz
+    PARAM readonly attribute AudioParam Q; // Quality factor
+    PARAM readonly attribute AudioParam gain; // in Decibels
+
+WaveShaper
+	curve - float32 array
+
+Compressor
+	PARAM readonly attribute AudioParam threshold; // in Decibels
+    PARAM readonly attribute AudioParam knee; // in Decibels
+    PARAM readonly attribute AudioParam ratio; // unit-less
+    PARAM readonly attribute AudioParam reduction; // in Decibels
+    PARAM readonly attribute AudioParam attack; // in Seconds
+    PARAM readonly attribute AudioParam release; // in Seconds
+
+    
+interface AudioParam {
+
+    attribute float value;
+    readonly attribute float computedValue;
+    readonly attribute float minValue;
+    readonly attribute float maxValue;
+    readonly attribute float defaultValue;
+
+    // Parameter automation. 
+    void setValueAtTime(float value, double startTime);
+    void linearRampToValueAtTime(float value, double endTime);
+    void exponentialRampToValueAtTime(float value, double endTime);
+
+    // Exponentially approach the target value with a rate having the given time constant. 
+    void setTargetAtTime(float target, double startTime, double timeConstant);
+
+    // Sets an array of arbitrary parameter values starting at time for the given duration. 
+    // The number of values will be scaled to fit into the desired duration. 
+    void setValueCurveAtTime(Float32Array values, double startTime, double duration);
+
+    // Cancels all scheduled parameter changes with times greater than or equal to startTime. 
+    void cancelScheduledValues(double startTime);
+
+};
