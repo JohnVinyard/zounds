@@ -5,13 +5,14 @@ Delay ** NOTES HAVE UNKNOWN LENGTH **
 
 Convolution (need a small set of impulse responses) ** NOTES HAVE UNKNOWN LENGTH **
 	float32 buffer
+	// HOW DO I REPRESENT NON_PARAM VALUES?
 	boolean normalize
 	PARAM float32 mix
 
 Gain
 	gain - float32
 
-BiQuad Filter
+BiQuad Filter ** STATEFUL **
 	// Filter type.
     const unsigned short LOWPASS = 0;
     const unsigned short HIGHPASS = 1;
@@ -22,15 +23,16 @@ BiQuad Filter
     const unsigned short NOTCH = 6;
     const unsigned short ALLPASS = 7;
 
+	// HOW DO I REPRESENT NON_PARAM VALUES?
     attribute unsigned short type;
     PARAM readonly attribute AudioParam frequency; // in Hertz
     PARAM readonly attribute AudioParam Q; // Quality factor
     PARAM readonly attribute AudioParam gain; // in Decibels
 
-WaveShaper
+WaveShaper ** STATEFUL **
 	curve - float32 array
 
-Compressor
+Compressor ** STATEFUL **
 	PARAM readonly attribute AudioParam threshold; // in Decibels
     PARAM readonly attribute AudioParam knee; // in Decibels
     PARAM readonly attribute AudioParam ratio; // unit-less

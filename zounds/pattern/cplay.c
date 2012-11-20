@@ -74,6 +74,7 @@ int process(jack_nframes_t nframes, void *arg) {
 	jack_nframes_t frame_time = jack_last_frame_time(client);
 	float sample = 0;
 
+
 	for(i = 0; i < nframes; i++) {
 		sample = 0;
 

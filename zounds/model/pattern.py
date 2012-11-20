@@ -142,6 +142,7 @@ class Buffers(Thread):
         try:
             # p is a FrameModel-derived instance
             audio = self.env.synth(p.audio)
+            # BUG: What if this is only a partial segment of a pattern?
             self._buffers[p._id] = (t,audio)
             return
         except AttributeError as e:
