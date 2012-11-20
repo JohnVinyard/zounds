@@ -1819,8 +1819,6 @@ class PatternTest(object):
         
         
         
-        
-        
 class InMemoryTest(unittest.TestCase,PatternTest):
     
     def setUp(self):

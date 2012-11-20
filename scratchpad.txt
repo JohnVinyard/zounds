@@ -4,9 +4,14 @@ Musical Pattern game
 - Since leaf patterns aren't re-analyzed and inserted into the frames database, they
 	get no special treatment, i.e., leaf patterns aren't really searchable!!!
 
+- JACK client should do resampling, if necessary
+- When do I need to know the exact length-in-samples of a pattern?  How do I handle
+  effects that may lengthen or shorten a pattern?
 - Transformations and JACK rendering
 - Simple transformations : Time stretch, pitch shift, reverb, high and lowpass filters
 - _render() and play() should use the exact same code; transformations should be implemented in C/C++
+
+
 - Coffeescript implementation of MusicPattern code
 - How do I queue and analyze incoming patterns?
 - YIN implementation
@@ -21,6 +26,8 @@ Musical Pattern game
 
 TemplateMatch tweaks
 ====================================
+- Similarity search should be a web service
+
 - Upload/record query sounds in websearch.py
 
 - dragger/slider for playhead positioning
@@ -28,7 +35,7 @@ TemplateMatch tweaks
 - Display timecodes in websearch interface
 
 - How does correlation compare with euclidean distance once all patches have
-  unit norm, both in terms of speed and
+  unit norm, both in terms of speed and accuracy?
   
 - Once the Templates are learned, take the DCT of each and sparsify to speed
   up analysis?

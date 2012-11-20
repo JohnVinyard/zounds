@@ -10,6 +10,29 @@ from time import sleep
 class Transform(object):
     '''
     Transform some audio
+    
+    A transform applies to a single event.  The transform may take zero or more
+    parameters at one or more instances in time.
+    
+    If a particular parameter has n (time,value) pairs defined, then there should
+    be n-1 interpolations defined which determine how to travel between the two
+    values.
+    
+    E.g, for an event that is one second long, I might apply a Gain transform.  
+    Gain has a single parameter, "gain", which ranges from 0 to 1.  I might
+    define the transform like this:
+    
+    Gain([(time = 0,value = 0),(time = 1, value = 1)],[Linear])
+    
+    In this case, the gain value will changed linearly from 0 to 1 over the 
+    course of the sample.
+    
+    When multiple parameters are present, they can be changed independently.
+    
+    So, if
+        - 0 values are present for a parameter, a sensible default is used
+        - 1 value is present, this value is used for the duration of the event
+        - 2 or more values are present, n -1 interpolations must be provided
     '''
     
     _impl = {}
