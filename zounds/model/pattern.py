@@ -1136,16 +1136,28 @@ class MusicPattern(Zound):
         the two patterns have different tempos, the tempo of the left-hand side
         is kept.
         '''
-        # TODO: What if self and/or other are leaf patterns
         if not other:
             return self.copy()
         
+        if self.is_leaf or other.is_leaf:
+            raise ValueError('Cannot add leaf patterns')
+        
+        # TODO: Maybe copy should rectify any negative or wrapped times 
         rn = self.copy()
         p = other.patterns
         for k,v in other.pdata.iteritems():
             # BUG: What if other contains a pattern that this pattern contains?
             # The events in self will be overwritten by the events in other.
-            rn.append(p[k],[Event(e.time + rn.length_beats) for e in v])
+            
+            # BUG: What if self has negative or wrapped event times? The same
+            # problems apply.
+            
+            pattern = p[k]
+            events = []
+            for e in v:
+                time = pattern._interpret_beats(e.time) + rn.length_beats
+                events.append(Event(time))
+            rn.append(pattern,events)
         rn.length_beats += other.length_beats
         return rn
     
@@ -1153,8 +1165,6 @@ class MusicPattern(Zound):
         '''
         Implemented so that an iterable of patterns can be sum()-ed
         '''
-        # TODO: A new length in beats must be calculated
-        # TODO: What if the two patterns have different tempos?
         if not other:
             return self.copy()
         
@@ -1164,8 +1174,6 @@ class MusicPattern(Zound):
         '''
         Repeat this pattern n times 
         '''
-        # TODO: A new length in beats must be calculated
-        # TODO: What if the two patterns have different tempos?
         if self.is_leaf:
             raise Exception('cannot multiply a leaf pattern')
         
@@ -1183,33 +1191,31 @@ class MusicPattern(Zound):
             raise Exception('cannot invert a leaf pattern')
         
         def s(pattern,events):
-            
             if None is events:
                 return pattern,events
             
-            #try:
-            #    # BUG: What matters here is the length in beats of the *parent*
-            #    # pattern, not the pattern that's passed to the transform
-            #    lb = pattern.length_beats
-            #    ev = [lb - e for e in events]
-            #except AttributeError:
-            #    # this is a leaf pattern
-            #    ev = [-(e + 1) for e in events]
             ev = [-(e + 1) for e in events]
             
             return pattern,ev
          
         return self.transform(RecursiveTransform(s))
     
+    def _interpret_beats(self,time):
+        '''
+        Interpret any negative times or wrapped beats
+        '''
+        actual_beats = time % self.length_beats
+        if actual_beats < 0:
+            actual_beats = self.length_beats - actual_beats
+        return actual_beats
+    
     def interpret_time(self,time,**kwargs):
+        actual_beats = self._interpret_beats(time)
+        
         if kwargs:
             bpm = kwargs['bpm']
         else:
             bpm = self.bpm
-        
-        actual_beats = time % self.length_beats
-        if actual_beats < 0:
-            actual_beats = self.length_beats - actual_beats
         return actual_beats * (1 / (bpm / 60))
     
     def _leaves_absolute(self,d = None,patterns = None,offset = 0,**kwargs):
