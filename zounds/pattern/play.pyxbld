@@ -27,8 +27,7 @@ def make_ext(modname, pyxfilename):
     cmd = 'gcc -fPIC %s -I%s -c %s -o %s' % (libflags,dir,cfile,output)
     p = subprocess.Popen(cmd,shell = True)
     p.wait()
-	    
-    
+	
     # Build the cython extension
     from distutils.extension import Extension
     return Extension(name = modname,

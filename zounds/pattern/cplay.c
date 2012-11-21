@@ -13,6 +13,46 @@ jack_client_t *client;
 jack_port_t *output_ports[CHANNELS+1];
 jack_port_t *input_port;
 
+/*
+// Parameter ##################################################################
+
+parameter * parameter_new(
+float * values,int n_values,jack_nframes_t * times,char * interpolations) {
+
+	struct parameter * param = malloc(sizeof(*param));
+
+	param->n_values = n_values;
+	param->values = (float *)malloc(sizeof(float) * n_values);
+	memmove(values,param->values,sizeof(float) * n_values);
+
+	param->times = (jack_nframes_t *)malloc(sizeof(jack_nframes_t) * (n_values - 1));
+	memmove(times,param->times,sizeof(jack_nframes_t) * (n_values - 1));
+
+	param->interpolations = (char *)malloc(sizeof(char) * (n_values - 1));
+	memmove(interpolations,param->interpolations,sizeof(char) * (n_values - 1));
+
+	param->pos = 0;
+
+	return param;
+};
+
+float parameter_current_value(parameter * param,jack_nframes_t time) {
+	return 0.0;
+};
+
+void parameter_advance_if_necessary(parameter * param,jack_nframes_t time) {
+	;
+};
+
+void parameter_delete(parameter * param) {
+	free(param->values);
+	free(param->times);
+	free(param->interpolations);
+	free(param);
+}
+
+*/
+
 
 event_t *EVENTS;
 

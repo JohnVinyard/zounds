@@ -25,8 +25,14 @@ typedef struct {
 
 } event_t;
 
+
 /*
 // Parameter ##################################################################
+enum INTERPOLATION_TYPE {
+	Linear,
+	Exponential
+};
+
 typedef struct {
 	// the current value of a parameter is computed using the current time,
 	// the previous value, the next value, and the interpolation type.
@@ -42,7 +48,7 @@ typedef struct {
 	// the type of interpolation for the current transition. This must be
 	// len(values) - 1, , since the first value is assumed to begin at time zero.
 	// Implement the interpolation types recommended by  the Web Audio API
-	int * interpolation;
+	char * interpolations;
 
 	// the position in the values array
 	int pos;
@@ -50,23 +56,22 @@ typedef struct {
 } parameter;
 
 // Create a new parameter instance
-parameter parameter_new(float * values,         // all values for this parameter
+parameter * parameter_new(float * values,         // all values for this parameter
 						int n_values,           // the number of values
 						jack_nframes_t * times, // times at which the values begin
 						int * interpolations);   // interpolation type codes
 
 // Get the current value of the parameter instance
-void parameter_current_value(parameter * param,           // parameter instance
-							jack_nframes_t time,          // current time
-							float previous_value,         // previous param value
-							float next_value,             // next param value
-							jack_nframes_t previous_time, // begin interpolate time
-							jack_nframes_t next_time);    // end interpolate time
+float parameter_current_value(parameter * param,    // parameter instance
+							  jack_nframes_t time); // current time
 
 // Advance the parameter to the next transition if the next way-point has been
 // reached.
 void parameter_advance_if_necessary(parameter * param,
 									jack_nframes_t current_time);
+
+// Free the memory used by the parameter
+void parameter_delete(parameter * param);
 
 
 // Transform ##################################################################
@@ -139,8 +144,8 @@ typedef struct {
 	char silent;
 
 } event2_t;
-
 */
+
 
 #define N_EVENTS 256
 #define second_in_microsecs 1e6
