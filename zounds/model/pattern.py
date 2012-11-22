@@ -1027,6 +1027,18 @@ class Zound(Pattern):
         d['pdata'] = pdata
         return d
     
+    def todict_comprehensive(self):
+        '''
+        Return a dictionary containing this pattern and all patterns
+        required to render it.
+        '''
+        d = dict()
+        d['root'] = self.todict()
+        
+        patterns = self.__class__[self.all_ids]
+        d['patterns'] = dict([(p._id,p.todict()) for p in patterns])
+        return d 
+    
     @classmethod
     def fromdict(cls,d,stored = False):
         
