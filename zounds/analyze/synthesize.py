@@ -7,7 +7,14 @@ from time import sleep
 
 # KLUDGE: All these transforms should be written in C/C++, so they can be used with
 # the realtime JACK player as well
+
+# BUG: the todict() fromdict() cycle isn't idempotent!!
 class Transform(object):
+    
+    JUMP = 0
+    LINEAR = 1
+    EXPONENTIAL = 2
+    
     '''
     Transform some audio
     
@@ -45,12 +52,24 @@ class Transform(object):
     def args(self):
         return ()
     
+    # TODO: Get rid of this!!  Clients should do the interpretation here
+    def _normalize(self,param):
+        '''
+        Parameters may be passed as a single value, or an iterable of tuples of
+        (values, times, interpolation types).  Normalize them.
+        '''
+        if hasattr(param,'__iter__'):
+            values,times,interps = param
+            return [values,(0,) + times,(Transform.LINEAR,) + interps]
+        
+        return[(param,),(0,),(Transform.JUMP)]
+    
     def todict(self):
         return (self.__class__.__name__ ,self.args)
     
     @classmethod
     def fromdict(cls,d):
-        return transformers[d[0]](*d[1])
+        return cls._impl[d[0]](*d[1])
     
     def _transform(self,audio):
         raise NotImplemented()
@@ -69,26 +88,100 @@ class NoOp(Transform):
 
 #TODO: This should accept constant and variable rate amplitude data too, defined
 # by a zounds.timeseries.TimeSeries-derived class
-class Amplitude(Transform):
+class Gain(Transform):
     '''
     Adjust the amplitude of audio
     '''
-    def __init__(self,amp):
-        Transform.__init__(self)
-        self.amp = amp
+    def __init__(self,gain):
+        '''__init__
         
+        :param amp: Either a single floating point value between 0 and 1, or an \
+        iterable of tuples of ((values,),(times,),(interpolation types),)
+        '''
+        Transform.__init__(self)
+        self.gain = self._normalize(gain)
+    
     @property
     def args(self):
         return (self.amp,)
     
     def _transform(self,audio):
-        return audio * self.amp
+        raise NotImplemented()
+
+class Delay(Transform):
     
-# TODO: Dirac-based time and pitch stretch
+    def __init__(self,dtime,feedback,level):
+        Transform.__init__(self)
+        self.dtime = self._normalize(dtime)
+        self.feedback = self._normalize(feedback)
+        self.level = self._normalize(level)
+    
+    @property
+    def args(self):
+        return (self.dtime,self.feedback,self.level)
+    
+class Convolver(Transform):
+    ROOM = 0
+    PLATE = 1
+    HALL = 2
+    
+    def __init__(self,rtype,normalize,mix):
+        Transform.__init__(self)
+        self.rtype = rtype
+        self.normalize = normalize
+        self.mix = self._normalize(mix)
+    
+    @property
+    def args(self):
+        return (self.rtype,self.normalize,self.mix)
 
-# TODO: Basic low and high-pass filters
+class BiQuadFilter(Transform):
+    LOWPASS = 0
+    HIGHPASS = 1
+    BANDPASS = 2
+    LOWSHELF = 3
+    HIGHSHELF = 4
+    PEAKING = 5
+    NOTCH = 6
+    ALLPASS = 7
+    
+    def __init__(self,ftype,frequency,q,gain):
+        Transform.__init__(self)
+        self.ftype = ftype
+        self.frequency = self._normalize(frequency)
+        self.q = self._normalize(q)
+        self.gain = self._normalize(gain)
+    
+    @property
+    def args(self):
+        return (self.ftype,self.frequency,self.q,self.gain)
 
-# TODO: Freeverb
+# TODO: How does this work?
+class WaveShaper(Transform):
+    
+    def __init__(self):
+        Transform.__init__(self)
+        raise NotImplemented()
+    
+    @property
+    def args(self):
+        raise NotImplemented()
+
+class Compressor(Transform):
+    
+    def __init__(self,threshold,knee,ratio,reduction,attack,release):
+        Transform.__init__(self)
+        self.threshold = self._normalize(threshold)
+        self.knee = self._normalize(knee)
+        self.ratio = self._normalize(ratio)
+        self.reduction = self._normalize(reduction)
+        self.attack = self._normalize(attack)
+        self.release = self._normalize(release)
+    
+    @property
+    def args(self):
+        return (self.threshold,self.knee,self.ratio,
+                self.reduction,self.attack,self.release)
 
 class TransformChain(Transform):
     
@@ -98,6 +191,7 @@ class TransformChain(Transform):
     
     def _transform(self,audio):
         ac = audio.copy()
+        print self._chain
         for c in self._chain:
             ac = c(ac)
         return ac
@@ -112,10 +206,85 @@ class TransformChain(Transform):
     def fromdict(cls,d):
         return TransformChain([Transform.fromdict(z) for z in d])
 
-# KLUDGE: There's gotta be a better way than this
-transformers = {
-    'Amplitude' : Amplitude
-}
+
+
+
+# TODO: It'd probably be better to do a max size in bytes, rather than an 
+# expiration time in minutes
+class Buffers(Thread):
+    
+    def __init__(self,expire_time_minutes = 5):
+        Thread.__init__(self)
+        self.setDaemon(True)
+        self._should_run = True
+        self._buffers = dict()
+        self._expire_seconds = expire_time_minutes * 60
+        self.start()
+    
+    @property
+    def env(self):
+        return Environment.instance
+    
+    def has_key(self,key):
+        return self._buffers.has_key(key)
+    
+    def _update(self,key):
+        _,audio = self._buffers[key]
+        self._buffers[key] = (time(),audio)
+        return audio
+    
+    def __getitem__(self,key):
+        return self._update(key)
+    
+    def allocate(self,p):
+        
+        try:
+            self._update(p._id)
+            return
+        except KeyError:
+            pass
+        
+        t = time()
+        
+        try:
+            # p is a FrameModel-derived instance
+            audio = self.env.synth(p.audio)
+            # BUG: What if this is only a partial segment of a pattern?
+            self._buffers[p._id] = (t,audio)
+            return
+        except AttributeError as e:
+            print e
+            pass
+        
+        try:
+            # p is a leaf pattern, or a pattern that has been analyzed
+            fm = self.env.framemodel
+            frames = fm[p.address]
+            audio = self.env.synth(frames.audio)
+            self._buffers[p._id] = (t,audio)
+            return
+        except AttributeError as e:
+            print e
+            pass
+        
+        raise ValueError('p must be a FrameModel-derived instance or a Zound')
+    
+    def run(self):
+        while self._should_run:
+            keys = self._buffers.keys()
+            tm = time()
+            for k in keys:
+                t,_ = self._buffers[k]
+                if tm - t > self._expire_seconds:
+                    print 'expiring %s' % k
+                    del self._buffers[k]
+            
+            # check for expired buffers once a minute
+            sleep(1000 * 60)
+                
+    
+    def stop(self):
+        self._should_run = False
 
 class BufferBabysitter(Thread):
     '''
