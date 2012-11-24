@@ -2,13 +2,12 @@ import numpy as np
 #from scikits.audiolab import play
 from zounds.pattern import start,usecs,put,stop,cancel_all
 from threading import Thread
-from time import sleep
+from time import sleep,time
 
 
 # KLUDGE: All these transforms should be written in C/C++, so they can be used with
 # the realtime JACK player as well
 
-# BUG: the todict() fromdict() cycle isn't idempotent!!
 class Transform(object):
     
     JUMP = 0
@@ -52,18 +51,6 @@ class Transform(object):
     def args(self):
         return ()
     
-    # TODO: Get rid of this!!  Clients should do the interpretation here
-    def _normalize(self,param):
-        '''
-        Parameters may be passed as a single value, or an iterable of tuples of
-        (values, times, interpolation types).  Normalize them.
-        '''
-        if hasattr(param,'__iter__'):
-            values,times,interps = param
-            return [values,(0,) + times,(Transform.LINEAR,) + interps]
-        
-        return[(param,),(0,),(Transform.JUMP)]
-    
     def todict(self):
         return (self.__class__.__name__ ,self.args)
     
@@ -86,8 +73,6 @@ class NoOp(Transform):
         return audio
         
 
-#TODO: This should accept constant and variable rate amplitude data too, defined
-# by a zounds.timeseries.TimeSeries-derived class
 class Gain(Transform):
     '''
     Adjust the amplitude of audio
@@ -99,7 +84,7 @@ class Gain(Transform):
         iterable of tuples of ((values,),(times,),(interpolation types),)
         '''
         Transform.__init__(self)
-        self.gain = self._normalize(gain)
+        self.gain = gain
     
     @property
     def args(self):
@@ -112,9 +97,9 @@ class Delay(Transform):
     
     def __init__(self,dtime,feedback,level):
         Transform.__init__(self)
-        self.dtime = self._normalize(dtime)
-        self.feedback = self._normalize(feedback)
-        self.level = self._normalize(level)
+        self.dtime = dtime
+        self.feedback = feedback
+        self.level = level
     
     @property
     def args(self):
@@ -129,7 +114,7 @@ class Convolver(Transform):
         Transform.__init__(self)
         self.rtype = rtype
         self.normalize = normalize
-        self.mix = self._normalize(mix)
+        self.mix = mix
     
     @property
     def args(self):
@@ -156,7 +141,7 @@ class BiQuadFilter(Transform):
     def args(self):
         return (self.ftype,self.frequency,self.q,self.gain)
 
-# TODO: How does this work?
+# TODO: Write this class.
 class WaveShaper(Transform):
     
     def __init__(self):
@@ -171,12 +156,12 @@ class Compressor(Transform):
     
     def __init__(self,threshold,knee,ratio,reduction,attack,release):
         Transform.__init__(self)
-        self.threshold = self._normalize(threshold)
-        self.knee = self._normalize(knee)
-        self.ratio = self._normalize(ratio)
-        self.reduction = self._normalize(reduction)
-        self.attack = self._normalize(attack)
-        self.release = self._normalize(release)
+        self.threshold = threshold
+        self.knee = knee
+        self.ratio = ratio
+        self.reduction = reduction
+        self.attack = attack
+        self.release = release
     
     @property
     def args(self):
@@ -187,11 +172,12 @@ class TransformChain(Transform):
     
     def __init__(self,transformers):
         Transform.__init__(self)
+        print 'TRANSFORMERS',transformers
         self._chain = transformers
     
     def _transform(self,audio):
         ac = audio.copy()
-        print self._chain
+        print 'CHAIN',self._chain
         for c in self._chain:
             ac = c(ac)
         return ac
@@ -213,17 +199,22 @@ class TransformChain(Transform):
 # expiration time in minutes
 class Buffers(Thread):
     
-    def __init__(self,expire_time_minutes = 5):
+    instance = None
+    
+    def __new__(cls,*args,**kwargs):
+        if not cls.instance:
+            cls.instance = super(Buffers,cls).__new__(cls)
+        
+        return cls.instance
+    
+    def __init__(self,env,expire_time_minutes = 5):
         Thread.__init__(self)
         self.setDaemon(True)
         self._should_run = True
         self._buffers = dict()
         self._expire_seconds = expire_time_minutes * 60
+        self.env = env
         self.start()
-    
-    @property
-    def env(self):
-        return Environment.instance
     
     def has_key(self,key):
         return self._buffers.has_key(key)

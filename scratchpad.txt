@@ -1,11 +1,9 @@
 Musical Pattern game
 ====================================
-- reorganize code
-- Get transforms straightened out
 - tests to ensure that events/transforms are stored and retrieved correctly
+- add created date to patterns
 - Web Audio delay unit and blog post
 
-- DONE finish failing Pattern tests
 - Since leaf patterns aren't re-analyzed and inserted into the frames database, they
 	get no special treatment, i.e., leaf patterns aren't really searchable!!!
 

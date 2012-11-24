@@ -2,7 +2,7 @@ from __future__ import division
 from uuid import uuid4
 from multiprocessing import cpu_count
 
-from zounds.analyze.synthesize import WindowedAudioSynthesizer
+from zounds.analyze.synthesize import WindowedAudioSynthesizer,Buffers
 from zounds.util import tostring
 
 
@@ -124,6 +124,8 @@ class Environment(object):
         ''' 
         object.__init__(self)
         
+        self.buffers = Buffers(self)
+        
         self.do_sync = do_sync
         
         #: audio settings, samplerate, windowsize and stepsize
@@ -161,6 +163,7 @@ class Environment(object):
         self.data[framemodel] = self.framecontroller
         if not Environment._test and self.do_sync:
             self.framemodel.sync()
+    
     
     def __repr__(self):
         return tostring(self,
@@ -346,5 +349,4 @@ class Environment(object):
         env = Environment.__new__(Environment)
         env = env.__setstate__(data)
         return env
-    
     

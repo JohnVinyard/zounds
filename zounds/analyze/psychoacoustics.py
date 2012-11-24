@@ -39,6 +39,8 @@ def erb(hz):
     '''
     return (0.108 * hz) + 24.7
 
+
+# TODO: Documentation
 class Scale(object):
     
     __metaclass__ = ABCMeta
