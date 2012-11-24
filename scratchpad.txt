@@ -1,5 +1,10 @@
 Musical Pattern game
 ====================================
+- reorganize code
+- Get transforms straightened out
+- tests to ensure that events/transforms are stored and retrieved correctly
+- Web Audio delay unit and blog post
+
 - DONE finish failing Pattern tests
 - Since leaf patterns aren't re-analyzed and inserted into the frames database, they
 	get no special treatment, i.e., leaf patterns aren't really searchable!!!
@@ -11,7 +16,7 @@ Musical Pattern game
 - Simple transformations : Time stretch, pitch shift, reverb, high and lowpass filters
 - _render() and play() should use the exact same code; transformations should be implemented in C/C++
 
-
+- Update indexes on-the-fly
 - Coffeescript implementation of MusicPattern code
 - How do I queue and analyze incoming patterns?
 - YIN implementation
@@ -79,13 +84,6 @@ Handle mp3 files using the FFMpeg library
 upload or record query sounds
 ogg vorbis or mp3 storage?
 Audio hosted elsewhere, i.e., I store the features, but the audio is hosted on SoundCloud, e.g.
-Pattern data structure
-Update indexes on-the-fly
-onset detection
-pitch
-chroma
-loudness
-"effects" - amplitude, time and pitch stretch, reverb
 client and at-home player
 
 
