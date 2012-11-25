@@ -2,9 +2,8 @@ from __future__ import division
 from uuid import uuid4
 from multiprocessing import cpu_count
 
-from zounds.analyze.synthesize import WindowedAudioSynthesizer,Buffers
+from zounds.analyze.synthesize import WindowedAudioSynthesizer
 from zounds.util import tostring
-
 
 class AudioConfig:
     samplerate = 44100
@@ -123,8 +122,6 @@ class Environment(object):
         :param do_sync: Mostly for internal use. This should usually be True.
         ''' 
         object.__init__(self)
-        
-        self.buffers = Buffers(self)
         
         self.do_sync = do_sync
         

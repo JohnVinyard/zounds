@@ -1,4 +1,5 @@
 from __future__ import division
+from time import time
 
 from zounds.model.model import Model
 from zounds.analyze.feature.rawaudio import AudioFromDisk,AudioFromMemory
@@ -18,8 +19,9 @@ class MetaPattern(type):
             return [self.fromdict(i,stored = True) for i in item]
     
     def _store(self,pattern):
+        pattern.stored = time()
         self.controller().store(pattern.todict())
-        pattern.stored = True
+        
 
 class Pattern(Model):
     '''
