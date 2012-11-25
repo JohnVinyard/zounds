@@ -1,6 +1,8 @@
 from __future__ import division
 from copy import deepcopy
 from itertools import izip,repeat
+from time import time,sleep
+from threading import Thread
 
 import numpy as np
 
@@ -10,6 +12,89 @@ from transform import RecursiveTransform,IndiscriminateTransform
 from zounds.util import tostring
 from zounds.analyze.synthesize import TransformChain
 from zounds.pattern import usecs,put
+from zounds.environment import Environment
+
+
+# TODO: It'd probably be better to do a max size in bytes, rather than an 
+# expiration time in minutes
+# KLUDGE: This class doesn't really belong here
+class Buffers(Thread):
+    
+    def __init__(self,expire_time_minutes = 5):
+        Thread.__init__(self)
+        self.setDaemon(True)
+        self._should_run = True
+        self._buffers = dict()
+        self._expire_seconds = expire_time_minutes * 60
+        self.start()
+    
+    @property
+    def env(self):
+        return Environment.instance
+    
+    def has_key(self,key):
+        return self._buffers.has_key(key)
+    
+    def _update(self,key):
+        _,audio = self._buffers[key]
+        self._buffers[key] = (time(),audio)
+        return audio
+    
+    def __getitem__(self,key):
+        return self._update(key)
+    
+    def allocate(self,p):
+        
+        try:
+            self._update(p._id)
+            return
+        except KeyError:
+            pass
+        
+        t = time()
+        
+        try:
+            # p is a FrameModel-derived instance
+            audio = self.env.synth(p.audio)
+            # BUG: What if this is only a partial segment of a pattern?
+            self._buffers[p._id] = (t,audio)
+            return
+        except AttributeError as e:
+            print e
+            pass
+        
+        try:
+            # p is a leaf pattern, or a pattern that has been analyzed
+            fm = self.env.framemodel
+            frames = fm[p.address]
+            audio = self.env.synth(frames.audio)
+            self._buffers[p._id] = (t,audio)
+            return
+        except AttributeError as e:
+            print e
+            pass
+        
+        raise ValueError('p must be a FrameModel-derived instance or a Zound')
+    
+    def run(self):
+        while self._should_run:
+            keys = self._buffers.keys()
+            tm = time()
+            for k in keys:
+                t,_ = self._buffers[k]
+                if tm - t > self._expire_seconds:
+                    print 'expiring %s' % k
+                    del self._buffers[k]
+            
+            # check for expired buffers once a minute
+            sleep(1000 * 60)
+                
+    
+    def stop(self):
+        self._should_run = False
+
+
+BUFFERS = Buffers()
 
 # TODO: Add created date
 class Zound(Pattern):
@@ -31,6 +116,9 @@ class Zound(Pattern):
         self.all_ids = set(all_ids or [])
         self._patterns = None
         self._is_leaf = is_leaf
+        # If the pattern has not yet been stored, this will be None. Otherwise,
+        # it will the time at which the pattern was stored in seconds since the
+        # epoch
         self.stored = stored
         # keep track of unstored nested patterns that should be stored when
         # self.store() is called
@@ -343,7 +431,7 @@ class Zound(Pattern):
         '''
         play this pattern in realtime, starting time seconds from now
         '''
-        buffers = self.env().buffers
+        buffers = BUFFERS
         
         # get all leaf patterns with *Absolute* times
         leaves = self._leaves_absolute()
@@ -688,10 +776,6 @@ class Zound(Pattern):
             d['address'] = cls.env().address_class.fromdict(d['address'])
         
         if d['is_leaf']:
-            # BUG: The presence of an addreess is being used to decide if the
-            # pattern is a leaf pattern, but all patterns will be analyzed and
-            # given an address.  This is broken for non-leaf patterns that have
-            # been analyzed.
             d['all_ids'] = None
             d['pdata'] = None
         else:
@@ -700,7 +784,11 @@ class Zound(Pattern):
                 pdata[k] = [Event.fromdict(e) for e in v]
             d['pdata'] = pdata
         
-        d['stored'] = stored
+        # KLUDGE: Why is this here?  When would you pass stored = False to this
+        # method?
+        if not stored:
+            d['stored'] = stored
+        
         return cls(**d)
     
     # TODO: Should this be asynchronous ?

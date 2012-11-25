@@ -1,7 +1,5 @@
 Musical Pattern game
 ====================================
-- tests to ensure that events/transforms are stored and retrieved correctly
-- add created date to patterns
 - Web Audio delay unit and blog post
 
 - Since leaf patterns aren't re-analyzed and inserted into the frames database, they
@@ -21,6 +19,7 @@ Musical Pattern game
 - Chroma implementation
 - Stupid onset detection
 - Stupid BPM estimation
+- How do I index things like pitch, bpm, chroma, etc?
 - Pattern construction is cumbersome
 - Move tests that have nothing to do with data storage/access into the model package
 - Address.contiguous() method which helps to answer the question: 

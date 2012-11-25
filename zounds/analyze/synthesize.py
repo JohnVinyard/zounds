@@ -2,7 +2,7 @@ import numpy as np
 #from scikits.audiolab import play
 from zounds.pattern import start,usecs,put,stop,cancel_all
 from threading import Thread
-from time import sleep,time
+from time import sleep
 
 
 # KLUDGE: All these transforms should be written in C/C++, so they can be used with
@@ -195,87 +195,6 @@ class TransformChain(Transform):
 
 
 
-# TODO: It'd probably be better to do a max size in bytes, rather than an 
-# expiration time in minutes
-class Buffers(Thread):
-    
-    instance = None
-    
-    def __new__(cls,*args,**kwargs):
-        if not cls.instance:
-            cls.instance = super(Buffers,cls).__new__(cls)
-        
-        return cls.instance
-    
-    def __init__(self,env,expire_time_minutes = 5):
-        Thread.__init__(self)
-        self.setDaemon(True)
-        self._should_run = True
-        self._buffers = dict()
-        self._expire_seconds = expire_time_minutes * 60
-        self.env = env
-        self.start()
-    
-    def has_key(self,key):
-        return self._buffers.has_key(key)
-    
-    def _update(self,key):
-        _,audio = self._buffers[key]
-        self._buffers[key] = (time(),audio)
-        return audio
-    
-    def __getitem__(self,key):
-        return self._update(key)
-    
-    def allocate(self,p):
-        
-        try:
-            self._update(p._id)
-            return
-        except KeyError:
-            pass
-        
-        t = time()
-        
-        try:
-            # p is a FrameModel-derived instance
-            audio = self.env.synth(p.audio)
-            # BUG: What if this is only a partial segment of a pattern?
-            self._buffers[p._id] = (t,audio)
-            return
-        except AttributeError as e:
-            print e
-            pass
-        
-        try:
-            # p is a leaf pattern, or a pattern that has been analyzed
-            fm = self.env.framemodel
-            frames = fm[p.address]
-            audio = self.env.synth(frames.audio)
-            self._buffers[p._id] = (t,audio)
-            return
-        except AttributeError as e:
-            print e
-            pass
-        
-        raise ValueError('p must be a FrameModel-derived instance or a Zound')
-    
-    def run(self):
-        while self._should_run:
-            keys = self._buffers.keys()
-            tm = time()
-            for k in keys:
-                t,_ = self._buffers[k]
-                if tm - t > self._expire_seconds:
-                    print 'expiring %s' % k
-                    del self._buffers[k]
-            
-            # check for expired buffers once a minute
-            sleep(1000 * 60)
-                
-    
-    def stop(self):
-        self._should_run = False
 
 class BufferBabysitter(Thread):
     '''

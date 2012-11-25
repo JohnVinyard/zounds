@@ -87,6 +87,33 @@ class PatternTest(object):
             remove(c)
         Environment._test = False
     
+    def test_no_stored_date(self):
+        leaf = Zound[self._pattern_id]
+        p = Zound(source = 'Test')
+        p.append(leaf,[Event(i) for i in range(4)])
+        self.assertFalse(p.stored)
+    
+    def test_stored_date(self):
+        leaf = Zound[self._pattern_id]
+        p = Zound(source = 'Test')
+        p.append(leaf,[Event(i) for i in range(4)])
+        p.store()
+        print p.stored
+        self.assertTrue(p.stored)
+        self.assertTrue(isinstance(p.stored,float))
+    
+    def test_stored_date_retrieved(self):
+        leaf = Zound[self._pattern_id]
+        p = Zound(source = 'Test')
+        p.append(leaf,[Event(i) for i in range(4)])
+        p.store()
+        _id = p._id
+        del p
+        
+        p = Zound[_id]
+        self.assertTrue(p.stored)
+        self.assertTrue(isinstance(p.stored,float))
+    
     def test_bad_id(self):
         self.assertRaises(KeyError,lambda : Zound['BAD_ID'])
     
@@ -453,6 +480,14 @@ class PatternTest(object):
         self.assertFalse(b2.stored)
         self.assertFalse(branch._id == b2._id)
         self.assertTrue(self._almost_equal(b2,branch))
+    
+    def test_music_pattern_copy_rectifies_negative_beats(self):
+        leaf = Zound[self._pattern_id]
+        mp = MusicPattern(source = 'Test', length_beats = 4, bpm = 60)
+        mp.append(leaf,[Event(i) for i in range(4)])
+        mp <<= 1
+        n = mp.copy()
+        self.assertTrue(all([e.time >= 0 for e in n.pdata[leaf._id]]))
     
     ## TRANSFORM ######################################################
 
@@ -1599,6 +1634,35 @@ class PatternTest(object):
         self.assertEqual(6,b3.length_beats)
         self.assertEqual(1,len(b3.pdata))
         self.assertEqual(6,len(b3.pdata[leaf._id]))
+    
+    def test_music_pattern_add_lhs_has_negative_beats(self):
+        l1 = self.make_leaf_pattern(1, 'l1', store= False)
+        l2 = self.make_leaf_pattern(1, 'l2', store = False)
+        
+        p1 = MusicPattern(source = 'Test',length_beats = 4, bpm = 60)
+        p1.append(l1,[Event(i) for i in range(4)])
+        p1 = p1 << 1
+        
+        p2 = MusicPattern(source = 'Test',length_beats = 4, bpm = 60)
+        p2.append(l2,[Event(i) for i in range(4)])
+        
+        p3 = p1 + p2
+        
+        la = p3._leaves_absolute()
+        self.assertEqual(2,len(la))
+        self.assertTrue(l1._id in la)
+        self.assertTrue(l2._id in la)
+        
+        # ensure that the negative time in p1 was interpreted in the context
+        # of that pattern, and not in the context of the new, longer pattern
+        # resulting from the addition
+        expected = set([0,1,2,3])
+        actual = set([e.time for e in la[l1._id]])
+        self.assertEqual(expected,actual)
+        
+        expected = set([4,5,6,7])
+        actual = set([e.time for e in la[l2._id]])
+        self.assertEqual(expected,actual)
     
     def test_music_pattern_sum(self):
         leaf = Zound[self._pattern_id]

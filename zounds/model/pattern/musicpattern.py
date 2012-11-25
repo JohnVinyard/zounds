@@ -5,6 +5,7 @@ from zound import Zound
 from event import Event
 from transform import RecursiveTransform
 
+
 class MusicPattern(Zound):
     '''
     Things to think about:
@@ -83,8 +84,6 @@ class MusicPattern(Zound):
         rn = self.copy()
         p = other.patterns
         for k,v in other.pdata.iteritems():
-            # BUG: What if other contains a pattern that this pattern contains?
-            # The events in self will be overwritten by the events in other.
             
             # BUG: What if *self* has negative or wrapped event times? The same
             # problems apply.
@@ -92,8 +91,8 @@ class MusicPattern(Zound):
             pattern = p[k]
             events = []
             for e in v:
-                time = pattern._interpret_beats(e.time) + rn.length_beats
-                events.append(Event(time))
+                time = other._interpret_beats(e.time) + rn.length_beats
+                events.append(Event(time,*e.transforms))
             rn.append(pattern,events)
         rn.length_beats += other.length_beats
         return rn
@@ -136,6 +135,18 @@ class MusicPattern(Zound):
             return pattern,ev
          
         return self.transform(RecursiveTransform(s))
+    
+    def copy(self):
+        '''
+        Copy self, rectifying any negative beat values.
+        '''
+        n = Zound.copy(self)
+        for v in n.pdata.values():
+            for e in v:
+                # rectify any negative beat times in the context of the pattern
+                # being copied
+                e.time = self._interpret_beats(e.time)
+        return n
     
     def _interpret_beats(self,time):
         '''
