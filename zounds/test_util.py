@@ -1,6 +1,6 @@
 import numpy as np
 import os
-import unittest
+import unittest2
 from zounds.util import ensure_path_exists
 from zounds.nputil import pad
 from zounds.testhelper import remove
@@ -8,7 +8,7 @@ from random import shuffle
 from uuid import uuid4
 
 
-class EnsurePathExistsTests(unittest.TestCase):
+class EnsurePathExistsTests(unittest2.TestCase):
     
     def setUp(self):
         self.to_cleanup = []
@@ -40,7 +40,7 @@ class EnsurePathExistsTests(unittest.TestCase):
         ensure_path_exists(path)
         self.assertTrue(os.path.exists(path))
 
-class PadTests(unittest.TestCase):
+class PadTests(unittest2.TestCase):
     
     def test_pad_onedim_desired(self):
         a = np.array([1,2,3])
@@ -98,7 +98,7 @@ class Node:
     def ancestors(self):
         return self.parents
     
-class RecurseTests(unittest.TestCase):
+class RecurseTests(unittest2.TestCase):
     
     def test_root(self):
         n = Node()
@@ -122,7 +122,7 @@ class RecurseTests(unittest.TestCase):
         self.assertTrue(c1 in a)
         self.assertTrue(c2 in a)
 
-class SortByLineageTests(unittest.TestCase):
+class SortByLineageTests(unittest2.TestCase):
     
     def test_single_parent(self):
         n1 = Node()

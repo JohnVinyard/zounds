@@ -11,6 +11,7 @@
 # The following two libraries are needed by matplotlib
 # g++ is required to compile Scipy
 # jackd1 and libjack-dev are required to use/build against the jack library
+# mongodb for pattern storage
 
 sudo apt-get install \
 python-dev \
@@ -29,3 +30,4 @@ libpng-dev \
 g++ \
 jackd \
 libjack-dev \
+mongodb

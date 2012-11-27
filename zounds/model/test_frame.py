@@ -1,4 +1,4 @@
-import unittest
+import unittest2
 
 import numpy as np
 
@@ -12,7 +12,7 @@ from zounds.analyze.feature.metadata import MetaDataExtractor
 
 
     
-class FrameModelTests(unittest.TestCase):
+class FrameModelTests(unittest2.TestCase):
     
     
     def setUp(self):

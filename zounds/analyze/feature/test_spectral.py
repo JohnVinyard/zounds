@@ -1,4 +1,4 @@
-import unittest
+import unittest2
 import numpy as np
 from zounds.analyze.extractor import ExtractorChain
 from spectral import FFT
@@ -11,7 +11,7 @@ class MockEnvironment(object):
         self.windowsize = windowsize
 
 
-class FFTTests(unittest.TestCase):
+class FFTTests(unittest2.TestCase):
     
     def setUp(self):
         self.orig_env = Environment.instance

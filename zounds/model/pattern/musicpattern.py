@@ -80,14 +80,9 @@ class MusicPattern(Zound):
         if self.is_leaf or other.is_leaf:
             raise ValueError('Cannot add leaf patterns')
         
-        # TODO: Maybe copy should rectify any negative or wrapped times 
         rn = self.copy()
         p = other.patterns
         for k,v in other.pdata.iteritems():
-            
-            # BUG: What if *self* has negative or wrapped event times? The same
-            # problems apply.
-            
             pattern = p[k]
             events = []
             for e in v:

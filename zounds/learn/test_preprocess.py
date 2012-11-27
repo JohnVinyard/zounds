@@ -1,9 +1,9 @@
 import numpy as np
-import unittest
+import unittest2
 from preprocess import NoOp, MeanStd,Downsample
 
 
-class NoOpTests(unittest.TestCase):
+class NoOpTests(unittest2.TestCase):
     
     def test_noop(self):
         a = np.random.random_sample(100)
@@ -11,7 +11,7 @@ class NoOpTests(unittest.TestCase):
         b = p(a)
         self.assertTrue(np.all(a == b))
         
-class MeanStdTests(unittest.TestCase):
+class MeanStdTests(unittest2.TestCase):
     
     def test_mean_std(self):
         # KLUDGE: This feels like kind of a stupid test, since the behavior 
@@ -48,7 +48,7 @@ class MeanStdTests(unittest.TestCase):
         c = np.random.random_sample((100,11))
         self.assertRaises(ValueError, lambda : p(c))
         
-class DownsampleTests(unittest.TestCase):
+class DownsampleTests(unittest2.TestCase):
     
     def test_downsample(self):
         d = Downsample((10,10),2)

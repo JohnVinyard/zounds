@@ -1,7 +1,7 @@
 from zounds.analyze.extractor import Extractor,ExtractorChain
 from composite import Composite
 import numpy as np
-import unittest
+import unittest2
 from zounds.testhelper import RootExtractor
 
 class SourceData(Extractor):
@@ -35,7 +35,7 @@ class SourceData(Extractor):
         return a
         
 
-class CompositeTests(unittest.TestCase):
+class CompositeTests(unittest2.TestCase):
     
     
     def make_chain(self,v1,v2,nframes = 1):

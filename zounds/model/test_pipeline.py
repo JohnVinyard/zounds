@@ -1,4 +1,4 @@
-import unittest
+import unittest2
 
 import numpy as np
 
@@ -49,7 +49,7 @@ class MockLearn(Learn):
         return data * 2
     
 
-class PipelineTests(unittest.TestCase):
+class PipelineTests(unittest2.TestCase):
     
     def setUp(self):
         Environment._test = True

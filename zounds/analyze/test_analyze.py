@@ -1,5 +1,5 @@
 from __future__ import division
-import unittest
+import unittest2
 from math import ceil
 
 import numpy as np
@@ -10,7 +10,7 @@ from zounds.testhelper import \
     make_sndfile,filename,remove,RootExtractor,SumExtractor
 
 ## AudioStreamTests ##########################################################
-class AudioStreamTests(unittest.TestCase):
+class AudioStreamTests(unittest2.TestCase):
     
     
     def setUp(self):
@@ -59,9 +59,9 @@ class AudioStreamTests(unittest.TestCase):
     def test_two_frames(self):
         self.get_frames(2050)
 
-    # TODO: Switch to unittest2, so this test can be ignored    
-    #def test_three_frames(self):
-    #    self.get_frames(4096)
+    @unittest2.expectedFailure    
+    def test_three_frames(self):
+        self.get_frames(4096)
     
     def test_four_frames(self):
         self.get_frames(4097)
@@ -127,7 +127,7 @@ class ShimExtractor(Extractor):
     def _process(self):
         raise NotImplemented()
 
-class ExtractorTests(unittest.TestCase):
+class ExtractorTests(unittest2.TestCase):
     
     def test_bad_frames_count(self):
         self.assertRaises(ValueError, lambda : ShimExtractor(nframes=-1))
@@ -301,7 +301,7 @@ class ExtractorTests(unittest.TestCase):
         self.assertEqual(60,se4.step_abs())
     
     
-class SingleInputTests(unittest.TestCase):
+class SingleInputTests(unittest2.TestCase):
     
     def test_root(self):
         self.assertRaises(ValueError, lambda : SingleInput(None))
@@ -332,7 +332,7 @@ class SingleInputTests(unittest.TestCase):
 
 ## ExtractorChainTests ########################################################
         
-class ExtractorChainTests(unittest.TestCase):
+class ExtractorChainTests(unittest2.TestCase):
     
         
     def test_sort(self):

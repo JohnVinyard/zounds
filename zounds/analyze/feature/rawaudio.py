@@ -107,7 +107,7 @@ class AudioFromMemory(AudioSamples):
         def __iter__(self):
             ls = len(self.samples)
             leftover = np.zeros(0)
-            for i in range(0,ls,self.chunksize):
+            for i in range(0,ls,int(self.chunksize)):
                 start = i
                 stop = i + self.chunksize
                 self.done = stop >= ls
