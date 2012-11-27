@@ -1,39 +1,33 @@
-from setuptools import setup,Extension
+import sys
 import os
 import string
 import subprocess
-import getpass
-import sys
-
-# TODO: Run dependencies.sh from here
-# TODO: Start mongodb after running dependencies.sh
-# TODO: install numpy and scipy from here
-# TODO: Do installation until it succeeds
-# TODO: run tests from here
 
 # KLUDGE: Is there a better way to get setuptools commands?
 install = 'install' in sys.argv[1:]
 
-def force_manual_numpy_scipy_install():
-    npmsg = 'You must have numpy >= 1.6 installed.%s Type "sudo pip install numpy" to install.'
-    try:
-        import numpy
-        vparts = [int(s) for s in numpy.__version__.split('.')]
-        if vparts[0] < 1 or vparts[1] < 6:
-            print npmsg % ('  Yours is version %s' % numpy.__version__)
-            exit()
-        print 'You\'ve got numpy version %s. Great!' % numpy.__version__
-    except ImportError:
-        print npmsg % ''
-        exit()
-        
-    spmsg = 'You must have scipy installed. Type "sudo pip install scipy" to install.'
-    try:
-        import scipy
-        print 'You\'ve got scipy version %s. Great!' % scipy.__version__
-    except ImportError:
-        print spmsg
-        exit()
+def run_command(cmd):
+    p = subprocess.Popen(cmd,shell = True)
+    rc = p.wait()
+    if rc:
+        # KLUDGE: What should I do here?
+        raise RuntimeError()
+
+if install:
+    # make dependencies.sh executable
+    run_command('chmod a+x dependencies.sh')
+    # install non-python dependencies
+    run_command('./dependencies.sh')
+    
+# At this point, setuptools should be available
+from setuptools import setup
+
+if install:
+    # install numpy
+    run_command('pip install numpy')
+    # install scipy
+    run_command('pip install scipy')
+
 
 def setup_jack_audio():
     
@@ -62,12 +56,6 @@ def setup_jack_audio():
         print fail_msg % p.stderr.read()
     
     
-    
-
-if install:
-    # TODO: Run the setup.sh script from here
-    force_manual_numpy_scipy_install()
-
 # build up the list of packages
 packages = []
 root_dir = os.path.dirname(__file__)
@@ -90,9 +78,9 @@ def read(fname):
     '''
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
-python_packages = ['bitarray','tables','cython','numexpr',
-                   'nose','scikits.audiolab',
-                   'matplotlib','web.py','scipy','numpy','pymongo','unittest2']
+python_packages = ['bitarray','tables','nose','scikits.audiolab',
+                   'matplotlib','web.py','scipy','numpy','pymongo',
+                   'unittest2','numexpr','cython']
 
 # argparse was introduced into the standard library in python 2.7. Instead of
 # checking the python version, just try to import it. If the import fails, add
@@ -104,9 +92,10 @@ except ImportError:
 
 c_ext = ['*.c','*.h']
 pyx_ext = ['*.pyx','*.pyxbld']
+
 setup(
       name = 'zounds',
-      version = '0.02',
+      version = '0.03',
       url = 'http://www.johnvinyard.com',
       author = 'John Vinyard',
       author_email = 'john.vinyard@gmail.com',
@@ -124,7 +113,11 @@ setup(
       packages = packages,
       install_requires = python_packages
 )
-
+        
+        
 if install:
+    # add the current user to the audio user group
     setup_jack_audio()
+    # run the unit tests
+    run_command('nosetests')
     print 'Done! Enjoy Zounds.'
