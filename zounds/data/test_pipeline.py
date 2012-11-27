@@ -1,6 +1,5 @@
-import unittest
+import unittest2
 import os.path
-import shutil
 from uuid import uuid4
 
 from zounds.environment import Environment
@@ -13,7 +12,7 @@ from zounds.model.frame import Frames
 from zounds.model.test_pipeline import MockFetch,AddPreprocess,MockLearn
 from zounds.testhelper import remove
 
-class PickledLearningControllerTests(unittest.TestCase):
+class PickledLearningControllerTests(unittest2.TestCase):
     
     def setUp(self):
         Environment._test = True

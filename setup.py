@@ -5,6 +5,12 @@ import subprocess
 import getpass
 import sys
 
+# TODO: Run dependencies.sh from here
+# TODO: Start mongodb after running dependencies.sh
+# TODO: install numpy and scipy from here
+# TODO: Do installation until it succeeds
+# TODO: run tests from here
+
 # KLUDGE: Is there a better way to get setuptools commands?
 install = 'install' in sys.argv[1:]
 
@@ -86,7 +92,7 @@ def read(fname):
 
 python_packages = ['bitarray','tables','cython','numexpr',
                    'nose','scikits.audiolab',
-                   'matplotlib','web.py','scipy','numpy','pymongo']
+                   'matplotlib','web.py','scipy','numpy','pymongo','unittest2']
 
 # argparse was introduced into the standard library in python 2.7. Instead of
 # checking the python version, just try to import it. If the import fails, add

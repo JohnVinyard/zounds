@@ -1,5 +1,5 @@
 from __future__ import division
-import unittest
+import unittest2
 from uuid import uuid4
 import os
 
@@ -761,7 +761,7 @@ class FrameControllerTests(object):
         # counts.  Just make sure one of them does.
         self.assertEqual(2,len(f[0][1]))
 
-class PyTablesFrameControllerTests(unittest.TestCase,FrameControllerTests):
+class PyTablesFrameControllerTests(unittest2.TestCase,FrameControllerTests):
     
     def setUp(self):
         self.set_up()
@@ -843,7 +843,7 @@ class PyTablesFrameControllerTests(unittest.TestCase,FrameControllerTests):
         c = FM1.controller()
         self.assertTrue('audio' in c.db_read.colnames)
     
-class FileSystemFrameControllerTests(unittest.TestCase,FrameControllerTests):
+class FileSystemFrameControllerTests(unittest2.TestCase,FrameControllerTests):
     
     def setUp(self):
         self.set_up()
@@ -931,7 +931,7 @@ class FileSystemFrameControllerTests(unittest.TestCase,FrameControllerTests):
         self.assertEqual(c1._skinny_dtype,c2._skinny_dtype)
 
 # KLUDGE: I've excluded int -> int comparisons    
-class PyTablesFrameControllerAddressTests(unittest.TestCase):
+class PyTablesFrameControllerAddressTests(unittest2.TestCase):
     
     def setUp(self):
         self.Address = PyTablesFrameController.Address

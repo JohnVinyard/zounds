@@ -1,6 +1,20 @@
 Musical Pattern game
 ====================================
+- YIN implementation
+- Chroma implementation
+- Stupid onset detection
+- Stupid BPM estimation
+- How do I index things like pitch, bpm, chroma, etc?
+- Update indexes on-the-fly
+
+
+- facebook/google login
+- server-side rendering
 - Web Audio delay unit and blog post
+
+
+
+
 
 - Since leaf patterns aren't re-analyzed and inserted into the frames database, they
 	get no special treatment, i.e., leaf patterns aren't really searchable!!!
@@ -12,14 +26,10 @@ Musical Pattern game
 - Simple transformations : Time stretch, pitch shift, reverb, high and lowpass filters
 - _render() and play() should use the exact same code; transformations should be implemented in C/C++
 
-- Update indexes on-the-fly
+
 - Coffeescript implementation of MusicPattern code
 - How do I queue and analyze incoming patterns?
-- YIN implementation
-- Chroma implementation
-- Stupid onset detection
-- Stupid BPM estimation
-- How do I index things like pitch, bpm, chroma, etc?
+
 - Pattern construction is cumbersome
 - Move tests that have nothing to do with data storage/access into the model package
 - Address.contiguous() method which helps to answer the question: 
@@ -73,15 +83,8 @@ How does the human brain represent noise?
 
 TODO:
 ===========
-TimeSeries class
-Transforms (make sure that transforms are an ordered list, and not a dictionary!)
-Handle mp3 files using the FFMpeg library
-
-
-upload or record query sounds
-ogg vorbis or mp3 storage?
-Audio hosted elsewhere, i.e., I store the features, but the audio is hosted on SoundCloud, e.g.
-client and at-home player
+unittest2
+smoother installer
 
 
   

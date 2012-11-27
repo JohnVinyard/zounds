@@ -1,11 +1,11 @@
-import unittest
+import unittest2
 from random import random
 import numpy as np
 
 from zounds.model.pattern import Event
 
 
-class EventTests(unittest.TestCase):
+class EventTests(unittest2.TestCase):
     
     def test_sort(self):
         events = [Event(random()) for i in range(10)]
