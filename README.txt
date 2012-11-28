@@ -1,5 +1,6 @@
 About
 ====================================
+
 **Zounds** is a library designed to make experimenting with audio features a breeze!
 
 - **Zounds allows you to define sets of features in an intuitive, pythonic way**::
@@ -33,4 +34,9 @@ About
 	# grab 10,000 samples of bark bands from the database, at random, and train
 	# for 100 epochs. Then save the results.
 	pl.train(10000,lambda epoch,error: epoch > 100)
+
+Install
+====================================
+
+TODO: installtion
 
