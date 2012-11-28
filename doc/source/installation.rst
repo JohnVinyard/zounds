@@ -9,72 +9,40 @@ This is a very early release of Zounds. So far, it has only been tested on Ubunt
 =================================
 Download
 =================================
-You can download the latest source distribution here: `zounds-0.02.tar.gz <https://bitbucket.org/jvinyard/zounds2/downloads/zounds-0.02.tar.gz>`_.
-For the quickstart tutorial, it's highly recommended that you download the source distribution, and *not* clone the source repository.
+Get the latest source distribution here: `zounds-0.03.tar.gz <https://bitbucket.org/jvinyard/zounds2/downloads/zounds-0.03.tar.gz>`_.
+The source distribution is the latest stable release, so this is the preferred way to get Zounds if you're planning to go through the :doc:`quickstart tutorial <quick-start>`, or write a client application.
 
-.. WARNING::
-	Please don't run setup.py right away!  Keep reading...
-
-=================================
-Dependencies
-=================================
-Zounds has a pretty hefty list of dependencies at the moment, but there are resources
-included in the source distribution to make installing them as painless as possible.
-
---------------------------------
-Libraries
---------------------------------
-There are quite a few libraries you'll need to install, upon which Zounds' python
-dependencies rely.  If you're interested in the details, take a look at dependencies.sh
-in the source distribution folder for a list of packages, and justifications for each.
-Otherwise, run::
-	chmod a+x dependencies.sh
-
-so you can execute the script, and then::
-
-	./dependencies.sh
-
-This will install any libraries you need that you don't already have.  During this
-process, the JACK library will ask you to confirm that you'd like it to have 
-realtime permissions.  Please say "yes".
-
---------------------------------
-Numpy and Scipy
---------------------------------
-Unfortunately, the setup script doesn't build the numpy and scipy libraries correctly,
-so you'll have to do this by hand.  If you attempt to run setup.py before completing
-this step, it'll complain. To make it shut up, do::
-	sudo pip install numpy
-	sudo pip install scipy
-
-in that order.
-
+Or, if you're feeling brave, get the source: `Zounds on BitBucket <https://bitbucket.org/jvinyard/zounds2/src>`_.
+ 
 =================================
 Setup.py
 =================================
 Run::
 
-	sudo python setup.py install 
+	sudo python setup.py install
+
+During installation, you'll see something like this:
+
+.. image:: Screenshot.png
+
+Be sure to enable realtime scheduling for JACK.
+
+.. NOTE::
+	setup.py installs quite a few libraries and Python packages, and may take
+	some time to run.
 
 .. WARNING::
-	This step has some problems too. For some reason, both scikits.audiolab and tables 
-	(the PyTables package) cause errors that halt the setup script. In both cases, 
-	you can simply re-issue the command above, and things will continue along just fine.
-	Klunky, but it gets the job done.
-
-While you're still in the source distribution directory, run::
-
-	nosetests
-
-to make sure everything is working.
+	During installation, `scikits.audiolab` causes an error that halts the 
+	script.  You can simply re-issue the command above, and things will continue
+	along just fine.  It's a bit klunky, but it gets the job done.
 
 =================================
 Test Audio
 =================================
 Zounds uses the `JACK <http://jackaudio.org/>`_ library to play audio.  Setup.py
 added the user you're logged in as to the "audio" group, which gives you realtime
-audio permissions. You'll need to log out and back in for these changes to take
-effect. Once you do, run::
+audio permissions. **You'll need to log out and back in for these changes to take
+effect**. Once you do, run::
 
 	zounds-audio-test.py
 
