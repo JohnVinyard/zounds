@@ -4,6 +4,7 @@ About
 
 - **Zounds allows you to define sets of features in an intuitive, pythonic way**::
 
+	:::python
 	class FrameModel(Frames):
 		fft = Feature(FFT, store = False)
 		bark = Feature(BarkBands, needs = fft, nbands = 100, stop_freq_hz = 12000)
@@ -18,7 +19,8 @@ About
 - **Zounds doesn't mind if you change yours**. If you modify your feature set, Zounds knows, and handles the dirty work of updating your data store.
 
 - **Zounds implements some neat, unsupervised learning algorithms**, so you can learn good representations of your data, and use them as part of your feature set::
-	 
+	
+	:::python
 	pl = Pipeline(
 		'bark/rbm',
 		# we're learning a representation of bark bands
