@@ -1,9 +1,7 @@
 Installation
 ===================================
-One-button install
-update installation documentation
 Better README
-fix path in search section of quickstart tutorial
+
 
 
 Musical Pattern game
