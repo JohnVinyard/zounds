@@ -34,7 +34,3 @@ About
 	# for 100 epochs. Then save the results.
 	pl.train(10000,lambda epoch,error: epoch > 100)
 
-Documentation
-====================================
-Check out the documentation at `http://www.johnvinyard.com/zoundsdoc`_.
-
