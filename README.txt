@@ -4,21 +4,19 @@ Zounds is a python library designed to make experimenting with audio feature
 extraction easy.  It allows you to define your features-of-interest in an 
 inuitive, pythonic way, store them, and search them.
 
+Zounds is a Python library designed to make prototyping machine listening pipelines
+easy!  It allows you to define you features-of-interest in an intuitive, pythonic
+way, store them, and search them.
+
+    class FrameModel(Frames):
+        fft = Feature(FFT, store = False)
+        bark = Feature(BarkBands, needs = fft, nbands = 100, stop_freq_hz = 12000)
+        loudness = Feature(Loudness, needs = bark)
+        centroid = Feature(SpectralCentroid, needs = bark)
+        flatness = Feature(SpectralFlatness, needs = bark) 
+
 Installation
 ===============================================================================
-1. Run the dependencies.sh script. This will install packages needed to build
-and run Zounds' python dependencies.  Take a look at dependencies.sh to see the
-full list of packages, as well as justifications for each.
 
-2. Unfortunately, setup.py has trouble installing numpy and scipy, so these should
-be installed manually prior to running setup.py. Type "sudo pip install numpy"
-and "sudo pip install scipy", in that order, to install them.
-
-3. Run "sudo python setup.py install". This step has some problems too. For some
-reason, scikits.audiolab and table (the PyTables package), both cause errors
-that halt the setup script. In both cases, you can simply re-issue the
-"sudo python setup.py install" command, and things will continue along just fine.
-Your guess is as good as mine.
-
-4. Finally, while you're still in Zounds source distribution directory, run 
-"nosetests" to ensure everything is working properly.
+1. Get the [latest stable release](https://bitbucket.org/jvinyard/zounds2/downloads/zounds-0.03.tar.gz)
+2. Run `setup.py`. 

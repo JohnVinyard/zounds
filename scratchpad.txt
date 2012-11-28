@@ -2,8 +2,6 @@ Installation
 ===================================
 Better README
 
-
-
 Musical Pattern game
 ====================================
 - YIN implementation
@@ -17,10 +15,6 @@ Musical Pattern game
 - facebook/google login
 - server-side rendering
 - Web Audio delay unit and blog post
-
-
-
-
 
 - Since leaf patterns aren't re-analyzed and inserted into the frames database, they
 	get no special treatment, i.e., leaf patterns aren't really searchable!!!
