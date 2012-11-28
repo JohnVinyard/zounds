@@ -38,5 +38,16 @@ About
 Install
 ====================================
 
-TODO: installtion
+1. Download the tarball of the latest stable version from the `downloads page <https://bitbucket.org/jvinyard/zounds2/downloads>`_ or 
+clone the repository.
+2. Run :py:code:`setup.py`.  This script will raise an exception and stop once
+while trying to install :py:code:`scikits.audiolab`.  We're still trying to iron
+this out, but you can simply re-run :py:code:`setup.py`, and everything will 
+continue along happily.
+
+
+
+Documentation
+====================================
+
 
