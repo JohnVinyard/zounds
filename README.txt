@@ -34,15 +34,3 @@ About
 	# for 100 epochs. Then save the results.
 	pl.train(10000,lambda epoch,error: epoch > 100)
 
-
-Download
-====================================
-Get the latest source distribution here: `zounds-0.03.tar.gz <https://bitbucket.org/jvinyard/zounds2/downloads/zounds-0.03.tar.gz>`_.
-The source distribution is the latest stable release, so this is the preferred way to get Zounds if you're planning to go through the :doc:`quickstart tutorial <quick-start>`, or write a client application.
-
-Get the source: `Zounds on BitBucket <https://bitbucket.org/jvinyard/zounds2/src>`_.
-
-You should hear a rhythmic ticking sound. This means that everything is setup
-properly.
-
-
