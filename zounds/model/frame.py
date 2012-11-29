@@ -689,6 +689,15 @@ class Frames(Model):
             return f
     
     @classmethod
+    def ingest(cls,pattern):
+        '''ingest
+        
+        Append a pattern-derived instance to the datastore
+        '''
+        ec = cls.extractor_chain(pattern)
+        cls.controller().append(ec)
+    
+    @classmethod
     def list_ids(cls):
         '''list_ids
         
