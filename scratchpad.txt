@@ -1,15 +1,21 @@
 Installation
-===================================
-Better README
+====================================
+Update path to audio files in quickstart search example
+
 
 Musical Pattern game
 ====================================
+- Can I build an empty search?
+- How is the search continuously persisted?
+- Update indexes on-the-fly
+
+
 - YIN implementation
 - Chroma implementation
 - Stupid onset detection
 - Stupid BPM estimation
 - How do I index things like pitch, bpm, chroma, etc?
-- Update indexes on-the-fly
+
 
 
 - facebook/google login
