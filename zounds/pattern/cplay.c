@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <math.h>
 
 #include <jack/jack.h>
 
@@ -13,7 +14,7 @@ jack_client_t *client;
 jack_port_t *output_ports[CHANNELS+1];
 jack_port_t *input_port;
 
-/*
+
 // Parameter ##################################################################
 
 parameter * parameter_new(
@@ -22,27 +23,79 @@ float * values,int n_values,jack_nframes_t * times,char * interpolations) {
 	struct parameter * param = malloc(sizeof(*param));
 
 	param->n_values = n_values;
-	param->values = (float *)malloc(sizeof(float) * n_values);
-	memmove(values,param->values,sizeof(float) * n_values);
+	int v_size = sizeof(float) * n_values;
+	param->values = (float *)malloc(v_size);
+	memmove(values,param->values,v_size);
 
-	param->times = (jack_nframes_t *)malloc(sizeof(jack_nframes_t) * (n_values - 1));
-	memmove(times,param->times,sizeof(jack_nframes_t) * (n_values - 1));
+	int t_size = sizeof(jack_nframes_t) * n_values;
+	param->times = (jack_nframes_t *)malloc(t_size);
+	memmove(times,param->times,t_size);
 
-	param->interpolations = (char *)malloc(sizeof(char) * (n_values - 1));
-	memmove(interpolations,param->interpolations,sizeof(char) * (n_values - 1));
+	// Number of interpolations is n - 1, since interpolations define transitions
+	// between points
+	int i_size = sizeof(char) * (n_values - 1);
+	param->interpolations = (char *)malloc(i_size);
+	memmove(interpolations,param->interpolations,i_size);
 
 	param->pos = 0;
 
 	return param;
 };
 
-float parameter_current_value(parameter * param,jack_nframes_t time) {
-	return 0.0;
+int parameter_advance_if_necessary(parameter * param,jack_nframes_t time) {
+	int pos = param->pos;
+
+	if(pos == param->n_values - 1) {
+		// -1 signifies that the last position has been reached
+		return -1;
+	}
+
+	jack_nframes_t next_time = param->times[pos + 1];
+	if(time >= next_time) {
+		param->pos++;
+	}
+	return param->pos;
 };
 
-void parameter_advance_if_necessary(parameter * param,jack_nframes_t time) {
-	;
+float parameter_current_value(parameter * param,jack_nframes_t time) {
+
+	// check if it's time to move on to the next position
+	int pos = parameter_advance_if_necessary(param,time);
+
+	if(-1 == pos) {
+		// -1 signifies that the last value in the values array has been
+		// reached.  We'll return this value forever.
+		return param->values[param->pos];
+	}
+
+	char interp = param->interpolations[pos];
+	float current_value = parameter->values[pos];
+
+	if(0 == interp) {
+		// The interpolation type is none, so we just return the current value
+		// in the values array
+		return current_value;
+	}
+
+	jack_nframes_t start_time = param->times[pos];
+	jack_nframes_t end_time = param->times[pos + 1];
+	float next_value = param->values[pos + 1];
+
+	if(1 == interp) {
+		// linear interpolation
+		// v(t) = V0 + (V1 - V0) * ((t - T0) / (T1 - T0))
+		return current_value + (next_value - current_value) *
+				((time - start_time) / (end_time - start_time));
+	}
+
+	// Assume that interpolation type is exponential
+	// v(t) = V0 * (V1 / V0) ^ ((t - T0) / (T1 - T0))
+	return current_value *
+			pow((next_Value / current_value),
+			(time - start_time) / (end_time - start_time));
 };
+
+
 
 void parameter_delete(parameter * param) {
 	free(param->values);
@@ -51,8 +104,169 @@ void parameter_delete(parameter * param) {
 	free(param);
 }
 
-*/
+// Transform ##################################################################
 
+transform * transform_new(
+parameter * params,int n_parameters,int state_buf_size,void * process) {
+	struct transform * t = malloc(sizeof(transform));
+
+	// Parameters
+	transform->n_parameters = n_parameters;
+	transform->parameters = params;
+
+	// State Buffer
+	int s = sizeof(float) * state_buf_size;
+	// allocate memory
+	transform->state_buf = (float*)malloc(s);
+	// zero the memory
+	memset(transform->state_buf,0,s);
+	transform->state_buf_size = state_buf_size;
+	transform->state_buf_pos = 0;
+
+	// Process function
+	transform->process = process;
+}
+
+void transform_delete(transform * t) {
+	for(int i = 0; i < t->n_parameters; i++) {
+		parameter_delete(n->parameters[i]);
+	}
+	free(t->parameters);
+	free(t->state_buf);
+	free(t->process);
+	free(t);
+}
+
+// Gain
+float gain_process(jack_nframes_t time,float insample,transform *t) {
+	float gain = parameter_current_value(t->parameters[0],time);
+	return insample * gain;
+}
+
+// TODO: Gain should take a single parameter instance instead of the arguments
+// to its constructor
+transform * gain_new(
+float * values,int n_values,jack_nframes_t * times,char * interps) {
+	parameter * gain = parameter_new(values,n_values,times,interps);
+	return transform_new(gain,1,0,gain_process);
+}
+
+// Delay
+float delay_process(jack_nframes_t time,float insample,transform *t) {
+	float effect_level = parameter_current_value(t->parameters[0],time);
+	float delay_sample = t->state_buf[t->state_buf_pos];
+	float out = insample + (delay_sample * effect_level);
+
+	float feedback = parameter_current_value(t->parameters[1],time);
+	t->state_buf[t->state_buf_pos] = in + (out * feedback);
+
+	t->state_buf_pos++;
+	if(t->state_buf_pos >= t->state_buf_size) {
+		t->state_buf_pos = 0;
+	}
+
+	return out;
+}
+
+transform * delay_new(int max_delay_time,parameter * params) {
+	return transform_new(params,3,max_delay_time,delay_process);
+}
+
+// Event ######################################################################
+event2 * event2_new_leaf(
+float * buf,int start_sample,int stop_sample,jack_nframes_t start_time,
+char unknown_length,transform * transforms,int n_transforms) {
+
+	struct event2 * event = malloc(sizeof(*event2));
+	event2->buf = buf;
+	event2->start_sample = start_sample;
+	event2->stop_sample = stop_sample;
+	event2->n_samples = stop_sample - start_sample;
+	event2->position = position;
+
+	event2->children = NULL;
+	event2->n_children = 0;
+
+	event2->transforms = transforms;
+	event2->n_transforms = n_transforms;
+	event2->start_time_frames = start_time;
+	event2->done = 0;
+	event2->unknown_length = unknown_length;
+	event2->silent = 0;
+}
+
+event2 * event_new_branch(
+event2 * children,int n_children,transform * transforms,jack_nframes_t start_time,
+char unknown_length,transform * transforms,int n_transforms) {
+
+	struct event2 * event = malloc(sizeof(*event2));
+	event2->buf = NULL;
+	event2->children = children;
+	event2->n_children = n_children;
+	event2->transforms = transforms;
+	event2->n_transforms = n_transforms;
+	event2->start_time_frames = start_time;
+	event2->done = 0;
+	event2->unknown_length = unknown_length;
+	char silent = 0;
+}
+
+char event2_is_leaf(event2 * event) {
+	if(0 == event->n_children) {
+		return 1;
+	}
+	return 0;
+}
+
+float event2_process(event2 * event,jack_nframes_t time) {
+
+	// TODO: Define different functions for leaf and branch processing
+	if(event2_is_leaf(event)) {
+		// do leaf processing
+		float sample = event->buf[event->position];
+		for(int i = 0; i < event->n_transforms; i++) {
+			sample = event
+						->transforms[i]
+			            ->process(time,sample,event->transforms[i]);
+
+		}
+		// check if done
+		event->position++;
+		// TODO: If not unknown_length, we're done, otherwise, start checking
+		// loudness levels
+		if(event->position >= event->n_samples &&
+		   0 == event->unknown_length) {
+			event->done = 1;
+			event->silent = 1;
+		}
+		// return value
+		return sample;
+	}
+
+	float out;
+	char done = 0;
+
+	for(int i = 0; i < event->n_children; i++) {
+		// check if each child is playing, or should start.
+		// break when the first child not playing is encountered, because
+		// events will always be sorted
+	}
+}
+
+void event2_delete(event2 * event) {
+	free(event->buf);
+	int i;
+
+	for(i = 0; i < event->n_children; i++) {
+		event2_delete(event->children[i]);
+	}
+	free(event->children);
+
+	for(i = 0; i < event->n_transforms; i++) {
+		transform_delete(event->transforms[i]);
+	}
+	free(event->transforms);
+}
 
 event_t *EVENTS;
 
