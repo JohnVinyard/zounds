@@ -2,6 +2,10 @@
 
 #define CHANNELS 2
 
+// KLUDGE: What about other JACK sample rates?
+#define KILL_AFTER 44100 * 10
+#define SILENCE_THRESHOLD .001
+
 typedef int (*t_callback)(int, float *, float **);
 
 jack_client_t *jack_start(void);
@@ -9,6 +13,7 @@ void setup(void);
 void teardown(void);
 jack_time_t get_time(void);
 
+/*
 typedef struct {
 	// a buffer containing audio samples
 	float * buf;
@@ -24,7 +29,7 @@ typedef struct {
 	unsigned int position;
 
 } event_t;
-
+*/
 
 
 // Parameter ##################################################################
@@ -148,6 +153,7 @@ typedef struct {
 	jack_nframes_t start_time_frames;
 	// a flag indicating that all samples have been output
 	char done;
+	char _done;
 	// a flag indicating that one of the effects defined for this event
 	// cause it to have an undetermined length. Note that if *any* "descendant"
 	// nodes have an unknown length, then this node should as well
@@ -155,21 +161,26 @@ typedef struct {
 	// a flag for use with events who have unknown length.  This is 1 if
 	// the samples have finished playing and the output has been "silent" (tbd)
 	// for some tbd length of time
-	char silent;
+	int silent;
+
+	void * process;
 
 } event2;
 
+// Instantiate a new leaf event
 event2 * event2_new_leaf(
-float * buf,int start_sample,int stop_sample,jack_nframes_t start_time,
-char unknown_length,transform * transforms,int n_transforms);
+float * buf,int start_sample,int stop_sample,jack_nframes_t start_time);
 
+// Instantiate a new branch event
 event2 * event2_new_branch(
 event2 * children,int n_children,jack_nframes_t start_time,
 char unknown_length,transform * transforms,int n_transforms);
 
-char event2_is_leaf(event2 * event);
+char event_is_leaf(event2 * event);
+char event_is_playing(event2 * event,jack_nframes_t time);
 
-float event2_process(event2 * event,jack_nframes_t time);
+float event2_leaf_process(event2 * event,jack_nframes_t time);
+float event2_branch_process(event2 * event,jack_nframes_t time);
 
 void event2_delete(event2 * event);
 

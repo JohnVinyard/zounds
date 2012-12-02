@@ -34,6 +34,7 @@ def count_bits(np.ndarray[UINT64_DTYPE_t,ndim = 1] n):
     return out
 
 
+# TODO: Why doesn't this function have boundscheck = False too?
 def count_packed_bits(np.ndarray[UINT64_DTYPE_t,ndim = 2] n):
     cdef int ns = n.shape[0]
     cdef int ns2 = n.shape[1]
