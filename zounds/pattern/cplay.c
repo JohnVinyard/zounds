@@ -173,9 +173,101 @@ transform * delay_new(int max_delay_time,parameter * params) {
 }
 
 // Event ######################################################################
+char event2_is_leaf(event2 * event) {
+	return !event->n_children;
+}
+
+char event2_is_playing(event2 * event,jack_nframes_t time) {
+	if(event_is_leaf(event)) {
+		return event->position || time >= event->start_time_frames;
+	}
+
+	return time >= event->start_time_frames;
+}
+
+
+float event2_leaf_process(event2 * event,jack_nframes_t time) {
+	// BUG: Leaf events CAN have transforms!!!
+
+	float sample = event->buf[event->start_sample + event->position];
+	event->position++;
+	if(event->position > event->n_samples) {
+		event->done = 1;
+	}
+	return sample;
+}
+
+float event2_branch_process(event2 * event,jack_nframes_t time) {
+
+	float out = 0;
+	char alive = 0;
+
+	if(event->_done) {
+		// All children are done, but this event has an unkown length because
+		// of transformations defined on it or one of its children.  Keep
+		// processing by feeding 0 to the processing chain.
+		for(i = 0; i < event->n_transforms; i++) {
+			out = event->transforms[i]->process(time,out,event->transforms[i]);
+		}
+
+		if(out < SILENCE_THRESHOLD) {
+			event->silence++;
+		}else {
+			event->silence = 0;
+		}
+
+		if(event->silence >= KILL_AFTER) {
+			// This event has been outputting "silence" for some amount of time.
+			// Mark it as done.
+			event->done = 1;
+		}
+
+		return out;
+	}
+
+	int i;
+	for(i = 0; i < event->n_children; i++) {
+
+		if(event->children[i]->done) {
+			// The child event is done and won't contribute to the current
+			// sample
+			continue;
+		}
+		alive++;
+
+		// TODO: event->playing property to avoid doing this comparison over
+		// and over
+		if(event_is_playing(event->children[i],time)) {
+			out += event->children[i]->process(event->children[i],time);
+		}
+	}
+
+	// Apply transformations to this sample
+	for(i = 0; i < event->n_transforms; i++) {
+		out = event->transforms[i]->process(time,out,event->transforms[i]);
+	}
+
+
+	if(!alive) {
+		if(!event->unknown_length) {
+			event->done = 1;
+		}
+		event->_done = 1;
+	}
+
+	if(!event->unknown_length && !done) {
+		// This event has a predictable length, and all its children are done.
+		// Mark the parent as done too.
+		event->done = 1;
+	}
+
+	return out;
+}
+
 event2 * event2_new_leaf(
-float * buf,int start_sample,int stop_sample,jack_nframes_t start_time,
-char unknown_length,transform * transforms,int n_transforms) {
+float * buf,int start_sample,int stop_sample,jack_nframes_t start_time) {
+
+	// BUG: Leaf events CAN have transforms!!!
 
 	struct event2 * event = malloc(sizeof(*event2));
 	event2->buf = buf;
@@ -187,12 +279,15 @@ char unknown_length,transform * transforms,int n_transforms) {
 	event2->children = NULL;
 	event2->n_children = 0;
 
-	event2->transforms = transforms;
-	event2->n_transforms = n_transforms;
+	// TODO: factor this stuff out into a common constructor
+	event2->n_transforms = 0;
 	event2->start_time_frames = start_time;
 	event2->done = 0;
-	event2->unknown_length = unknown_length;
+	event2->_done = 0;
+	event2->unknown_length = 0;
 	event2->silent = 0;
+
+	event2->process = event2_leaf_process;
 }
 
 event2 * event_new_branch(
@@ -203,60 +298,27 @@ char unknown_length,transform * transforms,int n_transforms) {
 	event2->buf = NULL;
 	event2->children = children;
 	event2->n_children = n_children;
+
+	// TODO: factor this stuff out into a common constructor
 	event2->transforms = transforms;
 	event2->n_transforms = n_transforms;
 	event2->start_time_frames = start_time;
 	event2->done = 0;
+	event2->_done = 0;
 	event2->unknown_length = unknown_length;
-	char silent = 0;
+	event->silent = 0;
+
+	event2->process = event2_branch_process;
 }
 
-char event2_is_leaf(event2 * event) {
-	if(0 == event->n_children) {
-		return 1;
-	}
-	return 0;
-}
 
-float event2_process(event2 * event,jack_nframes_t time) {
-
-	// TODO: Define different functions for leaf and branch processing
-	if(event2_is_leaf(event)) {
-		// do leaf processing
-		float sample = event->buf[event->position];
-		for(int i = 0; i < event->n_transforms; i++) {
-			sample = event
-						->transforms[i]
-			            ->process(time,sample,event->transforms[i]);
-
-		}
-		// check if done
-		event->position++;
-		// TODO: If not unknown_length, we're done, otherwise, start checking
-		// loudness levels
-		if(event->position >= event->n_samples &&
-		   0 == event->unknown_length) {
-			event->done = 1;
-			event->silent = 1;
-		}
-		// return value
-		return sample;
-	}
-
-	float out;
-	char done = 0;
-
-	for(int i = 0; i < event->n_children; i++) {
-		// check if each child is playing, or should start.
-		// break when the first child not playing is encountered, because
-		// events will always be sorted
-	}
-}
 
 void event2_delete(event2 * event) {
-	free(event->buf);
-	int i;
 
+	// Note that event->buf isn't being freed. This is owned by the caller, and
+	// may be shared between many events
+
+	int i;
 	for(i = 0; i < event->n_children; i++) {
 		event2_delete(event->children[i]);
 	}
@@ -268,7 +330,7 @@ void event2_delete(event2 * event) {
 	free(event->transforms);
 }
 
-event_t *EVENTS;
+event2 *EVENTS;
 
 /*
  * Schedule an event to be played. If the list of events is full, the event
@@ -277,7 +339,7 @@ event_t *EVENTS;
 void put_event(
 float *buf,unsigned int start_sample,unsigned int stop_sample,jack_time_t start_time_ms,char done) {
 
-	event_t ne;
+	event2 ne;
 	ne.buf = buf;
 	ne.start_sample = start_sample;
 	ne.stop_sample = stop_sample;
@@ -288,6 +350,9 @@ float *buf,unsigned int start_sample,unsigned int stop_sample,jack_time_t start_
 	int i;
 	for(i = 0; i < N_EVENTS; i++) {
 		if(EVENTS[i].done) {
+			// cleanup dynamically allocated memory for the completed event
+			// KLUDGE: Is this the right place to do this?
+			event_delete(EVENTS[i]);
 			EVENTS[i] = ne;
 			break;
 		}
@@ -310,7 +375,7 @@ void cancel_all_events(void) {
  * Initialize all events
  */
 void init_events(void) {
-	EVENTS = (event_t*)calloc(N_EVENTS,sizeof(event_t));
+	EVENTS = (event2*)calloc(N_EVENTS,sizeof(event2));
 	cancel_all_events();
 }
 
@@ -343,7 +408,7 @@ int process(jack_nframes_t nframes, void *arg) {
 				continue;
 			}
 
-
+			/*
 			if(EVENTS[j].position > 0 || frame_time >= EVENTS[j].start_time_frames) {
 				// the sample has already started, or starts on this frame
 				current_pos = EVENTS[j].start_sample + EVENTS[j].position;
@@ -355,6 +420,10 @@ int process(jack_nframes_t nframes, void *arg) {
 					// Mark this event as done
 					EVENTS[j].done = 1;
 				}
+			}
+			*/
+			if(event2_is_playing(EVENTS[j])) {
+				sample += EVENTS[j].process(EVENTS[j],frame_time);
 			}
 		}
 

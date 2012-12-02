@@ -8,6 +8,8 @@ from time import sleep
 # KLUDGE: All these transforms should be written in C/C++, so they can be used with
 # the realtime JACK player as well
 
+# KLUDGE: This class should be named AudioTransform to distinguish it from
+# transforms that are applied to patterns
 class Transform(object):
     
     JUMP = 0
