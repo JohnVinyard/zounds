@@ -5,6 +5,11 @@ Update path to audio files in quickstart search example
 
 Musical Pattern game
 ====================================
+- server-side rendering
+- server-side -> browser listening tests / comparison
+- Web Audio delay unit and blog post
+- Facebook and Google login
+- Asynchronous upload
 - Can I build an empty search?
 - How is the search continuously persisted?
 - Update indexes on-the-fly
@@ -18,9 +23,6 @@ Musical Pattern game
 
 
 
-- facebook/google login
-- server-side rendering
-- Web Audio delay unit and blog post
 
 - Since leaf patterns aren't re-analyzed and inserted into the frames database, they
 	get no special treatment, i.e., leaf patterns aren't really searchable!!!

@@ -26,9 +26,10 @@ typedef struct {
 } event_t;
 
 
-/*
+
 // Parameter ##################################################################
 enum INTERPOLATION_TYPE {
+	Jump,
 	Linear,
 	Exponential
 };
@@ -66,8 +67,8 @@ float parameter_current_value(parameter * param,    // parameter instance
 							  jack_nframes_t time); // current time
 
 // Advance the parameter to the next transition if the next way-point has been
-// reached.
-void parameter_advance_if_necessary(parameter * param,
+// reached.  Return the current position in the values array.
+int parameter_advance_if_necessary(parameter * param,
 									jack_nframes_t current_time);
 
 // Free the memory used by the parameter
@@ -102,10 +103,20 @@ typedef struct {
 // Construct a new transform
 // TODO: How do I handle transform-specific constructor parameters, like filter
 // type, or delay time, e.g.?
-transform transform_new(parameter * params,
+transform * transform_new(parameter * params,
 						int n_parameters,
 						int state_buf_size,
-						void * process);
+						float (* process)(jack_nframes_t time,float insample,transform * t));
+
+void transform_delete(transform * t);
+
+// Gain
+transform * gain_new(float * values, int n_values,jack_nframes_t * times,char * interps);
+float gain_process(jack_nrames_t time,float insample,transform * gain);
+
+// Delay
+transform * delay_new(int max_delay_time,parameter * params);
+float delay_process(jack_nframes_t time,float insample,transform * delay);
 
 // Event ######################################################################
 typedef struct {
@@ -117,19 +128,22 @@ typedef struct {
 	unsigned int start_sample;
 	// the stop position in the buffer
 	unsigned int stop_sample;
+	unsigned int n_samples;
 	// the current position in the sample
 	unsigned int position;
 
 	// ## BRANCH PATTERN DATA ###############################################
 
 	// an array of child events. this should be NULL if this is a "leaf" event
-	struct event2_t * children;
+	struct event2 * children;
 	// defaults to 0
 	int n_children;
 
 
 	// ## COMMON DATA ######################################################
-
+	// transforms to apply to this event
+	transform * transforms;
+	int n_transforms;
 	// the start time, in microseconds
 	jack_nframes_t start_time_frames;
 	// a flag indicating that all samples have been output
@@ -143,8 +157,21 @@ typedef struct {
 	// for some tbd length of time
 	char silent;
 
-} event2_t;
-*/
+} event2;
+
+event2 * event2_new_leaf(
+float * buf,int start_sample,int stop_sample,jack_nframes_t start_time,
+char unknown_length,transform * transforms,int n_transforms);
+
+event2 * event2_new_branch(
+event2 * children,int n_children,jack_nframes_t start_time,
+char unknown_length,transform * transforms,int n_transforms);
+
+char event2_is_leaf(event2 * event);
+
+float event2_process(event2 * event,jack_nframes_t time);
+
+void event2_delete(event2 * event);
 
 
 #define N_EVENTS 256
