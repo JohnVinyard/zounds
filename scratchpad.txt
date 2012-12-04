@@ -6,6 +6,7 @@ Update path to audio files in quickstart search example
 Musical Pattern game
 ====================================
 - server-side rendering
+	- do block processing instead of sample-by-sample processing
 - server-side -> browser listening tests / comparison
 - Web Audio delay unit and blog post
 - Facebook and Google login

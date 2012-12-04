@@ -65,7 +65,7 @@ typedef struct {
 parameter * parameter_new(float * values,         // all values for this parameter
 						int n_values,           // the number of values
 						jack_nframes_t * times, // times at which the values begin
-						int * interpolations);   // interpolation type codes
+						char * interpolations);   // interpolation type codes
 
 // Get the current value of the parameter instance
 float parameter_current_value(parameter * param,    // parameter instance
@@ -81,10 +81,12 @@ void parameter_delete(parameter * param);
 
 
 // Transform ##################################################################
+
+
 typedef struct {
 	// parameter list for this transform. the process() function for each transform
 	// type is responsible for knowing what order the parameters should arrive in.
-	struct parameter * parameters;
+	parameter * parameters;
 	int n_parameters;
 
 	// a float array containing any state needed by this transform. Note that
@@ -94,8 +96,6 @@ typedef struct {
 	int state_buf_size;
 	int state_buf_pos;
 
-	// TODO: What about non-param values, like the filter type, or "normalize"
-	// for the convolution effect?
 
 	// a function with the signature
 	// process(in_buffer,out_buffer,struct parameter *parameters,float * state_buf)
@@ -105,19 +105,21 @@ typedef struct {
 
 } transform;
 
+typedef float (*transform_process)(jack_nframes_t time,float insample,transform * t);
+
 // Construct a new transform
 // TODO: How do I handle transform-specific constructor parameters, like filter
 // type, or delay time, e.g.?
 transform * transform_new(parameter * params,
 						int n_parameters,
 						int state_buf_size,
-						float (* process)(jack_nframes_t time,float insample,transform * t));
+						transform_process p);
 
 void transform_delete(transform * t);
 
 // Gain
-transform * gain_new(float * values, int n_values,jack_nframes_t * times,char * interps);
-float gain_process(jack_nrames_t time,float insample,transform * gain);
+transform * gain_new(parameter * params);
+float gain_process(jack_nframes_t time,float insample,transform * gain);
 
 // Delay
 transform * delay_new(int max_delay_time,parameter * params);
@@ -140,7 +142,7 @@ typedef struct {
 	// ## BRANCH PATTERN DATA ###############################################
 
 	// an array of child events. this should be NULL if this is a "leaf" event
-	struct event2 * children;
+	void * children;
 	// defaults to 0
 	int n_children;
 
@@ -153,23 +155,29 @@ typedef struct {
 	jack_nframes_t start_time_frames;
 	// a flag indicating that all samples have been output
 	char done;
+	// TODO: This is confusing, and should be named something more descriptive!
 	char _done;
 	// a flag indicating that one of the effects defined for this event
 	// cause it to have an undetermined length. Note that if *any* "descendant"
-	// nodes have an unknown length, then this node should as well
-	char unkown_length;
+	// nodes have an unknown length, then this node should as well.  In other
+	// words, "unknown" propagates down the branches towards the root, but
+	// not in the other direction.
+	char unknown_length;
 	// a flag for use with events who have unknown length.  This is 1 if
 	// the samples have finished playing and the output has been "silent" (tbd)
 	// for some tbd length of time
-	int silent;
+	int silence;
 
 	void * process;
 
 } event2;
 
+typedef float (*event2_process)(event2 * event,jack_nframes_t time);
+
 // Instantiate a new leaf event
 event2 * event2_new_leaf(
-float * buf,int start_sample,int stop_sample,jack_nframes_t start_time);
+float * buf,int start_sample,int stop_sample,jack_nframes_t start_time,
+char unknown_length,transform * transforms,int n_transforms);
 
 // Instantiate a new branch event
 event2 * event2_new_branch(
