@@ -466,6 +466,22 @@ void put_event2(event2 * e) {
 	}
 }
 
+void put_event(
+float * buf,unsigned int start_sample,unsigned int stop_sample,
+jack_time_t start_time_ms,char done) {
+	event2 * leaf = (event2*)malloc(sizeof(event2));
+	transform * t = (transform*)malloc(0);
+	event2_new_leaf(
+			leaf,
+			buf,
+			start_sample,
+			stop_sample,
+			jack_time_to_frames(client,start_time_ms),
+			t,
+			0);
+	put_event2(leaf);
+}
+
 jack_time_t get_time(void) {
 	jack_nframes_t frames = jack_frame_time(client);
 	return jack_frames_to_time(client,frames);

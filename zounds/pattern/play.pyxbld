@@ -13,7 +13,6 @@ r = re.compile('-l(?P<libname>[^\s]+)')
 jacklibs = r.findall(pkgconfig_output)
 
 
-
 def make_ext(modname, pyxfilename):
     dir = os.path.split(pyxfilename)[0]
     obj = os.path.join(dir,'cplay.o')

@@ -9,6 +9,7 @@
 typedef int (*t_callback)(int, float *, float **);
 
 jack_client_t *jack_start(void);
+void init_events(void);
 void setup(void);
 void teardown(void);
 jack_time_t get_time(void);
@@ -224,6 +225,12 @@ void event2_delete(event2 * event);
 //void put_event(
 //float *buf,unsigned int start_sample,unsigned int stop_sample,jack_time_t start_time_ms,char done);
 
+void put_event(
+		float * buf,
+		unsigned int start_sample,
+		unsigned int stop_sample,
+		jack_time_t start_time_ms,
+		char done);
 void put_event2(event2 * e);
 void cancel_all_events(void);
 
