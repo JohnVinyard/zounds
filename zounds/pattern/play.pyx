@@ -16,9 +16,16 @@ ctypedef np.uint64_t UINT64_DTYPE_t
 from libc.stdlib cimport malloc, free
 
 cdef extern from 'cplay.h':
+    void init_events()
     void setup()
     void teardown()
     void cancel_all_events()
+    void put_event( \
+        float * buf,
+        unsigned int start_sample,
+        unsigned int stop_sample,
+        UINT64_DTYPE_t start_time_ms,
+        char done)
     void put_event2(event2 * e)
     UINT64_DTYPE_t get_time()
     UINT64_DTYPE_t get_frame_time()
@@ -41,7 +48,7 @@ cdef extern from 'cplay.h':
     
     # Event ###############################################################
     ctypedef struct event2:
-        pass
+        UINT64_DTYPE_t start_time_frames
     
     event2 * event2_new_buffer(\
         float * buf,int start_sample,int stop_sample,UINT64_DTYPE_t start_time)
@@ -58,7 +65,10 @@ cdef extern from 'cplay.h':
         transform * transforms,int n_transforms)
     
     void event2_set_children(event2 * e,event2 * children, int n_events)
-    
+
+def init():
+    init_events()
+
 def start():
     setup()
 
@@ -77,8 +87,8 @@ def frames():
     '''
     return get_frame_time()
 
-#def put(np.ndarray[FLOAT_DTYPE_t,ndim = 1] n,int starts, int stops,UINT64_DTYPE_t time):
-#    put_event(<float*>n.data,starts,stops,time,0)
+def put(np.ndarray[FLOAT_DTYPE_t,ndim = 1] n,int starts, int stops,UINT64_DTYPE_t time):
+    put_event(<float*>n.data,starts,stops,time,0)
 
 def cancel_all():
     '''
@@ -142,9 +152,6 @@ cdef transform * build_transforms(e,int samplerate):
     
     return transforms
         
-    
-
-
 # KLUDGE: is the time parameter necessary? Relative times are now handled by
 # the JACK client, I think. 
 def enqueue(ptrn,buffers,int samplerate,patterns = None,time = None,parent_event = None):
@@ -220,8 +227,8 @@ def enqueue(ptrn,buffers,int samplerate,patterns = None,time = None,parent_event
         # schedule the child events of this pattern
         now = get_frame_time()
         for i in range(n_children):
-            e[i].start_time_frames += <UINT64_DTYPE_t>(now + latency)
-            put_event2(&(e[i]))
+            events[i].start_time_frames += <UINT64_DTYPE_t>(now + latency)
+            put_event2(&(events[i]))
     
     
     

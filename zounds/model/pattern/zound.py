@@ -11,7 +11,7 @@ from event import Event
 from transform import RecursiveTransform,IndiscriminateTransform
 from zounds.util import tostring
 from zounds.analyze.synthesize import TransformChain
-from zounds.pattern import usecs,put
+from zounds.pattern import usecs,put,enqueue
 from zounds.environment import Environment
 
 
@@ -430,28 +430,29 @@ class Zound(Pattern):
         '''
         play this pattern in realtime, starting time seconds from now
         '''
-        buffers = BUFFERS
-        
-        # get all leaf patterns with *Absolute* times
-        leaves = self._leaves_absolute()
-        patterns = self.patterns
-        # allocate buffers for them
-        if self.is_leaf:
-            buffers.allocate(self)
-        else:
-            for k in leaves.iterkeys():
-                buffers.allocate(patterns[k])
-        
-        # schedule them
-        now = usecs()
-        # TODO: Stress test/profile the play method and find out what an 
-        # acceptable latency value is. I think this value is too high.
-        latency = .25 * 1e6
-        for k,v in leaves.iteritems():
-            audio = buffers[k]
-            la = len(audio)
-            for e in v:
-                put(audio,0,la,now + latency + (e.time * 1e6))
+        enqueue(self,BUFFERS,self.env().samplerate)
+#        buffers = BUFFERS
+#        
+#        # get all leaf patterns with *Absolute* times
+#        leaves = self._leaves_absolute()
+#        patterns = self.patterns
+#        # allocate buffers for them
+#        if self.is_leaf:
+#            buffers.allocate(self)
+#        else:
+#            for k in leaves.iterkeys():
+#                buffers.allocate(patterns[k])
+#        
+#        # schedule them
+#        now = usecs()
+#        # TODO: Stress test/profile the play method and find out what an 
+#        # acceptable latency value is. I think this value is too high.
+#        latency = .25 * 1e6
+#        for k,v in leaves.iteritems():
+#            audio = buffers[k]
+#            la = len(audio)
+#            for e in v:
+#                put(audio,0,la,now + latency + (e.time * 1e6))
         
     
     def audio_extractor(self,needs = None):
