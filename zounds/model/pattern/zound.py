@@ -46,8 +46,7 @@ class Buffers(Thread):
     def allocate(self,p):
         
         try:
-            self._update(p._id)
-            return
+            return self._update(p._id)
         except KeyError:
             pass
         
@@ -58,7 +57,7 @@ class Buffers(Thread):
             audio = self.env.synth(p.audio)
             # BUG: What if this is only a partial segment of a pattern?
             self._buffers[p._id] = (t,audio)
-            return
+            return audio
         except AttributeError as e:
             print e
             pass
@@ -69,7 +68,7 @@ class Buffers(Thread):
             frames = fm[p.address]
             audio = self.env.synth(frames.audio)
             self._buffers[p._id] = (t,audio)
-            return
+            return audio
         except AttributeError as e:
             print e
             pass

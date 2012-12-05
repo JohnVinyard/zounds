@@ -48,6 +48,31 @@ class Transform(object):
     def __init__(self):
         object.__init__(self)
         self._impl[self.__class__.__name__] = self.__class__
+        self.uknown_length = False
+    
+    def c_args(self,pattern,samplerate):
+        
+        for arg in self.args:
+            if hasattr(arg,'__iter__'):
+                # a group of values,times, and interpolations was passed for this
+                # parameter
+                n_values = len(arg[0])
+                values = np.array(arg[0],dtype = np.float32)
+                # convert the times into seconds, and then samples
+                times = [pattern.interpret_time(t) * samplerate for t in arg[1]]
+                times = np.array(arg[1],dtype = np.uint64)
+                interpolations = np.array(arg[2],dtype = np.int8)
+                yield n_values,values,times,interpolations
+            
+            # a single value was passed for this parameter. This value will begin
+            # at time zero, and will persist for the duration of the event
+            n_values = 1
+            values = np.array([arg],dtype = np.float32)
+            times = np.array([0],dtype = np.uint64)
+            interpolations = np.array([],dtype = np.int8)
+            yield n_values,values,times,interpolations
+            
+            
     
     @property
     def args(self):
@@ -87,13 +112,14 @@ class Gain(Transform):
         '''
         Transform.__init__(self)
         self.gain = gain
+        
+    @property
+    def n_args(self):
+        return 1
     
     @property
     def args(self):
-        return (self.amp,)
-    
-    def _transform(self,audio):
-        raise NotImplemented()
+        return (self.gain,)
 
 class Delay(Transform):
     
@@ -102,10 +128,17 @@ class Delay(Transform):
         self.dtime = dtime
         self.feedback = feedback
         self.level = level
+        self.unknown_length = True
+    
+    @property
+    def n_args(self):
+        return 3
     
     @property
     def args(self):
-        return (self.dtime,self.feedback,self.level)
+        return (self.level,self.feedback,self.dtime)
+
+
     
 class Convolver(Transform):
     ROOM = 0

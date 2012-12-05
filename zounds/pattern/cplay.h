@@ -12,6 +12,7 @@ jack_client_t *jack_start(void);
 void setup(void);
 void teardown(void);
 jack_time_t get_time(void);
+jack_nframes_t get_frame_time(void);
 
 /*
 typedef struct {
@@ -62,10 +63,11 @@ typedef struct {
 } parameter;
 
 // Create a new parameter instance
-parameter * parameter_new(float * values,         // all values for this parameter
-						int n_values,           // the number of values
-						jack_nframes_t * times, // times at which the values begin
-						char * interpolations);   // interpolation type codes
+void parameter_init(parameter * param,
+					float * values,         // all values for this parameter
+					int n_values,           // the number of values
+					jack_nframes_t * times, // times at which the values begin
+					char * interpolations); // interpolation type codes
 
 // Get the current value of the parameter instance
 float parameter_current_value(parameter * param,    // parameter instance
@@ -96,33 +98,36 @@ typedef struct {
 	int state_buf_size;
 	int state_buf_pos;
 
-
 	// a function with the signature
 	// process(in_buffer,out_buffer,struct parameter *parameters,float * state_buf)
 	// E.g., For a delay, this will contain the "hold" buffer, for a convolution, the
 	// impulse response
 	void * process;
 
+	// a boolean value which is true if this transform causes a pattern to have
+	// an unknown length
+	char unknown_length;
+
 } transform;
 
 typedef float (*transform_process)(jack_nframes_t time,float insample,transform * t);
 
-// Construct a new transform
-// TODO: How do I handle transform-specific constructor parameters, like filter
-// type, or delay time, e.g.?
-transform * transform_new(parameter * params,
-						int n_parameters,
-						int state_buf_size,
-						transform_process p);
+// Initialize a transform
+void transform_init(transform * t,
+					parameter * params,
+					int n_parameters,
+					int state_buf_size,
+					transform_process p,
+					char unknown_length);
 
 void transform_delete(transform * t);
 
 // Gain
-transform * gain_new(parameter * params);
+void gain_init(transform * t,parameter * params);
 float gain_process(jack_nframes_t time,float insample,transform * gain);
 
 // Delay
-transform * delay_new(int max_delay_time,parameter * params);
+void delay_init(transform * t,int max_delay_time,parameter * params);
 float delay_process(jack_nframes_t time,float insample,transform * delay);
 
 // Event ######################################################################
@@ -151,41 +156,59 @@ typedef struct {
 	// transforms to apply to this event
 	transform * transforms;
 	int n_transforms;
+
 	// the start time, in microseconds
 	jack_nframes_t start_time_frames;
+
 	// a flag indicating that all samples have been output
 	char done;
+
 	// TODO: This is confusing, and should be named something more descriptive!
+	// _done indicates that all samples have been output and/or children are
+	// finished playing, but some transform may cause the event to have an
+	// undetermined length
 	char _done;
+
 	// a flag indicating that one of the effects defined for this event
 	// cause it to have an undetermined length. Note that if *any* "descendant"
 	// nodes have an unknown length, then this node should as well.  In other
 	// words, "unknown" propagates down the branches towards the root, but
 	// not in the other direction.
 	char unknown_length;
+
 	// a flag for use with events who have unknown length.  This is 1 if
 	// the samples have finished playing and the output has been "silent" (tbd)
 	// for some tbd length of time
 	int silence;
 
+	// pointer to function which processes audio samples
 	void * process;
 
 } event2;
 
 typedef float (*event2_process)(event2 * event,jack_nframes_t time);
 
+// Instantiate a new raw buffer event
+event2 * event2_new_buffer(
+float * buf,int start_sample,int stop_sample,jack_nframes_t start_time);
+
+void event2_new_base(
+event2 * e,transform * transforms, int n_transforms,jack_nframes_t start_time_frames);
+
 // Instantiate a new leaf event
-event2 * event2_new_leaf(
-float * buf,int start_sample,int stop_sample,jack_nframes_t start_time,
-char unknown_length,transform * transforms,int n_transforms);
+void event2_new_leaf(
+event2 * e,float * buf,int start_sample,int stop_sample,jack_nframes_t start_time,
+transform * transforms,int n_transforms);
 
 // Instantiate a new branch event
 event2 * event2_new_branch(
 event2 * children,int n_children,jack_nframes_t start_time,
-char unknown_length,transform * transforms,int n_transforms);
+transform * transforms,int n_transforms);
 
-char event_is_leaf(event2 * event);
-char event_is_playing(event2 * event,jack_nframes_t time);
+void event2_set_children(event2 * e,event2 * children,int n_events);
+
+char event2_is_leaf(event2 * event);
+char event2_is_playing(event2 * event,jack_nframes_t time);
 
 float event2_leaf_process(event2 * event,jack_nframes_t time);
 float event2_branch_process(event2 * event,jack_nframes_t time);
@@ -196,7 +219,11 @@ void event2_delete(event2 * event);
 #define N_EVENTS 256
 #define second_in_microsecs 1e6
 
-void put_event(
-float *buf,unsigned int start_sample,unsigned int stop_sample,jack_time_t start_time_ms,char done);
+// KLUDGE: This signature is all wrong
+
+//void put_event(
+//float *buf,unsigned int start_sample,unsigned int stop_sample,jack_time_t start_time_ms,char done);
+
+void put_event2(event2 * e);
 void cancel_all_events(void);
 

@@ -16,11 +16,11 @@ jack_port_t *input_port;
 
 // Parameter ##################################################################
 
-parameter * parameter_new(
-float * values,int n_values,jack_nframes_t * times,char * interpolations) {
+void parameter_init(
+parameter * param,float * values,int n_values,jack_nframes_t * times,char * interpolations) {
 
-	parameter * param = (parameter*)malloc(sizeof(param));
-
+	// values are copied since these values may come from numpy arrays which are
+	// garbage collected if a reference to them doesn't exist in Python space.
 	param->n_values = n_values;
 	int v_size = sizeof(float) * n_values;
 	param->values = (float *)malloc(v_size);
@@ -37,8 +37,6 @@ float * values,int n_values,jack_nframes_t * times,char * interpolations) {
 	memmove(interpolations,param->interpolations,i_size);
 
 	param->pos = 0;
-
-	return param;
 };
 
 int parameter_advance_if_necessary(parameter * param,jack_nframes_t time) {
@@ -105,10 +103,9 @@ void parameter_delete(parameter * param) {
 
 // Transform ##################################################################
 
-transform * transform_new(
-parameter * params,int n_parameters,int state_buf_size,transform_process p) {
-
-	transform * t = (transform*)malloc(sizeof(transform));
+void transform_init(
+transform * t,parameter * params,int n_parameters,
+int state_buf_size,transform_process p,char unknown_length) {
 
 	// Parameters
 	t->n_parameters = n_parameters;
@@ -126,7 +123,7 @@ parameter * params,int n_parameters,int state_buf_size,transform_process p) {
 	// Process function
 	t->process = (void*)p;
 
-	return t;
+	t->unknown_length = unknown_length;
 }
 
 void transform_delete(transform * t) {
@@ -146,8 +143,14 @@ float gain_process(jack_nframes_t time,float insample,transform *t) {
 	return insample * gain;
 }
 
-transform * gain_new(parameter * params) {
-	return transform_new(params,1,0,gain_process);
+void gain_init(transform * t,parameter * params) {
+	transform_init(
+			t,
+			params,       // transform parameters
+			1,            // number of parameters
+			0,            // size of the state buffer
+			gain_process, // process function pointer
+			0);           // known length
 }
 
 // Delay
@@ -171,8 +174,14 @@ float delay_process(jack_nframes_t time,float insample,transform *t) {
 	return out;
 }
 
-transform * delay_new(int max_delay_time,parameter * params) {
-	return transform_new(params,3,max_delay_time,delay_process);
+void delay_init(transform * t,int max_delay_time,parameter * params) {
+	return transform_init(
+			t,
+			params,         // transform parameters
+			3,              // number of parameters
+			max_delay_time, // size of the state buffer
+			delay_process,  // process function pointer
+			1);             // unknown length
 }
 
 // Event ######################################################################
@@ -181,7 +190,7 @@ char event2_is_leaf(event2 * event) {
 }
 
 char event2_is_playing(event2 * event,jack_nframes_t time) {
-	if(event_is_leaf(event)) {
+	if(event2_is_leaf(event)) {
 		return event->position || time >= event->start_time_frames;
 	}
 	return time >= event->start_time_frames;
@@ -269,7 +278,7 @@ float event2_branch_process(event2 * event,jack_nframes_t time) {
 
 		// TODO: event->playing property to avoid doing this comparison over
 		// and over
-		if(event_is_playing(&(children[i]),time)) {
+		if(event2_is_playing(&(children[i]),time)) {
 			event2_process p = (event2_process)&(children[i].process);
 			out = p(&(children[i]),time - event->start_time_frames);
 		}
@@ -287,8 +296,19 @@ float event2_branch_process(event2 * event,jack_nframes_t time) {
 }
 
 void event2_new_common(
-event2 * e,char unknown_length,transform * transforms, int n_transforms,
+event2 * e,transform * transforms, int n_transforms,
 jack_nframes_t start_time_frames) {
+
+	// determine if any transforms defined on this pattern cause it to have
+	// an unknown length
+	char unknown_length = 0;
+	int i = 0;
+	for(i = 0; i < n_transforms; i++) {
+		if(transforms[i].unknown_length) {
+			unknown_length = 1;
+			break;
+		}
+	}
 
 	e->transforms = transforms;
 	e->n_transforms = n_transforms;
@@ -299,14 +319,32 @@ jack_nframes_t start_time_frames) {
 	e->silence = 0;
 }
 
-// TODO: Times aren't being created / handled relative to parent patterns!
-event2 * event2_new_leaf(
-float * buf,int start_sample,int stop_sample,jack_nframes_t start_time,
-char unknown_length,transform * transforms,int n_transforms) {
+void event2_new_base(
+event2 * e,transform * transforms,int n_transforms,jack_nframes_t start_time_frames) {
+	event2_new_common(e,transforms,n_transforms,start_time_frames);
+}
 
-	// BUG: Leaf events CAN have transforms!!!
+event2 * event2_new_buffer(
+float * buf,int start_sample,int stop_sample,jack_nframes_t start_time) {
 
-	event2 * e = malloc(sizeof(event2));
+	event2 * e = (event2*)malloc(sizeof(event2));
+	transform * t = (transform*)malloc(0);
+	event2_new_leaf(
+			e,
+			buf,
+			start_sample,
+			stop_sample,
+			start_time,
+			t,           // empty transform array
+			0);          // zero transforms
+
+	return e;
+}
+
+void event2_new_leaf(
+event2 * e,float * buf,int start_sample,int stop_sample,jack_nframes_t start_time,
+transform * transforms,int n_transforms) {
+
 	e->buf = buf;
 	e->start_sample = start_sample;
 	e->stop_sample = stop_sample;
@@ -317,30 +355,52 @@ char unknown_length,transform * transforms,int n_transforms) {
 	e->n_children = 0;
 
 	event2_new_common(
-			e,unknown_length,transforms,n_transforms,start_time);
+			e,transforms,n_transforms,start_time);
 
 	e->process = (void*)event2_leaf_process;
-	return e;
 }
+
+
 
 // TODO: Times aren't being created / handled relative to parent patterns!
 event2 * event_new_branch(
 event2 * children,int n_children,jack_nframes_t start_time,
-char unknown_length,transform * transforms,int n_transforms) {
+transform * transforms,int n_transforms) {
 
 	event2 * e = malloc(sizeof(event2));
-	e->buf = NULL;
-	e->children = (void*)children;
-	e->n_children = n_children;
 
 	event2_new_common(
-				e,unknown_length,transforms,n_transforms,start_time);
+				e,transforms,n_transforms,start_time);
+
+	e->buf = NULL;
+	// TODO: use the event2_set_children method
+	event2_set_children(e,children,n_children);
 
 	e->process = (void*)event2_branch_process;
 
 	return e;
 }
 
+void event2_set_children(event2 * e,event2 * children,int n_children) {
+	e->children = (void*)children;
+	e->n_children = n_children;
+	int i = 0;
+	for(i = 0; i < n_children; i++) {
+		if(children[i].unknown_length) {
+			e->unknown_length = 1;
+			break;
+		}
+	}
+}
+
+
+event2 * event2_new_branch_incomplete(
+jack_nframes_t start_time,transform * transforms,int n_transforms) {
+
+	event2 * e = malloc(sizeof(event2));
+	e->buf = NULL;
+
+}
 
 
 void event2_delete(event2 * event) {
@@ -361,12 +421,14 @@ void event2_delete(event2 * event) {
 	free(event->transforms);
 }
 
-event2 *EVENTS;
+event2 * EVENTS;
 
 /*
  * Schedule an event to be played. If the list of events is full, the event
  * will not be scheduled.
  */
+// KLUDGE: This signature is all wrong
+/*
 void put_event(
 float *buf,unsigned int start_sample,unsigned int stop_sample,jack_time_t start_time_ms,char done) {
 
@@ -389,10 +451,28 @@ float *buf,unsigned int start_sample,unsigned int stop_sample,jack_time_t start_
 		}
 	}
 }
+*/
+
+void put_event2(event2 * e) {
+	int i;
+	for(i = 0; i < N_EVENTS; i++) {
+		if(EVENTS[i].done) {
+			// cleanup dynamically allocated memory for the completed event
+			// KLUDGE: Is this the right place to do this?
+			event2_delete(&(EVENTS[i]));
+			EVENTS[i] = *e;
+			break;
+		}
+	}
+}
 
 jack_time_t get_time(void) {
 	jack_nframes_t frames = jack_frame_time(client);
 	return jack_frames_to_time(client,frames);
+}
+
+jack_nframes_t get_frame_time(void) {
+	return jack_frame_time(client);
 }
 
 void cancel_all_events(void) {
