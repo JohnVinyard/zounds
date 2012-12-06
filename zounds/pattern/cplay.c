@@ -235,7 +235,6 @@ float event2_do_tail(event2 * event,jack_nframes_t time) {
 
 // TODO: Times aren't being created / handled relative to parent patterns!
 float event2_leaf_process(event2 * event,jack_nframes_t time) {
-
 	if(event->_done) {
 		return event2_do_tail(event,time);
 	}
@@ -256,7 +255,6 @@ float event2_leaf_process(event2 * event,jack_nframes_t time) {
 
 // TODO: Times aren't being created / handled relative to parent patterns!
 float event2_branch_process(event2 * event,jack_nframes_t time) {
-
 	if(event->_done) {
 		return event2_do_tail(event,time);
 	}
@@ -264,11 +262,10 @@ float event2_branch_process(event2 * event,jack_nframes_t time) {
 	float out = 0;
 	char alive = 0;
 	int i;
-
 	event2 * children = (event2*)(event->children);
+	jack_nframes_t rel_time = time - event->start_time_frames;
 
 	for(i = 0; i < event->n_children; i++) {
-
 		if(children[i].done) {
 			// The child event is done and won't contribute to the current
 			// sample
@@ -278,15 +275,14 @@ float event2_branch_process(event2 * event,jack_nframes_t time) {
 
 		// TODO: event->playing property to avoid doing this comparison over
 		// and over
-		if(event2_is_playing(&(children[i]),time)) {
-			event2_process p = (event2_process)&(children[i].process);
-			out = p(&(children[i]),time - event->start_time_frames);
+		if(event2_is_playing(&(children[i]),rel_time)) {
+			event2_process p = (event2_process)(children[i].process);
+			out += p(&(children[i]),rel_time);
 		}
 	}
 
 	// Apply transformations to this sample
 	out = event2_do_transforms(event,out,time);
-
 
 	if(!alive) {
 		event2_set_done(event);
@@ -321,6 +317,9 @@ jack_nframes_t start_time_frames) {
 
 void event2_new_base(
 event2 * e,transform * transforms,int n_transforms,jack_nframes_t start_time_frames) {
+	e->process = (void*)event2_branch_process;
+	e->children = NULL;
+	e->n_children = 0;
 	event2_new_common(e,transforms,n_transforms,start_time_frames);
 }
 
@@ -384,7 +383,8 @@ transform * transforms,int n_transforms) {
 void event2_set_children(event2 * e,event2 * children,int n_children) {
 	e->children = (void*)children;
 	e->n_children = n_children;
-	int i = 0;
+
+	int i;
 	for(i = 0; i < n_children; i++) {
 		if(children[i].unknown_length) {
 			e->unknown_length = 1;
@@ -422,36 +422,6 @@ void event2_delete(event2 * event) {
 }
 
 event2 * EVENTS;
-
-/*
- * Schedule an event to be played. If the list of events is full, the event
- * will not be scheduled.
- */
-// KLUDGE: This signature is all wrong
-/*
-void put_event(
-float *buf,unsigned int start_sample,unsigned int stop_sample,jack_time_t start_time_ms,char done) {
-
-	event2 ne;
-	ne.buf = buf;
-	ne.start_sample = start_sample;
-	ne.stop_sample = stop_sample;
-	ne.start_time_frames = jack_time_to_frames(client,start_time_ms);
-	ne.done = done;
-	ne.position = 0;
-
-	int i;
-	for(i = 0; i < N_EVENTS; i++) {
-		if(EVENTS[i].done) {
-			// cleanup dynamically allocated memory for the completed event
-			// KLUDGE: Is this the right place to do this?
-			event_delete(EVENTS[i]);
-			EVENTS[i] = ne;
-			break;
-		}
-	}
-}
-*/
 
 void put_event2(event2 * e) {
 	int i;
@@ -502,6 +472,7 @@ void cancel_all_events(void) {
  * Initialize all events
  */
 void init_events(void) {
+	printf("Initialized events\n");
 	EVENTS = (event2*)calloc(N_EVENTS,sizeof(event2));
 	cancel_all_events();
 }
@@ -529,26 +500,12 @@ int process(jack_nframes_t nframes, void *arg) {
 		// loop over those.
 		for(j = 0; j < N_EVENTS; j++) {
 
+
 			if(EVENTS[j].done) {
 				// this position hasn't been assigned yet, or the sample has
 				// finished playing
 				continue;
 			}
-
-			/*
-			if(EVENTS[j].position > 0 || frame_time >= EVENTS[j].start_time_frames) {
-				// the sample has already started, or starts on this frame
-				current_pos = EVENTS[j].start_sample + EVENTS[j].position;
-				sample+= EVENTS[j].buf[current_pos];
-				// advance the sample position of this event
-				EVENTS[j].position++;
-
-				if((current_pos + 1) >= EVENTS[j].stop_sample) {
-					// Mark this event as done
-					EVENTS[j].done = 1;
-				}
-			}
-			*/
 
 			event2 * e = &(EVENTS[j]);
 			if(event2_is_playing(e,frame_time)) {
@@ -566,9 +523,7 @@ int process(jack_nframes_t nframes, void *arg) {
 		frame_time++;
 	}
 
-
 	return 0;
-
 }
 
 
