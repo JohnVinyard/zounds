@@ -49,6 +49,7 @@ cdef extern from 'cplay.h':
     # Event ###############################################################
     ctypedef struct event2:
         UINT64_DTYPE_t start_time_frames
+        int n_children
     
     event2 * event2_new_buffer(\
         float * buf,int start_sample,int stop_sample,UINT64_DTYPE_t start_time)
@@ -97,8 +98,6 @@ def cancel_all():
     cancel_all_events()
 
 # TODO: What about just playing a buffer, a la Z.play(frames.audio)?
-
-
 cdef transform * build_transforms(e,int samplerate):
     '''
     Build C structures representing the transforms for a single event
@@ -151,10 +150,20 @@ cdef transform * build_transforms(e,int samplerate):
             delay_init(&(transforms[i]),samplerate * 2,parameters)
     
     return transforms
-        
+
+# KLUDGE: This class is necessary to pass an event2* pointer to the enqueue()
+# function.
+cdef class EventWrapper:
+
+    cdef event2 * evt
+    
+    cdef set_e(self,event2 * e):
+        self.evt = e
+
 # KLUDGE: is the time parameter necessary? Relative times are now handled by
 # the JACK client, I think. 
-def enqueue(ptrn,buffers,int samplerate,patterns = None,time = None,parent_event = None):
+def enqueue(ptrn,buffers,int samplerate,
+            patterns = None,time = None,EventWrapper parent_event = None):
     '''
     Add a pattern to the queue
     '''
@@ -196,13 +205,13 @@ def enqueue(ptrn,buffers,int samplerate,patterns = None,time = None,parent_event
     cdef int n_transforms = 0
     cdef transform * transforms
     cdef float start_time_seconds
+    cdef EventWrapper wrapper
     
     for i,c in enumerate(children):
         p,evt = c
-        
         n_transforms = len(evt.transforms)
         transforms = build_transforms(evt,samplerate)
-        start_time_seconds = ptrn.interpret_time(evt.time) 
+        start_time_seconds = ptrn.interpret_time(evt.time)
         start_time_frames = <UINT64_DTYPE_t>(start_time_seconds * samplerate)
         
         if p.is_leaf:
@@ -212,19 +221,22 @@ def enqueue(ptrn,buffers,int samplerate,patterns = None,time = None,parent_event
         else:
             event2_new_base(\
                         &(events[i]),transforms,n_transforms,start_time_frames)
+            wrapper = EventWrapper()
+            wrapper.set_e(&(events[i]))
             enqueue(p,buffers,samplerate,patterns = patterns,
-                    time = start_time_seconds,parent_event = events[i])
+                    time = start_time_seconds,parent_event = wrapper)
     
     cdef event2 * pe
     # TODO: if parent_event, attach events to parent
     if None is not parent_event:
-        pe = <event2*>parent_event
+        pe = <event2*>(parent_event.evt)
         event2_set_children(pe,events,n_children)
-            
+    
+    
+    i = 0
     
     if None is parent_event:
         # get the current time and schedule the child events of this pattern
-        # schedule the child events of this pattern
         now = get_frame_time()
         for i in range(n_children):
             events[i].start_time_frames += <UINT64_DTYPE_t>(now + latency)

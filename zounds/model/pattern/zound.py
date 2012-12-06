@@ -58,8 +58,7 @@ class Buffers(Thread):
             # BUG: What if this is only a partial segment of a pattern?
             self._buffers[p._id] = (t,audio)
             return audio
-        except AttributeError as e:
-            print e
+        except AttributeError:
             pass
         
         try:
@@ -69,8 +68,7 @@ class Buffers(Thread):
             audio = self.env.synth(frames.audio)
             self._buffers[p._id] = (t,audio)
             return audio
-        except AttributeError as e:
-            print e
+        except AttributeError:
             pass
         
         raise ValueError('p must be a FrameModel-derived instance or a Zound')
