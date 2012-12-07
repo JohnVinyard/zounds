@@ -97,7 +97,6 @@ void parameter_delete(parameter * param) {
 	free(param->values);
 	free(param->times);
 	free(param->interpolations);
-	free(param);
 }
 
 // Transform ##################################################################
@@ -131,8 +130,6 @@ void transform_delete(transform * t) {
 	}
 	free(t->parameters);
 	free(t->state_buf);
-	free(t->process);
-	free(t);
 }
 
 // Gain
@@ -152,6 +149,7 @@ void gain_init(transform * t,parameter * params) {
 }
 
 // Delay
+// TODO: How do I avoid clicks when then delay time is changed?
 float delay_process(jack_nframes_t time,float insample,transform *t) {
 
 	float effect_level = parameter_current_value(&(t->parameters[0]),time);
@@ -404,10 +402,8 @@ jack_nframes_t start_time,transform * transforms,int n_transforms) {
 
 
 void event2_delete(event2 * event) {
-
 	// Note that event->buf isn't being freed. This is owned by the caller, and
 	// may be shared between many events
-
 	int i;
 	event2 * children = (event2*)event->children;
 	for(i = 0; i < event->n_children; i++) {

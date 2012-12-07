@@ -19,7 +19,6 @@ ctypedef np.uint64_t jack_time_t
 from libc.stdlib cimport malloc, free
 
 
-
 cdef extern from 'cplay.h':
     void init_events()
     void setup()
@@ -102,9 +101,6 @@ def cancel_all():
     '''
     cancel_all_events()
 
-
-
-
 # TODO: What about just playing a buffer, a la Z.play(frames.audio)?
 cdef transform * build_transforms(pattern,e,int samplerate) except *:
     '''
@@ -158,6 +154,7 @@ cdef transform * build_transforms(pattern,e,int samplerate) except *:
             delay_init(&(transforms[i]),samplerate * 2,parameters)
     
     return transforms
+
 
 # KLUDGE: This class is necessary to pass an event2* pointer to the enqueue()
 # function.
