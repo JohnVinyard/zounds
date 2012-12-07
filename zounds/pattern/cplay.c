@@ -24,17 +24,18 @@ parameter * param,float * values,int n_values,jack_nframes_t * times,char * inte
 	param->n_values = n_values;
 	int v_size = sizeof(float) * n_values;
 	param->values = (float *)malloc(v_size);
-	memmove(values,param->values,v_size);
+	memmove(param->values,values,v_size);
 
 	int t_size = sizeof(jack_nframes_t) * n_values;
 	param->times = (jack_nframes_t *)malloc(t_size);
-	memmove(times,param->times,t_size);
+	memmove(param->times,times,t_size);
+
 
 	// Number of interpolations is n - 1, since interpolations define transitions
 	// between points
 	int i_size = sizeof(char) * (n_values - 1);
 	param->interpolations = (char *)malloc(i_size);
-	memmove(interpolations,param->interpolations,i_size);
+	memmove(param->interpolations,interpolations,i_size);
 
 	param->pos = 0;
 };
@@ -68,7 +69,7 @@ float parameter_current_value(parameter * param,jack_nframes_t time) {
 	char interp = param->interpolations[pos];
 	float current_value = param->values[pos];
 
-	if(0 == interp) {
+	if(0 == (int)interp) {
 		// The interpolation type is none, so we just return the current value
 		// in the values array
 		return current_value;
@@ -78,18 +79,16 @@ float parameter_current_value(parameter * param,jack_nframes_t time) {
 	jack_nframes_t end_time = param->times[pos + 1];
 	float next_value = param->values[pos + 1];
 
-	if(1 == interp) {
+	float rel_time = (float)(time - start_time) / (float)(end_time - start_time);
+	if(1 == (int)interp) {
 		// linear interpolation
 		// v(t) = V0 + (V1 - V0) * ((t - T0) / (T1 - T0))
-		return current_value + (next_value - current_value) *
-				((time - start_time) / (end_time - start_time));
+		return current_value + ((next_value - current_value) * rel_time);
 	}
 
 	// Assume that interpolation type is exponential
 	// v(t) = V0 * (V1 / V0) ^ ((t - T0) / (T1 - T0))
-	return current_value *
-			pow((next_value / current_value),
-			(time - start_time) / (end_time - start_time));
+	return current_value * pow((next_value / current_value),rel_time);
 };
 
 
@@ -106,7 +105,6 @@ void parameter_delete(parameter * param) {
 void transform_init(
 transform * t,parameter * params,int n_parameters,
 int state_buf_size,transform_process p,char unknown_length) {
-
 	// Parameters
 	t->n_parameters = n_parameters;
 	t->parameters = params;
@@ -166,7 +164,7 @@ float delay_process(jack_nframes_t time,float insample,transform *t) {
 	t->state_buf_pos++;
 	// KLUDGE: What about other sample rates?
 	int delay_time_samples =
-			(int)(parameter_current_value(&(t->parameters[2]),time) * 44100);
+			(int)(parameter_current_value(&(t->parameters[2]),time) * 44100.);
 	if(t->state_buf_pos >= delay_time_samples) {
 		t->state_buf_pos = 0;
 	}
@@ -201,7 +199,7 @@ float event2_do_transforms(event2 * event, float insample,jack_nframes_t time) {
 	float out = insample;
 	// Apply transformations to this sample
 	for(i = 0; i < event->n_transforms; i++) {
-		transform_process p = (transform_process)&(event->transforms[i].process);
+		transform_process p = (transform_process)(event->transforms[i].process);
 		out = p(time,out,&(event->transforms[i]));
 	}
 	return out;
@@ -235,6 +233,7 @@ float event2_do_tail(event2 * event,jack_nframes_t time) {
 
 // TODO: Times aren't being created / handled relative to parent patterns!
 float event2_leaf_process(event2 * event,jack_nframes_t time) {
+
 	if(event->_done) {
 		return event2_do_tail(event,time);
 	}
@@ -242,7 +241,8 @@ float event2_leaf_process(event2 * event,jack_nframes_t time) {
 	// read from the buffer
 	float sample = event->buf[event->start_sample + event->position];
 	// do transformations
-	sample = event2_do_transforms(event,sample,time);
+	// TODO: Should I be passing a relative time to the transform?
+	sample = event2_do_transforms(event,sample,event->position);
 	// advance the buffer position
 	event->position++;
 
@@ -282,7 +282,7 @@ float event2_branch_process(event2 * event,jack_nframes_t time) {
 	}
 
 	// Apply transformations to this sample
-	out = event2_do_transforms(event,out,time);
+	out = event2_do_transforms(event,out,rel_time);
 
 	if(!alive) {
 		event2_set_done(event);
@@ -472,7 +472,6 @@ void cancel_all_events(void) {
  * Initialize all events
  */
 void init_events(void) {
-	printf("Initialized events\n");
 	EVENTS = (event2*)calloc(N_EVENTS,sizeof(event2));
 	cancel_all_events();
 }
