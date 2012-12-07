@@ -59,6 +59,10 @@ class Transform(object):
         # KLUDGE: Wouldn't it simpler to just wrap the C transform struct in 
         # an extension type?
         
+        # TODO: Only the times array depends on the current pattern and samplerate.
+        # cache the values and interpolations arrays, since this method might
+        # be called many times.
+        
         for arg in self.args:
             
             if hasattr(arg,'__iter__'):
@@ -67,11 +71,11 @@ class Transform(object):
                 n_values = len(arg[0])
                 values = np.array(arg[0],dtype = np.float32)
                 # convert the times into seconds, and then samples
-                print arg[1]
-                times = [pattern.interpret_time(t) * samplerate for t in arg[1]]
-                print times
+                
+                # TODO: interpret time should work for single values and numpy
+                # arrays of time values
+                times = [pattern.interpret_time(t) * samplerate for t in arg[1]] 
                 times = np.array(times,dtype = np.uint32)
-                print times
                 interpolations = np.array(arg[2],dtype = np.uint8)
                 yield n_values,values,times,interpolations
                 continue
@@ -81,7 +85,7 @@ class Transform(object):
             n_values = 1
             values = np.array([arg],dtype = np.float32)
             times = np.array([0],dtype = np.uint32)
-            interpolations = np.array([],dtype = np.uint8)
+            interpolations = np.empty(0,dtype = np.uint8)
             yield n_values,values,times,interpolations
             
             

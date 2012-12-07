@@ -101,8 +101,8 @@ def cancel_all():
     '''
     cancel_all_events()
 
-# TODO: What about just playing a buffer, a la Z.play(frames.audio)?
-cdef transform * build_transforms(pattern,e,int samplerate) except *:
+
+cdef transform * build_transforms(pattern,e,int samplerate):
     '''
     Build C structures representing the transforms for a single event
     '''
@@ -122,9 +122,12 @@ cdef transform * build_transforms(pattern,e,int samplerate) except *:
     cdef np.ndarray[FLOAT_DTYPE_t,ndim = 1] values
     cdef np.ndarray[jack_nframes_t,ndim = 1] times
     cdef np.ndarray[CHAR_DTYPE_t,ndim = 1] interpolations
+    cdef str GAIN = 'Gain'
+    cdef str DELAY = 'Delay'
+    cdef str transform_name
     
-    
-    for i,t in enumerate(e.transforms):
+    for i in range(n_transforms):
+        t = e.transforms[i]
         n_parameters = t.n_args
         # allocate a block of contiguous memory for the parameters
         parameters = <parameter*>malloc(n_parameters * sizeof(parameter))
@@ -147,9 +150,9 @@ cdef transform * build_transforms(pattern,e,int samplerate) except *:
         # I handle parameters that can't be automated and stay constant for the
         # lifetime of the transform?
         transform_name = t.__class__.__name__
-        if 'Gain' == transform_name:
+        if GAIN == transform_name:
             gain_init(&(transforms[i]),parameters)
-        elif 'Delay' == transform_name:
+        elif DELAY == transform_name:
             # max delay time of 2 seconds at 44100 hz
             delay_init(&(transforms[i]),samplerate * 2,parameters)
     
@@ -212,8 +215,8 @@ def enqueue(ptrn,buffers,int samplerate,
     cdef float start_time_seconds
     cdef EventWrapper wrapper
     
-    for i,c in enumerate(children):
-        p,evt = c
+    for i in range(n_children):
+        p,evt = children[i]
         n_transforms = len(evt.transforms)
         transforms = build_transforms(p,evt,samplerate)
         start_time_seconds = ptrn.interpret_time(evt.time)
@@ -221,7 +224,7 @@ def enqueue(ptrn,buffers,int samplerate,
         
         if p.is_leaf:
             audio = buffers.allocate(p)
-            event2_new_leaf(&(events[i]),<float*>audio.data,0,len(audio),
+            event2_new_leaf(&(events[i]),<float*>audio.data,0,audio.size,
                             start_time_frames,transforms,n_transforms)
         else:
             event2_new_base(\

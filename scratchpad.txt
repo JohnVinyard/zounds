@@ -7,6 +7,10 @@ Musical Pattern game
 ====================================
 
 - server-side rendering
+	- can I speed up scheduling?
+		- cache values and interpolations arrays
+		- cache times as a numpy array. Zound.interpret_times should work for numpy arrays too
+	- top level tempo is not respected when scheduling patterns and transforms
 	- Zound.render() should call the jack client in freewheel mode
 	- Change event2 to event
 	
