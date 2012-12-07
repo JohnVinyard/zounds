@@ -10,10 +10,15 @@ ctypedef np.float32_t FLOAT_DTYPE_t
 INT_DTYPE = np.int32
 ctypedef np.int32_t INT32_DTYPE_t
 
-UINT64_DTYPE = np.uint64
-ctypedef np.uint64_t UINT64_DTYPE_t
+FRAME_TIME_DTYPE = np.uint32
+ctypedef np.uint32_t jack_nframes_t
+
+USEC_TIME_DTYPE = np.uint64
+ctypedef np.uint64_t jack_time_t
 
 from libc.stdlib cimport malloc, free
+
+
 
 cdef extern from 'cplay.h':
     void init_events()
@@ -24,11 +29,11 @@ cdef extern from 'cplay.h':
         float * buf,
         unsigned int start_sample,
         unsigned int stop_sample,
-        UINT64_DTYPE_t start_time_ms,
+        jack_nframes_t start_time_ms,
         char done)
     void put_event2(event2 * e)
-    UINT64_DTYPE_t get_time()
-    UINT64_DTYPE_t get_frame_time()
+    jack_time_t get_time()
+    jack_nframes_t get_frame_time()
     
     
     # Parameter ###############################################################
@@ -37,7 +42,7 @@ cdef extern from 'cplay.h':
     
     void parameter_init( \
         parameter * param,float * values,int n_values,
-        UINT64_DTYPE_t * times,char * interpolations)
+        jack_nframes_t * times,char * interpolations)
     
     # Transform ###############################################################
     ctypedef struct transform:
@@ -48,21 +53,21 @@ cdef extern from 'cplay.h':
     
     # Event ###############################################################
     ctypedef struct event2:
-        UINT64_DTYPE_t start_time_frames
+        jack_nframes_t start_time_frames
         int n_children
     
     event2 * event2_new_buffer(\
-        float * buf,int start_sample,int stop_sample,UINT64_DTYPE_t start_time)
+        float * buf,int start_sample,int stop_sample,jack_nframes_t start_time)
     
     void event2_new_base( \
-        event2 * e,transform * transforms, int n_transforms,UINT64_DTYPE_t start_time_frames)
+        event2 * e,transform * transforms, int n_transforms,jack_nframes_t start_time_frames)
     
     void event2_new_leaf( \
-        event2 * e, float * buf,int start_sample,int stop_sample,UINT64_DTYPE_t start_time,
+        event2 * e, float * buf,int start_sample,int stop_sample,jack_nframes_t start_time,
         transform * transforms,int n_transforms)
     
     event2 * event2_new_branch( \
-        event2 * children,int n_children,UINT64_DTYPE_t start_time,
+        event2 * children,int n_children,jack_nframes_t start_time,
         transform * transforms,int n_transforms)
     
     void event2_set_children(event2 * e,event2 * children, int n_events)
@@ -88,7 +93,7 @@ def frames():
     '''
     return get_frame_time()
 
-def put(np.ndarray[FLOAT_DTYPE_t,ndim = 1] n,int starts, int stops,UINT64_DTYPE_t time):
+def put(np.ndarray[FLOAT_DTYPE_t,ndim = 1] n,int starts, int stops,jack_time_t time):
     put_event(<float*>n.data,starts,stops,time,0)
 
 def cancel_all():
@@ -97,8 +102,11 @@ def cancel_all():
     '''
     cancel_all_events()
 
+
+
+
 # TODO: What about just playing a buffer, a la Z.play(frames.audio)?
-cdef transform * build_transforms(e,int samplerate):
+cdef transform * build_transforms(pattern,e,int samplerate) except *:
     '''
     Build C structures representing the transforms for a single event
     '''
@@ -112,10 +120,11 @@ cdef transform * build_transforms(e,int samplerate):
     cdef transform * transforms = \
         <transform*>malloc(n_transforms * sizeof(transform))
     
+    
     cdef parameter * parameters
     cdef int n_values
     cdef np.ndarray[FLOAT_DTYPE_t,ndim = 1] values
-    cdef np.ndarray[UINT64_DTYPE_t,ndim = 1] times
+    cdef np.ndarray[jack_nframes_t,ndim = 1] times
     cdef np.ndarray[CHAR_DTYPE_t,ndim = 1] interpolations
     
     
@@ -124,14 +133,14 @@ cdef transform * build_transforms(e,int samplerate):
         # allocate a block of contiguous memory for the parameters
         parameters = <parameter*>malloc(n_parameters * sizeof(parameter))
         
-        for j,p in enumerate(t.c_args):
+        for j,p in enumerate(t.c_args(pattern,samplerate)):
             # initialize each parameter
             n_values,values,times,interpolations = p
             parameter_init(\
                 &(parameters[j]),
                 <float*>values.data,
                 n_values,
-                <UINT64_DTYPE_t*>times.data,
+                <jack_nframes_t*>times.data,
                 <char*>interpolations.data)
         
         # initialize each transform
@@ -146,7 +155,6 @@ cdef transform * build_transforms(e,int samplerate):
             gain_init(&(transforms[i]),parameters)
         elif 'Delay' == transform_name:
             # max delay time of 2 seconds at 44100 hz
-            # KLUDGE: Another hard-coded sample rate
             delay_init(&(transforms[i]),samplerate * 2,parameters)
     
     return transforms
@@ -171,7 +179,7 @@ def enqueue(ptrn,buffers,int samplerate,
     # translating times into frames/samples which are relative to the parent.
     # When the data structure is complete, enqueue the top-level events
     
-    cdef UINT64_DTYPE_t start_time_frames
+    cdef jack_nframes_t start_time_frames
     cdef float latency = 0.25 * samplerate
     cdef event2 * e
     cdef np.ndarray[FLOAT_DTYPE_t,ndim = 1] audio
@@ -182,7 +190,7 @@ def enqueue(ptrn,buffers,int samplerate,
         audio = buffers.allocate(ptrn)
         # KLUDGE: What about other sample rates?
         # KLUDGE: Latency should be configurable
-        start_time_frames = <UINT64_DTYPE_t>(get_frame_time() + latency)
+        start_time_frames = <jack_nframes_t>(get_frame_time() + latency)
         # The JACK client will free this memory once the event has played
         e = event2_new_buffer(<float*>audio.data,0,len(audio),start_time_frames)
         put_event2(e)  
@@ -210,9 +218,9 @@ def enqueue(ptrn,buffers,int samplerate,
     for i,c in enumerate(children):
         p,evt = c
         n_transforms = len(evt.transforms)
-        transforms = build_transforms(evt,samplerate)
+        transforms = build_transforms(p,evt,samplerate)
         start_time_seconds = ptrn.interpret_time(evt.time)
-        start_time_frames = <UINT64_DTYPE_t>(start_time_seconds * samplerate)
+        start_time_frames = <jack_nframes_t>(start_time_seconds * samplerate)
         
         if p.is_leaf:
             audio = buffers.allocate(p)
@@ -239,7 +247,7 @@ def enqueue(ptrn,buffers,int samplerate,
         # get the current time and schedule the child events of this pattern
         now = get_frame_time()
         for i in range(n_children):
-            events[i].start_time_frames += <UINT64_DTYPE_t>(now + latency)
+            events[i].start_time_frames += <jack_nframes_t>(now + latency)
             put_event2(&(events[i]))
     
     

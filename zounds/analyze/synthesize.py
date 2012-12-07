@@ -52,24 +52,36 @@ class Transform(object):
     
     def c_args(self,pattern,samplerate):
         
+        # KLUDGE: The C interpolations array type is char.  I'm using np.uint8
+        # here.  Is that going to be a platform-dependent thing, or is it always
+        # safe to use uint8?
+        
+        # KLUDGE: Wouldn't it simpler to just wrap the C transform struct in 
+        # an extension type?
+        
         for arg in self.args:
+            
             if hasattr(arg,'__iter__'):
                 # a group of values,times, and interpolations was passed for this
                 # parameter
                 n_values = len(arg[0])
                 values = np.array(arg[0],dtype = np.float32)
                 # convert the times into seconds, and then samples
+                print arg[1]
                 times = [pattern.interpret_time(t) * samplerate for t in arg[1]]
-                times = np.array(arg[1],dtype = np.uint64)
-                interpolations = np.array(arg[2],dtype = np.int8)
+                print times
+                times = np.array(times,dtype = np.uint32)
+                print times
+                interpolations = np.array(arg[2],dtype = np.uint8)
                 yield n_values,values,times,interpolations
+                continue
             
             # a single value was passed for this parameter. This value will begin
             # at time zero, and will persist for the duration of the event
             n_values = 1
             values = np.array([arg],dtype = np.float32)
-            times = np.array([0],dtype = np.uint64)
-            interpolations = np.array([],dtype = np.int8)
+            times = np.array([0],dtype = np.uint32)
+            interpolations = np.array([],dtype = np.uint8)
             yield n_values,values,times,interpolations
             
             
@@ -123,7 +135,7 @@ class Gain(Transform):
 
 class Delay(Transform):
     
-    def __init__(self,dtime,feedback,level):
+    def __init__(self,level,feedback,dtime):
         Transform.__init__(self)
         self.dtime = dtime
         self.feedback = feedback

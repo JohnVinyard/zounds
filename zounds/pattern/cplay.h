@@ -15,25 +15,6 @@ void teardown(void);
 jack_time_t get_time(void);
 jack_nframes_t get_frame_time(void);
 
-/*
-typedef struct {
-	// a buffer containing audio samples
-	float * buf;
-	// the position in the buffer to start
-	unsigned int start_sample;
-	// the stop position in the buffer
-	unsigned int stop_sample;
-	// the start time, in microseconds
-	jack_nframes_t start_time_frames;
-	// a flag indicating that all samples have been output
-	char done;
-	// the current position in the sample
-	unsigned int position;
-
-} event_t;
-*/
-
-
 // Parameter ##################################################################
 enum INTERPOLATION_TYPE {
 	Jump,
