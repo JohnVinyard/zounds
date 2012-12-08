@@ -56,7 +56,7 @@ class Transform(object):
         # here.  Is that going to be a platform-dependent thing, or is it always
         # safe to use uint8?
         
-        # KLUDGE: Wouldn't it simpler to just wrap the C transform struct in 
+        # KLUDGE: Wouldn't it be simpler to just wrap the C transform struct in 
         # an extension type?
         
         # TODO: Only the times array depends on the current pattern and samplerate.

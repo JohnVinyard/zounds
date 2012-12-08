@@ -214,4 +214,9 @@ void put_event(
 		char done);
 void put_event2(event2 * e);
 void cancel_all_events(void);
-
+int render(
+		jack_nframes_t nframes,
+		jack_nframes_t frame_time,
+		jack_default_audio_sample_t ** out,
+		int channels,
+		int mode);

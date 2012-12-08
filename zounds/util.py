@@ -146,6 +146,11 @@ class PsychicIter(object):
         self._iter = iterator
         self._buffer = []
     
+    def __iter__(self):
+        while True:
+            yield self.next()
+    
+    
     def next(self):
         for i in range(0,2 - len(self._buffer)):
             try:

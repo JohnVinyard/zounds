@@ -417,7 +417,7 @@ void event2_delete(event2 * event) {
 	free(event->transforms);
 }
 
-event2 * EVENTS;
+event2 * EVENTS = NULL;
 
 void put_event2(event2 * e) {
 	int i;
@@ -468,33 +468,30 @@ void cancel_all_events(void) {
  * Initialize all events
  */
 void init_events(void) {
-	EVENTS = (event2*)calloc(N_EVENTS,sizeof(event2));
+	if(NULL == EVENTS) {
+		EVENTS = (event2*)calloc(N_EVENTS,sizeof(event2));
+	}
 	cancel_all_events();
 }
 
 
+int render(
+jack_nframes_t nframes,
+jack_nframes_t frame_time,
+jack_default_audio_sample_t ** out,
+int channels,
+int mode) {
 
-int process(jack_nframes_t nframes, void *arg) {
-	jack_default_audio_sample_t *out[CHANNELS+1];
-	jack_default_audio_sample_t *in;
-
-	int i,j,k,current_pos;
-	for (i = 0; i < CHANNELS; ++i) {
-		out[i] = jack_port_get_buffer(output_ports[i], nframes);
-	}
-
-	jack_nframes_t frame_time = jack_last_frame_time(client);
 	float sample = 0;
-
+	int i,j,k,any;
 
 	for(i = 0; i < nframes; i++) {
 		sample = 0;
-
+		any = 0;
 		// KLUDGE: This is a lot of unecessary work. I should figure out
 		// which events are playing, or will begin in this cycle, and only
 		// loop over those.
 		for(j = 0; j < N_EVENTS; j++) {
-
 
 			if(EVENTS[j].done) {
 				// this position hasn't been assigned yet, or the sample has
@@ -502,6 +499,7 @@ int process(jack_nframes_t nframes, void *arg) {
 				continue;
 			}
 
+			any++;
 			event2 * e = &(EVENTS[j]);
 			if(event2_is_playing(e,frame_time)) {
 				event2_process p = (event2_process)(e->process);
@@ -509,8 +507,16 @@ int process(jack_nframes_t nframes, void *arg) {
 			}
 		}
 
+		if(mode && !any) {
+			// We're in non-realtime mode, and all scheduled events are
+			// completely done.  Returning a number < n_frames lets the
+			// caller know how many frames of the output buffer were filled,
+			// so trailing / unused zeros can be truncated.
+			return i;
+		}
+
 		// Write the computed sample to all channels of the out buffer
-		for(k = 0; k < CHANNELS; k++) {
+		for(k = 0; k < channels; k++) {
 			out[k][i] = sample;
 		}
 
@@ -518,7 +524,38 @@ int process(jack_nframes_t nframes, void *arg) {
 		frame_time++;
 	}
 
-	return 0;
+	if(!mode) {
+		// in JACK client mode, this function will always return 0, signifying
+		// to the JACK server that everything is ok.
+		return 0;
+	}
+
+	// In non-realtime rendering mode, returning n_frames means that every
+	// sample in the output buffer was filled.
+	return nframes;
+}
+
+int process(jack_nframes_t nframes, void *arg) {
+	jack_default_audio_sample_t *out[CHANNELS+1];
+	jack_default_audio_sample_t *in;
+
+	int i;
+	for (i = 0; i < CHANNELS; ++i) {
+		// TODO: abstract this so that process() can be called outside of the
+		// JACK context too
+		out[i] = jack_port_get_buffer(output_ports[i], nframes);
+	}
+
+	// TODO: abstract this to that process can be called outside of the
+	// JACK context too
+	jack_nframes_t frame_time = jack_last_frame_time(client);
+
+	return render(
+			nframes,    // number of frames to process
+			frame_time, // current time, in frames
+			out,        // output buffer
+			CHANNELS,   // n channels
+			0);         // JACK client mode (realtime)
 }
 
 
@@ -615,13 +652,20 @@ jack_client_t *jack_start(void) {
 	return(client);
 }
 
+int RUNNING = 0;
 
 void setup(void) {
-	init_events();
-	jack_start();
+	if(!RUNNING) {
+		init_events();
+		jack_start();
+		RUNNING = 1;
+	}
 }
 
 void teardown(void) {
-	jack_client_close(client);
-	free(EVENTS);
+	if(RUNNING) {
+		jack_client_close(client);
+		free(EVENTS);
+		RUNNING = 0;
+	}
 }

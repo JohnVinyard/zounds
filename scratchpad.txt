@@ -1,18 +1,25 @@
 Installation
 ====================================
 In the documentation, update path to audio files in quickstart search example
+rst rendering on BitBucket homepage is broken
 
 
 Musical Pattern game
 ====================================
 
 - server-side rendering
+	- DONE init should be idempotent.  memory shouldn't be allocated twice. Nor should
+		jack start be called twice
+	- Zound.render() should call the jack client in freewheel mode
 	- can I speed up scheduling?
 		- cache values and interpolations arrays
 		- cache times as a numpy array. Zound.interpret_times should work for numpy arrays too
-	- Zound.render() should call the jack client in freewheel mode
 	- Change event2 to event
-	
+
+- pattern analysis
+	- There should be a single analysis worker process running, and it should use
+	  the multiprocess TemplateMatch algorithm
+
 - server-side -> browser listening tests / comparison
 - Web Audio delay unit and blog post
 - Facebook and Google login

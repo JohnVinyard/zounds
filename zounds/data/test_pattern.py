@@ -1433,6 +1433,8 @@ class PatternTest(object):
         frames = FrameModel['root']
         ls = root.length_samples()
         audio = self.env.synth(frames.audio)
+        print ls
+        print len(audio)
         self.assert_approx_equal(ls, len(audio), self.env.windowsize)
         
     
