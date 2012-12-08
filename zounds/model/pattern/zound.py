@@ -128,6 +128,9 @@ class Zound(Pattern):
         # from
         self._was = None
     
+    def _kwargs(self,**kwargs):
+        return {}
+    
     @classmethod
     def list_ids(cls):
         return cls.controller().list_ids()
@@ -303,7 +306,6 @@ class Zound(Pattern):
         '''
         The length of this pattern in samples, when rendered as raw audio
         '''
-        
         try:
             # this pattern has been analyzed and is in the frames database,
             # so it's trivial to find out its length in samples
@@ -320,7 +322,6 @@ class Zound(Pattern):
             for k,v in self.pdata.iteritems():
                 pattern = patterns[k]
                 # get the latest end time of all the events
-                print v
                 total = \
                     max([(self.interpret_time(e.time,**kwargs) * sr) + e.length_samples(pattern,**kwargs) \
                           for e in v])

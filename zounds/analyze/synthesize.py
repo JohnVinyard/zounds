@@ -50,7 +50,7 @@ class Transform(object):
         self._impl[self.__class__.__name__] = self.__class__
         self.uknown_length = False
     
-    def c_args(self,pattern,samplerate):
+    def c_args(self,pattern,samplerate,**kwargs):
         
         # KLUDGE: The C interpolations array type is char.  I'm using np.uint8
         # here.  Is that going to be a platform-dependent thing, or is it always
@@ -74,7 +74,8 @@ class Transform(object):
                 
                 # TODO: interpret time should work for single values and numpy
                 # arrays of time values
-                times = [pattern.interpret_time(t) * samplerate for t in arg[1]] 
+                times = [pattern.interpret_time(t,**kwargs) * samplerate \
+                         for t in arg[1]] 
                 times = np.array(times,dtype = np.uint32)
                 interpolations = np.array(arg[2],dtype = np.uint8)
                 yield n_values,values,times,interpolations
