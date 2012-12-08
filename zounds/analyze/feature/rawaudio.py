@@ -3,6 +3,7 @@ import numpy as np
 from zounds.analyze.audiostream import AudioStream
 from zounds.analyze.extractor import Extractor
 from zounds.nputil import pad,windowed
+from zounds.util import PsychicIter
 from zounds.environment import Environment
 
 class AudioSamples(Extractor):
@@ -126,3 +127,44 @@ class AudioFromMemory(AudioSamples):
                             self.windowsize,self.stepsize)
         
         return self._stream
+
+class AudioFromIterator(AudioSamples):
+    
+    def __init__(self,samplerate,windowsize,stepsize,iterator,needs = None):
+        AudioSamples.__init__(self,samplerate,windowsize,stepsize,needs = needs)
+        self._stream = None
+        self._iterator = iterator
+    
+    class Stream(object):
+        
+        def __init__(self,iterator,chunksize,windowsize,stepsize):
+            object.__init__(self)
+            self._chunksize = chunksize
+            self.windowsize = windowsize
+            self.stepsize = stepsize
+            self.iterator = iterator
+            self.done = False
+        
+        @property
+        def chunksize(self):
+            return self._chunksize
+        
+        def __iter__(self):
+            leftover = np.zeros(0,dtype = np.float32)
+            pi = PsychicIter(self.iterator)
+            for chunk in pi:
+                self.done = pi.done
+                current = np.concatenate([leftover,chunk])
+                leftover,w = windowed(\
+                        current,self.windowsize,self.stepsize,dopad = self.done)
+                yield w
+    
+    @property
+    def stream(self):
+        if not self._stream:
+            self._stream = AudioFromIterator.Stream(\
+                            self._iterator,
+                            Environment.instance.chunksize,
+                            self.windowsize,self.stepsize)
+        return self._stream
+            

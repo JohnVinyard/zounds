@@ -6,6 +6,7 @@ ctypedef np.uint8_t CHAR_DTYPE_t
 
 FLOAT_DTYPE = np.float32
 ctypedef np.float32_t FLOAT_DTYPE_t
+ctypedef np.float32_t jack_default_audio_sample_t
 
 INT_DTYPE = np.int32
 ctypedef np.int32_t INT32_DTYPE_t
@@ -30,6 +31,12 @@ cdef extern from 'cplay.h':
         unsigned int stop_sample,
         jack_nframes_t start_time_ms,
         char done)
+    int render(
+        jack_nframes_t nframes,
+        jack_nframes_t frame_time,
+        jack_default_audio_sample_t ** out,
+        int channels,
+        int mode)
     void put_event2(event2 * e)
     jack_time_t get_time()
     jack_nframes_t get_frame_time()
@@ -100,6 +107,20 @@ def cancel_all():
     Cancel all pending events
     '''
     cancel_all_events()
+    
+def render_pattern_non_realtime(jack_nframes_t nframes,jack_nframes_t frame_time,
+                                np.ndarray[FLOAT_DTYPE_t,ndim = 1] outbuf):
+    
+    cdef jack_default_audio_sample_t * samples = <jack_default_audio_sample_t*>outbuf.data
+    cdef jack_default_audio_sample_t ** ptr = &samples
+    
+    return render(nframes,
+                  frame_time,
+                  ptr,
+                  1,                      # mono (1 channel)
+                  1)                      # non-realtime mode (realtime = 0)
+    
+    
 
 
 cdef transform * build_transforms(pattern,e,int samplerate,kwarg_dict):
@@ -168,10 +189,11 @@ cdef class EventWrapper:
     cdef set_e(self,event2 * e):
         self.evt = e
 
+
 # KLUDGE: is the time parameter necessary? Relative times are now handled by
 # the JACK client, I think. 
 def enqueue(ptrn,buffers,int samplerate,patterns = None,time = None,
-            EventWrapper parent_event = None,kwarg_dict = None):
+            EventWrapper parent_event = None,kwarg_dict = None,realtime = True):
     '''
     Add a pattern to the queue
     '''
@@ -190,7 +212,10 @@ def enqueue(ptrn,buffers,int samplerate,patterns = None,time = None,
         audio = buffers.allocate(ptrn)
         # KLUDGE: What about other sample rates?
         # KLUDGE: Latency should be configurable
-        start_time_frames = <jack_nframes_t>(get_frame_time() + latency)
+        if realtime:
+            start_time_frames = <jack_nframes_t>(get_frame_time() + latency)
+        else:
+            start_time_frames = 0
         # The JACK client will free this memory once the event has played
         e = event2_new_buffer(<float*>audio.data,0,len(audio),start_time_frames)
         put_event2(e)  
@@ -249,7 +274,7 @@ def enqueue(ptrn,buffers,int samplerate,patterns = None,time = None,
     if None is parent_event:
         # this is the "top-level" event.  get the current time and schedule 
         # the child events of this pattern.
-        now = get_frame_time()
+        now = get_frame_time() if realtime else 0
         for i in range(n_children):
             events[i].start_time_frames += <jack_nframes_t>(now + latency)
             put_event2(&(events[i]))

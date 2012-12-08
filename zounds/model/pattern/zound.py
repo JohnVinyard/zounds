@@ -6,12 +6,13 @@ from threading import Thread
 
 import numpy as np
 
-from pattern import Pattern,AudioFromMemory
+from pattern import Pattern
 from event import Event
 from transform import RecursiveTransform,IndiscriminateTransform
 from zounds.util import tostring
+from zounds.analyze.feature.rawaudio import AudioFromIterator,AudioFromMemory 
 from zounds.analyze.synthesize import TransformChain
-from zounds.pattern import usecs,put,enqueue
+from zounds.pattern import usecs,put,enqueue,init,render_pattern_non_realtime
 from zounds.environment import Environment
 
 
@@ -312,8 +313,10 @@ class Zound(Pattern):
             
             # BUG: This won't work for stored MusicPattern instances if
             # their bpm value has changed!
+            print 'CACHED LENGTH SAMPLES'
             return self.env().frames_to_samples(len(self.address))
         except TypeError:
+            print 'CALCULATED LENGTH SAMPLES'
             sr = self.env().samplerate
             # this pattern hasn't yet been analyzed, so we have to calculate
             # its length in samples
@@ -338,6 +341,45 @@ class Zound(Pattern):
         return self.length_samples(**kwargs) / self.env().samplerate
     
     
+    def audio_extractor(self,needs = None):
+        e = self.env()
+        
+        if self.address:
+            # this pattern has already been rendered, so we can just grab 
+            # encoded audio from the database and render it
+            return AudioFromMemory(e.samplerate,e.windowsize,e.stepsize,
+                                   self._render(),needs = needs)
+        
+        # this pattern has not yet been rendered and stored
+        print 'Getting AudioFromIterator instance'
+        return AudioFromIterator(e.samplerate,e.windowsize,e.stepsize,
+                                 self.iter_audio(),needs = needs)
+    
+    def iter_audio(self,**kwargs):
+        # ensure that everything is setup
+        init()
+        # enqueue this pattern
+        enqueue(self,BUFFERS,self.env().samplerate,realtime = False)
+        env = self.env()
+        # allocate memory for the audio buffer
+        buf = np.zeros(env.chunksize,dtype = np.float32)
+        
+        rpnr = render_pattern_non_realtime
+        
+        time = 0
+        frames_filled = rpnr(buf.size,time,buf)
+        
+        while frames_filled == buf.size:
+            yield buf
+            buf[:] = 0
+            time += frames_filled
+            frames_filled = rpnr(buf.size,time,buf)
+        
+        if frames_filled:
+            yield buf[:frames_filled]
+            
+    
+    
     def _render(self,**kwargs):
         # render the pattern as audio
         
@@ -351,33 +393,54 @@ class Zound(Pattern):
             raise Exception('Cannot render an empty pattern')
         
         env = self.env()
-        if self._is_leaf:
+        if self.address:
             # this is a "leaf" pattern that has already been rendered and analyzed,
             # so it can just be retrieved from the data store
             return env.synth(env.framemodel[self.address].audio)
     
-        # allocate memory to hold the entire pattern
-        # KLUDGE: What about very long patterns?
-        audio = np.zeros(self.length_samples(**kwargs),dtype = np.float32)
         
-        patterns = self.patterns
-        for k,v in self.pdata.iteritems():
-            # render the sub-pattern
-            p = patterns[k]
-            a = p._render()
-            for event in v:
-                # render each occurrence of the sub-pattern
-                # TODO: Don't perform the same transformation twice!
-                print 'EVENT.TRANSFORMS',event.transforms
-                time,tc = self.interpret_time(event.time,**kwargs), \
-                          TransformChain(event.transforms)
-                print tc
-                ts = int(time * env.samplerate)
-                transformed = tc(a)
-                # apply any transformations and add the result to the output
-                audio[ts : ts + len(transformed)] += transformed
+        # KLUDGE: What about very long patterns?
+        # make a *guess* about the amount of memory needed to hold the entire
+        # pattern.  Note that some transforms may make the pattern longer
+        # than we expect. 
+        fudge = 10 * env.samplerate
+        audio = np.zeros(\
+                self.length_samples(**kwargs) + fudge,dtype = np.float32)
+        
+        time = 0
+        for chunk in self.iter_audio(**kwargs):
+            stop = time + chunk.size
             
-        return audio
+            if stop >= audio.size:
+                # our guess, even with the fudge-factor, was too small.
+                # Re-allocate memory.
+                extra = np.zeros(stop - audio.size,dtype = np.float32)
+                audio = np.concatenate([audio,extra])
+            
+            audio[time : stop] = chunk
+            
+            time += chunk.size
+        
+        return audio[:time]
+    
+#        patterns = self.patterns
+#        for k,v in self.pdata.iteritems():
+#            # render the sub-pattern
+#            p = patterns[k]
+#            a = p._render()
+#            for event in v:
+#                # render each occurrence of the sub-pattern
+#                # TODO: Don't perform the same transformation twice!
+#                print 'EVENT.TRANSFORMS',event.transforms
+#                time,tc = self.interpret_time(event.time,**kwargs), \
+#                          TransformChain(event.transforms)
+#                print tc
+#                ts = int(time * env.samplerate)
+#                transformed = tc(a)
+#                # apply any transformations and add the result to the output
+#                audio[ts : ts + len(transformed)] += transformed
+#            
+#        return audio
     
     def interpret_time(self,time,**kwargs):
         '''
@@ -427,40 +490,10 @@ class Zound(Pattern):
     
     def play(self,time = 0):
         '''
-        play this pattern in realtime, starting time seconds from now
+        play this pattern in realtime, starting time seconds from now. This method
+        assumes that the realtime audio server is running.
         '''
         enqueue(self,BUFFERS,self.env().samplerate)
-#        buffers = BUFFERS
-#        
-#        # get all leaf patterns with *Absolute* times
-#        leaves = self._leaves_absolute()
-#        patterns = self.patterns
-#        # allocate buffers for them
-#        if self.is_leaf:
-#            buffers.allocate(self)
-#        else:
-#            for k in leaves.iterkeys():
-#                buffers.allocate(patterns[k])
-#        
-#        # schedule them
-#        now = usecs()
-#        # TODO: Stress test/profile the play method and find out what an 
-#        # acceptable latency value is. I think this value is too high.
-#        latency = .25 * 1e6
-#        for k,v in leaves.iteritems():
-#            audio = buffers[k]
-#            la = len(audio)
-#            for e in v:
-#                put(audio,0,la,now + latency + (e.time * 1e6))
-        
-    
-    def audio_extractor(self,needs = None):
-        e = self.env()
-        return AudioFromMemory(e.samplerate,
-                               e.windowsize,
-                               e.stepsize,
-                               self._render(),
-                               needs = needs)
     
     def _sort_events(self):
         for v in self.pdata.itervalues():
