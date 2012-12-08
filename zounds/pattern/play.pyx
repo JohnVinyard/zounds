@@ -102,7 +102,7 @@ def cancel_all():
     cancel_all_events()
 
 
-cdef transform * build_transforms(pattern,e,int samplerate):
+cdef transform * build_transforms(pattern,e,int samplerate,kwarg_dict):
     '''
     Build C structures representing the transforms for a single event
     '''
@@ -132,7 +132,7 @@ cdef transform * build_transforms(pattern,e,int samplerate):
         # allocate a block of contiguous memory for the parameters
         parameters = <parameter*>malloc(n_parameters * sizeof(parameter))
         
-        for j,p in enumerate(t.c_args(pattern,samplerate)):
+        for j,p in enumerate(t.c_args(pattern,samplerate,**kwarg_dict)):
             # initialize each parameter
             n_values,values,times,interpolations = p
             parameter_init(\
@@ -170,8 +170,8 @@ cdef class EventWrapper:
 
 # KLUDGE: is the time parameter necessary? Relative times are now handled by
 # the JACK client, I think. 
-def enqueue(ptrn,buffers,int samplerate,
-            patterns = None,time = None,EventWrapper parent_event = None):
+def enqueue(ptrn,buffers,int samplerate,patterns = None,time = None,
+            EventWrapper parent_event = None,kwarg_dict = None):
     '''
     Add a pattern to the queue
     '''
@@ -198,6 +198,9 @@ def enqueue(ptrn,buffers,int samplerate,
     if None is patterns:
         patterns = ptrn.patterns
     
+    if None is kwarg_dict:
+        kwarg_dict = ptrn._kwargs()
+    
     # transform events from dict(pattern -> [events,....]) to
     # flat list of two-tuples of (pattern,event) 
     children = []
@@ -218,8 +221,8 @@ def enqueue(ptrn,buffers,int samplerate,
     for i in range(n_children):
         p,evt = children[i]
         n_transforms = len(evt.transforms)
-        transforms = build_transforms(p,evt,samplerate)
-        start_time_seconds = ptrn.interpret_time(evt.time)
+        transforms = build_transforms(p,evt,samplerate,kwarg_dict)
+        start_time_seconds = ptrn.interpret_time(evt.time,**kwarg_dict)
         start_time_frames = <jack_nframes_t>(start_time_seconds * samplerate)
         
         if p.is_leaf:
@@ -232,10 +235,10 @@ def enqueue(ptrn,buffers,int samplerate,
             wrapper = EventWrapper()
             wrapper.set_e(&(events[i]))
             enqueue(p,buffers,samplerate,patterns = patterns,
-                    time = start_time_seconds,parent_event = wrapper)
+                    time = start_time_seconds,parent_event = wrapper,
+                    kwarg_dict = kwarg_dict)
     
     cdef event2 * pe
-    # TODO: if parent_event, attach events to parent
     if None is not parent_event:
         pe = <event2*>(parent_event.evt)
         event2_set_children(pe,events,n_children)
@@ -244,7 +247,8 @@ def enqueue(ptrn,buffers,int samplerate,
     i = 0
     
     if None is parent_event:
-        # get the current time and schedule the child events of this pattern
+        # this is the "top-level" event.  get the current time and schedule 
+        # the child events of this pattern.
         now = get_frame_time()
         for i in range(n_children):
             events[i].start_time_frames += <jack_nframes_t>(now + latency)

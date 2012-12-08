@@ -1,6 +1,6 @@
 Installation
 ====================================
-Update path to audio files in quickstart search example
+In the documentation, update path to audio files in quickstart search example
 
 
 Musical Pattern game
@@ -10,7 +10,6 @@ Musical Pattern game
 	- can I speed up scheduling?
 		- cache values and interpolations arrays
 		- cache times as a numpy array. Zound.interpret_times should work for numpy arrays too
-	- top level tempo is not respected when scheduling patterns and transforms
 	- Zound.render() should call the jack client in freewheel mode
 	- Change event2 to event
 	
@@ -97,13 +96,7 @@ Why does VQ coding work so poorly?
 How can upsampling be performed without aliasing?
 How does the human brain represent noise?
 
-TODO:
-===========
-unittest2
-smoother installer
 
-
-  
 Good Searches
 =================
 http://localhost/?q=8f906adb408f4475b68fee94447876af:31:178
