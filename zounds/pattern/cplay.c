@@ -251,7 +251,7 @@ float event2_leaf_process(event2 * event,jack_nframes_t time) {
 	return sample;
 }
 
-// TODO: Times aren't being created / handled relative to parent patterns!
+
 float event2_branch_process(event2 * event,jack_nframes_t time) {
 	if(event->_done) {
 		return event2_do_tail(event,time);
@@ -391,16 +391,6 @@ void event2_set_children(event2 * e,event2 * children,int n_children) {
 	}
 }
 
-
-event2 * event2_new_branch_incomplete(
-jack_nframes_t start_time,transform * transforms,int n_transforms) {
-
-	event2 * e = malloc(sizeof(event2));
-	e->buf = NULL;
-
-}
-
-
 void event2_delete(event2 * event) {
 	// Note that event->buf isn't being freed. This is owned by the caller, and
 	// may be shared between many events
@@ -417,24 +407,36 @@ void event2_delete(event2 * event) {
 	free(event->transforms);
 }
 
-event2 * EVENTS = NULL;
+// Event Scheduling ###########################################################
 
-void put_event2(event2 * e) {
+event2 * EVENTS = NULL;
+event2 * NRT_EVENTS = NULL;
+
+void _put_event2(event2 * queue,event2 * e) {
 	int i;
 	for(i = 0; i < N_EVENTS; i++) {
-		if(EVENTS[i].done) {
+		if(queue[i].done) {
 			// cleanup dynamically allocated memory for the completed event
 			// KLUDGE: Is this the right place to do this?
-			event2_delete(&(EVENTS[i]));
-			EVENTS[i] = *e;
+			event2_delete(&(queue[i]));
+			queue[i] = *e;
 			break;
 		}
 	}
 }
 
-void put_event(
-float * buf,unsigned int start_sample,unsigned int stop_sample,
+void put_event2(event2 * e) {
+	_put_event2(EVENTS,e);
+}
+
+void put_nrt_event2(event2 * e) {
+	_put_event2(NRT_EVENTS,e);
+}
+
+void _put_event(
+event2 * queue,float * buf,unsigned int start_sample,unsigned int stop_sample,
 jack_time_t start_time_ms,char done) {
+
 	event2 * leaf = (event2*)malloc(sizeof(event2));
 	transform * t = (transform*)malloc(0);
 	event2_new_leaf(
@@ -448,6 +450,47 @@ jack_time_t start_time_ms,char done) {
 	put_event2(leaf);
 }
 
+void put_event(float * buf,unsigned int start_sample,unsigned int stop_sample,
+jack_time_t start_time_ms,char done) {
+	_put_event(EVENTS,buf,start_sample,stop_sample,start_time_ms,done);
+}
+
+void put_nrt_event(float * buf,unsigned int start_sample,unsigned int stop_sample,
+jack_time_t start_time_ms,char done) {
+	_put_event(NRT_EVENTS,buf,start_sample,stop_sample,start_time_ms,done);
+}
+
+void _cancel_all_events(event2 * queue) {
+	int i;
+	for (i = 0; i < N_EVENTS; i++) {
+		queue[i].done = 1;
+	}
+}
+
+void cancel_all_events(void) {
+	_cancel_all_events(EVENTS);
+}
+
+void cancel_all_nrt_events(void) {
+	_cancel_all_events(NRT_EVENTS);
+}
+
+void init_events(void) {
+	if(NULL == EVENTS) {
+		EVENTS = (event2*)calloc(N_EVENTS,sizeof(event2));
+	}
+	_cancel_all_events(EVENTS);
+}
+
+void init_nrt_events(void) {
+	if(NULL == NRT_EVENTS) {
+		NRT_EVENTS = (event2*)calloc(N_EVENTS,sizeof(event2));
+	}
+	_cancel_all_events(NRT_EVENTS);
+}
+
+// Time ######################################################################
+
 jack_time_t get_time(void) {
 	jack_nframes_t frames = jack_frame_time(client);
 	return jack_frames_to_time(client,frames);
@@ -457,22 +500,7 @@ jack_nframes_t get_frame_time(void) {
 	return jack_frame_time(client);
 }
 
-void cancel_all_events(void) {
-	int i;
-	for (i = 0; i < N_EVENTS; i++) {
-		EVENTS[i].done = 1;
-	}
-}
 
-/*
- * Initialize all events
- */
-void init_events(void) {
-	if(NULL == EVENTS) {
-		EVENTS = (event2*)calloc(N_EVENTS,sizeof(event2));
-	}
-	cancel_all_events();
-}
 
 
 int render(
@@ -480,7 +508,8 @@ jack_nframes_t nframes,
 jack_nframes_t frame_time,
 jack_default_audio_sample_t ** out,
 int channels,
-int mode) {
+int mode,
+event2 * queue) {
 
 	float sample = 0;
 	int i,j,k,any;
@@ -493,14 +522,14 @@ int mode) {
 		// loop over those.
 		for(j = 0; j < N_EVENTS; j++) {
 
-			if(EVENTS[j].done) {
+			if(queue[j].done) {
 				// this position hasn't been assigned yet, or the sample has
 				// finished playing
 				continue;
 			}
 
 			any++;
-			event2 * e = &(EVENTS[j]);
+			event2 * e = &(queue[j]);
 			if(event2_is_playing(e,frame_time)) {
 				event2_process p = (event2_process)(e->process);
 				sample += p(e,frame_time);
@@ -535,6 +564,14 @@ int mode) {
 	return nframes;
 }
 
+int render_nrt(jack_nframes_t nframes,
+		jack_nframes_t frame_time,
+		jack_default_audio_sample_t ** out,
+		int channels,
+		int mode) {
+	return render(nframes,frame_time,out,channels,mode,NRT_EVENTS);
+}
+
 int process(jack_nframes_t nframes, void *arg) {
 	jack_default_audio_sample_t *out[CHANNELS+1];
 	jack_default_audio_sample_t *in;
@@ -555,7 +592,8 @@ int process(jack_nframes_t nframes, void *arg) {
 			frame_time, // current time, in frames
 			out,        // output buffer
 			CHANNELS,   // n channels
-			0);         // JACK client mode (realtime)
+			0,          // JACK client mode (realtime)
+			EVENTS);    // Use the realtime queue
 }
 
 

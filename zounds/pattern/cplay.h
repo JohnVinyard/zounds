@@ -9,7 +9,10 @@
 typedef int (*t_callback)(int, float *, float **);
 
 jack_client_t *jack_start(void);
+
 void init_events(void);
+void init_nrt_events(void);
+
 void setup(void);
 void teardown(void);
 jack_time_t get_time(void);
@@ -212,10 +215,27 @@ void put_event(
 		unsigned int stop_sample,
 		jack_time_t start_time_ms,
 		char done);
+void put_nrt_event(
+		float * buf,
+		unsigned int start_sample,
+		unsigned int stop_sample,
+		jack_time_t start_time_ms,
+		char done);
+
 void put_event2(event2 * e);
+void put_nrt_event2(event2 * e);
+
 void cancel_all_events(void);
+void cancel_all_nrt_events(void);
+
 int render(
 		jack_nframes_t nframes,
+		jack_nframes_t frame_time,
+		jack_default_audio_sample_t ** out,
+		int channels,
+		int mode,
+		event2 * queue);
+int render_nrt(jack_nframes_t nframes,
 		jack_nframes_t frame_time,
 		jack_default_audio_sample_t ** out,
 		int channels,

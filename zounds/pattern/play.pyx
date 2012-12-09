@@ -21,23 +21,45 @@ from libc.stdlib cimport malloc, free
 
 
 cdef extern from 'cplay.h':
+
     void init_events()
+    void init_nrt_events()
+    
     void setup()
     void teardown()
+    
     void cancel_all_events()
+    void cancel_all_nrt_events()
+    
     void put_event( \
         float * buf,
         unsigned int start_sample,
         unsigned int stop_sample,
         jack_nframes_t start_time_ms,
         char done)
+    void put_nrt_event(
+        float * buf,
+        unsigned int start_sample,
+        unsigned int stop_sample,
+        jack_time_t start_time_ms,
+        char done)
+    
     int render(
         jack_nframes_t nframes,
         jack_nframes_t frame_time,
         jack_default_audio_sample_t ** out,
         int channels,
+        int mode,
+        event2 * queue)
+    int render_nrt(jack_nframes_t nframes,
+        jack_nframes_t frame_time,
+        jack_default_audio_sample_t ** out,
+        int channels,
         int mode)
+    
     void put_event2(event2 * e)
+    void put_nrt_event2(event2 * e)
+    
     jack_time_t get_time()
     jack_nframes_t get_frame_time()
     
@@ -81,6 +103,9 @@ cdef extern from 'cplay.h':
 def init():
     init_events()
 
+def init_nrt():
+    init_nrt_events()
+
 def start():
     setup()
 
@@ -102,6 +127,9 @@ def frames():
 def put(np.ndarray[FLOAT_DTYPE_t,ndim = 1] n,int starts, int stops,jack_time_t time):
     put_event(<float*>n.data,starts,stops,time,0)
 
+def put_nrt(np.ndarray[FLOAT_DTYPE_t,ndim = 1] n,int starts, int stops,jack_time_t time):
+    put_nrt_event(<float*>n.data,starts,stops,time,0)
+
 def cancel_all():
     '''
     Cancel all pending events
@@ -114,12 +142,11 @@ def render_pattern_non_realtime(jack_nframes_t nframes,jack_nframes_t frame_time
     cdef jack_default_audio_sample_t * samples = <jack_default_audio_sample_t*>outbuf.data
     cdef jack_default_audio_sample_t ** ptr = &samples
     
-    return render(nframes,
-                  frame_time,
-                  ptr,
-                  1,                      # mono (1 channel)
-                  1)                      # non-realtime mode (realtime = 0)
-    
+    return render_nrt(nframes,
+                      frame_time,
+                      ptr,
+                      1,                      # mono (1 channel)
+                      1)                      # non-realtime mode (realtime = 0)
     
 cdef transform * build_transforms(pattern,e,int samplerate,kwarg_dict):
     '''
@@ -217,7 +244,10 @@ def enqueue(ptrn,buffers,int samplerate,patterns = None,time = None,
             start_time_frames = 0
         # The JACK client will free this memory once the event has played
         e = event2_new_buffer(<float*>audio.data,0,len(audio),start_time_frames)
-        put_event2(e)  
+        if realtime:
+            put_event2(e)
+        else:
+            put_nrt_event2(e)  
     
     if None is patterns:
         patterns = ptrn.patterns
@@ -260,7 +290,7 @@ def enqueue(ptrn,buffers,int samplerate,patterns = None,time = None,
             wrapper.set_e(&(events[i]))
             enqueue(p,buffers,samplerate,patterns = patterns,
                     time = start_time_seconds,parent_event = wrapper,
-                    kwarg_dict = kwarg_dict)
+                    kwarg_dict = kwarg_dict,realtime = realtime)
     
     cdef event2 * pe
     if None is not parent_event:
@@ -276,7 +306,10 @@ def enqueue(ptrn,buffers,int samplerate,patterns = None,time = None,
         now = get_frame_time() if realtime else 0
         for i in range(n_children):
             events[i].start_time_frames += <jack_nframes_t>(now + latency)
-            put_event2(&(events[i]))
+            if realtime:
+                put_event2(&(events[i]))
+            else:
+                put_nrt_event2(&(events[i]))
     
     
     
