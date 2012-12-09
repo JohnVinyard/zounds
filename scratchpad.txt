@@ -8,9 +8,9 @@ Musical Pattern game
 ====================================
 
 - server-side rendering
-	- DONE init should be idempotent.  memory shouldn't be allocated twice. Nor should
-		jack start be called twice
-	- Zound.render() should call the jack client in freewheel mode
+	- non-realtime rendering can't be done while realtime client is running
+	- Why does playraw block for much longer than the expected length of a rendered
+	   patterns?
 	- can I speed up scheduling?
 		- cache values and interpolations arrays
 		- cache times as a numpy array. Zound.interpret_times should work for numpy arrays too

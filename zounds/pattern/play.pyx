@@ -121,8 +121,6 @@ def render_pattern_non_realtime(jack_nframes_t nframes,jack_nframes_t frame_time
                   1)                      # non-realtime mode (realtime = 0)
     
     
-
-
 cdef transform * build_transforms(pattern,e,int samplerate,kwarg_dict):
     '''
     Build C structures representing the transforms for a single event
@@ -190,6 +188,7 @@ cdef class EventWrapper:
         self.evt = e
 
 
+
 # KLUDGE: is the time parameter necessary? Relative times are now handled by
 # the JACK client, I think. 
 def enqueue(ptrn,buffers,int samplerate,patterns = None,time = None,
@@ -202,7 +201,7 @@ def enqueue(ptrn,buffers,int samplerate,patterns = None,time = None,
     # When the data structure is complete, enqueue the top-level events
     
     cdef jack_nframes_t start_time_frames
-    cdef float latency = 0.25 * samplerate
+    cdef float latency = (0.25 * samplerate) if realtime else 0
     cdef event2 * e
     cdef np.ndarray[FLOAT_DTYPE_t,ndim = 1] audio
     

@@ -313,10 +313,8 @@ class Zound(Pattern):
             
             # BUG: This won't work for stored MusicPattern instances if
             # their bpm value has changed!
-            print 'CACHED LENGTH SAMPLES'
             return self.env().frames_to_samples(len(self.address))
         except TypeError:
-            print 'CALCULATED LENGTH SAMPLES'
             sr = self.env().samplerate
             # this pattern hasn't yet been analyzed, so we have to calculate
             # its length in samples
@@ -351,7 +349,6 @@ class Zound(Pattern):
                                    self._render(),needs = needs)
         
         # this pattern has not yet been rendered and stored
-        print 'Getting AudioFromIterator instance'
         return AudioFromIterator(e.samplerate,e.windowsize,e.stepsize,
                                  self.iter_audio(),needs = needs)
     
@@ -377,6 +374,9 @@ class Zound(Pattern):
         
         if frames_filled:
             yield buf[:frames_filled]
+        
+        # cleanup
+        init()
             
     
     
@@ -412,6 +412,7 @@ class Zound(Pattern):
             stop = time + chunk.size
             
             if stop >= audio.size:
+                print 're-allocating'
                 # our guess, even with the fudge-factor, was too small.
                 # Re-allocate memory.
                 extra = np.zeros(stop - audio.size,dtype = np.float32)
