@@ -12,7 +12,8 @@ from transform import RecursiveTransform,IndiscriminateTransform
 from zounds.util import tostring
 from zounds.analyze.feature.rawaudio import AudioFromIterator,AudioFromMemory 
 from zounds.analyze.synthesize import TransformChain
-from zounds.pattern import usecs,put,enqueue,init,render_pattern_non_realtime
+from zounds.pattern import \
+    usecs,put,enqueue,init,init_nrt,render_pattern_non_realtime
 from zounds.environment import Environment
 
 
@@ -354,8 +355,8 @@ class Zound(Pattern):
     
     def iter_audio(self,**kwargs):
         # ensure that everything is setup
-        init()
-        # enqueue this pattern
+        init_nrt()
+        # enqueue this pattern in the non-realtime queue
         enqueue(self,BUFFERS,self.env().samplerate,realtime = False)
         env = self.env()
         # allocate memory for the audio buffer
@@ -363,6 +364,7 @@ class Zound(Pattern):
         
         rpnr = render_pattern_non_realtime
         
+        # start rendering chunks
         time = 0
         frames_filled = rpnr(buf.size,time,buf)
         
@@ -376,7 +378,7 @@ class Zound(Pattern):
             yield buf[:frames_filled]
         
         # cleanup
-        init()
+        init_nrt()
             
     
     
@@ -384,10 +386,6 @@ class Zound(Pattern):
         # render the pattern as audio
         
         # KLUDGE: Maybe _render should be an iterator, for very long patterns
-        
-        # TODO: rendering should happen *just like* realtime playing, i.e.,
-        # audio rendering should be handled by the audio back-end in 
-        # "free-wheeling" mode.
         
         if self.empty:
             raise Exception('Cannot render an empty pattern')
@@ -423,25 +421,6 @@ class Zound(Pattern):
             time += chunk.size
         
         return audio[:time]
-    
-#        patterns = self.patterns
-#        for k,v in self.pdata.iteritems():
-#            # render the sub-pattern
-#            p = patterns[k]
-#            a = p._render()
-#            for event in v:
-#                # render each occurrence of the sub-pattern
-#                # TODO: Don't perform the same transformation twice!
-#                print 'EVENT.TRANSFORMS',event.transforms
-#                time,tc = self.interpret_time(event.time,**kwargs), \
-#                          TransformChain(event.transforms)
-#                print tc
-#                ts = int(time * env.samplerate)
-#                transformed = tc(a)
-#                # apply any transformations and add the result to the output
-#                audio[ts : ts + len(transformed)] += transformed
-#            
-#        return audio
     
     def interpret_time(self,time,**kwargs):
         '''

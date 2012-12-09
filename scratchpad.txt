@@ -8,18 +8,21 @@ Musical Pattern game
 ====================================
 
 - server-side rendering
-	- non-realtime rendering can't be done while realtime client is running
 	- Why does playraw block for much longer than the expected length of a rendered
 	   patterns?
 	- can I speed up scheduling?
 		- cache values and interpolations arrays
 		- cache times as a numpy array. Zound.interpret_times should work for numpy arrays too
 	- Change event2 to event
+	- Convolution
+	- BiQuad Filter
+	- Compressor
 
 - pattern analysis
 	- There should be a single analysis worker process running, and it should use
 	  the multiprocess TemplateMatch algorithm
 
+- WebAudio pattern rendering
 - server-side -> browser listening tests / comparison
 - Web Audio delay unit and blog post
 - Facebook and Google login
