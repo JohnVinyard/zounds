@@ -1884,6 +1884,96 @@ class PatternTest(object):
         p.append(l2,[Event(i) for i in range(4)])
         
         self.assertRaises(ValueError,lambda : p + l1)
+    
+    def test_contained_by_no_frame_ids(self):
+        d = MusicPattern.contained_by()
+        self.assertTrue(isinstance(d,dict))
+        self.assertFalse(d)
+    
+    def test_contained_by_one_frame_id(self):
+        leaf = Zound[self._pattern_id]
+        
+        frame_id = leaf.address._id
+        
+        d = Zound.contained_by(frame_id)
+        self.assertTrue(isinstance(d,dict))
+        self.assertEqual(1,len(d))
+        self.assertTrue(frame_id in d)
+        self.assertEqual(1,len(d[frame_id]))
+        self.assertEqual(leaf,d[frame_id][0])
+    
+    def test_contained_by_multiple_frame_ids(self):
+        l1 = self.make_leaf_pattern(1, 'fid1', store = True)
+        l2 = self.make_leaf_pattern(2, 'fid2',store = True)
+        l1 = Zound[l1]
+        l2 = Zound[l2]
+        
+        d = Zound.contained_by('fid1','fid2')
+        self.assertTrue(isinstance(d,dict))
+        self.assertEqual(2,len(d))
+        self.assertTrue('fid1' in d)
+        self.assertTrue('fid2' in d)
+        self.assertEqual(1,len(d['fid1']))
+        self.assertEqual(1,len(d['fid2']))
+        self.assertEqual(l1,d['fid1'][0])
+        self.assertEqual(l2,d['fid2'][0])
+    
+    def test_contained_by_list_contains_bad_id(self):
+        '''
+        Note: this test is nearly identical to 
+        test_contained_by_multiple_frame_ids, except that one invalid id is
+        passed to contained_by().  The bad id should be ignored, and the
+        results should be identical.
+        '''
+        l1 = self.make_leaf_pattern(1, 'fid1', store = True)
+        l2 = self.make_leaf_pattern(2, 'fid2',store = True)
+        l1 = Zound[l1]
+        l2 = Zound[l2]
+        
+        d = Zound.contained_by('fid1','fid2','BAD_ID')
+        self.assertTrue(isinstance(d,dict))
+        self.assertEqual(2,len(d))
+        self.assertTrue('fid1' in d)
+        self.assertTrue('fid2' in d)
+        self.assertEqual(1,len(d['fid1']))
+        self.assertEqual(1,len(d['fid2']))
+        self.assertEqual(l1,d['fid1'][0])
+        self.assertEqual(l2,d['fid2'][0])
+    
+    def test_contained_by_frames_contain_multiple_patterns(self):
+        frames_id = 'FID'
+        fn = make_sndfile(AudioConfig.samplerate * 10,
+                          AudioConfig.windowsize,
+                          AudioConfig.samplerate)
+        self.to_cleanup.append(fn)
+        
+        src = 'Test'
+        fp = FilePattern(frames_id,src,frames_id,fn)
+        ec = FrameModel.extractor_chain(fp)
+        self.env.framecontroller.append(ec)
+        
+        
+        # create two leaf patterns contained by the frames
+        addr1 = self.env.address_class((frames_id,slice(0,10)))
+        addr2 = self.env.address_class((frames_id,slice(5,20)))
+        l1 = Zound.leaf(addr1)
+        l2 = Zound.leaf(addr2)
+        l1.store()
+        l2.store()
+        
+        d = Zound.contained_by(frames_id)
+        self.assertTrue(isinstance(d,dict))
+        self.assertEqual(1,len(d))
+        self.assertTrue(frames_id in d)
+        self.assertEqual(2,len(d[frames_id]))
+        self.assertTrue(l1 in d[frames_id])
+        self.assertTrue(l2 in d[frames_id])
+    
+    def test_contained_by_contains_branch_and_leaf_patterns(self):
+        self.fail()
+    
+    def test_contained_by_user_created_pattern(self):
+        self.fail()
         
         
         

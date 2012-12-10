@@ -11,9 +11,7 @@ from event import Event
 from transform import RecursiveTransform,IndiscriminateTransform
 from zounds.util import tostring
 from zounds.analyze.feature.rawaudio import AudioFromIterator,AudioFromMemory 
-from zounds.analyze.synthesize import TransformChain
-from zounds.pattern import \
-    usecs,put,enqueue,init,init_nrt,render_pattern_non_realtime
+from zounds.pattern import enqueue,init_nrt,render_pattern_non_realtime
 from zounds.environment import Environment
 
 
@@ -95,7 +93,6 @@ class Buffers(Thread):
 
 BUFFERS = Buffers()
 
-# TODO: Add created date
 class Zound(Pattern):
     
     def __init__(self,source = None,external_id = None,_id = None, address = None,

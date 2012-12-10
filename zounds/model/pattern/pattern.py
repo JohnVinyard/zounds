@@ -21,6 +21,12 @@ class MetaPattern(type):
     def _store(self,pattern):
         pattern.stored = time()
         self.controller().store(pattern.todict())
+    
+    def contained_by(self,*frame_ids):
+        d = self.controller().contained_by(*frame_ids)
+        for k in d.iterkeys():
+            d[k] = [self.fromdict(ptrn,stored = True) for ptrn in d[k]]
+        return d
         
 
 class Pattern(Model):

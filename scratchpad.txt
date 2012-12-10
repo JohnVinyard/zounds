@@ -1,12 +1,84 @@
 Installation
 ====================================
-In the documentation, update path to audio files in quickstart search example
-rst rendering on BitBucket homepage is broken
+- In the documentation, update path to audio files in quickstart search example
+- rst rendering on BitBucket homepage is broken
 
 
 Musical Pattern game
 ====================================
 
+The Leaf Pattern Problem
+-------------------------------
+	- Since leaf patterns aren't analyzed, how do I know that some search result
+	  is or contains a leaf pattern?  What keeps interesting segments from being
+	  selected again and again?
+	
+	  
+	  Problem #1 : Even for a branch pattern created by a user, there's no way
+	   			   to differentiate it from a sound uploaded by a user. I.e., there's
+	   			   no way to know that a sound actually represents a stored
+	   			   pattern.
+
+Ideas:
+	- pattern_id field for frames (doesn't solve leaf pattern problem)
+	- pattern_ids field (variable length) for frames (not currently supported)
+	- query the pattern database with frames ids.
+
+
+"query the pattern database..." option seems simplest, for now.  BUG! How would this
+work for PyTables indices?
+
+I'm inclined to say Fuck Pytables, but one option would be to include ids in the
+PyTables address, but simply ignore them when retrieving data!  This would also
+unify the Address implementation.
+
+What do I lose by enforcing a single Address implementation that includes an 
+id field?
+	- I haven't really figured out how to do the "granular synthesis" thing with
+	  the FileSystem addresses, i.e., non-contiguous runs of frames, which may
+	  occur inter and/or intra pattern.
+	  
+How are non-contiguous inter and intra sound addresses specified using the 
+FileSystemController?
+
+AND WAIT A MINUTE!!! Provided I could specify such a thing, the thing specified
+would be a "leaf" pattern.  If I wanted to "smooth" the loudness of each "grain",
+so that there were no overt discontinuities, how would I do that?
+
+
+  
+Updating the search index problem
+---------------------------------
+- Can I build an empty search?
+- How is the search continuously persisted?
+
+
+Tile Map Problems
+---------------------------------
+- fix bark contrast problem
+	- ideas:
+		- Record the loudest "pixel" in each pattern, and normalize according to that
+		- Use a log scale to "compand" pixels.  This is the cheapest, but means
+		  that contrast is reduced everywhere
+		- deliver information about the loudest "pixel" in each block, and
+		  either:
+		  	a) alter the image data client side
+		  	b) apply a filter to the images.
+
+
+- deliver audio in chunks. (Is this possible?)
+	- How do compression ratios fare for short (~1.5 seconds) vorbis files?
+	- Can the clips be played seamlessly?
+	- Which is faster
+		a) saving lots of small files and making requests for them
+		b) saving one large file and dynamically returning bytes from them. Can
+		   this be cached on the client?
+
+
+- audio control
+	- move around in a file
+	- create leaf patterns by selecting segments and saving them
+	
 - server-side rendering
 	- Why does playraw block for much longer than the expected length of a rendered
 	   patterns?
@@ -27,8 +99,6 @@ Musical Pattern game
 - Web Audio delay unit and blog post
 - Facebook and Google login
 - Asynchronous upload
-- Can I build an empty search?
-- How is the search continuously persisted?
 - Update indexes on-the-fly
 
 
@@ -39,18 +109,7 @@ Musical Pattern game
 - How do I index things like pitch, bpm, chroma, etc?
 
 
-
-
-- Since leaf patterns aren't re-analyzed and inserted into the frames database, they
-	get no special treatment, i.e., leaf patterns aren't really searchable!!!
-
 - JACK client should do resampling, if necessary
-- When do I need to know the exact length-in-samples of a pattern?  How do I handle
-  effects that may lengthen or shorten a pattern?
-- Transformations and JACK rendering
-- Simple transformations : Time stretch, pitch shift, reverb, high and lowpass filters
-- _render() and play() should use the exact same code; transformations should be implemented in C/C++
-
 
 - Coffeescript implementation of MusicPattern code
 - How do I queue and analyze incoming patterns?
@@ -121,6 +180,37 @@ http://localhost/?q=087744117a6b40b2ac40a17802b2968c:14:65
 - Limit size of image and audio requests
 
 - start a planning document for the higher level/ more abstract stuff
+
+
+Storage of variable length data
+====================================
+Encoder <-> Decoder pairs
+
+BOTH - Ogg Vorbis or MP3.  Audio is encoded, and can be decoded back to audio
+ONLY ENCODE - Loudness.  *Way* too much information is discarded to synthesize 
+							the signal.
+ONLY DECODE - Parameters to a synthesizer.  These can only be decoded back into
+				audio, but not the other way.
+
+Ways of representing time:
+------------------------------------
+Constant or variable time X Constant or variable data length
+
+C = contiguous memory
+T = Time-Binary tree.
+
+ct  | C | T |
+   ----------
+vt  | T | T |
+   ----------
+     cd   vd
+
+
+In the left-hand column, sampling rate is defined as <= the "root" input's
+sample rate, e.g., audio at 44.1khz
+
+For ct & vd and vt & vd, the b-tree consists of byte offsets for time ranges, the
+leaves being byte offsets for individual data chunks
 
 
 
