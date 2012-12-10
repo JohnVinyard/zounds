@@ -1970,10 +1970,31 @@ class PatternTest(object):
         self.assertTrue(l2 in d[frames_id])
     
     def test_contained_by_contains_branch_and_leaf_patterns(self):
-        self.fail()
-    
-    def test_contained_by_user_created_pattern(self):
-        self.fail()
+        leaf = Zound[self._pattern_id]
+        mp = MusicPattern(source = 'Test',length_beats = 4)
+        mp.append(leaf,[Event(i) for i in range(4)])
+        mp.store()
+        
+        ec = FrameModel.extractor_chain(mp)
+        addr = self.env.framecontroller.append(ec)
+        mp.address = addr
+        mp.store()
+        fid = addr._id
+        
+        slce_addr = self.env.address_class((fid,slice(0,10)))
+        
+        l2 = Zound.leaf(slce_addr)
+        l2.store()
+        
+        pattern_controller = self.env.data[Zound]
+        d = pattern_controller.contained_by(fid)
+        self.assertTrue(isinstance(d,dict))
+        self.assertEqual(1,len(d))
+        self.assertTrue(fid in d)
+        l = d[fid]
+        self.assertEqual(2,len(l))
+        self.assertTrue(mp._id in [item['_id'] for item in l])
+        self.assertTrue(l2._id in [item['_id'] for item in l])
         
         
         
