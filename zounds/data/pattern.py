@@ -1,5 +1,5 @@
 from abc import ABCMeta,abstractmethod
-from random import choice
+from collections import defaultdict
 
 from pymongo import Connection
 
@@ -7,6 +7,11 @@ from controller import Controller
  
 
 class PatternController(Controller):
+    
+    ADDRESS_KEY = 'address'
+    ID_KEY = '_id'
+    ADDRESS_ID_KEY = '.'.join([ADDRESS_KEY,ID_KEY])
+    
     
     __metaclass__ = ABCMeta
     
@@ -29,6 +34,21 @@ class PatternController(Controller):
     def list_ids(self):
         '''
         Return a list of all pattern ids
+        '''
+        raise NotImplemented()
+
+    @abstractmethod
+    def contained_by(self,*frames_ids):
+        '''
+        Return a dictionary mapping frame ids -> lists of patterns that are
+        represented by, or contained by, those frames.
+        
+        For example, a frames instance might contain several leaf patterns, while
+        another frames instance might be the rendered version of a user-created
+        pattern.
+        
+        KLUDGE: This concept only works with the FileSystemFrameController.Address
+        implementation!!
         '''
         raise NotImplemented()
     
@@ -56,10 +76,29 @@ class InMemory(PatternController):
     
     def list_ids(self):
         return set(self._store.keys())
+    
+    def contained_by(self,*frames_ids):
+        
+        if not frames_ids:
+            return {}
+        
+        # This implementation is very inefficient, and only appropriate for
+        # small, test-type scenarios
+        d = defaultdict(list)
+        for v in self._store.itervalues():
+            if not v[self.ADDRESS_KEY]:
+                continue
+            
+            _id = v[self.ADDRESS_KEY][self.ID_KEY]
+            if _id in frames_ids: 
+                d[_id].append(v)
+        
+        return d
+            
 
 
 
-class MongoDbPatternController(PatternController):
+class MongoDbPatternController(PatternController): 
     
     def __init__(self,host = 'localhost',port = None,
                  dbname = 'zounds',collection_name = 'patterns'):
@@ -69,7 +108,11 @@ class MongoDbPatternController(PatternController):
         self.collection = self.db[collection_name]
         self._dbname = dbname
         self._collection_name = collection_name
-        # TODO: Which values should have MongoDb indexes ?
+        
+        # create an index which maps frames id -> pattern documents.
+        # KLUDGE: This only works with the FileSystemFrameController.Address
+        # implementation! 
+        self.collection.ensure_index(self.ADDRESS_KEY)
     
     def __getitem__(self,_id):
         if isinstance(_id,(str,unicode)):
@@ -105,6 +148,21 @@ class MongoDbPatternController(PatternController):
     
     def list_ids(self):
         return set(self._distinct_ids())
+    
+    def contained_by(self,*frames_ids):
+        
+        if not frames_ids:
+            return {}
+        
+        crsr = \
+            self.collection.find({self.ADDRESS_ID_KEY : {'$in' : frames_ids}})
+        
+        d = defaultdict(list)
+        for item in crsr:
+            frame_id = item['address']['_id']
+            d[frame_id].append(item)
+            
+        return d
         
         
 
