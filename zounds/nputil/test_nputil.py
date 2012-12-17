@@ -7,8 +7,12 @@ class GrowableTest(unittest.TestCase):
     def test_negative_growth_rate(self):
         self.assertRaises(ValueError, lambda : Growable(np.zeros(10),0,-1))
     
-    def test_zero_sized_data(self):
-        self.assertRaises(ValueError, lambda : Growable(np.zeros(0),0,1))
+    def test_initialized_with_zero_elements(self):
+        g = Growable(np.zeros(0),0,1)
+        g.append(1)
+        self.assertEqual(1,g.physical_size)
+        self.assertEqual(1,g.logical_size)
+        self.assertEqual(1,g._data[0])
     
     def test_append_no_growth(self):
         g = Growable(np.zeros(10),0,1)
@@ -53,6 +57,13 @@ class GrowableTest(unittest.TestCase):
         self.assertEqual(14,g.physical_size)
         self.assertEqual(14,g.logical_size)
         self.assertTrue(np.all(1 == g._data[10:14]))
+    
+    def test_multidimensional(self):
+        g = Growable(np.zeros((10,3)),10,1)
+        g.append(1)
+        self.assertEqual(20,g.physical_size)
+        self.assertEqual(11,g.logical_size)
+        self.assertEqual((20,3),g._data.shape)
     
 class DownsampleTest(unittest.TestCase):
     

@@ -194,7 +194,7 @@ class FrameSearch(Model):
         self.controller().store(self)
     
     def add_index(self,_id):
-        # TODO: When do I save the index back to disk?  Everytime this is called?
+        # TODO: When do I save the index back to disk?  Every time this is called?
         # Every n times?  Every n seconds? 
         self._add_index(_id)
     

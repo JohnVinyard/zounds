@@ -402,15 +402,29 @@ class Packer(object):
                 .reshape((l,self._nchunks))
 
 
-# TODO: Write tests!!
-# TODO: Write documentation
+
+
 class Growable(object):
+    '''
+    A thin wrapper around a numpy array that allows it to be treated like a 
+    dynamically-sized object.  For numeric types, this should be more memory
+    efficient than using a list, since members are represented by contiguous
+    blocks of memory instead of PyObjects.
+    '''
     
     def __init__(self,data,position = 0,growth_rate = 1):
+        '''__init__
         
-        if not data.shape[0]:
-            raise ValueError('data must have one or more elements')
+        :param data: A numpy array to treat as dynamically resizable. Can have \
+        length 0
         
+        :param position: The logical size of the array.  This can be smaller, \ 
+        equal to, or larger than the array passed in as data
+        
+        :param growth_rate: The amount by which the array will grow when \
+        necessary.  A growth rate of 1 means that the array will double in \
+        size each time.
+        '''
         if growth_rate <= 0:
             raise ValueError('growth_rate must be greater than zero')
         
@@ -421,28 +435,45 @@ class Growable(object):
     
     @property
     def data(self):
+        '''
+        Return the numpy array wrapped by this instance.  Note that the array
+        may be larger or smaller than logical_size
+        '''
         return self._data
     
     @property
     def logical_size(self):
+        '''
+        
+        '''
         return self._position
     
     @property
     def physical_size(self):
+        '''
+        The actual size of the wrapped array
+        '''
         return self._data.shape[0]
     
-    def _tmp(self):
+    def _tmp_size(self):
         n_items = int(self._data.shape[0] * self._growth_rate)
         # require that n_items is at least one
-        n_items = 1 if not n_items else n_items
+        return 1 if not n_items else n_items
+        
+    def _tmp(self,amt = None):
+        n_items = self._tmp_size() if None is amt else amt
         return np.ndarray(\
                 (n_items,) + self._data.shape[1:],dtype = self._data.dtype)
     
-    def _grow(self):
-        new_mem = self._tmp()
+    def _grow(self,amt = None):
+        new_mem = self._tmp(amt = amt)
         self._data = np.concatenate([self._data,new_mem])
     
     def append(self,item):
+        '''
+        append a single item to the array, growing the wrapped numpy array
+        if necessary
+        '''
         try:
             self._data[self._position] = item
         except IndexError:
@@ -451,12 +482,23 @@ class Growable(object):
         self._position += 1
         return self
     
-    def _slice_fits(self,items):
-        return items.shape[0] + self._position < self._data.shape[0]
-    
     def extend(self,items):
-        while not self._slice_fits(items):
-            self._grow()
+        '''
+        extend the numpy array with multiple items, growing the wrapped array
+        if necessary
+        '''
+        pos = items.shape[0] + self.logical_size
+        if pos > self.physical_size:
+            # more physical memory is needed than has been allocated so far
+            amt = self._tmp_size()
+            if self.physical_size + amt < pos:
+                # growing the memory by the prescribed amount still won't 
+                # make enough room. Allocate exactly as much memory as is needed
+                # to accommodate items
+                amt = pos - self.physical_size
+            
+            # actually grow the array
+            self._grow(amt = amt)
         
         stop = self._position + items.shape[0]
         self._data[self._position : stop] = items
