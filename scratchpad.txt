@@ -7,54 +7,31 @@ Installation
 Musical Pattern game
 ====================================
 
-The Leaf Pattern Problem
--------------------------------
-	- Since leaf patterns aren't analyzed, how do I know that some search result
-	  is or contains a leaf pattern?  What keeps interesting segments from being
-	  selected again and again?
-	
-	  
-	  Problem #1 : Even for a branch pattern created by a user, there's no way
-	   			   to differentiate it from a sound uploaded by a user. I.e., there's
-	   			   no way to know that a sound actually represents a stored
-	   			   pattern.
-
-Ideas:
-	- pattern_id field for frames (doesn't solve leaf pattern problem)
-	- pattern_ids field (variable length) for frames (not currently supported)
-	- query the pattern database with frames ids.
-
-
-"query the pattern database..." option seems simplest, for now.  BUG! How would this
-work for PyTables indices?
-
-I'm inclined to say Fuck Pytables, but one option would be to include ids in the
-PyTables address, but simply ignore them when retrieving data!  This would also
-unify the Address implementation.
-
-What do I lose by enforcing a single Address implementation that includes an 
-id field?
-	- I haven't really figured out how to do the "granular synthesis" thing with
-	  the FileSystem addresses, i.e., non-contiguous runs of frames, which may
-	  occur inter and/or intra pattern.
-	  
-How are non-contiguous inter and intra sound addresses specified using the 
-FileSystemController?
-
-AND WAIT A MINUTE!!! Provided I could specify such a thing, the thing specified
-would be a "leaf" pattern.  If I wanted to "smooth" the loudness of each "grain",
-so that there were no overt discontinuities, how would I do that?
-
-
-  
 Updating the search index problem
 ---------------------------------
-- Can I build an empty search?
-- How is the search continuously persisted?
+It shoule be possible to initialize the index with no items, and grow it
+dynamically.
+
+This means allocating a numpy array with both a physical and logical size, then
+re-allocating and copying memory when the physical size is exceeded.
+
+What does error checking entail, and does it make periodic saves pointless?
+
+# TODO: Would index building happen faster if self._filter was a set instead
+of a list? 
 
 
 Tile Map Problems
 ---------------------------------
+- deliver audio in chunks. (Is this possible?)
+	- How do compression ratios fare for short (~1.5 seconds) vorbis files?
+	- Can the clips be played seamlessly?
+	- Which is faster
+		a) saving lots of small files and making requests for them
+		b) saving one large file and dynamically returning bytes from them. Can
+		   this be cached on the client?
+		   
+		
 - fix bark contrast problem
 	- ideas:
 		- Record the loudest "pixel" in each pattern, and normalize according to that
@@ -64,16 +41,6 @@ Tile Map Problems
 		  either:
 		  	a) alter the image data client side
 		  	b) apply a filter to the images.
-
-
-- deliver audio in chunks. (Is this possible?)
-	- How do compression ratios fare for short (~1.5 seconds) vorbis files?
-	- Can the clips be played seamlessly?
-	- Which is faster
-		a) saving lots of small files and making requests for them
-		b) saving one large file and dynamically returning bytes from them. Can
-		   this be cached on the client?
-
 
 - audio control
 	- move around in a file

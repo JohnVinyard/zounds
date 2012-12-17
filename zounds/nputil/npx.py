@@ -400,6 +400,69 @@ class Packer(object):
         b.extend(padded.ravel())
         return np.fromstring(b.tobytes(),dtype = self._dtype)\
                 .reshape((l,self._nchunks))
+
+
+# TODO: Write tests!!
+# TODO: Write documentation
+class Growable(object):
+    
+    def __init__(self,data,position = 0,growth_rate = 1):
+        
+        if not data.shape[0]:
+            raise ValueError('data must have one or more elements')
+        
+        if growth_rate <= 0:
+            raise ValueError('growth_rate must be greater than zero')
+        
+        object.__init__(self)
+        self._data = data
+        self._position = position
+        self._growth_rate = growth_rate
+    
+    @property
+    def data(self):
+        return self._data
+    
+    @property
+    def logical_size(self):
+        return self._position
+    
+    @property
+    def physical_size(self):
+        return self._data.shape[0]
+    
+    def _tmp(self):
+        n_items = int(self._data.shape[0] * self._growth_rate)
+        # require that n_items is at least one
+        n_items = 1 if not n_items else n_items
+        return np.ndarray(\
+                (n_items,) + self._data.shape[1:],dtype = self._data.dtype)
+    
+    def _grow(self):
+        new_mem = self._tmp()
+        self._data = np.concatenate([self._data,new_mem])
+    
+    def append(self,item):
+        try:
+            self._data[self._position] = item
+        except IndexError:
+            self._grow()
+            self._data[self._position] = item
+        self._position += 1
+        return self
+    
+    def _slice_fits(self,items):
+        return items.shape[0] + self._position < self._data.shape[0]
+    
+    def extend(self,items):
+        while not self._slice_fits(items):
+            self._grow()
+        
+        stop = self._position + items.shape[0]
+        self._data[self._position : stop] = items
+        self._position += items.shape[0]
+        return self
+            
     
 
 def hamming_distance(a,b):
