@@ -1,7 +1,59 @@
 import unittest
 import numpy as np
-from npx import windowed,sliding_window,downsample
+from npx import windowed,sliding_window,downsample,Growable
 
+class GrowableTest(unittest.TestCase):
+    
+    def test_negative_growth_rate(self):
+        self.assertRaises(ValueError, lambda : Growable(np.zeros(10),0,-1))
+    
+    def test_zero_sized_data(self):
+        self.assertRaises(ValueError, lambda : Growable(np.zeros(0),0,1))
+    
+    def test_append_no_growth(self):
+        g = Growable(np.zeros(10),0,1)
+        g.append(1)
+        self.assertEqual(1,g._data[0])
+        self.assertEqual(10,g.physical_size)
+        self.assertEqual(1,g.logical_size)
+    
+    def test_extend_no_growth(self):
+        g = Growable(np.zeros(10),0,1)
+        g.extend(np.ones(3))
+        self.assertTrue(np.all(1 == g._data[:3]))
+        self.assertEqual(10,g.physical_size)
+        self.assertEqual(3,g.logical_size)
+    
+    def test_append_growth(self):
+        g = Growable(np.zeros(10),10,1)
+        g.append(1)
+        self.assertEqual(20,g.physical_size)
+        self.assertEqual(11,g.logical_size)
+        self.assertEqual(1,g._data[10])
+    
+    def test_extend_growth(self):
+        g = Growable(np.zeros(10),10,1)
+        g.extend(np.ones(5))
+        self.assertEqual(20,g.physical_size)
+        self.assertEqual(15,g.logical_size)
+        self.assertTrue(np.all(1 == g._data[10:15]))
+    
+    def test_lt_one_growth_rate_append(self):
+        g = Growable(np.zeros(1),0,.00001)
+        g.append(1)
+        g.append(2)
+        self.assertEqual(2,g.physical_size)
+        self.assertEqual(2,g.logical_size)
+        self.assertEqual(1,g._data[0])
+        self.assertEqual(2,g._data[1])
+    
+    def test_multiple_grow_calls_required(self):
+        g = Growable(np.zeros(10),10,.1)
+        g.extend(np.ones(4))
+        self.assertEqual(14,g.physical_size)
+        self.assertEqual(14,g.logical_size)
+        self.assertTrue(np.all(1 == g._data[10:14]))
+    
 class DownsampleTest(unittest.TestCase):
     
     def test_downsample_single_example_1D(self):

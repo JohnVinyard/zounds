@@ -75,7 +75,7 @@ from bitarray import bitarray
 from model import Model
 from pattern import DataPattern
 from zounds.nputil import \
-    hamming_distance,pad,Packer,packed_hamming_distance,TypeCodes,flatten2d
+    hamming_distance,pad,Packer,packed_hamming_distance,TypeCodes,flatten2d,Growable
 from zounds.environment import Environment
 from zounds.util import tostring
 
@@ -164,6 +164,20 @@ class FrameSearch(Model):
         Build any data structures needed by this search
         '''
         pass
+
+    @abstractmethod
+    def _add_index(self,_id):
+        '''
+        Add a single pattern to the index
+        '''
+        pass
+    
+    @abstractmethod
+    def _check_index(self):
+        '''
+        Ensure that the index is in sync with the Frames database
+        '''
+        pass
     
     def _add_id(self,_id):
         '''
@@ -178,6 +192,14 @@ class FrameSearch(Model):
         '''
         self._build_index()
         self.controller().store(self)
+    
+    def add_index(self,_id):
+        # TODO: When do I save the index back to disk?  Everytime this is called?
+        # Every n times?  Every n seconds? 
+        self._add_index(_id)
+    
+    def check_index(self):
+        self._check_index()
     
     @abstractmethod
     def _search(self,frames):
@@ -405,18 +427,22 @@ class ExhaustiveSearch(FrameSearch):
         return self._search_single_process(frames, nresults)
         
     
-    def _add_id(self,_id):
-        '''
-        This search has no in-memory index, so this method is a no-op
-        '''
-        pass
-    
     def _build_index(self):
         if self._normalize:
             self._std = self.feature.std()
             print self._std
         else:
             self._std = 1
+    
+    def _add_index(self,_id):
+        # TODO: update self._std
+        raise NotImplemented()
+    
+    def _check_index(self):
+        '''
+        This is a no-op, since this search stores no index data
+        '''
+        pass
     
     @property
     def feature(self):
@@ -532,6 +558,268 @@ class Frequency(object):
             w[i] = self._freq[a]
         return w / len(arr)
 
+
+class ExhaustiveLshSearch2(FrameSearch):
+    '''
+    '''
+    def __init__(self,_id,feature,step = None,fine_feature = None,
+                 ignore = None, growth_rate = .25,initial_size = None):
+        
+        FrameSearch.__init__(self,_id,feature)
+        self._hashdtype = feature.dtype
+        self.step = step
+        self.nbits = TypeCodes.bits(self._hashdtype)
+        self._initial_size = initial_size
+        
+        # allocate enough memory (plus a little) to hold an index for the
+        # entire database as it currently exists
+        self._index = self._allocate(self._hashdtype)
+        self._fine_feature = fine_feature
+        self._fine_index = None
+        if self._fine_feature:
+            fc = self.env().framecontroller
+            dim = fc.get_dim(self._fine_feature)
+            self._packer = Packer(dim[0])
+            self._fine_feature = self._allocate_fine()
+            
+        self._addrs = self._allocate(object)
+        self._ids = set()
+        self._logical_size = 0
+        
+        
+        # blocks in queries with any of the values in self._filter will be
+        # ignored when performing the search
+        self._filter = set([0])
+        if None is not ignore:
+            try:
+                self._filter.update(ignore)
+            except TypeError:
+                self._filter.add(ignore)
+        self._growth_rate = growth_rate
+        
+    def __repr__(self):
+        return tostring(self,short = False,feature = self.feature,id = self._id,
+                        step = self.step, nbits = self.nbits, 
+                        fine_feature = self._fine_feature,ignore = self._filter)
+    def __str__(self):
+        return tostring(self,id = self._id,feature = self.feature,
+                        step = self.step,nbits= self.nbits)
+    
+    @property
+    def feature(self):
+        return self.features[0]
+    
+    @property
+    def framecontroller(self):
+        return self.env().framecontroller
+    
+    def _feature_value(self,frame,feature):
+        try:
+            return frame[feature][0]
+        except IndexError:
+            return frame[feature]
+    
+    def _safe_size(self):
+        if None is self._initial_size:
+            fc = self.framecontroller
+            minimum = np.ceil(len(fc) / self.step)
+        else:
+            minimum = self._initial_size
+        return minimum + int(minimum * self._growth_rate)
+    
+    def _allocate(self,dtype):
+        return np.ndarray(self._safe_size(),dtype = dtype)
+    
+    def _allocate_fine(self):
+        size = self._safe_size()
+        return self._packer.allocate(size)
+    
+    def _add_index(self,_id):
+        '''
+        Add frames to the existing index. Keep a temporary index, and don't
+        write the frames until building is complete. Update self._ids when
+        done
+        '''
+        env = self.env()
+        fc = self.framecontroller
+        l = np.ceil(fc.pattern_length(_id) / self.step)
+        new_index = np.ndarray(l,self._hashdtype)
+        if self._fine_feature:
+            # KLUDGE: This is duplicated exactly in _build_index()
+            dim = fc.get_dim(self._fine_feature)
+            self._packer = Packer(dim[0])
+            new_fine_index = self._packer.allocate(l)
+        
+        new_addrs = np.ndarray(l,object)
+        chunksize = env.chunksize_frames
+        index = 0
+        
+        for address,frame in fc.iter_id(_id,chunksize,step = self.step):
+            fv = self._feature_value(frame, self.feature)
+            if fv not in self._filter:
+                new_addrs[index] = (_id,address)
+                new_index[index] = fv
+                
+                if self._fine_feature:
+                    # add the fine feature value to the fine feature index
+                    ffv = self._feature_value(frame, self._fine_feature)
+                    if not ffv.shape:
+                        new_fine_index[index] = 0
+                    else:
+                        new_fine_index[index] = self._packer(ffv[np.newaxis,...])
+                fv
+                index += 1
+        
+        
+        if self._fine_feature:
+            new_fine_index = new_fine_index[:index + 1]
+            self._fine_index = Growable(self._fine_index, 
+                                        logical_size = self._logical_size, 
+                                        growth_rate = self._growth_rate) \
+                                .extend(new_fine_index).data
+        
+        new_addrs = new_addrs[:index + 1]
+        self._addrs = Growable(self._addrs,
+                               logical_size = self._logical_size,
+                               growth_rate = self._growth_rate) \
+                               .extend(new_addrs).data
+        
+        # update the main index last, as this is the first index consulted by
+        # calls to _search.  This should mostly avoid problems caused by
+        # searches using out-of-sync indices.
+        new_index = new_index[:index + 1]
+        #self._index = np.concatenate(self._index,new_index)
+        new_index = Growable(self._index,
+                               logical_size = self._logical_size,
+                               growth_rate = self._growth_rate) \
+                               .extend(new_index)
+        self._logical_size =  new_index._logical_size
+        self._index = new_index.data
+        self._ids.add(_id)
+         
+    
+    def _check_index(self):
+        # check FrameModel.list_ids() against self.list_ids() and do any work
+        # necessary to update the index 
+        actual_ids = self.framecontroller.list_ids()
+        diff = actual_ids ^ self._ids
+        for _id in diff:
+            self._add_index(_id)
+        
+    
+    # KLUDGE: It's possible to build a corrupted index using this method.  More
+    # specifically, it's possible to add entries to the index array for some 
+    # pattern id, and fail before the pattern has been fully processed, leaving
+    # the pattern id out of self._ids.  When _check_id is called, this id
+    # will be missing, and will be added to the index again, meaning that there
+    # will be some duplicated entries.
+    #
+    # Using _add_index for each _id is actually more robust, but less efficient,
+    # because new memory is allocated for each new pattern.  One solution might
+    # be to *always* use _add_index, and keep some temporary memory allocated
+    # at all times, instead of allocating memory and throwing it away with each
+    # _add_index call. 
+    def _build_index(self):
+        fc = self.env().framecontroller
+        index = Growable(self._index, logical_size = self._logical_size, 
+                         growth_rate = self._growth_rate)
+        addrs = Growable(self._addrs, logical_size = self._logical_size,
+                         growth_rate = self._growth_rate)
+        if self._fine_feature:
+            findex = Growable(self._index, logical_size = self._logical_size,
+                              growth_rate = self._growth_rate)
+        
+        last_id = None
+        for address,frame in fc.iter_all(step = self.step):
+            fv = self._feature_value(frame,self.feature)
+            _id = frame['_id'][0]
+            # Note that we're keeping track of ids, regardless of whether any
+            # part of this pattern makes it into the index.  This indicates
+            # that we've processed this pattern in its entirety, and it doesn't
+            # need to be re-indexed.  Note that the _id only gets added once
+            # the entire pattern has been processed.
+            if last_id is None:
+                last_id = _id
+            elif _id != last_id:
+                self._ids.add(last_id)
+            
+            if fv not in self._filter:
+                # only include codes that aren't included in self._filter.
+                # Similarity at those positions doesn't matter.
+                addrs.append((_id,address))
+                index.append(fv)
+                
+                if self._fine_feature:
+                    # add the fine feature value to the fine feature index
+                    ffv = self._feature_value(frame, self._fine_feature)
+                    if not ffv.shape:
+                        findex.append(0)
+                    else:
+                        findex.append(self._packer(ffv[np.newaxis,...]))
+                        
+                print fv
+                self._logical_size = index.logical_size
+        
+        if last_id is not None:
+            self._ids.add(last_id)
+        
+        self._index = index.data
+        self._addrs = addrs.data
+        if self._fine_feature:
+            self._fine_index = findex.data
+    
+    def _valid_indices(self,features):
+        s = np.sum([(features == q) for q in self._filter],0)
+        return s == 0 
+        
+    def _search(self,frames,nresults):
+        start = time()
+        feature = frames[self.feature][::self.step]
+        valid = self._valid_indices(feature)
+        some_valid = np.any(valid)
+        # If any of the frames are valid, remove invalid frames, otherwise,
+        # we have no choice but to use everything.
+        feature = feature[valid] if some_valid else feature
+        
+        if self._fine_feature:
+            ff = frames[self._fine_feature][::self.step]
+            ff = ff[valid] if some_valid else ff
+            ff = self._packer(ff)
+        
+        lf = len(feature)
+        ls = self._logical_size
+        # KLUDGE: Results may not be unique
+        indices = []
+        distances = []
+        for i in range(lf):
+            dist = hamming_distance(feature[i],self._index[:ls])
+            srt = np.argsort(dist)
+            
+            # TODO: Make this size configurable
+            # TODO: What effect does altering this size have?
+            n = nresults * 10
+            
+            if self._fine_feature:
+                finer = packed_hamming_distance(ff[i],self._fine_index[:ls][srt[:n]])
+                fsrt = np.argsort(finer)
+                srt = srt[:n][fsrt]
+                dist = dist[srt]
+                indices.extend(srt)
+                distances.extend(finer[fsrt])
+            else:
+                indices.extend(srt[:n])
+                distances.extend(dist[srt[:n]])
+        
+        
+        dsrt = np.argsort(distances)
+        indices = np.array(indices)[dsrt[:nresults]]
+        results = [addr for addr in self._addrs[:ls][indices]]
+        
+            
+        stop = time() - start
+        print 'search took %1.4f seconds' % stop
+        return results
+
 class ExhaustiveLshSearch(FrameSearch):
     '''
     Quickly search large databases using features which are stored as
@@ -614,6 +902,9 @@ class ExhaustiveLshSearch(FrameSearch):
             return frame[feature][0]
         except IndexError:
             return frame[feature]
+    
+    def _check_index(self):
+        raise NotImplemented()
     
     # TODO: There's a ton of duplicated logic in self._build_index. Factor some
     # of it out.
@@ -823,6 +1114,11 @@ class LshSearch(FrameSearch):
             p[i] = struct.unpack(self._structtype,ba2.tobytes())[0]
         return p
     
+    def _add_index(self,_id):
+        raise NotImplemented()
+
+    def _check_index(self):
+        raise NotImplemented()
     
     def _build_index(self):
         '''
@@ -983,6 +1279,12 @@ class MinHashSearch(FrameSearch):
     @property
     def index(self):
         return self._index[2]
+    
+    def _add_index(self,_id):
+        raise NotImplemented()
+    
+    def _check_index(self):
+        raise NotImplemented()
     
     def _build_index(self):
         env = self.env()
