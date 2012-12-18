@@ -7,31 +7,8 @@ Installation
 Musical Pattern game
 ====================================
 
-Updating the search index problem
----------------------------------
-It shoule be possible to initialize the index with no items, and grow it
-dynamically.
-
-This means allocating a numpy array with both a physical and logical size, then
-re-allocating and copying memory when the physical size is exceeded.
-
-What does error checking entail, and does it make periodic saves pointless?
-
-# TODO: Would index building happen faster if self._filter was a set instead
-of a list? 
-
-
 Tile Map Problems
 ---------------------------------
-- deliver audio in chunks. (Is this possible?)
-	- How do compression ratios fare for short (~1.5 seconds) vorbis files?
-	- Can the clips be played seamlessly?
-	- Which is faster
-		a) saving lots of small files and making requests for them
-		b) saving one large file and dynamically returning bytes from them. Can
-		   this be cached on the client?
-		   
-		
 - fix bark contrast problem
 	- ideas:
 		- Record the loudest "pixel" in each pattern, and normalize according to that

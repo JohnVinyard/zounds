@@ -50,6 +50,7 @@ class SearchSetup(object):
     
     def _add_args(self):
         aa = self._parser.add_argument
+        
         # required arguments
         aa('--feature',
            help='the name of the feature to use',
@@ -60,6 +61,7 @@ class SearchSetup(object):
         aa('--sounddir',
            help='directory from which queries will be drawn',
            required = True)
+        
         # optional arguments
         aa('--minseconds',
            help='the minimum length of a query',

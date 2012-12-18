@@ -325,7 +325,7 @@ class TypeCodes(object):
         if isinstance(v,str):
             return cls._type_codes
         
-        if isinstance(v,np.dtype):
+        if isinstance(v,type):
             return cls._np_types
         
         raise ValueError('%s is not a valid key' % v)
