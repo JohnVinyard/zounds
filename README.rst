@@ -3,8 +3,13 @@ About
 
 **Zounds** is a library designed to make experimenting with audio features a breeze!
 
-- **Zounds allows you to define sets of features in an intuitive, pythonic way**::
+Here's a test::
 
+	def f(a):
+		return {'cat' : 10}
+
+- **Zounds allows you to define sets of features in an intuitive, pythonic way**::
+	
 	class FrameModel(Frames):
 		fft = Feature(FFT, store = False)
 		bark = Feature(BarkBands, needs = fft, nbands = 100, stop_freq_hz = 12000)
