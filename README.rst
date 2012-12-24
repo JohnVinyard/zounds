@@ -5,8 +5,9 @@ About
 
 Here's a test::
 
-	def f(a):
-		return {'cat' : 10}
+	>>> a = 10
+	>>> b = None
+	>>> c = []
 
 - **Zounds allows you to define sets of features in an intuitive, pythonic way**::
 	
