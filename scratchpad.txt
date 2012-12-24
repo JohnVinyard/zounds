@@ -9,6 +9,10 @@ Musical Pattern game
 
 Tile Map Problems
 ---------------------------------
+- audio control
+	- move around in a file
+	- create leaf patterns by selecting segments and saving them
+	
 - fix bark contrast problem
 	- ideas:
 		- Record the loudest "pixel" in each pattern, and normalize according to that
@@ -19,10 +23,6 @@ Tile Map Problems
 		  	a) alter the image data client side
 		  	b) apply a filter to the images.
 
-- audio control
-	- move around in a file
-	- create leaf patterns by selecting segments and saving them
-	
 - server-side rendering
 	- Why does playraw block for much longer than the expected length of a rendered
 	   patterns?
