@@ -3,11 +3,6 @@ About
 
 **Zounds** is a library designed to make experimenting with audio features a breeze!
 
-Here's a test::
-
-	>>> a = 10
-	>>> b = None
-	>>> c = []
 
 - **Zounds allows you to define sets of features in an intuitive, pythonic way**::
 	
