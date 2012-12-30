@@ -1,9 +1,3 @@
-Installation
-====================================
-- In the documentation, update path to audio files in quickstart search example
-- rst rendering on BitBucket homepage is broken
-
-
 Musical Pattern game
 ====================================
 
