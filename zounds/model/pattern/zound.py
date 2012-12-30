@@ -747,7 +747,8 @@ class Zound(Pattern):
              'source' : self.source,
              'external_id' : self.external_id,
              'is_leaf' : self._is_leaf,
-             'stored' : self.stored
+             'stored' : self.stored,
+             '_type'  : self.__class__.__name__
              }
         
         if self.address:
@@ -798,6 +799,7 @@ class Zound(Pattern):
         if not stored:
             d['stored'] = stored
         
+        del d['_type']
         return cls(**d)
     
     # TODO: Should this be asynchronous ?
