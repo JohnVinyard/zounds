@@ -181,7 +181,6 @@ class Tile(object):
     
     feature = 'bark'
     
-    
     def __init__(self,_id,start,stop,start_offset = 0,stop_offset = 0):
         self.id = _id
         self.start = start

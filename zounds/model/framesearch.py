@@ -621,7 +621,7 @@ class ExhaustiveLshSearch(FrameSearch):
             fc = self.env().framecontroller
             dim = fc.get_dim(self._fine_feature)
             self._packer = Packer(dim[0])
-            self._fine_feature = self._allocate_fine()
+            self._fine_index = self._allocate_fine()
             
         self._addrs = self._allocate(object)
         self._ids = set()
@@ -767,9 +767,9 @@ class ExhaustiveLshSearch(FrameSearch):
         addrs = Growable(self._addrs, position = self._logical_size,
                          growth_rate = self._growth_rate)
         
-        print self._fine_feature
+        
         if self._fine_feature:
-            findex = Growable(self._index, position = self._logical_size,
+            findex = Growable(self._fine_index, position = self._logical_size,
                               growth_rate = self._growth_rate)
         
         last_id = None
@@ -816,6 +816,8 @@ class ExhaustiveLshSearch(FrameSearch):
         return s == 0 
         
     def _search(self,frames,nresults):
+        print '_SEARCH!!'
+        
         start = time()
         feature = frames[self.feature][::self.step]
         valid = self._valid_indices(feature)
@@ -861,6 +863,7 @@ class ExhaustiveLshSearch(FrameSearch):
             
         stop = time() - start
         print 'search took %1.4f seconds' % stop
+        print results
         return results
 
 #class ExhaustiveLshSearch(FrameSearch):
