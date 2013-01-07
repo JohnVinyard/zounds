@@ -583,10 +583,10 @@ class FileSystemFrameController(FrameController):
         self.lock = lock
         # The number of bytes to reserve at the beginning of each file for the
         # source's name
-        self._source_chars = 32
+        self._source_chars = Environment.n_external_id_bytes
         # The number of bytes to reserve at the begninning of each file for the
         # external_id
-        self._extid_chars = 32
+        self._extid_chars = Environment.n_external_id_bytes
         # The total number of bytes needed at the beginning of each file for
         # metadata
         self._metadata_chars = self._source_chars + self._extid_chars

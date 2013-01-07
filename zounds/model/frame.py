@@ -568,7 +568,7 @@ class Frames(Model):
     
     __metaclass__ = MetaFrame
     
-    _string_dtype = 'a32'
+    _string_dtype = 'a%i' % Environment.n_external_id_bytes
     
     _id = Feature(LiteralExtractor,needs = None,dtype = _string_dtype)
     source = Feature(LiteralExtractor, needs = None, dtype = _string_dtype)
