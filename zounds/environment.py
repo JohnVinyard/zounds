@@ -82,6 +82,8 @@ class Environment(object):
     n_cores = cpu_count()
     _test = False 
     instance = None
+    # the number of bytes to allot for each of the source and external_id fields
+    n_external_id_bytes = 64
     
     @classmethod
     def parallel(cls):
