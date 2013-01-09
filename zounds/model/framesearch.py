@@ -816,7 +816,6 @@ class ExhaustiveLshSearch(FrameSearch):
         return s == 0 
         
     def _search(self,frames,nresults):
-        print '_SEARCH!!'
         
         start = time()
         feature = frames[self.feature][::self.step]
@@ -863,7 +862,6 @@ class ExhaustiveLshSearch(FrameSearch):
             
         stop = time() - start
         print 'search took %1.4f seconds' % stop
-        print results
         return results
 
 #class ExhaustiveLshSearch(FrameSearch):

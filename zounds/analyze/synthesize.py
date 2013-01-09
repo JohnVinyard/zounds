@@ -5,17 +5,20 @@ from threading import Thread
 from time import sleep
 
 
-# KLUDGE: All these transforms should be written in C/C++, so they can be used with
-# the realtime JACK player as well
+class MetaTransform(type):
+    '''
+    This meta class is implemented so that Transform-derived implementations are
+    registered with the base class.
+    '''
+    _impl = {}
+    
+    def __init__(self,name,bases,attrs):
+        self._impl[name] = self
+        super(MetaTransform,self).__init__(name,bases,attrs)
 
 # KLUDGE: This class should be named AudioTransform to distinguish it from
 # transforms that are applied to patterns
 class Transform(object):
-    
-    JUMP = 0
-    LINEAR = 1
-    EXPONENTIAL = 2
-    
     '''
     Transform some audio
     
@@ -43,11 +46,14 @@ class Transform(object):
         - 2 or more values are present, n -1 interpolations must be provided
     '''
     
-    _impl = {}
+    JUMP = 0
+    LINEAR = 1
+    EXPONENTIAL = 2
+    
+    __metaclass__ = MetaTransform
     
     def __init__(self):
         object.__init__(self)
-        self._impl[self.__class__.__name__] = self.__class__
         self.uknown_length = False
     
     def c_args(self,pattern,samplerate,**kwargs):
@@ -100,7 +106,9 @@ class Transform(object):
     
     @classmethod
     def fromdict(cls,d):
-        return cls._impl[d[0]](*d[1])
+        classname = str(d[0])
+        args = d[1]
+        return cls._impl[classname](*args)
     
     def _transform(self,audio):
         raise NotImplemented()
@@ -243,9 +251,6 @@ class TransformChain(Transform):
     @classmethod
     def fromdict(cls,d):
         return TransformChain([Transform.fromdict(z) for z in d])
-
-
-
 
 
 class BufferBabysitter(Thread):
