@@ -799,8 +799,9 @@ class Zound(Pattern):
         if not stored:
             d['stored'] = stored
         
+        _type = d['_type']
         del d['_type']
-        return cls(**d)
+        return cls._impl[_type](**d)
     
     # TODO: Should this be asynchronous ?
     def store(self):
