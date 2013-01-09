@@ -7,16 +7,21 @@ from zounds.pattern import usecs,put
 
 class MetaPattern(type):
     
+    _impl = {}
+    
     def __init__(self,name,bases,attrs):
+        self._impl[name] = self
         super(MetaPattern,self).__init__(name,bases,attrs)
+    
+    def _item_cls(self,item):
+        return self._impl[item['_type']]
     
     def __getitem__(self,key):
         item = self.controller()[key]
-        
         try:
-            return self.fromdict(item,stored = True)
-        except AttributeError:
-            return [self.fromdict(i,stored = True) for i in item]
+            return self._item_cls(item).fromdict(item,stored = True)
+        except TypeError:
+            return [self._item_cls(i).fromdict(i,stored = True) for i in item]
     
     def _store(self,pattern):
         pattern.stored = time()
@@ -25,7 +30,8 @@ class MetaPattern(type):
     def contained_by(self,*frame_ids):
         d = self.controller().contained_by(*frame_ids)
         for k in d.iterkeys():
-            d[k] = [self.fromdict(ptrn,stored = True) for ptrn in d[k]]
+            d[k] = [self._item_cls(ptrn).fromdict(ptrn,stored = True) 
+                    for ptrn in d[k]]
         return d
         
 
