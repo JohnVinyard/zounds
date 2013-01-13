@@ -782,8 +782,12 @@ class Zound(Pattern):
         # and inefficient for "real" implementations 
         d = d.copy()
         
-        if d.has_key('address'):
-            d['address'] = cls.env().address_class.fromdict(d['address'])
+        try:
+            address = d['address']
+            addr_cls = cls.env().address_class
+            d['address'] = addr_cls.fromdict(address) if address else None
+        except KeyError:
+            pass
         
         if d['is_leaf']:
             d['all_ids'] = None
