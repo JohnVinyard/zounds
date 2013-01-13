@@ -163,8 +163,6 @@ class Delay(Transform):
     def args(self):
         return (self.level,self.feedback,self.dtime)
 
-
-    
 class Convolver(Transform):
     ROOM = 0
     PLATE = 1
