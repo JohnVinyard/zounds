@@ -692,10 +692,11 @@ class Frames(Model):
     def ingest(cls,pattern):
         '''ingest
         
-        Append a pattern-derived instance to the datastore
+        Append a pattern-derived instance to the datastore and return its 
+        address
         '''
         ec = cls.extractor_chain(pattern)
-        cls.controller().append(ec)
+        return cls.controller().append(ec)
     
     @classmethod
     def list_ids(cls):
