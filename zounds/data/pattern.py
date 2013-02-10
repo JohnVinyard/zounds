@@ -1,5 +1,6 @@
 from abc import ABCMeta,abstractmethod
 from collections import defaultdict
+from time import time
 
 from pymongo import Connection
 
@@ -11,7 +12,8 @@ class PatternController(Controller):
     ADDRESS_KEY = 'address'
     ID_KEY = '_id'
     ADDRESS_ID_KEY = '.'.join([ADDRESS_KEY,ID_KEY])
-    
+    STORED_KEY = 'stored'
+    SOURCE_KEY = 'source'
     
     __metaclass__ = ABCMeta
     
@@ -50,6 +52,14 @@ class PatternController(Controller):
         KLUDGE: This concept only works with the FileSystemFrameController.Address
         implementation!!
         '''
+        raise NotImplemented()
+
+    @abstractmethod
+    def recent_patterns(self,how_many = 10,exclude_user = None):
+        raise NotImplemented()
+    
+    @abstractmethod
+    def patterns_by_user(self,user_id):
         raise NotImplemented()
     
     
@@ -94,6 +104,12 @@ class InMemory(PatternController):
                 d[_id].append(v)
         
         return d
+
+    def recent_patterns(self,how_many = 10,exclude_user = None):
+        raise NotImplemented()
+    
+    def patterns_by_user(self,user_id):
+        raise NotImplemented()
             
 
 
@@ -113,6 +129,8 @@ class MongoDbPatternController(PatternController):
         # KLUDGE: This only works with the FileSystemFrameController.Address
         # implementation! 
         self.collection.ensure_index(self.ADDRESS_KEY)
+        self.collection.ensure_index(self.STORED_KEY)
+        self.collection.ensure_index(self.SOURCE_KEY)
     
     def __getitem__(self,_id):
         if isinstance(_id,(str,unicode)):
@@ -124,7 +142,7 @@ class MongoDbPatternController(PatternController):
         if hasattr(_id,'__iter__'):
             # TODO: Is there a better way to fetch multiple documents by id?
             # _id is probably a set, so turn it into a list
-            d = list(self.collection.find({'_id' : {'$in' : list(_id)}}))
+            d = list(self.collection.find({self.ID_KEY : {'$in' : list(_id)}}))
             
             if len(d) != len(_id):
                 # some of the ids were missing
@@ -163,6 +181,21 @@ class MongoDbPatternController(PatternController):
             d[frame_id].append(item)
             
         return d
+    
+    def _recent(self,cursor,how_many):
+        return cursor.sort(self.STORED_KEY,-1).limit(how_many)
+    
+    def recent_patterns(self,how_many = 10,exclude_user = None):
+        criteria = {}
+        if exclude_user:
+            criteria = {self.SOURCE_KEY : {'$ne' : exclude_user}}
+        cursor = self.collection.find(criteria)
+        return self._recent(cursor,how_many)
+    
+    def patterns_by_user(self,user_id,how_many = 10):
+        criteria = {self.SOURCE_KEY : user_id}
+        cursor = self.collection.find(criteria)
+        return self._recent(cursor, how_many)
         
         
 
