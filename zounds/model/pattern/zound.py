@@ -772,6 +772,7 @@ class Zound(Pattern):
         
         patterns = self.__class__[self.all_ids]
         d['patterns'] = dict([(p._id,p.todict()) for p in patterns])
+        d['_type'] = self.__class__.__name__
         return d 
     
     @classmethod

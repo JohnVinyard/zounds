@@ -27,12 +27,25 @@ class MetaPattern(type):
         pattern.stored = time()
         self.controller().store(pattern.todict())
     
+    def _convert(self,data):
+        return [self._item_cls(d).fromdict(d,stored = True) for d in data]
+    
     def contained_by(self,*frame_ids):
         d = self.controller().contained_by(*frame_ids)
+        
         for k in d.iterkeys():
-            d[k] = [self._item_cls(ptrn).fromdict(ptrn,stored = True) 
-                    for ptrn in d[k]]
+            d[k] = self._convert(d[k])
+        
         return d
+
+    def recent_patterns(self,how_many = 10,exclude_user = None):
+        results = self.controller().recent_patterns(how_many,exclude_user)
+        return self._convert(results)
+    
+    def patterns_by_user(self,source,how_many = 10):
+        results = self.controller().patterns_by_user(source,how_many)
+        return self._convert(results)
+        
         
 
 class Pattern(Model):
