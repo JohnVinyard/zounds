@@ -2,6 +2,7 @@ from __future__ import division
 from copy import deepcopy
 from itertools import izip,repeat
 from time import time,sleep
+from datetime import datetime
 from threading import Thread
 
 import numpy as np
@@ -129,6 +130,13 @@ class Zound(Pattern):
     
     def _kwargs(self,**kwargs):
         return {}
+    
+    @property
+    def stored_time(self):
+        try:
+            return datetime.fromtimestamp(self.stored)
+        except TypeError:
+            return None  
     
     @classmethod
     def list_ids(cls):
