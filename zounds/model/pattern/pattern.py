@@ -2,7 +2,8 @@ from __future__ import division
 from time import time
 
 from zounds.model.model import Model
-from zounds.analyze.feature.rawaudio import AudioFromDisk,AudioFromMemory
+from zounds.analyze.feature.rawaudio import \
+    AudioFromDisk,AudioFromMemory,AudioFromUrl
 from zounds.pattern import usecs,put
 
 class MetaPattern(type):
@@ -100,6 +101,20 @@ class FilePattern(Pattern):
                              self.filename,
                              needs = needs)
 
+class UrlPattern(Pattern):
+    
+    def __init__(self,_id,source,external_id,url):
+        Pattern.__init__(self,_id,source,external_id)
+        self.url = url
+    
+    def audio_extractor(self,needs = None):
+        e = self.__class__.env()
+        return AudioFromUrl(e.samplerate,
+                            e.windowsize,
+                            e.stepsize,
+                            self.url,
+                            needs = needs)
+
 class DataPattern(Pattern):
     '''
     Represents a pattern in the form of an in-memory numpy array of audio 
@@ -116,3 +131,6 @@ class DataPattern(Pattern):
                                e.stepsize,
                                self.samples,
                                needs = needs)
+
+
+    
