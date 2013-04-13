@@ -19,7 +19,7 @@ def read_frames_mono(sndfile,nframes = None):
 class AudioStream(object):
     
     def __init__(self,filename,samplerate=44100,windowsize=2048,
-                 stepsize=1024,chunksize_seconds = 40):
+                 stepsize=1024,chunksize_seconds = 40,sndfile_class = Sndfile):
         
         
         self.filename = filename
@@ -27,6 +27,7 @@ class AudioStream(object):
         self.windowsize = windowsize
         self.stepsize = stepsize
         self.chunksize = int(chunksize_seconds * self.samplerate)
+        self.sndfile_class = sndfile_class
         self.done = False
         
     def _read_frames(self,sndfile):
@@ -53,7 +54,9 @@ class AudioStream(object):
         return rf
 
     def __iter__(self):
-        sndfile = Sndfile(self.filename)
+        # TODO: I should wrap Sndfile so it has __enter__ and __exit__ methods,
+        # and then this whole thing can be in a with block
+        sndfile = self.sndfile_class(self.filename)
         channels = sndfile.channels
         nframes = sndfile.nframes
         framen = 0

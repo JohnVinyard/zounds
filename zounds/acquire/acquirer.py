@@ -3,12 +3,13 @@ from abc import ABCMeta,abstractmethod,abstractproperty
 import os.path
 from time import time
 from multiprocessing import Manager,Pool
+import urlparse
 import traceback
 import logging
 
 from zounds.constants import available_file_formats
 from zounds.environment import Environment
-from zounds.model.pattern import FilePattern
+from zounds.model.pattern import FilePattern,UrlPattern
 
 LOGGER = logging.getLogger(__name__)
 
@@ -113,6 +114,49 @@ def acquire_multi(args):
         else:
             LOGGER.info(DiskAcquirer.skip_message(source, fn))
     return total_frames
+
+# TODO: Handle web-services, like FreeSound, or SoundCloud
+class UrlAcquirer(Acquirer):
+    '''
+    Import one or more audio files, given an iterable of URIs
+    '''
+    
+    def __init__(self,baseurl,paths):
+        Acquirer.__init__(self)
+        self.baseurl = baseurl
+        self.paths = paths
+    
+    @property
+    def source(self):
+        return urlparse.urlparse(self.baseurl).hostname
+    
+    def _acquire(self):
+        # TODO: Enable multiprocessing, just like in DiskAcquirer
+        frames_processed = 0
+        lf = len(self.paths)
+        for i,path in enumerate(self.paths):
+            uri = urlparse.urljoin(self.baseurl,path)
+            extid = path
+            fn = uri
+            pattern = UrlPattern(self.env.newid(),self.source,path,uri)
+            
+            # TODO: Factor the following into the base class.  It's
+            # identical to DiskAcquirer
+            if not self.framecontroller.exists(self.source,extid):
+                try:
+                    LOGGER.info(DiskAcquirer.processing_message(self.source, fn, i, lf))
+                    addr = \
+                        self.framecontroller.append(self.extractor_chain(pattern))
+                    frames_processed += len(addr)
+                except:
+                    # KLUDGE: Do some real logging here
+                    # TODO: How do I recover from an error once partial data has
+                    # been written?
+                    LOGGER.exception(traceback.format_exc())
+            else:
+                LOGGER.info(DiskAcquirer.skip_message(self.source, fn))
+            
+            
     
 class DiskAcquirer(Acquirer):
     '''
@@ -169,6 +213,8 @@ class DiskAcquirer(Acquirer):
         start = time()
         seconds_processed = self.__acquire(files)
         elapsed = time() - start
+        # TODO: Is the following line necessary?  Isn't this called in the base
+        # acquire() method?
         self.framecontroller.update_index()
         if not seconds_processed:
             LOGGER.info(DiskAcquirer.no_files_processed_message(self._source))

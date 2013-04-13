@@ -2,9 +2,10 @@ from __future__ import division
 import numpy as np
 from zounds.analyze.audiostream import AudioStream
 from zounds.analyze.extractor import Extractor
-from zounds.nputil import pad,windowed
+from zounds.nputil import windowed
 from zounds.util import PsychicIter
 from zounds.environment import Environment
+from zounds.acquire.urlsndfile import UrlSndFile
 
 class AudioSamples(Extractor):
     
@@ -80,7 +81,27 @@ class AudioFromDisk(AudioSamples):
             self._init = True
         
         return self._stream
+
+class AudioFromUrl(AudioSamples):
+    
+    def __init__(self,samplerate,windowsize,stepsize,url,needs = None):
+        AudioSamples.__init__(self,samplerate,windowsize,stepsize,needs = needs)
+        self.url = url
+        self._init = False
+    
+    @property
+    def stream(self):
+        if not self._init:
+            self._stream = AudioStream(\
+                            self.url,
+                            self.samplerate,
+                            self.windowsize,
+                            self.stepsize,
+                            Environment.instance.chunksize_seconds,
+                            UrlSndFile)
+            self._init = True
         
+        return self._stream
     
     
 class AudioFromMemory(AudioSamples):
