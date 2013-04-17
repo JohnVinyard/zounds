@@ -2,6 +2,7 @@ from __future__ import division
 import numpy as np
 from numpy.lib.stride_tricks import as_strided as ast
 from bitarray import bitarray
+from random import choice
 import pyximport
 pyximport.install()
 from countbits import *
@@ -332,14 +333,23 @@ class TypeCodes(object):
     
     @classmethod
     def bits(cls,v):
+        '''
+        Get the number of bits from a numpy dtype or typecode
+        '''
         return cls._fromto(cls._whichlist(v), cls._bits, v)
     
     @classmethod
     def np_dtype(cls,v):
+        '''
+        Get a numpy dtype from a typecode or number of bits
+        '''
         return cls._fromto(cls._whichlist(v), cls._np_types, v)
     
     @classmethod
     def type_code(cls,v):
+        '''
+        Get a typecode from a numpy dtype or a number of bits
+        '''
         return cls._fromto(cls._whichlist(v), cls._type_codes, v)
         
     
@@ -448,6 +458,7 @@ class Growable(object):
         '''
         return self._position
     
+    
     @property
     def physical_size(self):
         '''
@@ -534,3 +545,44 @@ def jaccard_distance(a,b):
     intersection = count_bits(a & b)
     union = count_bits(a | b)
     return 1 - (intersection / union)
+
+
+class BKTree(object):
+    '''
+    Take advantage of the triangle inequality.  Build a depth-one tree
+    where each branch contains the indices of all hashes which are distance n
+    from a seed value.
+    
+    When querying, take the distance between the query and seed values.  Begin
+    with the branch for that distance, and proceed outward. 
+    '''
+    def __init__(self,hashes,distance = hamming_distance):
+        object.__init__(self)
+        self.hashes = hashes
+        self.distance = distance
+        self.seed = self.hashes[np.random.randint(0,len(hashes))]
+        self._build()
+    
+    def _build(self):
+        d = self.distance(self.seed,self.hashes)
+        self.tree = dict((dist,np.where(d == dist)[0]) for dist in set(d))
+    
+    def query(self,query,nresults):
+        d = self.distance(query,[self.seed])[0]
+        results = np.zeros(nresults,dtype = np.uint32)
+        resultspos = 0
+        keys = np.array(self.tree.keys())
+        ordered = list(keys[np.argsort(np.abs(keys - d))])
+        while ordered and resultspos < nresults:
+            dist = ordered.pop(0)
+            r = self.tree[dist]
+            lr = len(r)
+            stop = min(nresults,resultspos + lr)
+            results[resultspos : stop] = r[:stop - resultspos]
+            resultspos += (stop - resultspos)
+        
+        return results
+         
+        
+        
+        

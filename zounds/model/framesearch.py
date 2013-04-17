@@ -596,7 +596,17 @@ class Frequency(object):
 
 class ExhaustiveLshSearch(FrameSearch):
     '''
+    Quickly search large databases using features which are stored as
+    32 or 64 bit scalars.  The scalars are treated as binary feature vectors
+    of dimension 32 or 64, and are compared using the hamming distance.
+    
+    Works well for features computed using 
+    `locality-sensitive hashing <http://en.wikipedia.org/wiki/Locality-sensitive_hashing>`_
+    or 
+    `semantic hashing <http://www.utstat.toronto.edu/~rsalakhu/papers/semantic_final.pdf>`_
     '''
+    
+    # TODO: nbits could be inferred from the feature
     def __init__(self,_id,feature,step = None,fine_feature = None,
                  ignore = None, growth_rate = .25,initial_size = None):
         
