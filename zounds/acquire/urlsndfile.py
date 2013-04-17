@@ -4,6 +4,11 @@ from tempfile import NamedTemporaryFile
 
 class UrlSndFile(object):
     
+    '''
+    Wrap scikits.audiolab.Sndfile so it can stream audio files
+    from a url
+    '''
+    
     def __init__(self,url,chunksize_bytes = 60 * 96000 * 2):
         object.__init__(self)
         self.url = url
