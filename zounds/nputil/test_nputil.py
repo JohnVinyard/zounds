@@ -14,6 +14,13 @@ class GrowableTest(unittest.TestCase):
         self.assertEqual(1,g.logical_size)
         self.assertEqual(1,g._data[0])
     
+    def test_logical_data(self):
+        g = Growable(np.zeros(10),0,1)
+        self.assertEqual(0,g.logical_data.shape[0])
+        g.extend([1,2])
+        self.assertEqual(2,g.logical_data.shape[0])
+        self.assertTrue(np.all(np.array([1,2]) == g.logical_data))
+    
     def test_append_no_growth(self):
         g = Growable(np.zeros(10),0,1)
         g.append(1)
@@ -27,6 +34,7 @@ class GrowableTest(unittest.TestCase):
         self.assertTrue(np.all(1 == g._data[:3]))
         self.assertEqual(10,g.physical_size)
         self.assertEqual(3,g.logical_size)
+    
     
     def test_append_growth(self):
         g = Growable(np.zeros(10),10,1)

@@ -6,10 +6,11 @@ from scipy.stats import kurtosis
 from scipy.signal import lfilter
 from scipy.signal.filter_design import butter
 from scipy.fftpack import dct
+from scipy.spatial.distance import cdist
 
 from zounds.environment import Environment
 from zounds.analyze.extractor import SingleInput
-from zounds.analyze.psychoacoustics import Bark
+from zounds.analyze.psychoacoustics import Bark,Chroma as ChromaScale
 from zounds.nputil import safe_log,flatten2d,sliding_window
 
 
@@ -163,6 +164,48 @@ class FFT(SingleInput):
         # excluding the zero-frequency term
         out = np.abs(np.fft.rfft(data,axis = self._axis)[self._slice])
         return flatten2d(out)
+
+
+class DCT(SingleInput):
+    
+    def __init__(self, needs = None, key = None,\
+                 nframes = 1, step = 1, axis = -1):
+        SingleInput.__init__(self, needs = needs, nframes = nframes, 
+                             step = step, key = key)
+        
+    @property
+    def dtype(self):
+        return np.float32
+    
+    
+    def dim(self,env):
+        return env.windowsize
+    
+    def _process(self):
+        data = self.in_data
+        return dct(data)
+
+
+class Chroma(SingleInput):
+    
+    def __init__(self, needs = None, key = None,
+                 nbins = 12, a440 = 440.):
+        SingleInput.__init__(self,needs=needs, nframes=1, step=1, key=key)
+        self.env = Environment.instance
+        self.nbins = nbins
+        self.a440 = a440
+        self.chroma = ChromaScale(\
+                    self.env.samplerate,self.env.windowsize,nbands = 12)
+    
+    def dim(self,env):
+        return self.nbins
+    
+    @property
+    def dtype(self):
+        return np.float32
+    
+    def _process(self):
+        return self.chroma.transform(self.in_data)
     
 class BarkBands(SingleInput):
     '''
@@ -490,7 +533,7 @@ class Difference(SingleInput):
         '''
         SingleInput.__init__(self, needs = needs, key = key)
         self.inshape = inshape
-        self._memory = np.zeros(self.size)
+        self._memory = None
         
     @property
     def dtype(self):
@@ -500,9 +543,15 @@ class Difference(SingleInput):
         return self.inshape
     
     def _process(self):
-        indata = self.in_data
-        output =  indata - self._memory
-        self._memory = indata
+        if self._memory is None:
+            self._memory = self.in_data[0]
+        # prepend memory to data
+        data = np.concatenate([self._memory[None,...],self.in_data])
+        # take diff
+        output = np.diff(data,axis = 0)
+        # set memory to be last item in data
+        self._memory = data[-1]
+        # return output
         return output
 
 class Flux(SingleInput):
@@ -534,4 +583,33 @@ class Flux(SingleInput):
     
     def _process(self):
         return np.sqrt((self.in_data**2).sum(axis = 1))
+
+
+class SelfSimilarityMatrix(SingleInput):
+    '''
+    Return the upper diagonal of a self similarity matrix for a feature, 
+    excluding the middle/diagonal indices, which are, by definition, zero.
+    
+    Use euclidean distance by default
+    '''
+    def __init__(self,needs = None, key = None, inshape = None):
+        SingleInput.__init__(self, needs = needs, key = key)
+        self._indices = np.triu_indices(inshape,k = 1)
+    
+    @property
+    def dtype(self):
+        return np.float32
+
+    def dim(self,env):
+        return (self._indices[0].size,)
+    
+    def _process(self):
+        o = np.zeros(\
+            (self.in_data.shape[0],self._indices[0].size))
+        data = self.in_data
+        data = data if len(data) == 3 else data[:,:,None]
+        # TODO: Can this be vectorized?
+        for i,d in enumerate(data):
+            o[i] = cdist(d,d)[self._indices]
+        return o
         

@@ -299,6 +299,10 @@ class SingleInput(Extractor):
         '''
         return self.input[self.sources[0]]
     
+    @property
+    def needs(self):
+        return self.sources[0]
+    
     def _process(self):
         raise NotImplemented()
     
