@@ -2,6 +2,7 @@ from __future__ import division
 from abc import ABCMeta,abstractmethod
 import numpy as np
 from scipy.signal import triang
+from zounds.visualize.plot import plot
 
 def fft_index(freq_hz,ws,sr,rnd = np.round):
     '''
@@ -38,7 +39,6 @@ def erb(hz):
     equivalent rectangular bandwidth
     '''
     return (0.108 * hz) + 24.7
-
 
 # TODO: Documentation
 class Scale(object):
@@ -146,5 +146,72 @@ class Mel(Scale):
     
     def from_hz(self,hz):
         return 1127 * np.log(1 + (hz/700))
+
+class Chroma(Scale):
+    '''
+    Based on Dan Ellis' MATLAB code, available here: 
+    http://www.ee.columbia.edu/~dpwe/resources/matlab/chroma-ansyn/#1
+    '''
+    def __init__(self,samplerate,window_size,nbands = 12):
+        # TODO: Set the start and stop freqs in hz
+        self._a440 = 440.
+        Scale.__init__(\
+                self,samplerate,window_size,nbands,None,None)
+    
+    def to_hz(self):
+        raise NotImplemented()
+    
+    def from_hz(self,hz):
+        '''
+        Convert a frequency in hz into a real number representing the octaves
+        above A0.
+        '''
+        return np.log(hz / (self._a440 / 16)) / np.log(2)
+    
+    @property
+    def n_fft_bands(self):
+        return int(self._ws / 2.)
+    
+    # TODO: Plot each step to ensure that you understand what's going on
+    def _build_data(self):
+        # allocate memory for an n_chroma_bins x n_fft_bins matrix.  We'll be 
+        # taking the dot product of this matrix with fft coefficients to get 
+        # the chroma vector
+        weights = np.zeros((self.n_bands,self._ws))
+        fft_bins = np.zeros(self._ws)
+        
+        # get hz values for every possible bin
+        hz = (np.arange(1,self._ws) / self._ws) * self._sr
+        
+        # translate hz into real-valued octave numbers (distance from A0)
+        fft_bins[1:] = self.n_bands * self.from_hz(hz)
+        fft_bins[0] = fft_bins[1] - (1.5 * self.n_bands)
+        
+        # calculate the width, in octaves, of each bin
+        bin_widths = np.concatenate([np.diff(fft_bins),[1]])
+        
+        # TODO: Is this tile necessary?
+        a = np.tile(fft_bins,(self.n_bands,1))
+        # TODO: Is this tile necessary?
+        b = np.tile(np.arange(self.n_bands),(self._ws,1)).T
+        # TODO: What is this variable for?
+        D =  a - b
+            
+        half_bands = np.round(self.n_bands / 2.)
+        # I'm officially lost. back up and figure out what's happening
+        D = ((D + half_bands + (10*self.n_bands)) % self.n_bands) - half_bands
+        
+        weights = \
+            np.exp(-0.5 * (2 * (D / np.tile(bin_widths,(self.n_bands,1)))) ** 2)
+        
+        # normalize each column
+        smsqr = np.sqrt((weights**2).sum(0))
+        smsqr[smsqr == 0] = 1
+        weights /= smsqr
+        weights = weights[:,:self.n_fft_bands]
+        return weights.T
+    
+    def transform(self,fft):
+        return np.dot(fft,self.data)
     
     

@@ -154,6 +154,15 @@ class UnitNorm(Preprocess):
         
     def _preprocess(self,data):
         return sun(data)
+
+
+class Abs(Preprocess):
+    
+    def __init__(self):
+        Preprocess.__init__(self)
+    
+    def _preprocess(self,data):
+        return np.abs(data)
     
     
 class SequentialPreprocessor(Preprocess):

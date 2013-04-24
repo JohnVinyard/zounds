@@ -105,6 +105,15 @@ def safe_log(a):
     return np.log(a + 1e-12)
 
 
+def euclidean_norm(a):
+    '''
+    Return the euclidean norm of each data example
+    '''
+    if 1 == len(a.shape):
+        return np.linalg.norm(a)
+    
+    return np.sum(np.abs(a)**2,axis=-1)**(1./2)
+        
 
 def safe_unit_norm(a):
     '''
@@ -454,7 +463,8 @@ class Growable(object):
     @property
     def logical_size(self):
         '''
-        
+        Return the size of the initialized part of the array.  Values outside
+        this boundary are invalid.
         '''
         return self._position
     
@@ -465,6 +475,13 @@ class Growable(object):
         The actual size of the wrapped array
         '''
         return self._data.shape[0]
+    
+    @property
+    def logical_data(self):
+        '''
+        Return only the initialized part of the array
+        '''
+        return self._data[:self.logical_size]
     
     def _tmp_size(self):
         n_items = int(self._data.shape[0] * self._growth_rate)
@@ -498,6 +515,7 @@ class Growable(object):
         extend the numpy array with multiple items, growing the wrapped array
         if necessary
         '''
+        items = np.array(items)
         pos = items.shape[0] + self.logical_size
         if pos > self.physical_size:
             # more physical memory is needed than has been allocated so far
@@ -547,6 +565,7 @@ def jaccard_distance(a,b):
     return 1 - (intersection / union)
 
 
+# TODO: Write tests
 class BKTree(object):
     '''
     Take advantage of the triangle inequality.  Build a depth-one tree
@@ -556,7 +575,7 @@ class BKTree(object):
     When querying, take the distance between the query and seed values.  Begin
     with the branch for that distance, and proceed outward. 
     '''
-    def __init__(self,hashes,distance = hamming_distance):
+    def __init__(self,hashes = None,distance = hamming_distance):
         object.__init__(self)
         self.hashes = hashes
         self.distance = distance
@@ -566,6 +585,15 @@ class BKTree(object):
     def _build(self):
         d = self.distance(self.seed,self.hashes)
         self.tree = dict((dist,np.where(d == dist)[0]) for dist in set(d))
+    
+    def append(self,hashes):
+        d = self.distance(self.seed,self.hashes)
+        tree = dict((dist,np.where(d == dist)[0]) for dist in set(d))
+        for k,v in tree.iteritems():
+            try:
+                self.tree[k] = np.concatenate([v,self.tree[k]])
+            except KeyError:
+                self.tree[k] = v
     
     def query(self,query,nresults):
         d = self.distance(query,[self.seed])[0]

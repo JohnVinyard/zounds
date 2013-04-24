@@ -4,7 +4,8 @@ import numpy as np
 from scipy.signal import convolve
 
 from zounds.analyze.extractor import SingleInput
-from zounds.nputil import safe_log,safe_unit_norm as sun,norm_shape,pack,flatten2d
+from zounds.nputil import \
+    safe_log,safe_unit_norm as sun,norm_shape,pack,flatten2d,euclidean_norm
 
 
 class Basic(SingleInput):
@@ -61,6 +62,17 @@ class Abs(Basic):
                        op = np.abs, needs = needs, key = key, 
                        nframes = nframes, step = step)
 
+class EuclideanNorm(Basic):
+    '''
+    Take the euclidean norm of the input vector
+    '''
+    def __init__(self, inshape = None, needs = None, key = None,
+                 nframes = 1, step = 1):
+        Basic.__init__(self,inshape = inshape,outshape = (),
+                       op = euclidean_norm,needs = needs, key = key,
+                       nframes = nframes, step = step)
+        
+        
 class UnitNorm(Basic):
     '''
     Give the input data unit-norm
