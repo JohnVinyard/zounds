@@ -1,4 +1,5 @@
 from __future__ import division
+from abc import ABCMeta,abstractmethod
 
 import numpy as np
 from scipy.stats.mstats import gmean
@@ -59,9 +60,50 @@ class BandpassFilter(SingleInput):
         return sliding_window(filtered,env.windowsize,env.stepsize) * self._window
         
         
+class SpectralDecomposition(SingleInput):
+    
+    __metaclass__ = ABCMeta
+    
+    def __init__(self, needs = None, key = None, inshape = None, 
+                 nframes = 1, step = 1, axis = -1, op = None):
+        SingleInput.__init__(self, needs = needs, nframes = nframes, 
+                             step = step, key = key)
+        self._axis = axis if axis < 0 else axis + 1
+        self._dim = None
+        self._slice = None
+        if None is inshape or isinstance(inshape,tuple):
+            self._inshape = inshape
+        elif isinstance(inshape,int):
+            self._inshape = (inshape,)
+        else:
+            raise ValueError('inshape must be None, an int, or a tuple')
+        
+        self._op = op
+        self._compute_shape()
+        self._compute_slice()
+    
+    @abstractmethod
+    def _compute_shape(self):
+        raise NotImplemented()
+    
+    @abstractmethod
+    def _compute_slice(self):
+        raise NotImplemented()
+    
+    @property
+    def dtype(self):
+        return np.float32
+    
+    def dim(self,env):
+        return self._dim
+    
+    def _process(self):
+        data = self.in_data
+        data = data.reshape((data.shape[0],) + self._inshape)
+        out = np.abs(self._op(data,axis = self._axis)[self._slice])
+        return flatten2d(out)
 
-
-class FFT(SingleInput):
+class FFT(SpectralDecomposition):
     '''
     Compute the real-valued magnitudes of input data.  This means that
         * phase is discarded
@@ -122,19 +164,12 @@ class FFT(SingleInput):
         :param axis: The axis of :code:`self.in_data` over which the FFT should \
         be computed.  The default is the last axis.
         '''
-        
-        SingleInput.__init__(self, needs = needs, nframes = nframes, 
-                             step = step, key = key)
-        self._axis = axis if axis < 0 else axis + 1
-        self._dim = None
-        self._slice = None
-        if None is inshape or isinstance(inshape,tuple):
-            self._inshape = inshape
-        elif isinstance(inshape,int):
-            self._inshape = (inshape,)
-        else:
-            raise ValueError('inshape must be None, an int, or a tuple')
-        
+        SpectralDecomposition.__init__(self, needs = needs, key = key,
+                                       inshape = inshape, nframes = nframes,
+                                       step = step, axis = axis, 
+                                       op = np.fft.rfft)
+    
+    def _compute_shape(self):
         if None is not self._inshape:
             a = np.array(self._inshape,dtype = np.float32)
             a[0] = int(a[0] / 2)
@@ -143,47 +178,31 @@ class FFT(SingleInput):
             ws = Environment.instance.windowsize
             self._dim = int(ws / 2)
             self._inshape = (ws,)
-        
+    
+    def _compute_slice(self):
         # create a list of slices to remove the zero-frequency term along
         # whichever axis we're computing the FFT
         self._slice = [slice(None) for i in xrange(len(self._inshape) + 1)]
         # this slice will remove the zero-frequency term
         self._slice[self._axis] = slice(1,None)
 
-    @property
-    def dtype(self):
-        return np.float32
-    
-    def dim(self,env):
-        return self._dim
-    
-    def _process(self):
-        data = self.in_data
-        data = data.reshape((data.shape[0],) + self._inshape)
-        # return the magnitudes of a real-valued fft along the axis specified,
-        # excluding the zero-frequency term
-        out = np.abs(np.fft.rfft(data,axis = self._axis)[self._slice])
-        return flatten2d(out)
 
-
-class DCT(SingleInput):
+class DCT(SpectralDecomposition):
     
-    def __init__(self, needs = None, key = None,\
+    def __init__(self, needs = None, key = None,inshape = None,
                  nframes = 1, step = 1, axis = -1):
-        SingleInput.__init__(self, needs = needs, nframes = nframes, 
-                             step = step, key = key)
         
-    @property
-    def dtype(self):
-        return np.float32
-    
-    
-    def dim(self,env):
-        return env.windowsize
-    
-    def _process(self):
-        data = self.in_data
-        return dct(data)
+        SpectralDecomposition.__init__(self, needs = needs, key = key,
+                                       inshape = inshape, nframes = nframes,
+                                       step = step, axis = axis, 
+                                       op = dct)
+        
+    def _compute_shape(self):
+        self._dim = self._inshape = \
+            self._inshape if self._inshape else Environment.instance.windowsize    
+        
+    def _compute_slice(self):
+        self._slice = slice(None)
 
 
 class Chroma(SingleInput):
