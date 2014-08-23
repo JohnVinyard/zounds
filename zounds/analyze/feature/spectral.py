@@ -65,7 +65,8 @@ class SpectralDecomposition(SingleInput):
     __metaclass__ = ABCMeta
     
     def __init__(self, needs = None, key = None, inshape = None, 
-                 nframes = 1, step = 1, axis = -1, op = None):
+                 nframes = 1, step = 1, axis = -1, op = None, abs_val = True):
+
         SingleInput.__init__(self, needs = needs, nframes = nframes, 
                              step = step, key = key)
         self._axis = axis if axis < 0 else axis + 1
@@ -81,6 +82,7 @@ class SpectralDecomposition(SingleInput):
         self._op = op
         self._compute_shape()
         self._compute_slice()
+        self._finalize = np.abs if abs_val else lambda x : x
     
     @abstractmethod
     def _compute_shape(self):
@@ -100,7 +102,7 @@ class SpectralDecomposition(SingleInput):
     def _process(self):
         data = self.in_data
         data = data.reshape((data.shape[0],) + self._inshape)
-        out = np.abs(self._op(data,axis = self._axis)[self._slice])
+        out = self._finalize(self._op(data,axis = self._axis)[self._slice])
         return flatten2d(out)
 
 class FFT(SpectralDecomposition):
@@ -190,16 +192,19 @@ class FFT(SpectralDecomposition):
 class DCT(SpectralDecomposition):
     
     def __init__(self, needs = None, key = None,inshape = None,
-                 nframes = 1, step = 1, axis = -1):
+                 nframes = 1, step = 1, axis = -1, abs_val = True):
         
+        def op(x, axis = axis):
+            return dct(x, norm = 'ortho', axis = axis)
+
         SpectralDecomposition.__init__(self, needs = needs, key = key,
                                        inshape = inshape, nframes = nframes,
                                        step = step, axis = axis, 
-                                       op = dct)
+                                       op = op, abs_val = abs_val)
         
     def _compute_shape(self):
         self._dim = self._inshape = \
-            self._inshape if self._inshape else Environment.instance.windowsize    
+            self._inshape if self._inshape else (Environment.instance.windowsize,)
         
     def _compute_slice(self):
         self._slice = slice(None)

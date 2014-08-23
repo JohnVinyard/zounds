@@ -7,9 +7,17 @@ class UrlSndFile(object):
     '''
     Wrap scikits.audiolab.Sndfile so it can stream audio files
     from a url
+    
+    TODO: Ensure that I'm streaming into a memory buffer and libsndfile is
+    decoding data from that buffer.  I should not be writing data to disk and
+    asking libsndfile to read it back.
     '''
     
     def __init__(self,url,chunksize_bytes = 60 * 96000 * 2):
+        '''
+        Default chunksize in bytes allows for one minute of 
+        stereo audio at 96khz
+        '''
         object.__init__(self)
         self.url = url
         self._chunksize_bytes = chunksize_bytes
