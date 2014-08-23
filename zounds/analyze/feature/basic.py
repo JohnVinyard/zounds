@@ -5,8 +5,36 @@ from scipy.signal import convolve
 
 from zounds.analyze.extractor import SingleInput
 from zounds.nputil import \
-    safe_log,safe_unit_norm as sun,norm_shape,pack,flatten2d,euclidean_norm
+    safe_log,safe_unit_norm as sun,norm_shape,pack,flatten2d,euclidean_norm,sliding_window
 
+
+class Tile(SingleInput):
+
+    def __init__(\
+        self,
+        dim = None,
+        needs = None,
+        key = None,
+        nframes = 1,
+        step = 1):
+
+        super(Tile,self).__init__(\
+            needs = needs, 
+            key = key, 
+            nframes = nframes, 
+            step = step)
+
+        self._dim = dim
+
+    def dim(self,env):
+        return self._dim
+
+    @property
+    def dtype(self):
+        return np.float32
+
+    def _process(self):
+        return sliding_window(self.in_data,self._dim)
 
 class Basic(SingleInput):
     

@@ -2,6 +2,8 @@ from matplotlib import pyplot as plt
 import subprocess
 import numpy as np
 
+from zounds.util import ensure_path_exists
+
 # TODO: How does this work on other systems, where matplotlib is working correctly?
 def plot(arr,filename,figsize = (5,5), oned = False, twod = False, gray = False):
     if gray:
@@ -26,6 +28,7 @@ def plot_series(arr,filename,figsize = (5,5), oned = False,
     Create several plot images, appending a unique number to each image file
     name. The size of dimension zero determines the number of plots to create.
     '''
+    ensure_path_exists(filename)
     for i,a in enumerate(arr):
         plot(a,'%s_%i' % (filename,i),figsize=figsize,oned=oned,twod=twod,gray=gray)
 

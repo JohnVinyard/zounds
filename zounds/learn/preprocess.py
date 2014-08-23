@@ -53,6 +53,17 @@ class NoOp(Preprocess):
     def _preprocess(self,data):
         return data
 
+class Binarize(Preprocess):
+    
+    def __init__(self,threshold):
+        Preprocess.__init__(self)
+        self.threshold = threshold
+    
+    def _preprocess(self,data):
+        out = np.zeros(data.shape)
+        out[data > self.threshold] = 1
+        return out 
+
 
 # TODO: Don't save the mean if axis = 1
 class SubtractMean(Preprocess):

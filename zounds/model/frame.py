@@ -11,6 +11,8 @@ from zounds.analyze.feature.metadata import \
 from zounds.analyze.feature.rawaudio import AudioSamples
 from zounds.util import recurse,sort_by_lineage,PsychicIter,tostring
 from zounds.environment import Environment
+from zounds.nputil import pad,flatten2d
+
 
 
 class Feature(object):
@@ -848,7 +850,42 @@ class Frames(Model):
         
         
         return add,update,delete,torecompute + toregenerate
-    
+
+    @classmethod
+    def from_audio(cls,audio):
+        p = DataPattern(Environment.instance.newid(),'search','search',audio)
+        
+        # build an extractor chain which will compute only the features
+        # necessary 
+        ec = cls.extractor_chain(p)
+        # extract the features into a dictionary
+        d = ec.collect()
+        
+        # turn the dictionary into a numpy recarray
+        dtype = []
+        for e in ec:
+            if 'audio' == e.key or\
+             (cls.features.has_key(e.key) and cls.features[e.key].store):
+                dtype.append((e.key,e.dtype,e.dim(Environment.instance)))
+        
+        audio = np.concatenate(d['audio'])
+        l = len(audio)
+        r = np.recarray(l,dtype=dtype)
+        
+        for k,v in d.iteritems():
+            if 'audio' == k or\
+             (cls.features.has_key(k) and cls.features[k].store):
+                data = np.concatenate(v)
+                rp = data.repeat(ec[k].step_abs(), axis = 0)#.squeeze()
+                padded = pad(rp,l)[:l]
+                try:
+                    r[k] = padded
+                except ValueError:
+                    r[k] = flatten2d(padded)
+        
+        # get a frames instance
+        frames = cls(data = r)
+        return frames
 
     @classmethod
     def extractor_chain(cls,
