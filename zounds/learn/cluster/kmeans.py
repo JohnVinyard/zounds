@@ -100,7 +100,7 @@ class KMeans(Learn):
         self._hdim = len(codebook)
         self.codebook = codebook
     
-    def __call__(self,data):
+    def __call__(self,data,return_codes = False,softened = False):
         '''__call__
         
         Transform the data by mapping each input example to the nearest cluster
@@ -115,9 +115,15 @@ class KMeans(Learn):
         '''
         l = data.shape[0]
         dist = cdist(data,self.codebook)
+        if softened:
+            dist[dist == 0] = -1e12
+            return 1 / dist
+        
         best = np.argmin(dist,axis = 1)
+
         feature = np.zeros((l,len(self.codebook)),dtype = np.uint8)
         feature[np.arange(l),best] = 1
+        if return_codes: return feature,self.codebook[best]
         return feature
     
     def __repr__(self):

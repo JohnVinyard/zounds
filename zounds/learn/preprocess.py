@@ -3,10 +3,8 @@ from abc import ABCMeta,abstractmethod
 
 import numpy as np
 
-
-from zounds.nputil import safe_unit_norm as sun,norm_shape,downsample,flatten2d
+from zounds.nputil import safe_unit_norm as sun,norm_shape,downsample,flatten2d,sliding_window,euclidean_norm
 from zounds.util import tostring
-
 
 class Preprocess(object):
     '''
@@ -164,7 +162,8 @@ class UnitNorm(Preprocess):
         Preprocess.__init__(self)
         
     def _preprocess(self,data):
-        return sun(data)
+        normed = sun(flatten2d(data))
+        return normed.reshape((normed.shape[0],) + data.shape[1:])
 
 
 class Abs(Preprocess):
@@ -351,3 +350,42 @@ class Multiply(Preprocess):
     
     def __str__(self):
         return self.__repr__()
+
+class SlidingWindow(Preprocess):
+
+    def __init__(self,shape):
+        super(Preprocess,self).__init__()
+        self.shape = shape
+
+    def _preprocess(self,data):
+        return sliding_window(data,self.shape)
+
+class EuclideanNorm(Preprocess):
+
+    def __init__(self):
+        super(Preprocess,self).__init__()
+
+    def _preprocess(self,data):
+        return euclidean_norm(flatten2d(data))
+
+class Reshape(Preprocess):
+
+    def __init__(self,shape):
+        super(Preprocess,self).__init__()
+        self.shape = shape
+
+    def _preprocess(self,data):
+        p = np.product(self.shape)
+        fd = (data.shape[-1] // p,)
+        if (1,) == fd:
+            return data.reshape((data.shape[0],) + self.shape)
+        else:
+            return data.reshape(fd + self.shape)  
+
+class Flatten2d(Preprocess):
+
+    def __init__(self):
+        super(Preprocess,self).__init__()
+
+    def _preprocess(self,data):
+        return flatten2d(data)
