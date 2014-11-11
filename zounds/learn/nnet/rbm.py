@@ -207,7 +207,6 @@ class Rbm(NeuralNetwork,Learn):
                 ((1 - self._sparsity_decay) * current_sparsity)
             sparse_penalty = self._sparsity_cost * \
                 (self._sparsity_target - self._sparsity)
-            
 
         # update the weights
         self._wvelocity = (m * self._wvelocity) + \
@@ -279,7 +278,7 @@ class Rbm(NeuralNetwork,Learn):
         del self._hbvelocity
         del self._sparsity
 
-    def activate(self,inp):
+    def activate(self,inp,binarize = True):
         '''
         Activate the net using the visible sample.
         Threshold the probabilities that the hidden
@@ -287,15 +286,24 @@ class Rbm(NeuralNetwork,Learn):
         '''
         hps,hs,hstoch = self._h_from_v(inp)
         vps,vs,vstoch = self._v_from_h(hs)
-        vs[vs > .5] = 1
-        vs[vs <=.5] = 0
+        if binarize:
+            vs[vs > .5] = 1
+            vs[vs <=.5] = 0
         return vs
 
-    def fromfeatures(self,features):
-        raise NotImplemented()
+    def fromfeatures(self,features,binarize = True):
+        '''
+        Using the hidden or latent variables, return the reconstructed output
+        '''
+        vps,vs,vstoch = self._v_from_h(features)
+        if binarize:
+            vs[vs > .5] = 1
+            vs[vs <=.5] = 0
+        return vs
+        
     
     # TODO: Is this the correct implementation for both Rbm and LinearRbm?
-    def __call__(self,data):
+    def __call__(self,data,binarize = True):
         '''__call__
         
         :param data: A two-dimensional numpy array of input data vectors
@@ -304,8 +312,9 @@ class Rbm(NeuralNetwork,Learn):
         '''
         
         ps,s,stoch = self._h_from_v(data)
-        s[s > .5] = 1
-        s[s <= .5] = 0
+        if binarize:
+            s[s > .5] = 1
+            s[s <= .5] = 0
         return s
 
 class LinearRbm(Rbm):

@@ -132,7 +132,10 @@ def safe_unit_norm(a):
     norm[norm == 0] = -1e12
     return a / norm[:,np.newaxis]
 
-
+def binarize(arr,thresh = 0.5):
+    arr[arr < thresh] = 0
+    arr[arr >= thresh] = 1
+    return arr
 
 def pad(a,desiredlength):
     '''
@@ -335,9 +338,9 @@ class TypeCodes(object):
         if isinstance(v,str):
             return cls._type_codes
         
-        if isinstance(v,type):
+        if isinstance(v,type) or isinstance(v,np.dtype):
             return cls._np_types
-        
+
         raise ValueError('%s is not a valid key' % v)
     
     @classmethod
@@ -533,9 +536,7 @@ class Growable(object):
         self._data[self._position : stop] = items
         self._position += items.shape[0]
         return self
-            
-    
-
+        
 def hamming_distance(a,b):
     '''
     a - scalar

@@ -113,7 +113,7 @@ class Pipeline(Model):
         self.trained_date = datetime.utcnow()
         self.store()
     
-    def __call__(self,data):
+    def __call__(self,data,**kwargs):
         '''__call__
         
         Activate the Pipeline on an arbitrary number of input data. Data will \
@@ -127,7 +127,7 @@ class Pipeline(Model):
         first dimension can be anything.
         '''
         data = self.preprocess(data)
-        return self.learn(data)
+        return self.learn(data,kwargs)
     
     def store(self):
         self.controller().store(self)

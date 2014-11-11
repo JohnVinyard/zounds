@@ -965,4 +965,4 @@ class Frames(Model):
             d[f] = e
             
 
-        return ExtractorChain(chain)
+        return ExtractorChain(chain)    
