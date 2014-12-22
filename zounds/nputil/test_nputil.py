@@ -150,6 +150,24 @@ class SlidingWindowTest(unittest.TestCase):
         a = np.zeros((8,8))
         b = sliding_window(a,(4,4),(1,1),flatten = False)
         self.assertEqual((5,5,4,4),b.shape)
+    
+    def test_reshape_does_not_create_copy(self):
+        a = np.zeros((8,8))
+        b = sliding_window(a,(2,2))
+        b[:] = 1
+        print a
+        print b
+        self.assertTrue(np.all(a == 1))
+    
+    def test_can_unwind(self):
+        a = np.arange(64).reshape((8,8))
+        b = sliding_window(a,(2,2))
+        c = np.zeros((8,8))
+        d = sliding_window(c,(2,2))
+        d[:] = b
+        print a
+        print c
+        self.assertTrue(np.all(a == c))
         
     
 class WindowedTest(unittest.TestCase):

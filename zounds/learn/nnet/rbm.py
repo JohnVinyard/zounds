@@ -184,7 +184,7 @@ class Rbm(NeuralNetwork,Learn):
         Update the weights by multiplying the difference between
         the input and fantasy free energies by a learning rate
         '''
-
+        
         # positive phase (reality)
         stoch, posprod, pos_h_act, pos_v_act = self._positive_phase(inp)
 
