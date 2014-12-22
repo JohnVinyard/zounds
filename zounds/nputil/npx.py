@@ -306,6 +306,7 @@ def sliding_window(a,ws,ss = None,flatten = True):
     # the strides tuple will be the array's strides multiplied by step size, plus
     # the array's strides (tuple addition)
     newstrides = norm_shape(np.array(a.strides) * ss) + a.strides
+        
     strided = ast(a,shape = newshape,strides = newstrides)
     if not flatten:
         return strided
@@ -318,6 +319,7 @@ def sliding_window(a,ws,ss = None,flatten = True):
     # remove any dimensions with size 1
     dim = filter(lambda i : i != 1,dim)
     return strided.reshape(dim)
+    
 
 
 class TypeCodes(object):
@@ -349,6 +351,10 @@ class TypeCodes(object):
         Get the number of bits from a numpy dtype or typecode
         '''
         return cls._fromto(cls._whichlist(v), cls._bits, v)
+
+    @classmethod
+    def bytes(cls,v):
+        return cls.bits(v) // 8
     
     @classmethod
     def np_dtype(cls,v):

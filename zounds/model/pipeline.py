@@ -127,7 +127,7 @@ class Pipeline(Model):
         first dimension can be anything.
         '''
         data = self.preprocess(data)
-        return self.learn(data,kwargs)
+        return self.learn(data,**kwargs)
     
     def store(self):
         self.controller().store(self)
