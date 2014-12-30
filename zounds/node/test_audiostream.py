@@ -15,6 +15,19 @@ from zounds.flow.model import BaseModel
 
 class AudioStreamTest(unittest2.TestCase):
     
+    '''
+    These tests illustrate my abuse of libsndfile.  Ideally, it should be OK
+    to have a reader that is faster than the writer, i.e., I should not give
+    up the first time I read zero bytes.  Rather, I should give up only once
+    I've read the expected content length, or an error has occurred.
+    
+    libsndfile seems to demonstrate different behavior depending on the
+    encoding type.  For wav files, it behaves as I'd like.  For flac and
+    ogg vorbis files, it gives up the first time a read results in zero bytes.
+    
+    Can I hack libsndfile to always try until n bytes have been read?
+    '''
+    
     WAV  = snd_types['WAV']  | snd_subtypes['PCM_16']
     OGG  = snd_types['OGG']  | snd_subtypes['VORBIS']
     FLAC = snd_types['FLAC'] | snd_subtypes['PCM_16']
@@ -36,8 +49,7 @@ class AudioStreamTest(unittest2.TestCase):
             pcm = NumpyFeature(AudioStream, needs = raw, store = True)
         
         AudioStreamTest.Model = Doc
-        self._seconds = 60.48
-
+        self._seconds = 400
     def tearDown(self):
         try:
             os.remove(self._file_path)
