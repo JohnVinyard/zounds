@@ -80,7 +80,8 @@ def read(fname):
 
 python_packages = ['bitarray','tables','nose','scikits.audiolab',
                    'matplotlib','web.py','scipy','numpy','pymongo',
-                   'unittest2','numexpr','cython','pysoundfile']
+                   'unittest2','numexpr','cython','pysoundfile',
+                   'requests']
 
 # argparse was introduced into the standard library in python 2.7. Instead of
 # checking the python version, just try to import it. If the import fails, add
