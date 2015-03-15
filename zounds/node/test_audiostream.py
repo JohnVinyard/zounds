@@ -1,17 +1,12 @@
 from __future__ import division
 import unittest2
-import os
 from uuid import uuid4
-import numpy as np
-from pysoundfile import *
+from pysoundfile import * 
 
-from zounds.flow.feature import Feature
-from zounds.flow.nmpy import NumpyFeature
-from zounds.node.bytestream import ByteStream
+from flow import *
+from flow.nmpy import NumpyFeature
+from flow.data import *
 from zounds.node.audiostream import AudioStream
-from zounds.flow.dependency_injection import Registry
-from zounds.flow.data import *
-from zounds.flow.model import BaseModel
 
 class AudioStreamTest(unittest2.TestCase):
     
@@ -35,21 +30,30 @@ class AudioStreamTest(unittest2.TestCase):
         
     def setUp(self):
         self._file_path = None
+        self._sample_rate = 44100
+        
         Registry.register(IdProvider,UuidProvider())
         Registry.register(KeyBuilder,StringDelimitedKeyBuilder())
         Registry.register(Database,InMemoryDatabase())
         Registry.register(DataWriter,DataWriter)
-        Registry.register(DataReader,DataReaderFactory())
         
         class Doc(BaseModel):
             raw = Feature(\
-              ByteStream, 
-              chunksize = 4 * 44100 * 10 * 2, 
+              ByteStream,
+              # bytes_per_sample x sample_rate * n_seconds * n_channels 
+              chunksize = 2 * self._sample_rate * 25 * 2, 
               store = True)
-            pcm = NumpyFeature(AudioStream, needs = raw, store = True)
+            
+            pcm = NumpyFeature(\
+               AudioStream, 
+               chunk_size_samples = self._sample_rate * 20, 
+               needs = raw, 
+               store = True)
+            
         
         AudioStreamTest.Model = Doc
         self._seconds = 400
+    
     def tearDown(self):
         try:
             os.remove(self._file_path)
@@ -60,22 +64,26 @@ class AudioStreamTest(unittest2.TestCase):
     def _create_file(self,fmt):
         filename = uuid4().hex
         self._file_path = '/tmp/{filename}'.format(**locals())
-        samples = signal(hz = 440, seconds = self._seconds)
+        samples = signal(\
+             hz = 440, seconds = self._seconds, sr = self._sample_rate)
+        print 'TOTAL SAMPLES',len(samples)
         with SoundFile(\
                self._file_path, 
                mode = write_mode, 
                channels = 2, 
                format = fmt, 
-               sample_rate = 44100) as f:
+               sample_rate = self._sample_rate) as f:
             
-            for i in xrange(0,len(samples),44100):
-                f.write(samples[i : i + 44100])
+            for i in xrange(0,len(samples),self._sample_rate):
+                f.write(samples[i : i + self._sample_rate])
     
     def _do_test(self,fmt):
         self._create_file(fmt)
         _id = AudioStreamTest.Model.process(raw = self._file_path)
         doc = AudioStreamTest.Model(_id)
-        self.assertEqual(self._seconds,doc.pcm.size / 44100)
+        self.assertEqual(\
+         self._seconds,doc.pcm.size / self._sample_rate,
+         'The results of this test are non-deterministic!  Check the output a few times in a row.  Is this a libsndfile bug?')
         self.assertEqual(os.path.getsize(self._file_path),len(doc.raw.read()))
     
     def test_reads_entirety_of_long_ogg_vorbis_file(self):
