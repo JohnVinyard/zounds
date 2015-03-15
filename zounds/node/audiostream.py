@@ -1,6 +1,21 @@
 from flow import Node,ByteStream,Graph
 from pysoundfile import SoundFile
 from io import BytesIO
+import numpy as np
+      
+
+class Samples(np.ndarray):
+
+    def __new__(cls, input_array, samplerate = None, channels = None):
+        obj = np.asarray(input_array).view(cls)
+        obj.samplerate = samplerate
+        obj.channels = channels
+        return obj
+
+    def __array_finalize__(self, obj):
+        if obj is None: return
+        self.samplerate = getattr(obj, 'samplerate', None)
+        self.channels = getattr(obj, 'channels', None)  
 
 class AudioStream(Node):
     
@@ -16,8 +31,6 @@ class AudioStream(Node):
         self._sf = None
         self._chunk_size_samples = chunk_size_samples
         self._cache = ''
-        
-        self._total_samples = 0
     
     def _enqueue(self,data,pusher):
         self._cache += data
@@ -29,16 +42,14 @@ class AudioStream(Node):
 
     def _get_samples(self):
         samples = self._sf.read(self._chunk_size_samples)
-        print 'samples size',len(samples)
-        self._total_samples += len(samples)
-        print 'total samples',self._total_samples
         if self._sum_to_mono:
             samples = samples.sum(axis = 1) * 0.5
-        return samples
+        channels = 1 if len(samples.shape) == 1 else samples.shape[1]
+        return Samples(\
+            samples, samplerate = self._sf.sample_rate, channels = channels)
     
     def _process(self,data):
         b = data
-        print 'bytes read',len(b)
         if self._buf is None:
             self._buf = MemoryBuffer(b.total_length)
         
@@ -51,7 +62,6 @@ class AudioStream(Node):
             yield self._get_samples()
             return
         
-        print 'FINALIZED'
         samples = self._get_samples()
         while samples.size:
             yield samples

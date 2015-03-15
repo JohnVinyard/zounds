@@ -7,6 +7,8 @@ from flow import *
 from flow.nmpy import NumpyFeature
 from flow.data import *
 from zounds.node.audiostream import AudioStream
+from zounds.node.resample import Resampler
+from zounds.node.sliding_window import SlidingWindow
 
 class AudioStreamTest(unittest2.TestCase):
     
@@ -50,7 +52,20 @@ class AudioStreamTest(unittest2.TestCase):
                needs = raw, 
                store = True)
             
-        
+            resampled = NumpyFeature(\
+                 Resampler,
+                 samplerate = 22050,
+                 needs = pcm,
+                 store = True)
+            
+            sliding = NumpyFeature(\
+               SlidingWindow,
+               windowsize = 2048,
+               stepsize = 1024,
+               needs = resampled,
+               store = True)
+            
+            
         AudioStreamTest.Model = Doc
         self._seconds = 400
     
@@ -79,12 +94,15 @@ class AudioStreamTest(unittest2.TestCase):
     
     def _do_test(self,fmt):
         self._create_file(fmt)
-        _id = AudioStreamTest.Model.process(raw = self._file_path)
+        _id = AudioStreamTest.Model.process(\
+            raw = self._file_path)
         doc = AudioStreamTest.Model(_id)
         self.assertEqual(\
          self._seconds,doc.pcm.size / self._sample_rate,
          'The results of this test are non-deterministic!  Check the output a few times in a row.  Is this a libsndfile bug?')
         self.assertEqual(os.path.getsize(self._file_path),len(doc.raw.read()))
+        self.assertEqual(self._seconds, doc.resampled.size / 22050)
+        self.assertEqual(2048,doc.sliding.shape[1])
     
     def test_reads_entirety_of_long_ogg_vorbis_file(self):
         self._do_test(AudioStreamTest.OGG)
