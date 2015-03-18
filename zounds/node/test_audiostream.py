@@ -9,6 +9,7 @@ from flow.data import *
 from zounds.node.audiostream import AudioStream
 from zounds.node.resample import Resampler
 from zounds.node.sliding_window import SlidingWindow
+from zounds.node.audio_metadata import AudioMetaData
 
 class AudioStreamTest(unittest2.TestCase):
     
@@ -81,7 +82,6 @@ class AudioStreamTest(unittest2.TestCase):
         self._file_path = '/tmp/{filename}'.format(**locals())
         samples = signal(\
              hz = 440, seconds = self._seconds, sr = self._sample_rate)
-        print 'TOTAL SAMPLES',len(samples)
         with SoundFile(\
                self._file_path, 
                mode = write_mode, 
@@ -95,7 +95,7 @@ class AudioStreamTest(unittest2.TestCase):
     def _do_test(self,fmt):
         self._create_file(fmt)
         _id = AudioStreamTest.Model.process(\
-            raw = self._file_path)
+            raw = AudioMetaData(uri = self._file_path))
         doc = AudioStreamTest.Model(_id)
         self.assertEqual(\
          self._seconds,doc.pcm.size / self._sample_rate,
@@ -113,7 +113,7 @@ class AudioStreamTest(unittest2.TestCase):
     def test_reads_entirety_of_long_flac_file(self):
         self._do_test(AudioStreamTest.FLAC)
 
-def signal(hz = 440,seconds=5.,sr=44100.):
+def signal(hz = 440,seconds = 5.,sr = 44100.):
     mono = np.random.random_sample(seconds * sr)
     stereo = np.vstack((mono,mono)).T
     return stereo
