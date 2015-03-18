@@ -111,7 +111,6 @@ class Resampler(Node):
         return data
     
     def _process(self,data):
-        print data.samplerate,self._samplerate
         if self._resample is None:
             self._resample = Resample(\
               data.samplerate,

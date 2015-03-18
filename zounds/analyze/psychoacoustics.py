@@ -177,7 +177,7 @@ class Chroma(Scale):
         # allocate memory for an n_chroma_bins x n_fft_bins matrix.  We'll be 
         # taking the dot product of this matrix with fft coefficients to get 
         # the chroma vector
-        weights = np.zeros((self.n_bands,self._ws))
+        #weights = np.zeros((self.n_bands,self._ws))
         fft_bins = np.zeros(self._ws)
         
         # get hz values for every possible bin
