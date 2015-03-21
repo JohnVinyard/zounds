@@ -1,7 +1,7 @@
 from __future__ import division
 import unittest2
 from uuid import uuid4
-from pysoundfile import * 
+from soundfile import * 
 
 from flow import *
 from flow.nmpy import NumpyFeature
