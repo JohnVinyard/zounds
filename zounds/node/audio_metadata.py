@@ -1,6 +1,6 @@
 from flow import Node,Aggregator
 import os
-from pysoundfile import SoundFile
+from soundfile import SoundFile
 import requests
 import json
 

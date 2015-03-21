@@ -9,7 +9,8 @@ class TimeSeries(object):
     static - zero sample rate, or a single sample value that applies to every
     moment in time
     
-    constant sample rate- a sample is taken every n units of time
+    constant sample rate- a sample is taken every n units of time 
+    (frequency and duration)
     
     sparse - samples occur in a completely arbitrary way. Samples are not spaced
     evenly, and multiple samples may occur simultaneously.
@@ -22,7 +23,7 @@ class TimeSeries(object):
     that normal list/array indexing can occur.
     
     For constant rate TimeSeries, all sampling rates should be expressed in 
-    seconds.
+    microseconds.
     '''
     def __init__(self):
         object.__init__(self)

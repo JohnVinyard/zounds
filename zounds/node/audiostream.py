@@ -1,5 +1,5 @@
 from flow import Node,ByteStream,Graph
-from pysoundfile import SoundFile
+from soundfile import SoundFile
 from io import BytesIO
 import numpy as np
       
@@ -46,7 +46,7 @@ class AudioStream(Node):
             samples = samples.sum(axis = 1) * 0.5
         channels = 1 if len(samples.shape) == 1 else samples.shape[1]
         return Samples(\
-            samples, samplerate = self._sf.sample_rate, channels = channels)
+            samples, samplerate = self._sf.samplerate, channels = channels)
     
     def _process(self,data):
         b = data
@@ -56,7 +56,7 @@ class AudioStream(Node):
         self._buf.write(b)
         
         if self._sf is None:
-            self._sf = SoundFile(self._buf,virtual_io = True)
+            self._sf = SoundFile(self._buf)
         
         if not self._finalized: 
             yield self._get_samples()
