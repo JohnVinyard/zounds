@@ -1,7 +1,6 @@
 from __future__ import division
 from ctypes import *
 import numpy as np
-import logging
 libsamplerate = CDLL('libsamplerate.so')
 
 from flow import Node

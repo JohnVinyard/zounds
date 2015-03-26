@@ -2,7 +2,6 @@ from flow import Node,ByteStream,Graph
 from soundfile import SoundFile
 from io import BytesIO
 import numpy as np
-      
 
 class Samples(np.ndarray):
 
@@ -22,14 +21,15 @@ class AudioStream(Node):
     def __init__(\
          self, 
          sum_to_mono = True, 
-         chunk_size_samples = 44100 * 20, 
+#         chunk_size_samples = 44100 * 20, 
          needs = None):
         
         super(AudioStream, self).__init__(needs = needs)
         self._sum_to_mono = sum_to_mono
         self._buf = None
         self._sf = None
-        self._chunk_size_samples = chunk_size_samples
+#        self._chunk_size_samples = chunk_size_samples
+        self._chunk_size_samples = None
         self._cache = ''
     
     def _enqueue(self,data,pusher):
@@ -51,12 +51,17 @@ class AudioStream(Node):
     def _process(self,data):
         b = data
         if self._buf is None:
+            print b.total_length
             self._buf = MemoryBuffer(b.total_length)
         
         self._buf.write(b)
         
         if self._sf is None:
             self._sf = SoundFile(self._buf)
+        
+        if self._chunk_size_samples is None:
+            print self._sf.samplerate,self._sf.format,self._sf.subtype
+            self._chunk_size_samples = 44100 * 20
         
         if not self._finalized: 
             yield self._get_samples()
@@ -77,7 +82,7 @@ class MemoryBuffer(object):
     def __len__(self):
         return self._content_length
     
-    def read(self,count): 
+    def read(self,count):
         if count == -1:
             return self._buf.read()
         return self._buf.read(count)
@@ -85,7 +90,7 @@ class MemoryBuffer(object):
     def readinto(self,buf):
         data = self.read(len(buf))
         ld = len(data)
-        buf[:ld] = data
+        buf[:ld] = data        
         return ld
     
     def write(self,data):
@@ -100,8 +105,7 @@ class MemoryBuffer(object):
         self._buf.seek(read_pos)
     
     def tell(self):
-        v = self._buf.tell()
-        return v
+        return self._buf.tell()
 
     def seek(self,offset,whence):
         self._buf.seek(offset,whence)
