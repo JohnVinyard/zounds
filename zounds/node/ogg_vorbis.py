@@ -32,8 +32,10 @@ class OggVorbis(Node):
         else:
             self._in_buf.write(data)        
         
-        samples = self._in_sf.read()
-        self._out_sf.write(samples)
+        samples = self._in_sf.read(44100 * 20)
+        while samples.size:
+            self._out_sf.write(samples)
+            samples = self._in_sf.read(44100 * 20)
         
         if self._finalized:
             self._out_sf.flush()

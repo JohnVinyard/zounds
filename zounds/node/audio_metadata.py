@@ -31,7 +31,7 @@ class AudioMetaDataEncoder(Aggregator,Node):
         super(AudioMetaDataEncoder,self).__init__(needs = needs)
     
     def _process(self,data):
-        return json.dumps({
+        yield json.dumps({
                'uri' : data.uri.url \
                     if isinstance(data.uri,requests.Request) else data.uri,
                'samplerate' : data.samplerate,
@@ -55,9 +55,10 @@ class MetaData(Node):
         uri = data
         if os.path.exists(uri):
             sf = SoundFile(uri)
+            print sf.format
             yield AudioMetaData(\
                  uri = uri, 
-                 samplerate = sf.sample_rate, 
+                 samplerate = sf.samplerate, 
                  channels = sf.channels)
         elif 'freesound.org' in uri:
             params = {'api_key' : self._freesound_api_key}
