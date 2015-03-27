@@ -15,6 +15,8 @@ class OggVorbis(Node):
     def _process_ogg(self,data):
         return data
     
+    # TODO: test to ensure that decoded ogg vorbis is the same length
+    # as original
     def _process_other(self,data):
         
         if self._out_buf is None:
