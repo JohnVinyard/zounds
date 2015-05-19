@@ -2,6 +2,7 @@ from flow import Node,ByteStream,Graph
 from soundfile import SoundFile
 from io import BytesIO
 import numpy as np
+from byte_depth import chunk_size_samples
 
 class Samples(np.ndarray):
 
@@ -21,18 +22,16 @@ class AudioStream(Node):
     def __init__(\
          self, 
          sum_to_mono = True, 
-#         chunk_size_samples = 44100 * 20, 
          needs = None):
         
         super(AudioStream, self).__init__(needs = needs)
         self._sum_to_mono = sum_to_mono
         self._buf = None
         self._sf = None
-#        self._chunk_size_samples = chunk_size_samples
         self._chunk_size_samples = None
         self._cache = ''
     
-    def _enqueue(self,data,pusher):
+    def _enqueue(self, data, pusher):
         self._cache += data
     
     def _dequeue(self):
@@ -51,7 +50,6 @@ class AudioStream(Node):
     def _process(self,data):
         b = data
         if self._buf is None:
-            print b.total_length
             self._buf = MemoryBuffer(b.total_length)
         
         self._buf.write(b)
@@ -60,8 +58,7 @@ class AudioStream(Node):
             self._sf = SoundFile(self._buf)
         
         if self._chunk_size_samples is None:
-            print self._sf.samplerate,self._sf.format,self._sf.subtype
-            self._chunk_size_samples = 44100 * 20
+            self._chunk_size_samples = chunk_size_samples(self._sf, b)
         
         if not self._finalized: 
             yield self._get_samples()
@@ -109,3 +106,6 @@ class MemoryBuffer(object):
 
     def seek(self,offset,whence):
         self._buf.seek(offset,whence)
+    
+    def flush(self):
+        self._buf.flush()

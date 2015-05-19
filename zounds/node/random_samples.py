@@ -14,6 +14,8 @@ class ReservoirSampler(Node):
         self._r = None
         self._index = 0
     
+    # TODO: What happens if we have filled up all the sample slots and we run
+    # out of data?
     def _enqueue(self, data, pusher):
         if self._r is None:
             shape = (self._nsamples,) + data.shape[1:]
@@ -33,6 +35,7 @@ class ReservoirSampler(Node):
         self._index += remaining
     
     def _dequeue(self):
+        # TODO: This should probably be self._r[:self._index]
         if self._finalized: return self._r
 
 class ChunkedStreamingSampler(Node):
