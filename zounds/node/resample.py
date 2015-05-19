@@ -26,7 +26,7 @@ class Resample(object):
     file processed.
     '''    
     def __init__(self,orig_sample_rate,new_sample_rate,\
-                 nchannels = 1, converter_type = 0):
+                 nchannels = 1, converter_type = 1):
         '''
         orig_sample_rate - The sample rate of the incoming samples, in hz
         new_sample_rate - The sample_rate of the outgoiing samples, in hz
