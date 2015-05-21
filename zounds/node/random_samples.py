@@ -17,9 +17,11 @@ class ReservoirSampler(Node):
     # TODO: What happens if we have filled up all the sample slots and we run
     # out of data?
     def _enqueue(self, data, pusher):
+        print data.shape
         if self._r is None:
             shape = (self._nsamples,) + data.shape[1:]
             self._r = np.zeros(shape, dtype = data.dtype)
+        print self._r.shape
         
         diff = 0
         if self._index < self._nsamples:
@@ -29,14 +31,21 @@ class ReservoirSampler(Node):
             self._index += available
         
         remaining = len(data[diff:])
+        if not remaining: return
         indices = np.random.random_integers(0,self._index,size = remaining)
         indices = indices[indices < self._nsamples]
         self._r[indices] = data[diff:][range(len(indices))]
         self._index += remaining
     
     def _dequeue(self):
-        # TODO: This should probably be self._r[:self._index]
-        if self._finalized: return self._r
+        if not self._finalized: return
+        
+        if self._index <= self._nsamples:
+            arr = self._r[:self._index]
+            np.random.shuffle(arr)
+            return arr
+        
+        return self._r
 
 class ChunkedStreamingSampler(Node):
     # first, fill the pool in random order by choosing (random pool, random index)

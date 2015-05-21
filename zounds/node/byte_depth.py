@@ -1,6 +1,11 @@
 from __future__ import division
 
 _lookup = {
+       # https://support.microsoft.com/en-us/kb/89879
+       'MS_ADPCM' : 1,
+       'IMA_ADPCM' : 1,
+       'PCM_S8' : 1,
+       'PCM_U8' : 1,
        'PCM_16' : 2,
        'PCM_24' : 3,
        'PCM_32' : 4,
@@ -10,23 +15,19 @@ _lookup = {
        'VORBIS' : 3
 }
 
-#def get_byte_depth(subtype):
-#    return _lookup[subtype]
-
 def chunk_size_samples(sf, buf):
-    #print 'BUF',len(buf)
-    byte_depth = _lookup[sf.subtype]
-    #print 'DEPTH',byte_depth
-    channels = 2
-    bytes_per_second = byte_depth * sf.samplerate * channels
-    #print 'BYTES PER SECOND',bytes_per_second
-    secs = len(buf) / bytes_per_second
-    #print 'SECS',secs
-    #print 'SAMPLERATE',sf.samplerate
-    secs = secs if secs <= 4 else secs - 4
-    #print 'SECS',secs
-    css = int(secs * sf.samplerate)
-    #print 'CHUNK SIZE SAMPLES', css
-    return css
+    '''
+    Black magic to account for the fact that libsndfile's behavior varies 
+    depending on file format when using the virtual io api.
     
+    If you ask for more samples from an ogg or flac file than are available
+    at that moment, libsndfile will give you no more samples ever, even if
+    more bytes arrive in the buffer later.
+    '''
+    byte_depth = _lookup[sf.subtype]
+    channels = sf.channels
+    bytes_per_second = byte_depth * sf.samplerate * channels
+    secs = len(buf) / bytes_per_second
+    secs = max(4, secs - 4)
+    return int(secs * sf.samplerate)    
         
