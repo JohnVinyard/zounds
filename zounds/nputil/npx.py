@@ -221,10 +221,10 @@ def windowed(a,windowsize,stepsize = None,dopad = False):
     if windowsize == 1 and stepsize == 1:
         # A windowsize and stepsize of one mean that no windowing is necessary.
         # Return the array unchanged.
-        return np.zeros((0,) + a.shape[1:]),a
+        return np.zeros((0,) + a.shape[1:], dtype = a.dtype), a
     
     if windowsize == 1 and stepsize > 1:
-        return np.zeros(0),a[::stepsize]
+        return np.zeros(0, dtype = a.dtype), a[::stepsize]
     
     # the original length of the input array
     l = a.shape[0]
@@ -234,7 +234,7 @@ def windowed(a,windowsize,stepsize = None,dopad = False):
         # pad the array with enough zeros so that there are no leftover samples
         a = pad(a,p)
         # no leftovers; an empty array
-        leftover = np.zeros((0,) + a.shape[1:])
+        leftover = np.zeros((0,) + a.shape[1:], dtype = a.dtype)
     else:
         # cut the array so that any leftover samples are returned seperately
         c,lc = _wcut(l,windowsize,stepsize)
@@ -242,7 +242,7 @@ def windowed(a,windowsize,stepsize = None,dopad = False):
         a = a[:c]
     
     if 0 == a.shape[0]:
-        return leftover,np.zeros(a.shape)
+        return leftover,np.zeros(a.shape, dtype = a.dtype)
 
     
     n = 1+(a.shape[0]-windowsize)//(stepsize)
