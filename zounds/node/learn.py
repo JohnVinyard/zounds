@@ -25,3 +25,13 @@ class KMeans(Preprocessor):
         op = Op(x, codebook = codebook)
         data = op(data)
         yield PreprocessResult(data, op)
+
+
+class Learned(Node):
+    
+    def __init__(self, learned = None, needs = None):
+        super(Learned, self).__init__(needs = needs)
+        self._learned = learned
+    
+    def _process(self, data):
+        yield self._learned(data)

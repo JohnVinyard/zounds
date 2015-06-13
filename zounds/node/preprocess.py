@@ -8,12 +8,15 @@ class Op(object):
         super(Op, self).__init__()
         self._kwargs = kwargs
         self._func = marshal.dumps(func.func_code)
-    
-    def __str__(self):
-        return self.__repr__()
-
-    def __repr__(self):
-        return self._kwargs.__str__()
+        
+    def __getattr__(self, key):
+        if key == '_kwargs':
+            raise AttributeError()
+        
+        try:
+            return self._kwargs[key]    
+        except KeyError: 
+            raise AttributeError(key)
     
     def __call__(self, arg):
         code = marshal.loads(self._func)
@@ -86,15 +89,17 @@ class PreprocessingPipeline(Node):
         if i < 0: raise Exception('pusher not found')
         self._pipeline[i] = data.op
     
-    def _dequeue(self):
-        if not self._finalized or not all(self._pipeline):
-            raise NotEnoughData()
-        
+    def _compute_op(self, pipeline):
         def x(d, pipeline = None):
             for p in pipeline:
                 d = p(d)
             return d
+        return Op(x, pipeline = pipeline)
+    
+    def _dequeue(self):
+        if not self._finalized or not all(self._pipeline):
+            raise NotEnoughData()
         
-        return Op(x, pipeline = self._pipeline)
+        return self._compute_op(pipeline = self._pipeline)
         
             

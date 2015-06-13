@@ -41,12 +41,19 @@ class SlidingWindow(Node):
         if self._cache.shape[0] < self._windowsize and not self._finalized:
             raise NotEnoughData()
         
+        
         leftover, arr = windowed(\
              self._cache,
              self._windowsize,
              self._stepsize, 
              dopad = self._finalized)
+        
+        
         self._cache = leftover
+        
+        if not arr.size:
+            raise NotEnoughData()
+        
         # BUG: Don't recompute the window function every time!
         return \
         (arr * self._window_func(arr.shape[1])) if self._window_func else arr
