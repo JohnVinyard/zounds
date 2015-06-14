@@ -1,10 +1,15 @@
 import numpy as np
 import unittest2
 
-'''
-TODO: 
-how do I handle "offset" in the ConstantRateTimeSeries class?
-'''
+class Hours(np.timedelta64):
+    
+    def __new__(cls, hours):
+        return np.timedelta64(hours, 'h')
+
+class Minutes(np.timedelta64):
+    
+    def __new__(cls, minutes):
+        return np.timedelta64(minutes, 'm')
 
 class Seconds(np.timedelta64):
     
@@ -18,8 +23,13 @@ class Milliseconds(np.timedelta64):
 
 class Microseconds(np.timedelta64):
     
-    def __new__(self, microseconds):
+    def __new__(cls, microseconds):
         return np.timedelta64(microseconds, 'us')
+
+class Nanoseconds(np.timedelta64):
+    
+    def __new__(cls, nanoseconds):
+        return np.timedelta64(nanoseconds, 'ns')
 
 class TimeSlice(object):
     
@@ -143,76 +153,72 @@ class TimeSliceTests(unittest2.TestCase):
     
     def test_raises_if_start_is_provided_and_is_not_timedelta_instance(self):
         self.assertRaises(\
-              ValueError, lambda : TimeSlice(np.timedelta64(100,'ns'),1))
+              ValueError, lambda : TimeSlice(Nanoseconds(100), 1))
     
     def test_can_instantiate_time_slice_instance_without_start_argument(self):
-        duration = np.timedelta64(100,'s')
+        duration = Seconds(100)
         ts = TimeSlice(duration)
         self.assertEqual(duration, ts.duration)
-        self.assertEqual(np.timedelta64(0,'s'), ts.start)
+        self.assertEqual(Seconds(0), ts.start)
         
     def test_can_instantiate_time_slice_instance_with_start_argument(self):
-        duration = np.timedelta64(1000,'us')
-        start = np.timedelta64(1,'h')
+        duration = Microseconds(1000)
+        start = Hours(1)
         ts = TimeSlice(duration, start = start)
         self.assertEqual(duration, ts.duration)
         self.assertEqual(start, ts.start)
     
     def test_can_intersect_two_time_slices(self):
-        ts1 = TimeSlice(\
-            np.timedelta64(100,'s'), start = np.timedelta64(100,'s'))
-        ts2 = TimeSlice(\
-            np.timedelta64(100,'s'), start = np.timedelta64(101,'s'))
+        ts1 = TimeSlice(Seconds(100), start = Seconds(100))
+        ts2 = TimeSlice(Seconds(100), start = Seconds(101))
         intersection = ts1 & ts2
-        self.assertEqual(np.timedelta64(99,'s'), intersection.duration)
+        self.assertEqual(Seconds(99), intersection.duration)
     
     def test_can_find_null_intersection(self):
-        ts1 = TimeSlice(\
-            np.timedelta64(100,'s'), start = np.timedelta64(100,'s'))
-        ts2 = TimeSlice(\
-            np.timedelta64(100,'s'), start = np.timedelta64(200,'s'))
+        ts1 = TimeSlice(Seconds(100), start = Seconds(100))
+        ts2 = TimeSlice(Seconds(100), start = Seconds(200))
         intersection = ts1 & ts2
-        self.assertEqual(np.timedelta64(0,'s'), intersection.duration)
+        self.assertEqual(Seconds(0), intersection.duration)
     
     def test_does_not_contain_point_in_time_before(self):
-        ts = TimeSlice(np.timedelta64(100,'s'), start = np.timedelta64(200,'s'))
-        self.assertFalse(np.timedelta64(10,'s') in ts)
+        ts = TimeSlice(Seconds(100), start = Seconds(200))
+        self.assertFalse(Seconds(10) in ts)
     
     def test_contains_point_in_time_during(self):
-        ts = TimeSlice(np.timedelta64(100,'s'), start = np.timedelta64(200,'s'))
-        self.assertTrue(np.timedelta64(210,'s') in ts)
+        ts = TimeSlice(Seconds(100), start = Seconds(200))
+        self.assertTrue(Seconds(210) in ts)
     
     def test_does_not_contain_point_in_time_after(self):
-        ts = TimeSlice(np.timedelta64(100,'s'), start = np.timedelta64(200,'s'))
-        self.assertFalse(np.timedelta64(310,'s') in ts)
+        ts = TimeSlice(Seconds(100), start = Seconds(200))
+        self.assertFalse(Seconds(310) in ts)
     
     def test_does_not_contain_slice_completely_before(self):
-        ts1 = TimeSlice(np.timedelta64(100,'s'), start = np.timedelta64(200,'s'))
-        ts2 = TimeSlice(np.timedelta64(10,'s'), np.timedelta64(12,'s'))
+        ts1 = TimeSlice(Seconds(100), start = Seconds(200))
+        ts2 = TimeSlice(Seconds(10), Seconds(12))
         self.assertFalse(ts2 in ts1)
     
     def test_does_not_contain_slice_beginning_before(self):
-        ts1 = TimeSlice(np.timedelta64(100,'s'), start = np.timedelta64(200,'s'))
-        ts2 = TimeSlice(np.timedelta64(50,'s'), np.timedelta64(190,'s'))
+        ts1 = TimeSlice(Seconds(100), start = Seconds(200))
+        ts2 = TimeSlice(Seconds(50), Seconds(190))
         self.assertFalse(ts2 in ts1)
     
     def test_contains_slice(self):
-        ts1 = TimeSlice(np.timedelta64(100,'s'), start = np.timedelta64(200,'s'))
-        ts2 = TimeSlice(np.timedelta64(10,'s'), np.timedelta64(250,'s'))
+        ts1 = TimeSlice(Seconds(100), start = Seconds(200))
+        ts2 = TimeSlice(Seconds(10), Seconds(250))
         self.assertTrue(ts2 in ts1)
     
     def test_does_not_contain_slice_completely_after(self):
-        ts1 = TimeSlice(np.timedelta64(100,'s'), start = np.timedelta64(200,'s'))
-        ts2 = TimeSlice(np.timedelta64(100,'s'), np.timedelta64(310,'s'))
+        ts1 = TimeSlice(Seconds(100), start = Seconds(200))
+        ts2 = TimeSlice(Seconds(100), Seconds(310))
         self.assertFalse(ts2 in ts1)
     
     def test_does_not_contain_slice_beginning_after(self):
-        ts1 = TimeSlice(np.timedelta64(100,'s'), start = np.timedelta64(200,'s'))
-        ts2 = TimeSlice(np.timedelta64(100,'s'), np.timedelta64(210,'s'))
+        ts1 = TimeSlice(Seconds(100), start = Seconds(200))
+        ts2 = TimeSlice(Seconds(100), Seconds(210))
         self.assertFalse(ts2 in ts1)
     
     def test_raises_value_error_if_item_is_not_timedelta_or_timeslice(self):
-        ts1 = TimeSlice(np.timedelta64(100,'s'), start = np.timedelta64(200,'s'))
+        ts1 = TimeSlice(Seconds(100), start = Seconds(200))
         self.assertRaises(ValueError, lambda : 's' in ts1)
     
     def test_eq_when_start_and_duration_equal(self):
@@ -238,34 +244,34 @@ class TimeSeriesTests(unittest2.TestCase):
     
     def test_raises_if_duration_is_not_timedelta_instance(self):
         arr = np.arange(10)
-        freq = np.timedelta64(1,'s')
+        freq = Seconds(1)
         self.assertRaises(\
               ValueError, lambda : ConstantRateTimeSeries(arr, freq, 1))
     
     def test_duration_is_equal_to_frequency_if_not_provided(self):
         arr = np.arange(10)
-        freq = np.timedelta64(1,'s')
+        freq = Seconds(1)
         ts = ConstantRateTimeSeries(arr, freq)
         self.assertEqual(ts.frequency, ts.duration)
     
     def test_can_slice_time_series_with_time_slice(self):
         arr = np.arange(10)
-        freq = np.timedelta64(1,'s')
+        freq = Seconds(1)
         ts = ConstantRateTimeSeries(arr, freq)
-        sl = TimeSlice(np.timedelta64(2,'s'),start = np.timedelta64(2,'s'))
+        sl = TimeSlice(Seconds(2), start = Seconds(2))
         ts2 = ts[sl]
         self.assertEqual(2,len(ts2))
     
     def test_can_index_constant_rate_time_series_with_integer_index(self):
         arr = np.arange(10)
-        freq = np.timedelta64(1,'s')
+        freq = Seconds(1)
         ts = ConstantRateTimeSeries(arr, freq)
         ts2 = ts[5]
         self.assertEqual(5, ts2)
     
     def test_can_slice_constant_rate_time_series_with_integer_indices(self):
         arr = np.arange(10)
-        freq = np.timedelta64(1,'s')
+        freq = Seconds(1)
         ts = ConstantRateTimeSeries(arr, freq)
         ts2 = ts[:5]
         self.assertEqual(5,len(ts2))
@@ -273,33 +279,32 @@ class TimeSeriesTests(unittest2.TestCase):
     
     def test_can_add_constant_factor_to_time_series(self):
         arr = np.arange(10)
-        freq = np.timedelta64(1,'s')
+        freq = Seconds(1)
         ts = ConstantRateTimeSeries(arr, freq)
         ts2 = ts + 10
-        self.assertTrue(np.all(np.arange(10,20) == ts2))
+        self.assertTrue(np.all(np.arange(10, 20) == ts2))
         self.assertIsInstance(ts2, ConstantRateTimeSeries)
     
     def test_get_index_error_when_using_out_of_range_int_index(self):
         arr = np.arange(10)
-        freq = np.timedelta64(1,'s')
+        freq = Seconds(1)
         ts = ConstantRateTimeSeries(arr, freq)
         self.assertRaises(IndexError, lambda : ts[100])
     
     def test_get_empty_time_series_when_using_out_of_range_time_slice(self):
         arr = np.arange(10)
-        freq = np.timedelta64(1,'s')
+        freq = Seconds(1)
         ts = ConstantRateTimeSeries(arr, freq)
-        sl = TimeSlice(np.timedelta64(2,'s'), start = np.timedelta64(11,'s'))
+        sl = TimeSlice(Seconds(2), start = Seconds(11))
         ts2 = ts[sl]
         self.assertEqual(0, ts2.size)
         self.assertIsInstance(ts2, ConstantRateTimeSeries)
     
     def test_time_slice_spanning_less_than_one_sample_returns_one_sample(self):
         arr = np.arange(10)
-        freq = np.timedelta64(1,'s')
+        freq = Seconds(1)
         ts = ConstantRateTimeSeries(arr, freq)
-        sl = TimeSlice(\
-           np.timedelta64(100,'ms'), start = np.timedelta64(1500,'ms'))
+        sl = TimeSlice(Milliseconds(100), start = Milliseconds(1500))
         ts2 = ts[sl]
         self.assertIsInstance(ts2, ConstantRateTimeSeries)
         self.assertEqual(1, ts2.size)
@@ -307,63 +312,52 @@ class TimeSeriesTests(unittest2.TestCase):
     
     def test_time_slice_spanning_multiple_samples_returns_all_samples(self):
         arr = np.arange(10)
-        freq = np.timedelta64(1,'s')
+        freq = Seconds(1)
         ts = ConstantRateTimeSeries(arr, freq)
-        sl = TimeSlice(\
-           np.timedelta64(2000,'ms'), start = np.timedelta64(1500,'ms'))
+        sl = TimeSlice(Milliseconds(2000), start = Milliseconds(1500))
         ts2 = ts[sl]
         self.assertIsInstance(ts2, ConstantRateTimeSeries)
         self.assertEqual(3, ts2.size)
-        self.assertEqual(1, ts2[0])
-        self.assertEqual(2, ts2[1])
-        self.assertEqual(3, ts2[2])
+        self.assertTrue(np.all(np.arange(1,4) == ts2))
     
     def test_frequency_and_duration_differ(self):
         arr = np.arange(10)
-        freq = np.timedelta64(1,'s')
-        duration = np.timedelta64(2,'s')
+        freq = Seconds(1)
+        duration = Seconds(2)
         ts = ConstantRateTimeSeries(arr, freq, duration)
-        sl = TimeSlice(np.timedelta64(2, 's'), start = np.timedelta64(1,'s'))
+        sl = TimeSlice(Seconds(2), start = Seconds(1))
         ts2 = ts[sl]
         self.assertIsInstance(ts2, ConstantRateTimeSeries)
         self.assertEqual(3, ts2.size)
-        self.assertEqual(0, ts2[0])
-        self.assertEqual(1, ts2[1])
-        self.assertEqual(2, ts2[2])
+        self.assertTrue(np.all(np.arange(3) == ts2))
     
     def test_frequency_and_duration_differ2(self):
         arr = np.arange(10)
-        freq = np.timedelta64(1,'s')
-        duration = np.timedelta64(3,'s')
+        freq = Seconds(1)
+        duration = Seconds(3)
         ts = ConstantRateTimeSeries(arr, freq, duration)
-        sl = TimeSlice(np.timedelta64(2, 's'), start = np.timedelta64(5,'s'))
+        sl = TimeSlice(Seconds(2), start = Seconds(5))
         ts2 = ts[sl]
         self.assertIsInstance(ts2, ConstantRateTimeSeries)
         self.assertEqual(4, ts2.size)
-        self.assertEqual(3, ts2[0])
-        self.assertEqual(4, ts2[1])
-        self.assertEqual(5, ts2[2])
-        self.assertEqual(6, ts2[3])
+        self.assertTrue(np.all(np.arange(3,7) == ts2))
     
     def test_frequency_and_duration_differ3(self):
         arr = np.arange(10)
-        freq = np.timedelta64(1,'s')
-        duration = np.timedelta64(3,'s')
+        freq = Seconds(1)
+        duration = Seconds(3)
         ts = ConstantRateTimeSeries(arr, freq, duration)
-        sl = TimeSlice(np.timedelta64(2, 's'), start = np.timedelta64(6,'s'))
+        sl = TimeSlice(Seconds(2), start = Seconds(6))
         ts2 = ts[sl]
         self.assertIsInstance(ts2, ConstantRateTimeSeries)
         self.assertEqual(4, ts2.size)
-        self.assertEqual(4, ts2[0])
-        self.assertEqual(5, ts2[1])
-        self.assertEqual(6, ts2[2])
-        self.assertEqual(7, ts2[3])
+        self.assertTrue(np.all(np.arange(4,8) == ts2))
     
     def test_frequency_less_than_one(self):
         arr = np.arange(10)
-        freq = np.timedelta64(500,'ms')
+        freq = Milliseconds(500)
         ts = ConstantRateTimeSeries(arr, freq)
-        sl = TimeSlice(np.timedelta64(2, 's'), start = np.timedelta64(600,'ms'))
+        sl = TimeSlice(Seconds(2), start = Milliseconds(600))
         ts2 = ts[sl]
         self.assertIsInstance(ts2, ConstantRateTimeSeries)
         self.assertEqual(5, ts2.size)
@@ -371,10 +365,10 @@ class TimeSeriesTests(unittest2.TestCase):
     
     def test_frequency_less_than_one_freq_and_duration_differ(self):
         arr = np.arange(10)
-        freq = np.timedelta64(500,'ms')
-        duration = np.timedelta64(1,'s')
+        freq = Milliseconds(500)
+        duration = Seconds(1)
         ts = ConstantRateTimeSeries(arr, freq, duration)
-        sl = TimeSlice(np.timedelta64(3, 's'), start = np.timedelta64(250, 'ms'))
+        sl = TimeSlice(Seconds(3), start = Milliseconds(250))
         ts2 = ts[sl]
         self.assertIsInstance(ts2, ConstantRateTimeSeries)
         self.assertEqual(7, ts2.size)
@@ -382,10 +376,10 @@ class TimeSeriesTests(unittest2.TestCase):
     
     def test_frequency_less_than_one_freq_and_duration_differ2(self):
         arr = np.arange(10)
-        freq = np.timedelta64(500,'ms')
-        duration = np.timedelta64(1,'s')
+        freq = Milliseconds(500)
+        duration = Seconds(1)
         ts = ConstantRateTimeSeries(arr, freq, duration)
-        sl = TimeSlice(np.timedelta64(3, 's'), start = np.timedelta64(1250, 'ms'))
+        sl = TimeSlice(Seconds(3), start = Milliseconds(1250))
         ts2 = ts[sl]
         self.assertIsInstance(ts2, ConstantRateTimeSeries)
         self.assertEqual(8, ts2.size)
@@ -393,10 +387,10 @@ class TimeSeriesTests(unittest2.TestCase):
     
     def test_duration_less_than_frequency(self):
         arr = np.arange(10)
-        freq = np.timedelta64(1, 's')
-        duration = np.timedelta64(500, 'ms')
+        freq = Seconds(1)
+        duration = Milliseconds(500)
         ts = ConstantRateTimeSeries(arr, freq, duration)
-        sl = TimeSlice(np.timedelta64(3,'s'), start = np.timedelta64(1250, 'ms'))
+        sl = TimeSlice(Seconds(3), start = Milliseconds(1250))
         ts2 = ts[sl]
         self.assertIsInstance(ts2, ConstantRateTimeSeries)
         self.assertEqual(4, ts2.size)
@@ -404,20 +398,20 @@ class TimeSeriesTests(unittest2.TestCase):
         
     def test_span_freq_and_duration_equal(self):
         arr = np.arange(10)
-        freq = np.timedelta64(1,'s')
+        freq = Seconds(1)
         ts = ConstantRateTimeSeries(arr, freq)
-        self.assertEqual(TimeSlice(np.timedelta64(10,'s')), ts.span)
+        self.assertEqual(TimeSlice(Seconds(10)), ts.span)
     
     def test_span_duration_greater_than_frequency(self):
         arr = np.arange(10)
-        freq = np.timedelta64(1,'s')
-        duration = np.timedelta64(2500,'ms')
+        freq = Seconds(1)
+        duration = Milliseconds(2500)
         ts = ConstantRateTimeSeries(arr, freq, duration)
-        self.assertEqual(TimeSlice(np.timedelta64(11500,'ms')), ts.span)
+        self.assertEqual(TimeSlice(Milliseconds(11500)), ts.span)
     
     def test_span_duration_less_than_frequency(self):
         arr = np.arange(10)
-        freq = np.timedelta64(1,'s')
-        duration = np.timedelta64(500,'ms')
+        freq = Seconds(1)
+        duration = Milliseconds(500)
         ts = ConstantRateTimeSeries(arr, freq, duration)
-        self.assertEqual(TimeSlice(np.timedelta64(9500,'ms')), ts.span)
+        self.assertEqual(TimeSlice(Milliseconds(9500)), ts.span)
