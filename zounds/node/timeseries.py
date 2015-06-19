@@ -45,7 +45,13 @@ class TimeSlice(object):
                t = np.timedelta64))
         
         self.duration = duration
-        self.start = start or np.timedelta64(0,'ns')
+        self.start = start or np.timedelta64(0,'s')
+    
+    def __add__(self, other):
+        return TimeSlice(self.duration, start = self.start + other)
+    
+    def __radd__(self, other):
+        return self.__add__(other)
     
     @property
     def end(self):
@@ -73,8 +79,8 @@ class TimeSlice(object):
     def __repr__(self):
         return '{cls}(duration = {duration}, start = {start})'.format(\
               cls = self.__class__.__name__,
-              duration = self.duration,
-              start = self.start)
+              duration = str(self.duration),
+              start = str(self.start))
     
     def __str__(self):
         return self.__repr__()
