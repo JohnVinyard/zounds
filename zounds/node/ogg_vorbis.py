@@ -1,7 +1,63 @@
-from flow import Node
+from __future__ import division
+from flow import Node, Decoder, Feature
 from audiostream import MemoryBuffer
 from soundfile import *
 from byte_depth import chunk_size_samples
+from timeseries import Microseconds, Seconds, TimeSlice
+
+class OggVorbisWrapper(object):
+    
+    def __init__(self, flo):
+        self._flo = flo
+        self._sf = SoundFile(self._flo)
+        self._freq = Microseconds(int((1 / self._sf.samplerate) * 1e6))
+    
+    def _n_samples(self, duration):
+        return int(duration / self._freq)
+    
+    def __getitem__(self, timeslice):
+        start_sample = int(timeslice.start / self._freq)
+        self._sf.seek(start_sample)
+        return self._sf.read(self._n_samples(timeslice.duration))
+    
+    def iter_chunks(self):
+        chunksize = Seconds(1)
+        ts = TimeSlice(chunksize)
+        sl = self[ts]
+        yield sl
+        while len(sl) >= self._n_samples(chunksize):
+            ts += chunksize
+            sl = self[ts]
+            yield sl
+
+class OggVorbisDecoder(Decoder):
+    
+    def __init__(self):
+        super(OggVorbisDecoder, self).__init__()
+    
+    def __call__(self, flo):
+        return OggVorbisWrapper(flo)
+    
+    def __iter__(self, flo):
+        yield self(flo)
+
+class OggVorbisFeature(Feature):
+    
+    def __init__(\
+         self, 
+         extractor, 
+         needs = None, 
+         store = False, 
+         key = None,
+         **extractor_args):
+        
+        super(OggVorbisFeature, self).__init__(\
+               extractor,
+               needs = needs,
+               store = store,
+               decoder = OggVorbisDecoder(),
+               key = key,
+               **extractor_args)
 
 class OggVorbis(Node):
     
