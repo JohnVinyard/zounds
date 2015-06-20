@@ -16,6 +16,9 @@ class OggVorbisWrapper(object):
         return int(duration / self._freq)
     
     def __getitem__(self, timeslice):
+        if timeslice == slice(None):
+            return self._sf[:]
+        
         start_sample = int(timeslice.start / self._freq)
         self._sf.seek(start_sample)
         return self._sf.read(self._n_samples(timeslice.duration))
