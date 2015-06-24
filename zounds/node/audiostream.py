@@ -1,21 +1,8 @@
 from flow import Node,ByteStream,Graph
 from soundfile import SoundFile
 from io import BytesIO
-import numpy as np
 from byte_depth import chunk_size_samples
-
-class Samples(np.ndarray):
-
-    def __new__(cls, input_array, samplerate = None, channels = None):
-        obj = np.asarray(input_array).view(cls)
-        obj.samplerate = samplerate
-        obj.channels = channels
-        return obj
-
-    def __array_finalize__(self, obj):
-        if obj is None: return
-        self.samplerate = getattr(obj, 'samplerate', None)
-        self.channels = getattr(obj, 'channels', None)  
+from timeseries import ConstantRateTimeSeries, Picoseconds
 
 class AudioStream(Node):
     
@@ -43,9 +30,8 @@ class AudioStream(Node):
         samples = self._sf.read(self._chunk_size_samples)
         if self._sum_to_mono:
             samples = samples.sum(axis = 1) * 0.5
-        channels = 1 if len(samples.shape) == 1 else samples.shape[1]
-        return Samples(\
-            samples, samplerate = self._sf.samplerate, channels = channels)
+        freq = Picoseconds(int(1e12)) / self._sf.samplerate 
+        return ConstantRateTimeSeries(samples, freq)
     
     def _process(self,data):
         b = data
@@ -69,6 +55,8 @@ class AudioStream(Node):
             yield samples
             samples = self._get_samples()
 
+# TODO: Is this class really necessary?  There must be a better way to handle
+# this.
 class MemoryBuffer(object):
     
     def __init__(self,content_length, max_size = 10 * 1024 * 1024):

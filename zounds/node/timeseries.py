@@ -1,5 +1,6 @@
 import numpy as np
 import unittest2
+from flow import NumpyMetaData
 
 class Hours(np.timedelta64):
     
@@ -30,6 +31,11 @@ class Nanoseconds(np.timedelta64):
     
     def __new__(cls, nanoseconds):
         return np.timedelta64(nanoseconds, 'ns')
+
+class Picoseconds(np.timedelta64):
+    
+    def __new__(cls, picoseconds):
+        return np.timedelta64(picoseconds, 'ps')
 
 class TimeSlice(object):
     
@@ -92,11 +98,37 @@ class TimeSeries(object):
     def __init__(self):
         super(TimeSeries, self).__init__()
 
+class ConstantRateTimeSeriesMetadata(NumpyMetaData):
+    
+    def __init__(\
+         self, 
+         dtype = None, 
+         shape = None, 
+         frequency = None, 
+         duration = None):
+        
+        super(ConstantRateTimeSeriesMetadata, self).__init__(\
+            dtype = dtype, shape = shape)
+        self.frequency = frequency
+        self.duration = duration
+    
+    def __repr__(self):
+        return repr((
+             str(np.dtype(self.dtype)), 
+             self.shape,
+             # TODO: This won't work! np.timedelta64.__repr__() isn't reversible
+             # by using eval()
+             self.frequency,
+             self.duration
+         ))
+
 class ConstantRateTimeSeries(np.ndarray):
     '''
     A TimeSeries implementation with samples of a constant duration and 
     frequency.
     '''
+    __array_priority__ = 10.0
+    
     def __new__(cls, input_array, frequency, duration = None):
         
         if not isinstance(frequency, np.timedelta64):
@@ -106,11 +138,20 @@ class ConstantRateTimeSeries(np.ndarray):
         if duration != None and not isinstance(duration, np.timedelta64):
             raise ValueError('start must be of type {t}'.format(\
                t = np.timedelta64))
-            
+        
         obj = np.asarray(input_array).view(cls)
         obj.frequency = frequency
         obj.duration = duration or frequency
         return obj
+
+    def concatenate(self, other):
+        if self.frequency == other.frequency and self.duration == other.duration:
+            return np.concatenate([self, other])
+        raise ValueError(\
+         'self and other must have the same sample frequency and sample duration')
+
+    def samplerate(self, duration = Seconds(1)):
+        return duration / self.frequency
     
     @property
     def span(self):
@@ -121,7 +162,7 @@ class ConstantRateTimeSeries(np.ndarray):
         if obj is None: return
         self.frequency = getattr(obj, 'frequency', None)
         self.duration = getattr(obj, 'duration', None)
-    
+        
     def __getitem__(self, index):
         if isinstance(index, TimeSlice):
             diff = self.duration - self.frequency
@@ -430,3 +471,52 @@ class TimeSeriesTests(unittest2.TestCase):
         duration = Milliseconds(500)
         ts = ConstantRateTimeSeries(arr, freq, duration)
         self.assertEqual(TimeSlice(Milliseconds(9500)), ts.span)
+    
+    def test_samplerate_one_per_second(self):
+        arr = np.arange(10)
+        freq = Seconds(1)
+        ts = ConstantRateTimeSeries(arr, freq)
+        self.assertEqual(1, ts.samplerate())
+    
+    def test_samplerate_two_per_second(self):
+        arr = np.arange(10)
+        freq = Milliseconds(500)
+        ts = ConstantRateTimeSeries(arr, freq)
+        self.assertEqual(2, ts.samplerate())
+    
+    def test_samplerate_three_per_second(self):
+        arr = np.arange(10)
+        freq = Milliseconds(333)
+        ts = ConstantRateTimeSeries(arr, freq)
+        self.assertEqual(3, int(ts.samplerate()))
+    
+    def test_samplerate_audio(self):
+        arr = np.arange(10)
+        freq = Picoseconds(int(1e12)) / 44100.
+        ts = ConstantRateTimeSeries(arr, freq)
+        self.assertEqual(44100, int(ts.samplerate()))
+    
+    def test_concatenation_with_differing_freqs_and_durations_raises(self):
+        ts = ConstantRateTimeSeries(\
+            np.arange(10),
+            Seconds(1),
+            Seconds(2))
+        ts2 = ConstantRateTimeSeries(\
+             np.arange(10, 20),
+             Seconds(1),
+             Seconds(1)) 
+        self.assertRaises(ValueError, lambda : ts.concatenate(ts2))
+        
+    def test_concatenation_with_matching_freqs_and_duration_results_in_crts(self):
+        ts = ConstantRateTimeSeries(\
+            np.ones((10, 3)),
+            Seconds(1),
+            Seconds(2))
+        ts2 = ConstantRateTimeSeries(\
+             np.ones((13, 3)),
+             Seconds(1),
+             Seconds(2))
+        result = ts.concatenate(ts2)
+        self.assertIsInstance(result, ConstantRateTimeSeries)
+        self.assertEqual((23, 3), result.shape)
+        

@@ -1,4 +1,5 @@
 from __future__ import division
+from timeseries import Picoseconds, ConstantRateTimeSeries
 from ctypes import *
 import numpy as np
 libsamplerate = CDLL('libsamplerate.so')
@@ -25,7 +26,7 @@ class Resample(object):
     intended for one-time use. New instances should be created for each sound\
     file processed.
     '''    
-    def __init__(self,orig_sample_rate,new_sample_rate,\
+    def __init__(self,orig_sample_rate, new_sample_rate,\
                  nchannels = 1, converter_type = 1):
         '''
         orig_sample_rate - The sample rate of the incoming samples, in hz
@@ -101,29 +102,39 @@ class Resample(object):
 
 class Resampler(Node):
     
-    def __init__(self, samplerate = 44100, needs = None):
+    def __init__(self, samplerate = None, needs = None):
         super(Resampler,self).__init__(needs = needs)
-        self._samplerate = samplerate
+        self._samplerate = samplerate or (Picoseconds(int(1e12)) / 44100.)
         self._resample = None
     
-    def _noop(self,data,finalized):
+    def _noop(self, data, finalized):
         return data
     
-    def _process(self,data):
-        if self._resample is None:
+    def _process(self, data):
+        sr = int(data.samplerate())
+        
+        if self._resample is None:    
+            target_sr = int(Picoseconds(int(1e12)) / self._samplerate)
             self._resample = Resample(\
-              data.samplerate,
-              self._samplerate, 
-              data.channels)
+              sr,
+              target_sr, 
+              1 if len(data.shape) == 1 else data.shape[1])
             
-            if self._samplerate != data.samplerate:
+            if target_sr != sr:
                 self._rs = self._resample
                 # KLUDGE: The following line seems to solve a bug whereby 
                 # libsamplerate doesn't generate enough samples the first time
                 # src_process is called. We're calling it once here, so the "real"
                 # output will come out click-free
-                self._resample(np.zeros(self._samplerate,dtype = np.float32))
+                self._resample(np.zeros(target_sr, dtype = np.float32))
             else:
                 self._rs = self._noop
         
-        yield self._rs(data, self._finalized)
+        resampled = self._rs(data, self._finalized)
+        if not isinstance(resampled, ConstantRateTimeSeries):
+            resampled = ConstantRateTimeSeries(resampled, self._samplerate)
+        
+        print sr
+        print resampled.samplerate()
+        print '============================================'
+        yield resampled
