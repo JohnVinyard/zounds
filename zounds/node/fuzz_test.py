@@ -157,7 +157,7 @@ class FuzzTests(unittest2.TestCase):
 
 def suite():
     suite = unittest2.TestSuite()
-    for _ in xrange(100):
+    for _ in xrange(10):
         seconds = (np.random.random_sample() * 50)
         min_size = 4 * 96000 * 5 * 2
         chunksize = min_size + (np.random.randint(0, 4 * 96000 * 25 * 2))
