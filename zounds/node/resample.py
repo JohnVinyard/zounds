@@ -134,7 +134,4 @@ class Resampler(Node):
         if not isinstance(resampled, ConstantRateTimeSeries):
             resampled = ConstantRateTimeSeries(resampled, self._samplerate)
         
-        print sr
-        print resampled.samplerate()
-        print '============================================'
         yield resampled
