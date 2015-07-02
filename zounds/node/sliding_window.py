@@ -1,7 +1,7 @@
 from flow import Node, NotEnoughData
 import numpy as np
 from zounds.nputil import windowed
-from timeseries import Picoseconds
+from timeseries import Picoseconds, Seconds, ConstantRateTimeSeries
 
 def oggvorbis(s):
     '''
@@ -44,13 +44,14 @@ class WindowingScheme(object):
     def __init__(self, duration, frequency):
         self.duration = duration
         self.frequency = frequency
+        super(WindowingScheme, self).__init__()
 
 class HalfLapped(WindowingScheme):
     
     def __init__(self):
         one_sample_at_44100 = Picoseconds(int(1e12)) / 44100.
-        window = one_sample_at_44100 * 2048
-        step = window / 2
+        window = one_sample_at_44100 * 2048.
+        step = one_sample_at_44100 * 1024.
         super(HalfLapped, self).__init__(window, step)
 
 class SlidingWindow(Node):
@@ -67,7 +68,7 @@ class SlidingWindow(Node):
             self._windowsize = int(self._scheme.duration / data.frequency)
             self._stepsize = int(self._scheme.frequency / data.frequency)
         else:
-            self._cache = np.concatenate([self._cache, data])
+            np.concatenate([self._cache, data])
     
     def _dequeue(self):
         leftover, arr = windowed(\
@@ -75,7 +76,7 @@ class SlidingWindow(Node):
              self._windowsize,
              self._stepsize, 
              dopad = self._finalized)
-            
+
         self._cache = leftover
         
         if not arr.size:
@@ -84,4 +85,7 @@ class SlidingWindow(Node):
         # BUG: Order matters here (try arr * self._func instead)
         # why does that statement result in __rmul__ being called for each
         # scalar value in arr?
-        return (self._func * arr) if self._func else arr
+        out = (self._func * arr) if self._func else arr
+        out = ConstantRateTimeSeries(\
+              out, self._scheme.frequency, self._scheme.duration)
+        return out

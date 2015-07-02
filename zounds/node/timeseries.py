@@ -1,6 +1,6 @@
 import numpy as np
 import unittest2
-from flow import NumpyMetaData
+from flow import NumpyMetaData, Node, Feature, Decoder
 
 class Hours(np.timedelta64):
     
@@ -43,12 +43,12 @@ class TimeSlice(object):
         super(TimeSlice, self).__init__()
         
         if not isinstance(duration, np.timedelta64):
-            raise ValueError('duration must be of type {t}'.format(\
-               t = np.timedelta64))
+            raise ValueError('duration must be of type {t} but was {t2}'.format(\
+               t = np.timedelta64, t2 = duration.__class__))
         
         if start != None and not isinstance(start, np.timedelta64):
-            raise ValueError('start must be of type {t}'.format(\
-               t = np.timedelta64))
+            raise ValueError('start must be of type {t} but was {t2}'.format(\
+               t = np.timedelta64, t2 = start.__class__))
         
         self.duration = duration
         self.start = start or np.timedelta64(0,'s')
@@ -109,19 +109,99 @@ class ConstantRateTimeSeriesMetadata(NumpyMetaData):
         
         super(ConstantRateTimeSeriesMetadata, self).__init__(\
             dtype = dtype, shape = shape)
-        self.frequency = frequency
-        self.duration = duration
+        self.frequency = self._decode_timedelta(frequency)
+        self.duration = self._decode_timedelta(duration)
+    
+    def _encode_timedelta(self, td):
+        return (td.astype(np.uint64).tostring(), str(td.dtype)[-3:-1])
+
+    def _decode_timedelta(self, t):
+        if isinstance(t, np.timedelta64):
+            return t
+        
+        v = np.fromstring(t[0], dtype = np.uint64)[0]
+        s = t[1] 
+        return np.timedelta64(long(v), s)
     
     def __repr__(self):
         return repr((
              str(np.dtype(self.dtype)), 
              self.shape,
-             # TODO: This won't work! np.timedelta64.__repr__() isn't reversible
-             # by using eval()
-             self.frequency,
-             self.duration
+             self._encode_timedelta(self.frequency),
+             self._encode_timedelta(self.duration)
          ))
 
+class ConstantRateTimeSeriesEncoder(Node):
+    
+    content_type = 'application/octet-stream'
+    
+    def __init__(self, needs = None):
+        super(ConstantRateTimeSeriesEncoder, self).__init__(needs = needs)
+        self.metadata = None
+    
+    def _process(self, data):
+        
+        if not self.metadata:
+            self.metadata = ConstantRateTimeSeriesMetadata(\
+                dtype = data.dtype, 
+                shape = data.shape[1:],
+                frequency = data.frequency,
+                duration = data.duration)
+            packed = self.metadata.pack()
+            yield packed
+        
+        encoded = data.tostring()
+        yield encoded
+
+def _np_from_buffer(b, shape, dtype, freq, duration):
+    f = np.frombuffer if len(b) else np.fromstring
+    shape = tuple(int(x) for x in shape)
+    f = f(b, dtype = dtype).reshape(shape)
+    return ConstantRateTimeSeries(f, freq, duration)
+
+class GreedyConstantRateTimeSeriesDecoder(Decoder):
+    
+    def __init__(self):
+        super(GreedyConstantRateTimeSeriesDecoder, self).__init__()
+
+    def __call__(self,flo):
+        metadata, bytes_read = ConstantRateTimeSeriesMetadata.unpack(flo)
+        
+        leftovers = flo.read()
+        leftover_bytes = len(leftovers)
+        first_dim = leftover_bytes / metadata.totalsize
+        dim = (first_dim,) + metadata.shape
+        out = _np_from_buffer(\
+           leftovers,
+           dim,
+           metadata.dtype, 
+           metadata.frequency, 
+           metadata.duration)
+        return out
+
+    def __iter__(self,flo):
+        yield self(flo)
+
+class ConstantRateTimeSeriesFeature(Feature):
+    
+    def __init__(\
+        self,
+        extractor,
+        needs = None,
+        store = False,
+        key = None,
+        decoder = GreedyConstantRateTimeSeriesDecoder(),
+        **extractor_args):
+        
+        super(ConstantRateTimeSeriesFeature ,self).__init__(\
+            extractor,
+            needs = needs,
+            store = store,
+            encoder = ConstantRateTimeSeriesEncoder,
+            decoder = decoder,
+            key = key,
+            **extractor_args)
+        
 class ConstantRateTimeSeries(np.ndarray):
     '''
     A TimeSeries implementation with samples of a constant duration and 
@@ -132,12 +212,12 @@ class ConstantRateTimeSeries(np.ndarray):
     def __new__(cls, input_array, frequency, duration = None):
         
         if not isinstance(frequency, np.timedelta64):
-            raise ValueError('duration must be of type {t}'.format(\
-               t = np.timedelta64))
+            raise ValueError('duration must be of type {t} but was {t2}'.format(\
+               t = np.timedelta64, t2 = frequency.__class__))
         
         if duration != None and not isinstance(duration, np.timedelta64):
-            raise ValueError('start must be of type {t}'.format(\
-               t = np.timedelta64))
+            raise ValueError('start must be of type {t} but was {t2}'.format(\
+               t = np.timedelta64, t2 = duration.__class__))
         
         obj = np.asarray(input_array).view(cls)
         obj.frequency = frequency
@@ -146,7 +226,10 @@ class ConstantRateTimeSeries(np.ndarray):
 
     def concatenate(self, other):
         if self.frequency == other.frequency and self.duration == other.duration:
-            return np.concatenate([self, other])
+            return ConstantRateTimeSeries(\
+                  np.concatenate([self, other]),
+                  frequency = self.frequency,
+                  duration = self.duration)
         raise ValueError(\
          'self and other must have the same sample frequency and sample duration')
 
