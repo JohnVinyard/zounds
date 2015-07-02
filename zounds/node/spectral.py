@@ -4,6 +4,7 @@ from scipy.fftpack import dct
 from zounds.analyze.psychoacoustics import \
     Chroma as ChromaScale, Bark as BarkScale
 from zounds.nputil import safe_log
+from zounds.node.timeseries import ConstantRateTimeSeries
 
 class FFT(Node):
     
@@ -15,7 +16,10 @@ class FFT(Node):
         transformed = np.fft.rfft(data, axis = self._axis)
         sl = [slice(None) for _ in xrange(len(transformed.shape))]
         sl[self._axis] = slice(1, None)
-        yield np.abs(transformed[sl])
+        yield ConstantRateTimeSeries(\
+             np.abs(transformed[sl]), 
+             data.frequency, 
+             data.duration)
 
 class DCT(Node):
     
@@ -24,7 +28,10 @@ class DCT(Node):
         self._axis = axis
     
     def _process(self, data):
-        yield dct(data, norm = 'ortho', axis = self._axis)
+        yield ConstantRateTimeSeries(\
+             dct(data, norm = 'ortho', axis = self._axis),
+             data.frequency,
+             data.duration)
 
 # TODO: This constructor should not take a samplerate; that information should
 # be encapsulated in the data that's passed in
