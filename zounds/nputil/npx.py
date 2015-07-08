@@ -209,6 +209,7 @@ def windowed(a,windowsize,stepsize = None,dopad = False):
                      If true, the input array is padded with zeros so that all
                      samples are used. 
     '''
+    print a.strides
     if windowsize < 1:
         raise ValueError('windowsize must be greater than or equal to one')
     
@@ -243,17 +244,28 @@ def windowed(a,windowsize,stepsize = None,dopad = False):
     
     if 0 == a.shape[0]:
         return leftover,np.zeros(a.shape, dtype = a.dtype)
-
     
     n = 1+(a.shape[0]-windowsize)//(stepsize)
     s = a.strides[0]
     newshape = (n,windowsize)+a.shape[1:]
     newstrides = (stepsize*s,s) + a.strides[1:]
+    
+#    print '$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$'
+#    print a.strides
+#    print windowsize
+#    print stepsize
+#    print newshape
+#    print newstrides
+#    print a.shape
+#    print a.dtype
+#    print '$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$'
+    
     return leftover,np.ndarray.__new__(\
-            np.ndarray,strides=newstrides,shape=newshape,buffer=a,dtype=a.dtype)
-
-
-
+        np.ndarray, 
+        strides = newstrides, 
+        shape = newshape, 
+        buffer = a,
+        dtype = a.dtype)
             
 def sliding_window(a,ws,ss = None,flatten = True):
     '''

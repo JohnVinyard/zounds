@@ -1,7 +1,7 @@
 from flow import Node, NotEnoughData
 import numpy as np
 from zounds.nputil import windowed
-from timeseries import Picoseconds, Seconds, ConstantRateTimeSeries
+from timeseries import ConstantRateTimeSeries
 
 def oggvorbis(s):
     '''
@@ -31,6 +31,11 @@ class WindowingFunc(object):
     def __rmul__(self, other):
         return self.__mul__(other)
 
+class IdentityWindowingFunc(WindowingFunc):
+    
+    def __init__(self):
+        super(IdentityWindowingFunc, self).__init__()
+
 class OggVorbisWindowingFunc(WindowingFunc):
     
     def __init__(self):
@@ -39,32 +44,36 @@ class OggVorbisWindowingFunc(WindowingFunc):
     def _wdata(self, size):
         return oggvorbis(size)
 
-class WindowingScheme(object):
-    
-    def __init__(self, duration, frequency):
-        self.duration = duration
-        self.frequency = frequency
-        super(WindowingScheme, self).__init__()
+# TODO: Replace these with the SampleRate-derived classes from samplerate
+#class WindowingScheme(object):
+#    
+#    def __init__(self, duration, frequency):
+#        self.duration = duration
+#        self.frequency = frequency
+#        super(WindowingScheme, self).__init__()
+#
+#class HalfLapped(WindowingScheme):
+#    
+#    def __init__(self):
+#        one_sample_at_44100 = Picoseconds(int(1e12)) / 44100.
+#        window = one_sample_at_44100 * 2048.
+#        step = one_sample_at_44100 * 1024.
+#        super(HalfLapped, self).__init__(window, step)
 
-class HalfLapped(WindowingScheme):
-    
-    def __init__(self):
-        one_sample_at_44100 = Picoseconds(int(1e12)) / 44100.
-        window = one_sample_at_44100 * 2048.
-        step = one_sample_at_44100 * 1024.
-        super(HalfLapped, self).__init__(window, step)
 
 class SlidingWindow(Node):
     
-    def __init__(self, wscheme, wfunc, needs = None):
+    def __init__(self, wscheme, wfunc = None, needs = None):
         super(SlidingWindow, self).__init__(needs = needs)
         self._scheme = wscheme
-        self._func = wfunc
+        self._func = wfunc or IdentityWindowingFunc()
         self._cache = None
     
     def _enqueue(self, data, pusher):
         if self._cache is None:
             self._cache = data
+            # BUG: I Think this may only work in cases where frequency and
+            # duration are the same
             self._windowsize = int(self._scheme.duration / data.frequency)
             self._stepsize = int(self._scheme.frequency / data.frequency)
         else:
