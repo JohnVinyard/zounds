@@ -54,7 +54,10 @@ class Chroma(Node):
         if self._chroma_scale is None:
             self._chroma_scale = ChromaScale(\
                  self._samplerate, data.shape[1] * 2, nbands = self._nbins)
-        yield self._chroma_scale.transform(data)
+        yield ConstantRateTimeSeries(\
+             self._chroma_scale.transform(data),
+             data.frequency,
+             data.duration)
 
 # TODO: This constructor should not take a samplerate; that information should
 # be encapsulated in the data that's passed in
@@ -83,7 +86,10 @@ class BarkBands(Node):
                  self._n_bands,
                  self._start_freq_hz,
                  self._stop_freq_hz)
-        yield self._bark_scale.transform(data)
+        yield ConstantRateTimeSeries(\
+             self._bark_scale.transform(data),
+             data.frequency,
+             data.duration)
 
 class BFCC(Node):
     
@@ -93,7 +99,9 @@ class BFCC(Node):
         self._exclude = exclude
     
     def _process(self, data):
-        yield dct(safe_log(data),axis = 1)\
+        bfcc = dct(safe_log(data),axis = 1)\
             [:,self._exclude : self._exclude + self._n_coeffs]
+        yield ConstantRateTimeSeries(\
+             bfcc.copy(), data.frequency, data.duration)
     
         
