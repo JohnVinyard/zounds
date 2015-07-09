@@ -1,7 +1,9 @@
 import unittest2
 from flow import NumpyMetaData, Node, Feature, Decoder
-from duration import *
-
+import numpy as np
+from duration import \
+    Picoseconds, Milliseconds, Seconds, Microseconds, Nanoseconds, Hours
+from samplerate import SampleRate
 
 class TimeSlice(object):
     
@@ -199,8 +201,17 @@ class ConstantRateTimeSeries(np.ndarray):
         raise ValueError(\
          'self and other must have the same sample frequency and sample duration')
 
-    def samplerate(self, duration = Seconds(1)):
-        return duration / self.frequency
+    @property
+    def samples_per_second(self):
+        return int(Picoseconds(int(1e12)) / self.frequency)
+    
+    @property
+    def samplerate(self):
+        return SampleRate(self.frequency, self.duration)
+    
+    @property
+    def overlap(self):
+        return self.samplerate.overlap
     
     @property
     def span(self):
