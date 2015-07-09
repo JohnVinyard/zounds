@@ -61,11 +61,11 @@ class SR11025(AudioSampleRate):
 
 class HalfLapped(SampleRate):
     
-    def __init__(self, samplerate):
+    def __init__(self):
         one_sample_at_44100 = Picoseconds(int(1e12)) / 44100.
         window = one_sample_at_44100 * 2048.
         step = one_sample_at_44100 * 1024.
-        super(HalfLapped, self).__init__(window, step) 
+        super(HalfLapped, self).__init__(step, window) 
 
 class SampleRateTests(unittest2.TestCase):
     
@@ -118,5 +118,5 @@ class SampleRateTests(unittest2.TestCase):
     def test_multiply_some_overlap_two_values(self):
         sr = SampleRate(Seconds(1), Seconds(2)) * (2, 4)
         self.assertEqual(Seconds(2), sr.frequency)
-        self.assertEqual(Seconds(5), sr.duration)
+        self.assertEqual(Seconds(5), sr.duration) 
         

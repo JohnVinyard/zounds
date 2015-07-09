@@ -112,11 +112,10 @@ class Resampler(Node):
         return data
     
     def _process(self, data):
-        sr = int(data.samplerate())
+        sr = data.samples_per_second
         
         if self._resample is None:    
             target_sr = self._samplerate.samples_per_second
-            print sr, target_sr
             self._resample = Resample(\
               sr,
               target_sr, 

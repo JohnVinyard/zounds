@@ -5,6 +5,7 @@ from zounds.analyze.psychoacoustics import \
     Chroma as ChromaScale, Bark as BarkScale
 from zounds.nputil import safe_log
 from zounds.node.timeseries import ConstantRateTimeSeries
+from zounds.node.samplerate import SR44100
 
 class FFT(Node):
     
@@ -40,7 +41,7 @@ class Chroma(Node):
     def __init__(\
          self, 
          needs = None, 
-         samplerate = 44100., 
+         samplerate = SR44100(), 
          nbins = 12, 
          a440 = 440.):
         
@@ -53,7 +54,10 @@ class Chroma(Node):
     def _process(self, data):
         if self._chroma_scale is None:
             self._chroma_scale = ChromaScale(\
-                 self._samplerate, data.shape[1] * 2, nbands = self._nbins)
+                 self._samplerate.samples_per_second, 
+                 data.shape[1] * 2, 
+                 nbands = self._nbins)
+        
         yield ConstantRateTimeSeries(\
              self._chroma_scale.transform(data),
              data.frequency,
@@ -66,7 +70,7 @@ class BarkBands(Node):
     def __init__(\
          self, 
          needs = None,
-         samplerate = 44100., 
+         samplerate = SR44100(), 
          n_bands = 100, 
          start_freq_hz = 50, 
          stop_freq_hz = 2e4):
@@ -81,7 +85,7 @@ class BarkBands(Node):
     def _process(self, data):
         if self._bark_scale is None:
             self._bark_scale = BarkScale(\
-                 self._samplerate, 
+                 self._samplerate.samples_per_second, 
                  data.shape[1] * 2, 
                  self._n_bands,
                  self._start_freq_hz,
