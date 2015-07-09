@@ -74,6 +74,7 @@ class SlidingWindow(Node):
             self._cache = data
             # BUG: I Think this may only work in cases where frequency and
             # duration are the same
+            raise Exception('Fix this bug')
             self._windowsize = int(self._scheme.duration / data.frequency)
             self._stepsize = int(self._scheme.frequency / data.frequency)
         else:
