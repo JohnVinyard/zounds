@@ -27,12 +27,12 @@ class SampleRate(object):
 class AudioSampleRate(SampleRate):
     
     def __init__(self, samples_per_second):
-        one_sample = int(Picoseconds(int(1e12)) // samples_per_second)
+        one_sample = Picoseconds(int(1e12)) // samples_per_second
         super(AudioSampleRate, self).__init__(one_sample, one_sample)
     
     @property
     def samples_per_second(self):
-        return Picoseconds(int(1e12)) / self.frequency
+        return int(Picoseconds(int(1e12)) / self.frequency)
     
 class SR96000(AudioSampleRate):
     

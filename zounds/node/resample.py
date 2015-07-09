@@ -2,6 +2,7 @@ from __future__ import division
 from timeseries import Picoseconds, ConstantRateTimeSeries
 from ctypes import *
 import numpy as np
+from samplerate import SR44100
 libsamplerate = CDLL('libsamplerate.so')
 
 from flow import Node
@@ -104,7 +105,7 @@ class Resampler(Node):
     
     def __init__(self, samplerate = None, needs = None):
         super(Resampler,self).__init__(needs = needs)
-        self._samplerate = samplerate or (Picoseconds(int(1e12)) / 44100.)
+        self._samplerate = samplerate or SR44100()
         self._resample = None
     
     def _noop(self, data, finalized):
@@ -114,7 +115,8 @@ class Resampler(Node):
         sr = int(data.samplerate())
         
         if self._resample is None:    
-            target_sr = int(Picoseconds(int(1e12)) / self._samplerate)
+            target_sr = self._samplerate.samples_per_second
+            print sr, target_sr
             self._resample = Resample(\
               sr,
               target_sr, 
@@ -132,6 +134,7 @@ class Resampler(Node):
         
         resampled = self._rs(data, self._finalized)
         if not isinstance(resampled, ConstantRateTimeSeries):
-            resampled = ConstantRateTimeSeries(resampled, self._samplerate)
+            resampled = ConstantRateTimeSeries(\
+               resampled, self._samplerate.frequency)
         
         yield resampled

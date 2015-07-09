@@ -15,6 +15,7 @@ from random import choice
 from audiostream import AudioStream
 from ogg_vorbis import OggVorbis
 from resample import Resampler
+from samplerate import SR44100
 
 _sample_rates = (11025, 22050, 44100, 48000, 88200, 96000)
 _channels = (1, 2)
@@ -76,7 +77,7 @@ class FuzzTests(unittest2.TestCase):
             
             resampled = NumpyFeature(\
                 Resampler,
-                samplerate = 44100.,
+                samplerate = SR44100(),
                 needs = pcm,
                 store = True)
         return Document
