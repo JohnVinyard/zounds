@@ -8,7 +8,7 @@ import unittest2
 from zounds.node.audiostream import AudioStream
 from zounds.node.ogg_vorbis import OggVorbis, OggVorbisFeature
 from zounds.node.resample import Resampler
-from zounds.node.spectral import FFT
+from zounds.node.spectral import FFT, Chroma
 from zounds.node.sliding_window import SlidingWindow, OggVorbisWindowingFunc
 from zounds.node.timeseries import ConstantRateTimeSeriesFeature
 from zounds.node.samplerate import SR44100, HalfLapped
@@ -53,6 +53,12 @@ class Document(BaseModel):
         FFT,
         needs = windowed,
         store = True)
+    
+    chroma = ConstantRateTimeSeriesFeature(\
+        Chroma,
+        needs = fft,
+        samplerate = samplerate,
+        store = True)
 
 class HasUri(object):
     
@@ -91,6 +97,8 @@ class IntegrationTests(unittest2.TestCase):
         bio = soundfile(seconds = 10.)
         _id = Document.process(raw = bio)
         doc = Document(_id)
+        print 'COMPUTING'
+        print 'rehydrated', doc.resampled.shape, doc.resampled.frequency, doc.resampled.duration
         self.assertEqual(doc.windowed.shape[0], doc.fft.shape[0])
     
     

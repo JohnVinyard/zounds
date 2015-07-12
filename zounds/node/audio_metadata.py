@@ -55,7 +55,6 @@ class MetaData(Node):
         uri = data
         if os.path.exists(uri):
             sf = SoundFile(uri)
-            print sf.format
             yield AudioMetaData(\
                  uri = uri, 
                  samplerate = sf.samplerate, 
