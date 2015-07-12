@@ -107,7 +107,6 @@ class Resampler(Node):
         super(Resampler,self).__init__(needs = needs)
         self._samplerate = samplerate or SR44100()
         self._resample = None
-        self._processed = 0
     
     def _noop(self, data, finalized):
         return data
@@ -136,5 +135,4 @@ class Resampler(Node):
         if not isinstance(resampled, ConstantRateTimeSeries):
             resampled = ConstantRateTimeSeries(\
                resampled, self._samplerate.frequency)
-        self._processed += len(resampled)
         yield resampled

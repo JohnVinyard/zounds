@@ -3,7 +3,7 @@ from flow import Node, Decoder, Feature
 from audiostream import MemoryBuffer
 from soundfile import *
 from byte_depth import chunk_size_samples
-from duration import Microseconds, Seconds
+from duration import Picoseconds, Seconds
 from timeseries import TimeSlice
 
 class OggVorbisWrapper(object):
@@ -11,7 +11,8 @@ class OggVorbisWrapper(object):
     def __init__(self, flo):
         self._flo = flo
         self._sf = SoundFile(self._flo)
-        self._freq = Microseconds(int((1 / self._sf.samplerate) * 1e6))
+        #self._freq = Microseconds(int((1 / self._sf.samplerate) * 1e6))
+        self._freq = Picoseconds(int(1e12)) / self._sf.samplerate
     
     def _n_samples(self, duration):
         return int(duration / self._freq)

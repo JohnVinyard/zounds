@@ -10,7 +10,8 @@ from ogg_vorbis import OggVorbis, OggVorbisFeature
 from resample import Resampler
 from spectral import FFT, Chroma, BarkBands, BFCC
 from sliding_window import SlidingWindow, OggVorbisWindowingFunc
-from timeseries import ConstantRateTimeSeriesFeature
+from duration import Seconds, Milliseconds
+from timeseries import ConstantRateTimeSeriesFeature, TimeSlice
 from samplerate import SR44100, HalfLapped
 from basic import Max
 
@@ -146,3 +147,17 @@ class IntegrationTests(unittest2.TestCase):
         self.assertEqual(\
          5, self.doc.bfcc_pooled.duration / self.doc.bfcc.frequency)
     
+    def test_can_get_second_long_slice_from_ogg_vorbis_feature(self):
+        ogg = self.doc.ogg
+        samples = ogg[TimeSlice(Seconds(1), start = Seconds(5))]
+        self.assertEqual(44100, len(samples))
+    
+    def test_can_get_entirety_of_ogg_vorbis_feature_with_slice(self):
+        ogg = self.doc.ogg
+        samples = ogg[:]
+        self.assertEqual(441000, len(samples))
+    
+    def test_can_get_end_of_ogg_vorbis_feature_with_slice(self):
+        ogg = self.doc.ogg
+        samples = ogg[TimeSlice(Seconds(1), Milliseconds(9500))]
+        self.assertEqual(22050, len(samples))
