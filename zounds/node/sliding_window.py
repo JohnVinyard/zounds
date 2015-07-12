@@ -61,7 +61,7 @@ class SlidingWindow(Node):
                 int((self._scheme.duration - data.overlap) / data.frequency)
             self._stepsize = int(self._scheme.frequency / data.frequency)
         else:
-            np.concatenate([self._cache, data])
+            self._cache = np.concatenate([self._cache, data])
     
     def _dequeue(self):
         leftover, arr = windowed(\

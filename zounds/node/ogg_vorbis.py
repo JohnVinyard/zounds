@@ -3,7 +3,8 @@ from flow import Node, Decoder, Feature
 from audiostream import MemoryBuffer
 from soundfile import *
 from byte_depth import chunk_size_samples
-from timeseries import Microseconds, Seconds, TimeSlice
+from duration import Microseconds, Seconds
+from timeseries import TimeSlice
 
 class OggVorbisWrapper(object):
     
