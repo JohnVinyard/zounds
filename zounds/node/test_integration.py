@@ -5,13 +5,14 @@ from flow.nmpy import *
 from io import BytesIO
 import unittest2
 
-from zounds.node.audiostream import AudioStream
-from zounds.node.ogg_vorbis import OggVorbis, OggVorbisFeature
-from zounds.node.resample import Resampler
-from zounds.node.spectral import FFT, Chroma
-from zounds.node.sliding_window import SlidingWindow, OggVorbisWindowingFunc
-from zounds.node.timeseries import ConstantRateTimeSeriesFeature
-from zounds.node.samplerate import SR44100, HalfLapped
+from audiostream import AudioStream
+from ogg_vorbis import OggVorbis, OggVorbisFeature
+from resample import Resampler
+from spectral import FFT, Chroma, BarkBands, BFCC
+from sliding_window import SlidingWindow, OggVorbisWindowingFunc
+from timeseries import ConstantRateTimeSeriesFeature
+from samplerate import SR44100, HalfLapped
+from basic import Max
 
 from soundfile import SoundFile
 import numpy as np
@@ -59,6 +60,29 @@ class Document(BaseModel):
         needs = fft,
         samplerate = samplerate,
         store = True)
+    
+    bark = ConstantRateTimeSeriesFeature(\
+        BarkBands,
+        needs = fft,
+        samplerate = samplerate,
+        store = True)
+
+    bfcc = ConstantRateTimeSeriesFeature(\
+        BFCC,
+        needs = bark,
+        store = True)
+    
+    bfcc_sliding_window = ConstantRateTimeSeriesFeature(\
+        SlidingWindow,
+        needs = bfcc,
+        wscheme = windowing_scheme * (2, 4),
+        store = True)
+
+    bfcc_pooled = ConstantRateTimeSeriesFeature(\
+        Max,
+        needs = bfcc_sliding_window,
+        axis = 1,
+        store = True)
 
 class HasUri(object):
     
@@ -92,14 +116,33 @@ class IntegrationTests(unittest2.TestCase):
         Registry.register(KeyBuilder, StringDelimitedKeyBuilder())
         Registry.register(Database, InMemoryDatabase())
         Registry.register(DataWriter, DataWriter)
-    
-    def test_windowed_and_fft_have_same_first_dimension(self):
         bio = soundfile(seconds = 10.)
         _id = Document.process(raw = bio)
-        doc = Document(_id)
-        print 'COMPUTING'
-        print 'rehydrated', doc.resampled.shape, doc.resampled.frequency, doc.resampled.duration
-        self.assertEqual(doc.windowed.shape[0], doc.fft.shape[0])
+        self.doc = Document(_id)
+        
+    def test_windowed_and_fft_have_same_first_dimension(self):
+        self.assertEqual(self.doc.windowed.shape[0], self.doc.fft.shape[0])
     
+    def test_bfcc_sliding_window_has_correct_shape(self):
+        self.assertEqual((4, 13), self.doc.bfcc_sliding_window.shape[1:])
     
+    def test_bfcc_sliding_window_has_correct_frequency(self):
+        self.assertEqual(\
+         2, self.doc.bfcc_sliding_window.frequency / self.doc.bfcc.frequency)
+    
+    def test_bfcc_sliding_window_has_correct_duration(self):
+        self.assertEqual(\
+         5, self.doc.bfcc_sliding_window.duration / self.doc.bfcc.frequency)
+    
+    def test_bfcc_pooled_has_correct_shape(self):
+        self.assertEqual(2, len(self.doc.bfcc_pooled.shape))
+        self.assertEqual((13,), self.doc.bfcc_pooled.shape[1:])
+    
+    def test_bfcc_pooled_has_correct_frequency(self):
+        self.assertEqual(\
+         2, self.doc.bfcc_pooled.frequency / self.doc.bfcc.frequency)
+    
+    def test_bfcc_pooled_has_correct_duration(self):
+        self.assertEqual(\
+         5, self.doc.bfcc_pooled.duration / self.doc.bfcc.frequency)
     
