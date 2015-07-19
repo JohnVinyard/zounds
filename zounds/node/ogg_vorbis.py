@@ -11,7 +11,6 @@ class OggVorbisWrapper(object):
     def __init__(self, flo):
         self._flo = flo
         self._sf = SoundFile(self._flo)
-        #self._freq = Microseconds(int((1 / self._sf.samplerate) * 1e6))
         self._freq = Picoseconds(int(1e12)) / self._sf.samplerate
     
     def _n_samples(self, duration):
