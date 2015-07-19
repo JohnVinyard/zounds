@@ -1,5 +1,6 @@
 from flow import Node
 from preprocess import Op, PreprocessResult, Preprocessor
+from timeseries import ConstantRateTimeSeries
 from scipy.cluster.vq import kmeans
 
 class KMeans(Preprocessor):
@@ -34,4 +35,10 @@ class Learned(Node):
         self._learned = learned
     
     def _process(self, data):
-        yield self._learned(data)
+        transformed = self._learned(data)
+        if isinstance(data, ConstantRateTimeSeries):
+            yield ConstantRateTimeSeries(\
+                 transformed, 
+                 frequency = data.frequency, 
+                 duration = data.duration)
+        yield transformed
