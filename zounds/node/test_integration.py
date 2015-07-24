@@ -161,3 +161,7 @@ class IntegrationTests(unittest2.TestCase):
         ogg = self.doc.ogg
         samples = ogg[TimeSlice(Seconds(1), Milliseconds(9500))]
         self.assertEqual(22050, len(samples))
+    
+    def test_sliding_window_has_correct_relationship_to_bfcc(self):
+        self.assertEqual(\
+             2, self.doc.bfcc.shape[0] // self.doc.bfcc_sliding_window.shape[0])

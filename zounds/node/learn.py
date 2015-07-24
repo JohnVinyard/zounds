@@ -41,4 +41,5 @@ class Learned(Node):
                  transformed, 
                  frequency = data.frequency, 
                  duration = data.duration)
-        yield transformed
+        else:
+            yield transformed
