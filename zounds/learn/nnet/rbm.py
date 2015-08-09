@@ -300,7 +300,6 @@ class Rbm(NeuralNetwork,Learn):
             vs[vs > .5] = 1
             vs[vs <=.5] = 0
         return vs
-        
     
     # TODO: Is this the correct implementation for both Rbm and LinearRbm?
     def __call__(self,data,binarize = True):
