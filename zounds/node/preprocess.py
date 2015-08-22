@@ -69,7 +69,7 @@ class UnitNorm(Preprocessor):
         data = self._extract_data(data)
         def x(d):
             from zounds.nputil import safe_unit_norm
-            return safe_unit_norm(d)
+            return safe_unit_norm(d.reshape(d.shape[0], -1))
         
         op = Op(x)
         data = op(data)

@@ -46,31 +46,3 @@ class ReservoirSampler(Node):
             return arr
         
         return self._r
-
-class ChunkedStreamingSampler(Node):
-    # first, fill the pool in random order by choosing (random pool, random index)
-    #
-    # then write each new sample to a random (pool,index)
-    #
-    # then, once a chunk in the pool has received some number of writes maybe 
-    # (50 - 75% of its size), deem it well mixed, and yield it.  Reset its 
-    # write count
-    #
-    # keep doing this until we run out of samples 
-    def __init__(self, needs = None, chunksize = None, poolsize = None):
-        super(ChunkedStreamingSampler,self).__init__(needs = needs)
-        self._chunksize = chunksize
-        self._poolsize = poolsize
-        self._pool = None
-        self._mix = None
-    
-    def _enqueue(self, data, pusher):
-        pass
-    
-    def _dequeue(self):
-        # TODO: return the indices of any well-mixed chunks
-        pass
-    
-    def _process(self,data):
-        # TODO: yield each well-mixed chunk (data will simply be a set of indices)
-        pass
