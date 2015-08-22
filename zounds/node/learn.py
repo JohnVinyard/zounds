@@ -30,15 +30,26 @@ class KMeans(Preprocessor):
 
 class BaseRbm(Preprocessor):
     
-    def __init__(self, cls = None, hdim = None, epochs = 100, needs = None):
+    def __init__(\
+         self, 
+         cls = None, 
+         hdim = None, 
+         sparsity_target = 0.01, 
+         epochs = 100, 
+         needs = None):
+        
         super(BaseRbm, self).__init__(needs = needs)
         self._hdim = hdim
+        self._sparsity = sparsity_target
         self._epochs = epochs
         self._cls = cls
     
     def _process(self, data):
         data = self._extract_data(data)
-        rbm = self._cls(indim = data.shape[1], hdim = self._hdim)
+        rbm = self._cls(\
+            indim = data.shape[1], 
+            hdim = self._hdim, 
+            sparsity_target = self._sparsity)
         rbm.train(data, lambda epoch, error : epoch > self._epochs)
     
         def x(d, rbm = None):
@@ -50,15 +61,34 @@ class BaseRbm(Preprocessor):
     
 class BinaryRbm(BaseRbm):
     
-    def __init__(self, hdim = None, epochs = 100, needs = None):
+    def __init__(\
+         self, sparsity_target = 0.01, 
+         hdim = None, 
+         epochs = 100, 
+         needs = None):
+        
         super(BinaryRbm, self).__init__(\
-                cls = Rbm, hdim = hdim, epochs = epochs, needs = needs)
+            cls = Rbm, 
+            hdim = hdim, 
+            sparsity_target = sparsity_target,
+            epochs = epochs, 
+            needs = needs)
 
 class LinearRbm(BaseRbm):
     
-    def __init__(self, hdim = None, epochs = 100, needs = None):
+    def __init__(\
+         self, 
+         hdim = None,
+         sparsity_target = 0.01, 
+         epochs = 100, 
+         needs = None):
+        
         super(LinearRbm, self).__init__(\
-                cls = LinRbm, hdim = hdim, epochs = epochs, needs = needs)
+            cls = LinRbm, 
+            hdim = hdim,
+            sparsity_target = sparsity_target, 
+            epochs = epochs, 
+            needs = needs)
 
 class Learned(Node):
     

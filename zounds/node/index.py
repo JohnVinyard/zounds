@@ -49,6 +49,8 @@ class Search(object):
     
     def _bisect(self, l, x):
         i = bisect_left(l, x)
+        if i == len(l):
+            return len(l) - 1
         if x < l[i]:
             i -= 1
         return i
@@ -56,10 +58,11 @@ class Search(object):
     def search(self, query, n_results = 5):
         scores = self._score(query)
         indices = np.argsort(scores)[:n_results]
+        _ids, positions = self._offsets
         for i in indices:
-            start_index = self._bisect(self._offsets[1], i)
-            diff = i - self._offsets[1][start_index]
-            _id = self._offsets[0][start_index]
+            start_index = self._bisect(positions, i)
+            diff = i - positions[start_index]
+            _id = _ids[start_index]
             start_time = self._contiguous.frequency * diff
             duration = self._contiguous.duration
             ts = TimeSlice(duration, start_time)
