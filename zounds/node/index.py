@@ -1,7 +1,9 @@
-from flow import Node, Aggregator
+from flow import Node, Aggregator, BaseModel, Feature, PickleFeature
 import numpy as np
 from bisect import bisect_left
-from timeseries import TimeSlice
+from timeseries import TimeSlice, ConstantRateTimeSeriesFeature
+from timeseries import ConstantRateTimeSeriesEncoder
+from timeseries import PackedConstantRateTimeSeriesEncoder
 from zounds.nputil import packed_hamming_distance
 
 class Index(Node):
@@ -84,4 +86,30 @@ class PackedHammingDistanceSearch(Search):
     def _score(self, query):
         return packed_hamming_distance(\
            query.view(np.uint64), self._contiguous.view(np.uint64))
-        
+
+
+def hamming_distance_index(feature_func, packed):
+    
+    encoder = \
+        PackedConstantRateTimeSeriesEncoder if packed \
+        else ConstantRateTimeSeriesEncoder
+    
+    class Index(BaseModel):
+    
+        index = Feature(\
+            Index,
+            func = feature_func,
+            store = False)
+    
+        contiguous = ConstantRateTimeSeriesFeature(\
+            Contiguous,
+            needs = index,
+            encoder = encoder,
+            store = True)
+    
+        offsets = PickleFeature(\
+            Offsets,
+            needs = index,
+            store = True)
+    
+    return Index
