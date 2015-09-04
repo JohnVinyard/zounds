@@ -302,7 +302,7 @@ class Rbm(NeuralNetwork,Learn):
         return vs
     
     # TODO: Is this the correct implementation for both Rbm and LinearRbm?
-    def __call__(self,data,binarize = True):
+    def __call__(self, data, binarize = True):
         '''__call__
         
         :param data: A two-dimensional numpy array of input data vectors

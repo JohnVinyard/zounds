@@ -1,6 +1,15 @@
 from flow import Node
 import numpy as np
 
+class Slice(Node):
+    
+    def __init__(self, sl = None, needs = None):
+        super(Slice, self).__init__(needs = needs)
+        self._sl = sl
+    
+    def _process(self, data):
+        yield data[:, self._sl]
+
 class Sum(Node):
     
     def __init__(self, axis = 0, needs = None):
