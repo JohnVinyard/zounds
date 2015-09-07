@@ -4,7 +4,7 @@ from io import BytesIO
 
 class WriteStream(object):
     
-    def __init__(self, _id, env, db):
+    def __init__(self, _id, env, db = None):
         self._id = _id
         self.db = db
         self.env = env
@@ -21,16 +21,82 @@ class WriteStream(object):
     def write(self, data):
         self.buf.write(data)
 
-# TODO: Should I do a sub-database per feature, or organize the keys as 
-# feature:id?  Does it matter?  Are these equivalent?
+class ReadStream(object):
+    
+    def __init__(self, buf):
+        self.buf = buf
+    
+    def __enter__(self):
+        return self
+    
+    def __exit__(self, t, value, traceback):
+        pass
+    
+    def read(self, nbytes = None):
+        # KLUDGE: Ignoring nbytes for now
+        return self.buf
+
 class LmdbDatabase(Database):
-    '''
-    '''
+    
+    def __init__(self, path):
+        super(LmdbDatabase, self).__init__()
+        self.path = path
+        self.env = lmdb.open(\
+             self.path, 
+             max_dbs = 10, 
+             map_size = 1000000000,
+             writemap = True,
+             map_async = True,
+             metasync = False)
+    
+    @property
+    @dependency(KeyBuilder)
+    def key_builder(self): pass
+    
+    def _reverse(self, key):
+        _id, feature = self.key_builder.decompose(key)
+        return self.key_builder.build(feature, _id)
+    
+    def write_stream(self, key, content_type):
+        _id = self._reverse(key)
+        return WriteStream(_id, self.env)
+    
+    def read_stream(self, key):
+        _id = self._reverse(key)
+        with self.env.begin(buffers = True) as txn:
+            buf = txn.get(_id)
+        return ReadStream(buf)
+    
+    def iter_ids(self):
+        s = set()
+        with self.env.begin() as txn:
+            cursor = txn.cursor()
+            for key in cursor.iternext(keys = True, values = False):
+                feat, _id = self.key_builder.decompose(key)
+                if s and feat not in s:
+                    break
+                s.add(feat)
+                yield _id
+    
+    def __contains__(self, _id):
+        _id = self._reverse(_id)
+        with self.env.begin(buffers = True) as txn:
+            buf = txn.get(_id)
+        return buf is not None
+
+
+class LmdbDatabase2(Database):
     
     def __init__(self, path):
         super(Database, self).__init__()
         self.path = path
-        self.env = lmdb.open(self.path, max_dbs = 10)
+        self.env = lmdb.open(\
+             self.path, 
+             max_dbs = 10, 
+             map_size = 1000000000,
+             writemap = True,
+             map_async = True,
+             metasync = False)
         self.dbs = dict()
     
     def _get_db(self, key):
@@ -47,25 +113,18 @@ class LmdbDatabase(Database):
     def key_builder(self): pass
     
     def write_stream(self, key, content_type):
-        # Create a sub-database for the feature if it doesn't already exist,
-        # and return a file like object that writes the data to lmdb once
-        # all data has been written and __exit__ has been called
         _id, db = self._get_db(key)
         return WriteStream(_id, self.env, db)
     
     def read_stream(self, key):
-        # Can I use a buffer outside of a transaction, or do I need to return
-        # a file like object here that manages the transaction in its
-        # __enter__ and __exit__ methods?
         _id, db = self._get_db(key)
         with self.env.begin(buffers = True) as txn:
             buf = txn.get(_id, db = db)
         if buf is None:
             raise KeyError(key)
-        return BytesIO(buf)
+        return ReadStream(buf)
     
     def iter_ids(self):
-        # iterate over all the keys in a single sub-database
         db = self.dbs.values()[0]
         with self.env.begin() as txn:
             cursor = txn.cursor(db)
