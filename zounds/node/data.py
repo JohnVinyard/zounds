@@ -25,6 +25,7 @@ class ReadStream(object):
     
     def __init__(self, buf):
         self.buf = buf
+        self.pos = 0
     
     def __enter__(self):
         return self
@@ -34,7 +35,11 @@ class ReadStream(object):
     
     def read(self, nbytes = None):
         # KLUDGE: Ignoring nbytes for now
-        return self.buf
+        if nbytes is None:
+            nbytes = len(self.buf)
+        v = buffer(self.buf, self.pos, self.pos + nbytes)
+        self.pos += nbytes
+        return v
 
 class LmdbDatabase(Database):
     
