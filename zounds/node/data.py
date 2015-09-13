@@ -34,11 +34,11 @@ class ReadStream(object):
         pass
     
     def read(self, nbytes = None):
-        # KLUDGE: Ignoring nbytes for now
         if nbytes is None:
             nbytes = len(self.buf)
-        v = buffer(self.buf, self.pos, self.pos + nbytes)
+        v = buffer(self.buf, self.pos, nbytes)
         self.pos += nbytes
+        # TODO: This should be memoryview(v)[:]
         return v
 
 class LmdbDatabase(Database):
