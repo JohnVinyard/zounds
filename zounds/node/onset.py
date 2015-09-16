@@ -1,6 +1,7 @@
 from flow import Node
 from timeseries import ConstantRateTimeSeries
 import numpy as np
+from duration import Milliseconds, Picoseconds
 
 class Flux(Node):
     
@@ -29,3 +30,20 @@ class Flux(Node):
               diff.sum(axis = 1),
               data.frequency,
               data.duration)
+
+class PeakPicker(Node):
+    
+    def __init__(self, factor = 3.5, needs = None):
+        super(PeakPicker, self).__init__(needs = needs)
+        self._factor = factor
+        self._pos = Picoseconds(0)
+        self._memory = None
+    
+    def _process(self, data):
+        mean = data.mean(axis = 1) * self._factor
+        indices = np.where(data[:,0] > mean)[0]
+        print indices, data.frequency
+        timestamps = indices * data.frequency
+        print timestamps.dtype
+        self._pos += len(data) * data.frequency
+        yield timestamps

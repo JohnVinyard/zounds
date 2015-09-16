@@ -241,7 +241,11 @@ class ConstantRateTimeSeries(np.ndarray):
     @property
     def span(self):
         overlap = self.duration - self.frequency
-        return TimeSlice((len(self) * self.frequency) + overlap) 
+        return TimeSlice((len(self) * self.frequency) + overlap)
+    
+    @property
+    def end(self):
+        return self.span.end 
 
     def __array_finalize__(self, obj):
         if obj is None: return
