@@ -51,6 +51,13 @@ class MetaData(Node):
         super(MetaData,self).__init__(needs = needs)
         self._freesound_api_key = freesound_api_key
     
+    def _ensure_freesound_api_key(self):
+        if self._freesound_api_key is not None: 
+            return
+        msg = \
+            'A freesound uri was requested, but no freesound API key was provided' 
+        raise Exception(msg)
+    
     def _process(self, data):
         uri = data
         if os.path.exists(uri):
@@ -60,6 +67,7 @@ class MetaData(Node):
                  samplerate = sf.samplerate, 
                  channels = sf.channels)
         elif 'freesound.org' in uri:
+            self._ensure_freesound_api_key()
             params = {'api_key' : self._freesound_api_key}
             meta = requests.get(\
                 uri, params = params).json()
