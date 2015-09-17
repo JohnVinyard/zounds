@@ -13,8 +13,7 @@ from sliding_window import SlidingWindow, OggVorbisWindowingFunc
 from duration import Seconds, Milliseconds
 from timeseries import ConstantRateTimeSeriesFeature, TimeSlice
 from samplerate import SR44100, HalfLapped
-from basic import Max
-from audiograph import 
+from basic import Max 
 
 from soundfile import SoundFile
 import numpy as np
