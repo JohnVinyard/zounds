@@ -1,7 +1,8 @@
-from flow import Node
-from timeseries import ConstantRateTimeSeries
+from flow import Node, Feature, Decoder
+from timeseries import ConstantRateTimeSeries, TimeSlice
 import numpy as np
-from duration import Milliseconds, Picoseconds
+from duration import Picoseconds, Seconds
+import struct
 
 class Flux(Node):
     
@@ -37,13 +38,110 @@ class PeakPicker(Node):
         super(PeakPicker, self).__init__(needs = needs)
         self._factor = factor
         self._pos = Picoseconds(0)
-        self._memory = None
     
     def _process(self, data):
         mean = data.mean(axis = 1) * self._factor
         indices = np.where(data[:,0] > mean)[0]
-        print indices, data.frequency
-        timestamps = indices * data.frequency
-        print timestamps.dtype
+        timestamps = self._pos + (indices * data.frequency)
         self._pos += len(data) * data.frequency
         yield timestamps
+        
+        if self._finalized:
+            yield self._pos
+
+class SparseTimestampEncoder(Node):
+    
+    content_type = 'application/octet-stream'
+    
+    def __init__(self, needs = None):
+        super(SparseTimestampEncoder, self).__init__(needs = needs)
+        # TODO: Add a class (mixin) in the flow library for this pattern where
+        # the _process implementarion changes depending on whether it's the first
+        # call or a subsequent one
+        self._initialized = False
+    
+    def _process(self, data):
+        if not self._initialized:
+            sd = str(data.dtype)
+            yield struct.pack('B', len(sd))
+            yield sd
+            self._initialized = True
+        
+        yield data.astype(np.uint64).tostring()
+
+# TODO: Encode/decode tests
+# TODO: A subclass of this that turns each pair into a timeslice
+# TODO: Should PeakPicker always emit the *end* of the timeseries, so that the
+# final timeslice can be produced correctly?
+class SparseTimestampDecoder(Decoder):
+    
+    def __init__(self):
+        super(SparseTimestampDecoder, self).__init__()
+    
+    def __call__(self, flo):
+        dtype_len = struct.unpack('B', flo.read(1))[0]
+        dtype = np.dtype(flo.read(dtype_len))
+        data = np.fromstring(flo.read(), dtype = np.uint64)
+        return np.array(data, dtype = dtype)
+    
+    def __iter__(self, flo):
+        yield self(flo)
+
+class TimeSliceDecoder(SparseTimestampDecoder):
+    
+    def __init__(self):
+        super(TimeSliceDecoder, self).__init__()
+    
+    def __call__(self, flo):
+        timestamps = super(TimeSliceDecoder, self).__call__(flo)
+        durations = np.diff(timestamps)
+        return (TimeSlice(d, s) for s, d in zip(timestamps, durations))
+        
+    def __iter__(self, flo):
+        yield self(flo)
+
+
+class SparseTimestampFeature(Feature):
+    
+    def __init__(\
+        self,
+        extractor,
+        needs = None,
+        store = False,
+        key = None,
+        encoder = SparseTimestampEncoder,
+        decoder = SparseTimestampDecoder(),
+        **extractor_args):
+        
+        super(SparseTimestampFeature ,self).__init__(\
+            extractor,
+            needs = needs,
+            store = store,
+            encoder = encoder,
+            decoder = decoder,
+            key = key,
+            **extractor_args)
+
+class TimeSliceFeature(Feature):
+    
+    def __init__(\
+        self,
+        extractor,
+        needs = None,
+        store = False,
+        key = None,
+        encoder = SparseTimestampEncoder,
+        decoder = TimeSliceDecoder(),
+        **extractor_args):
+        
+        super(TimeSliceFeature ,self).__init__(\
+            extractor,
+            needs = needs,
+            store = store,
+            encoder = encoder,
+            decoder = decoder,
+            key = key,
+            **extractor_args)
+    
+
+        
