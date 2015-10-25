@@ -21,8 +21,11 @@ class OggVorbisWrapper(object):
             return self._sf[:]
         
         start_sample = int(timeslice.start / self._freq)
+        print start_sample
         self._sf.seek(start_sample)
-        return self._sf.read(self._n_samples(timeslice.duration))
+        n_samples = self._n_samples(timeslice.duration)
+        print n_samples
+        return self._sf.read(n_samples)
     
     def iter_chunks(self):
         chunksize = Seconds(1)
