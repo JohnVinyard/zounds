@@ -62,6 +62,18 @@ def audio_graph(\
             needs = windowed,
             store = False)
         
+        short_windowed = ConstantRateTimeSeriesFeature(\
+           SlidingWindow,
+           needs = resampled,
+           wscheme = HalfLapped(512, 256),
+           wfunc = OggVorbisWindowingFunc(),
+           store = False)
+        
+        short_fft = ConstantRateTimeSeriesFeature(\
+              FFT,
+              needs = short_windowed,
+              store = False)
+        
         bark = ConstantRateTimeSeriesFeature(\
             BarkBands,
             needs = fft,
