@@ -61,10 +61,10 @@ class SR11025(AudioSampleRate):
 
 class HalfLapped(SampleRate):
     
-    def __init__(self):
+    def __init__(self, window_at_44100 = 2048, hop_at_44100 = 1024):
         one_sample_at_44100 = Picoseconds(int(1e12)) / 44100.
-        window = one_sample_at_44100 * 2048.
-        step = one_sample_at_44100 * 1024.
+        window = one_sample_at_44100 * window_at_44100
+        step = one_sample_at_44100 * hop_at_44100
         super(HalfLapped, self).__init__(step, window) 
 
 class SampleRateTests(unittest2.TestCase):

@@ -1,9 +1,37 @@
-from flow import Node, Feature, Decoder
+from flow import Node, Feature, Decoder, NotEnoughData
 from timeseries import ConstantRateTimeSeries, TimeSlice
 import numpy as np
 from duration import Picoseconds, Seconds
 import struct
 
+class Energy(Node):
+    
+    def __init__(self, needs = None):
+        super(Energy, self).__init__(needs = needs)
+    
+    def _process(self, data):
+        yield (data[:, 2:] ** 2).sum(axis = 1)
+
+class HighFrequencyContent(Node):
+    
+    def __init__(self, needs = None):
+        super(HighFrequencyContent, self).__init__(needs = needs)
+        self._bin_numbers = None
+    
+    def _process(self, data):
+        if self._bin_numbers is None:
+            self._bin_numbers = np.arange(1, data.shape[1] + 1)
+        yield ((data[:, 2:] ** 2) * self._bin_numbers[2:]).sum(axis = 1)
+
+class MesaureOfTransience(Node):
+    
+    def __init__(self, needs = None):
+        super(MesaureOfTransience, self).__init__(needs = needs)
+    
+    def _process(self, data):
+        pass
+        
+        
 class Flux(Node):
     
     def __init__(self, needs = None):
