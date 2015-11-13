@@ -14,11 +14,11 @@ class FFT(Node):
         self._axis = axis
     
     def _process(self, data):
-        transformed = np.fft.rfft(data, axis = self._axis)
+        transformed = np.fft.fft(data, axis = self._axis)
         sl = [slice(None) for _ in xrange(len(transformed.shape))]
         sl[self._axis] = slice(1, None)
         yield ConstantRateTimeSeries(\
-             np.abs(transformed[sl]), 
+             transformed[sl], 
              data.frequency, 
              data.duration)
 
@@ -52,6 +52,7 @@ class Chroma(Node):
         self._chroma_scale = None
     
     def _process(self, data):
+        data = np.abs(data)
         if self._chroma_scale is None:
             self._chroma_scale = ChromaScale(\
                  self._samplerate.samples_per_second, 
@@ -83,6 +84,7 @@ class BarkBands(Node):
         self._bark_scale = None
     
     def _process(self, data):
+        data = np.abs(data)
         if self._bark_scale is None:
             self._bark_scale = BarkScale(\
                  self._samplerate.samples_per_second, 

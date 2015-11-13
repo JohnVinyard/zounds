@@ -350,3 +350,52 @@ class TimeSeriesTests(unittest2.TestCase):
         result = ts.concatenate(ts2)
         self.assertIsInstance(result, ConstantRateTimeSeries)
         self.assertEqual((23, 3), result.shape)
+    
+    
+    def test_concat_with_differing_freqs(self):
+        ts = ConstantRateTimeSeries(\
+            np.ones((10, 3)),
+            Seconds(2),
+            Seconds(2))
+        ts2 = ConstantRateTimeSeries(\
+             np.ones((13, 3)),
+             Seconds(1),
+             Seconds(2))
+        self.assertRaises(\
+              ValueError, lambda : ConstantRateTimeSeries.concat([ts, ts2]))
+    
+    def test_concat_with_differing_durations(self):
+        ts = ConstantRateTimeSeries(\
+            np.ones((10, 3)),
+            Seconds(1),
+            Seconds(2))
+        ts2 = ConstantRateTimeSeries(\
+             np.ones((13, 3)),
+             Seconds(1),
+             Seconds(3))
+        self.assertRaises(\
+              ValueError, lambda : ConstantRateTimeSeries.concat([ts, ts2]))
+    
+    def test_concat_along_first_axis(self):
+        ts = ConstantRateTimeSeries(\
+            np.ones((10, 3)),
+            Seconds(1),
+            Seconds(2))
+        ts2 = ConstantRateTimeSeries(\
+             np.ones((13, 3)),
+             Seconds(1),
+             Seconds(2))
+        result = ConstantRateTimeSeries.concat([ts, ts2])
+        self.assertEqual((23,3), result.shape)
+    
+    def test_concat_along_second_axis(self):
+        ts = ConstantRateTimeSeries(\
+            np.ones((10, 3)),
+            Seconds(1),
+            Seconds(2))
+        ts2 = ConstantRateTimeSeries(\
+             np.ones((10, 5)),
+             Seconds(1),
+             Seconds(2))
+        result = ConstantRateTimeSeries.concat([ts, ts2], axis = 1)
+        self.assertEqual((10,8), result.shape)

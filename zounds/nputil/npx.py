@@ -218,6 +218,9 @@ def windowed(a,windowsize,stepsize = None,dopad = False):
     if stepsize < 1:
         raise ValueError('stepsize must be greater than or equal to one')
     
+    if not a.flags['C_CONTIGUOUS']:
+        a = a.copy()
+    
     if windowsize == 1 and stepsize == 1:
         # A windowsize and stepsize of one mean that no windowing is necessary.
         # Return the array unchanged.
@@ -249,22 +252,14 @@ def windowed(a,windowsize,stepsize = None,dopad = False):
     newshape = (n,windowsize)+a.shape[1:]
     newstrides = (stepsize*s,s) + a.strides[1:]
     
-#    print '$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$'
-#    print a.strides
-#    print windowsize
-#    print stepsize
-#    print newshape
-#    print newstrides
-#    print a.shape
-#    print a.dtype
-#    print '$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$'
-    
-    return leftover,np.ndarray.__new__(\
+    out = np.ndarray.__new__(\
         np.ndarray, 
         strides = newstrides, 
         shape = newshape, 
         buffer = a,
         dtype = a.dtype)
+    
+    return leftover, out 
             
 def sliding_window(a,ws,ss = None,flatten = True):
     '''
