@@ -1,36 +1,94 @@
 from flow import Node, Feature, Decoder, NotEnoughData
 from timeseries import ConstantRateTimeSeries, TimeSlice
 import numpy as np
-from duration import Picoseconds, Seconds
+from duration import Picoseconds
 import struct
 
-class Energy(Node):
-    
+class MeasureOfTransience(Node):
+    '''
+    Measure of Transience, as defined in section 5.2.1 of 
+    http://www.mp3-tech.org/programmer/docs/Masri_thesis.pdf
+    '''
     def __init__(self, needs = None):
-        super(Energy, self).__init__(needs = needs)
+        super(MeasureOfTransience, self).__init__(needs = needs)
+    
+    def _first_chunk(self, data):
+        self._bin_numbers = np.arange(1, data.shape[1] + 1)
+        padding = np.zeros(data.shape[1])
+        padding[:] = 1e-12
+        data = np.concatenate([padding[None,:], data])
     
     def _process(self, data):
-        yield (data[:, 2:] ** 2).sum(axis = 1)
+        magnitude = (data[:, 2:] ** 2)
+        energy = magnitude.sum(axis = 1)
+        hfc = (magnitude * self._bin_numbers[2:]).sum(axis = 1)
+        energy[energy == 0] = 1e-12
+        hfc[hfc == 0] = 1e-12
+        mot = (hfc[1:] / hfc[:-1]) * (hfc[1:] / energy[1:])
+        yield ConstantRateTimeSeries(mot, data.frequency, data.duration)
 
-class HighFrequencyContent(Node):
+class ComplexDomain(Node):
+    '''
+    We expect a complex-valued STFT with a sliding window applied (windowsize 
+    of 3, and hopsize of 1).
     
+    We then compute the phase deviation for the current frame as described in 
+    section 2.2
+    
+    We then compute the target magnitude (simply the magnitude of the previous
+    frame)
+    
+    We then compute real-valued deviation of each frequency bin (figures 18 and
+    19 in section 2.3)
+    
+    We then sum over all frequency bins to complete the detection function 
+    computation
+    
+    Complex-domain onset detection as described in
+    http://www.eecs.qmul.ac.uk/legacy/dafx03/proceedings/pdfs/dafx81.pdf
+    '''
     def __init__(self, needs = None):
-        super(HighFrequencyContent, self).__init__(needs = needs)
-        self._bin_numbers = None
+        super(ComplexDomain, self).__init__(needs = needs)
+    
+    def _first_chunk(self, data):
+        first = np.zeros((2, 3, data.shape[-1]), dtype = np.complex128)
+        first[0, 2:, :] = data[0, :1]
+        first[1, 1:, :] = data[0, :2]
+        return ConstantRateTimeSeries(\
+              np.concatenate([first, data]),
+              data.frequency,
+              data.duration)
     
     def _process(self, data):
-        if self._bin_numbers is None:
-            self._bin_numbers = np.arange(1, data.shape[1] + 1)
-        yield ((data[:, 2:] ** 2) * self._bin_numbers[2:]).sum(axis = 1)
-
-class MesaureOfTransience(Node):
-    
-    def __init__(self, needs = None):
-        super(MesaureOfTransience, self).__init__(needs = needs)
-    
-    def _process(self, data):
-        pass
+        data.imag = np.unwrap(data.imag)
+        # delta between expected and actual phase
+        angle = np.angle(data[:,2] - (2 * data[:,1]) + data[:,0])
+        # expected magnitude
+        expected = np.abs(data[:, 1, :])
+        # actual magnitude
+        actual = np.abs(data[:, 2, :])
+        # detection function array
+        detect = np.zeros(angle.shape)
         
+        # where phase delta is zero, detection function is the difference 
+        # between expected and actual magnitude
+        zero_phase_delta_indices = np.where(angle == 0) 
+        detect[zero_phase_delta_indices] = \
+            (expected - actual)[zero_phase_delta_indices]
+            
+        # where phase delta is non-zero, detection function combines magnitude
+        # and phase deltas
+        nonzero_phase_delta_indices = np.where(angle != 0)  
+        detect[nonzero_phase_delta_indices] = (
+          ((expected**2) + (actual**2) - 
+          (2 * expected * actual * np.cos(angle))) ** 0.5)[nonzero_phase_delta_indices]
+          
+        # TODO: This duration isn't right.  It should probably be 
+        # data.duration // 3
+        yield ConstantRateTimeSeries(\
+             detect.sum(axis = 1),
+             data.frequency,
+             data.duration)
         
 class Flux(Node):
     
@@ -60,22 +118,63 @@ class Flux(Node):
               data.frequency,
               data.duration)
 
-class PeakPicker(Node):
+class BasePeakPicker(Node):
     
-    def __init__(self, factor = 3.5, needs = None):
-        super(PeakPicker, self).__init__(needs = needs)
-        self._factor = factor
+    def __init__(self, needs = None):
+        super(BasePeakPicker, self).__init__(needs = needs)
         self._pos = Picoseconds(0)
     
+    def _onset_indices(self, data):
+        raise NotImplementedError()
+    
     def _process(self, data):
-        mean = data.mean(axis = 1) * self._factor
-        indices = np.where(data[:,0] > mean)[0]
+        indices = self._onset_indices(data)
         timestamps = self._pos + (indices * data.frequency)
         self._pos += len(data) * data.frequency
         yield timestamps
         
         if self._finalized:
             yield self._pos
+
+class BestOverThreshold(BasePeakPicker):
+    
+    def __init__(self, threshold = 1.0, needs = None):
+        super(BestOverThreshold, self).__init__(needs = needs)
+        self._threshold = threshold
+    
+    def _onset_indices(self, data):
+        # find the index with the greatest value from each window
+        mx = data.argmax(axis = 1)
+        # return indices where the first entry in the window is the greatest,
+        # *and* it's over the threshold
+        return np.where((mx == 0) & (data[:,0] > self._threshold))[0]
+
+class PeakPicker(BasePeakPicker):
+    
+    def __init__(self, factor = 3.5, needs = None):
+        super(PeakPicker, self).__init__(needs = needs)
+        self._factor = factor
+    
+    def _onset_indices(self, data):
+        mean = data.mean(axis = 1) * self._factor
+        return np.where(data[:,0] > mean)[0]
+
+#class PeakPicker(Node):
+#    
+#    def __init__(self, factor = 3.5, needs = None):
+#        super(PeakPicker, self).__init__(needs = needs)
+#        self._factor = factor
+#        self._pos = Picoseconds(0)
+#    
+#    def _process(self, data):
+#        mean = data.mean(axis = 1) * self._factor
+#        indices = np.where(data[:,0] > mean)[0]
+#        timestamps = self._pos + (indices * data.frequency)
+#        self._pos += len(data) * data.frequency
+#        yield timestamps
+#        
+#        if self._finalized:
+#            yield self._pos
 
 class SparseTimestampEncoder(Node):
     

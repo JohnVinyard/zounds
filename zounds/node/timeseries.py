@@ -225,10 +225,29 @@ class ConstantRateTimeSeries(np.ndarray):
                   duration = self.duration)
         raise ValueError(\
          'self and other must have the same sample frequency and sample duration')
-
+    
+    @staticmethod
+    def concat(arrs, axis = 0):
+        freqs = set(x.frequency for x in arrs)
+        if len(freqs) > 1:
+            raise ValueError('all timeseries must have same frequency')
+        
+        durations = set(x.duration for x in arrs)
+        if len(durations) > 1:
+            raise ValueError('all timeseries must have same duration')
+        
+        return ConstantRateTimeSeries(\
+              np.concatenate(arrs, axis = axis),
+              frequency = list(freqs)[0],
+              duration = list(durations)[0])
+    
     @property
     def samples_per_second(self):
         return int(Picoseconds(int(1e12)) / self.frequency)
+    
+    @property
+    def duration_in_seconds(self):
+        return int(Picoseconds(int(1e12)) / self.duration)
     
     @property
     def samplerate(self):
