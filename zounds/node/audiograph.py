@@ -11,7 +11,8 @@ from spectral import FFT, BarkBands
 def audio_graph(\
     chunksize_bytes = 2 * 44100 * 30 * 2,
     resample_to = SR44100(),
-    freesound_api_key = None):
+    freesound_api_key = None,
+    store_fft = False):
     
     '''
     Produce a base class suitable as a starting point for many audio processing
@@ -60,7 +61,7 @@ def audio_graph(\
         fft = ConstantRateTimeSeriesFeature(\
             FFT,
             needs = windowed,
-            store = False)
+            store = store_fft)
         
         short_windowed = ConstantRateTimeSeriesFeature(\
            SlidingWindow,
@@ -72,7 +73,7 @@ def audio_graph(\
         short_fft = ConstantRateTimeSeriesFeature(\
               FFT,
               needs = short_windowed,
-              store = False)
+              store = store_fft)
         
         bark = ConstantRateTimeSeriesFeature(\
             BarkBands,
