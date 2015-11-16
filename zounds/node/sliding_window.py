@@ -46,11 +46,20 @@ class OggVorbisWindowingFunc(WindowingFunc):
 
 class SlidingWindow(Node):
     
-    def __init__(self, wscheme, wfunc = None, needs = None):
+    def __init__(self, wscheme, wfunc = None, padwith = 0, needs = None):
         super(SlidingWindow, self).__init__(needs = needs)
         self._scheme = wscheme
         self._func = wfunc or IdentityWindowingFunc()
+        self._padwith = padwith
         self._cache = None
+    
+    def _first_chunk(self, data):
+        padding = np.zeros((self._padwith,) + data.shape[1:], dtype = data.dtype)
+        padding_ts = ConstantRateTimeSeries(\
+            padding,
+            data.frequency,
+            data.duration)
+        return padding_ts.concatenate(data)
     
     def _enqueue(self, data, pusher):
         if self._cache is None:

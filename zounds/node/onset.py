@@ -29,21 +29,6 @@ class MeasureOfTransience(Node):
 
 class ComplexDomain(Node):
     '''
-    We expect a complex-valued STFT with a sliding window applied (windowsize 
-    of 3, and hopsize of 1).
-    
-    We then compute the phase deviation for the current frame as described in 
-    section 2.2
-    
-    We then compute the target magnitude (simply the magnitude of the previous
-    frame)
-    
-    We then compute real-valued deviation of each frequency bin (figures 18 and
-    19 in section 2.3)
-    
-    We then sum over all frequency bins to complete the detection function 
-    computation
-    
     Complex-domain onset detection as described in
     http://www.eecs.qmul.ac.uk/legacy/dafx03/proceedings/pdfs/dafx81.pdf
     '''
@@ -60,9 +45,11 @@ class ComplexDomain(Node):
               data.duration)
     
     def _process(self, data):
-        data.imag = np.unwrap(data.imag)
         # delta between expected and actual phase
+        # TODO: unwrap phases before computing deltas, to avoid artifacts
+        # or discontinuties from phase boundary wrapping
         angle = np.angle(data[:,2] - (2 * data[:,1]) + data[:,0])
+        
         # expected magnitude
         expected = np.abs(data[:, 1, :])
         # actual magnitude
@@ -136,18 +123,18 @@ class BasePeakPicker(Node):
         if self._finalized:
             yield self._pos
 
-class BestOverThreshold(BasePeakPicker):
+class MovingAveragePeakPicker(Node):
     
-    def __init__(self, threshold = 1.0, needs = None):
-        super(BestOverThreshold, self).__init__(needs = needs)
-        self._threshold = threshold
+    def __init__(self, aggregate = np.mean, needs = None):
+        super(MovingAveragePeakPicker, self).__init__(needs = needs)
+        self._aggregate = aggregate
+    
+    def _first_chunk(self, data):
+        self._center = data.shape[1] // 2
     
     def _onset_indices(self, data):
-        # find the index with the greatest value from each window
-        mx = data.argmax(axis = 1)
-        # return indices where the first entry in the window is the greatest,
-        # *and* it's over the threshold
-        return np.where((mx == 0) & (data[:,0] > self._threshold))[0]
+        agg = self._aggregate(data, axis = 1)
+        return np.where(data[:, self._center] > agg)[0]
 
 class PeakPicker(BasePeakPicker):
     
@@ -158,23 +145,6 @@ class PeakPicker(BasePeakPicker):
     def _onset_indices(self, data):
         mean = data.mean(axis = 1) * self._factor
         return np.where(data[:,0] > mean)[0]
-
-#class PeakPicker(Node):
-#    
-#    def __init__(self, factor = 3.5, needs = None):
-#        super(PeakPicker, self).__init__(needs = needs)
-#        self._factor = factor
-#        self._pos = Picoseconds(0)
-#    
-#    def _process(self, data):
-#        mean = data.mean(axis = 1) * self._factor
-#        indices = np.where(data[:,0] > mean)[0]
-#        timestamps = self._pos + (indices * data.frequency)
-#        self._pos += len(data) * data.frequency
-#        yield timestamps
-#        
-#        if self._finalized:
-#            yield self._pos
 
 class SparseTimestampEncoder(Node):
     

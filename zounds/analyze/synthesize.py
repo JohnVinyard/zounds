@@ -312,6 +312,13 @@ class WindowedAudioSynthesizer(object):
         # seems to not be "crosslapping" at write boundaries. 
         self.vorbis_chunk_size = 25 * 44100
     
+    def __enter__(self):
+        self._start_audio_engine()
+        return self
+    
+    def __exit__(self, t, value, traceback):
+        self._stop_audio_engine()
+    
     def _start_audio_engine(self):
         start()
         self._start_audio_engine = self._start_audio_engine_done
