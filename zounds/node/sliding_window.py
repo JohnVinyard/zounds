@@ -78,7 +78,7 @@ class SlidingWindow(Node):
              self._windowsize,
              self._stepsize, 
              dopad = self._finalized)
-
+        
         self._cache = leftover
         
         if not arr.size:
