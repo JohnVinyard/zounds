@@ -8,6 +8,9 @@ class MeasureOfTransience(Node):
     '''
     Measure of Transience, as defined in section 5.2.1 of 
     http://www.mp3-tech.org/programmer/docs/Masri_thesis.pdf
+    
+    Uses the ratio of high-frequency content in the signal to detect onsets.
+    Effective for percussive onsets.
     '''
     def __init__(self, needs = None):
         super(MeasureOfTransience, self).__init__(needs = needs)
@@ -16,7 +19,7 @@ class MeasureOfTransience(Node):
         self._bin_numbers = np.arange(1, data.shape[1] + 1)
         padding = np.zeros(data.shape[1])
         padding[:] = 1e-12
-        data = np.concatenate([padding[None,:], data])
+        return np.concatenate([padding[None,:], data])
     
     def _process(self, data):
         magnitude = (data[:, 2:] ** 2)
@@ -48,7 +51,9 @@ class ComplexDomain(Node):
         # delta between expected and actual phase
         # TODO: unwrap phases before computing deltas, to avoid artifacts
         # or discontinuties from phase boundary wrapping
-        angle = np.angle(data[:,2] - (2 * data[:,1]) + data[:,0])
+        angle = np.angle(data)
+        angle = np.unwrap(angle, axis = 1)
+        angle = np.angle(angle[:,2] - (2 * angle[:,1]) + angle[:,0])
         
         # expected magnitude
         expected = np.abs(data[:, 1, :])
@@ -114,16 +119,20 @@ class BasePeakPicker(Node):
     def _onset_indices(self, data):
         raise NotImplementedError()
     
+    def _last_chunk(self):
+        yield self._pos
+    
     def _process(self, data):
+        if self._pos == Picoseconds(0):
+            print self._pos
+            yield self._pos
+        
         indices = self._onset_indices(data)
         timestamps = self._pos + (indices * data.frequency)
         self._pos += len(data) * data.frequency
         yield timestamps
-        
-        if self._finalized:
-            yield self._pos
 
-class MovingAveragePeakPicker(Node):
+class MovingAveragePeakPicker(BasePeakPicker):
     
     def __init__(self, aggregate = np.mean, needs = None):
         super(MovingAveragePeakPicker, self).__init__(needs = needs)
@@ -131,20 +140,17 @@ class MovingAveragePeakPicker(Node):
     
     def _first_chunk(self, data):
         self._center = data.shape[1] // 2
+        return data
     
     def _onset_indices(self, data):
-        agg = self._aggregate(data, axis = 1)
-        return np.where(data[:, self._center] > agg)[0]
-
-class PeakPicker(BasePeakPicker):
-    
-    def __init__(self, factor = 3.5, needs = None):
-        super(PeakPicker, self).__init__(needs = needs)
-        self._factor = factor
-    
-    def _onset_indices(self, data):
-        mean = data.mean(axis = 1) * self._factor
-        return np.where(data[:,0] > mean)[0]
+        agg = self._aggregate(data, axis = 1) * 1.25
+        # find indices that are peaks
+        diff = np.diff(data[:, self._center - 2  : self._center + 1])
+        peaks = (diff[:,0] > 0) & (diff[:,1] < 0)
+        # find indices that are above the local average or median
+        over_thresh = data[:, self._center] > agg
+        # return the intersection of the two
+        return np.where(peaks & over_thresh)[0]
 
 class SparseTimestampEncoder(Node):
     
