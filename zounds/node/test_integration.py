@@ -124,6 +124,9 @@ class IntegrationTests(unittest2.TestCase):
     def test_windowed_and_fft_have_same_first_dimension(self):
         self.assertEqual(self.doc.windowed.shape[0], self.doc.fft.shape[0])
     
+    def test_fft_dimension_is_half_of_windowsize(self):
+        self.assertEqual(self.doc.windowed.shape[1] // 2, self.doc.fft.shape[1])
+    
     def test_bfcc_sliding_window_has_correct_shape(self):
         self.assertEqual((4, 13), self.doc.bfcc_sliding_window.shape[1:])
     

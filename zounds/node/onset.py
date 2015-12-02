@@ -124,7 +124,6 @@ class BasePeakPicker(Node):
     
     def _process(self, data):
         if self._pos == Picoseconds(0):
-            print self._pos
             yield self._pos
         
         indices = self._onset_indices(data)

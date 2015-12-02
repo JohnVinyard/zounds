@@ -407,7 +407,11 @@ class WindowedAudioSynthesizer(object):
         bb = BufferBabysitter(audio)
         bb.start()
         # time is in microseconds
-        put(audio,0,len(audio),usecs() + 1e4)
+        
+        fade = np.linspace(0, 1, 10)
+        audio[:10] *= fade
+        audio[-10:] *= fade[::-1]
+        put(audio, 0, len(audio), usecs() + 1e4)
         
         if block:
             # block until the audio is done playing, unless a KeyboardInterrupt
