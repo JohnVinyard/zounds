@@ -1,6 +1,7 @@
 from flow import Node, Feature, Decoder, NotEnoughData
 from timeseries import ConstantRateTimeSeries, TimeSlice
 import numpy as np
+from zounds.nputil import safe_unit_norm
 from duration import Picoseconds
 import struct
 
@@ -84,18 +85,25 @@ class ComplexDomain(Node):
         
 class Flux(Node):
     
-    def __init__(self, needs = None):
+    def __init__(self, unit_norm = False, needs = None):
         super(Flux, self).__init__(needs = needs)
         self._memory = None
+        self._unit_norm = unit_norm
     
     def _enqueue(self, data, pusher):
         if self._memory is None:
             self._cache = np.vstack((data[0], data))
         else:
             self._cache = np.vstack((self._memory, data))
+        self._cache = ConstantRateTimeSeries(\
+                self._cache,
+                data.frequency,
+                data.duration)
         self._memory = data[-1]
     
     def _process(self, data):
+        if self._unit_norm:
+            data = safe_unit_norm(data)
         diff = np.diff(data, axis = 0)
         yield ConstantRateTimeSeries(\
               np.linalg.norm(diff, axis = -1),
