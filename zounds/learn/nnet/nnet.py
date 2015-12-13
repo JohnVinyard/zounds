@@ -4,7 +4,8 @@ from zounds.util import tostring
 
 # TODO: package up these activation functions somehow
 def sigmoid(a):
-    return 1. / (1 + np.exp(-a))
+    #return 1. / (1 + np.exp(-a))
+    return np.log(1 + np.exp(a))
 
 def stochastic_binary(a):
     return a > np.random.random_sample(a.shape)

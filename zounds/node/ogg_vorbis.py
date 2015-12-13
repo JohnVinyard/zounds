@@ -1,5 +1,5 @@
 from __future__ import division
-from flow import Node, Decoder, Feature
+from flow import IdentityEncoder, Node, Decoder, Feature
 from audiostream import MemoryBuffer
 from soundfile import *
 from byte_depth import chunk_size_samples
@@ -21,10 +21,8 @@ class OggVorbisWrapper(object):
             return self._sf[:]
         
         start_sample = int(timeslice.start / self._freq)
-        print start_sample
         self._sf.seek(start_sample)
         n_samples = self._n_samples(timeslice.duration)
-        print n_samples
         return self._sf.read(n_samples)
     
     def iter_chunks(self):
@@ -36,6 +34,10 @@ class OggVorbisWrapper(object):
             ts += chunksize
             sl = self[ts]
             yield sl
+
+class OggVorbisEncoder(IdentityEncoder):
+    
+    content_type = 'audio/ogg'
 
 class OggVorbisDecoder(Decoder):
     
@@ -62,6 +64,7 @@ class OggVorbisFeature(Feature):
                extractor,
                needs = needs,
                store = store,
+               encoder = OggVorbisEncoder,
                decoder = OggVorbisDecoder(),
                key = key,
                **extractor_args)

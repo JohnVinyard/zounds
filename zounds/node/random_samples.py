@@ -19,11 +19,9 @@ class ReservoirSampler(Node):
     # TODO: What happens if we have filled up all the sample slots and we run
     # out of data?
     def _enqueue(self, data, pusher):
-        print data.shape
         if self._r is None:
             shape = (self._nsamples,) + data.shape[1:]
             self._r = np.zeros(shape, dtype = data.dtype)
-        print self._r.shape
         
         diff = 0
         if self._index < self._nsamples:
@@ -48,6 +46,20 @@ class ReservoirSampler(Node):
             return arr
         
         return self._r
+
+class RequireSignalToNoiseRatio(Node):
+    
+    def __init__(self, max_snr = None, needs = None):
+        super(RequireSignalToNoiseRatio, self).__init__(needs = needs)
+        self._max_snr = max_snr
+    
+    def _process(self, data):
+        axes = tuple(range(len(data.shape))[1:])
+        a = np.abs(data)
+        snr = a.mean(axis = axes) / a.std(axis = axes)
+        filtered = data[snr < self._max_snr]
+        print len(data), len(filtered)
+        yield filtered
 
 def random_samples(feature_func, nsamples, store_shuffled = True):
     

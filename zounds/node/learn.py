@@ -36,11 +36,13 @@ class BaseRbm(Preprocessor):
          hdim = None, 
          sparsity_target = 0.01, 
          epochs = 100, 
+         learning_rate = 0.1,
          needs = None):
         
         super(BaseRbm, self).__init__(needs = needs)
         self._hdim = hdim
         self._sparsity = sparsity_target
+        self._learning_rate = learning_rate
         self._epochs = epochs
         self._cls = cls
     
@@ -49,7 +51,8 @@ class BaseRbm(Preprocessor):
         rbm = self._cls(\
             indim = data.shape[1], 
             hdim = self._hdim, 
-            sparsity_target = self._sparsity)
+            sparsity_target = self._sparsity,
+            learning_rate = self._learning_rate)
         rbm.train(data, lambda epoch, error : epoch > self._epochs)
     
         def x(d, rbm = None):
@@ -65,6 +68,7 @@ class BinaryRbm(BaseRbm):
          self, sparsity_target = 0.01, 
          hdim = None, 
          epochs = 100, 
+         learning_rate = 0.1,
          needs = None):
         
         super(BinaryRbm, self).__init__(\
@@ -72,6 +76,7 @@ class BinaryRbm(BaseRbm):
             hdim = hdim, 
             sparsity_target = sparsity_target,
             epochs = epochs, 
+            learning_rate = learning_rate,
             needs = needs)
 
 class LinearRbm(BaseRbm):
@@ -81,6 +86,7 @@ class LinearRbm(BaseRbm):
          hdim = None,
          sparsity_target = 0.01, 
          epochs = 100, 
+         learning_rate = 0.001,
          needs = None):
         
         super(LinearRbm, self).__init__(\
@@ -88,6 +94,7 @@ class LinearRbm(BaseRbm):
             hdim = hdim,
             sparsity_target = sparsity_target, 
             epochs = epochs, 
+            learning_rate = 0.001,
             needs = needs)
 
 class Learned(Node):
