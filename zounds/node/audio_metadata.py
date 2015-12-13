@@ -60,7 +60,9 @@ class MetaData(Node):
     
     def _process(self, data):
         uri = data
-        if os.path.exists(uri):
+        if isinstance(data, requests.Request):
+            yield AudioMetaData(uri = uri)
+        elif os.path.exists(uri):
             sf = SoundFile(uri)
             yield AudioMetaData(\
                  uri = uri, 
