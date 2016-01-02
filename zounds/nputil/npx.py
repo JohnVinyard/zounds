@@ -375,68 +375,6 @@ class TypeCodes(object):
         Get a typecode from a numpy dtype or a number of bits
         '''
         return cls._fromto(cls._whichlist(v), cls._type_codes, v)
-        
-    
-
-# TODO: Write tests
-def pack(a):
-    '''
-    Interpret an NxM numpy array as an N-length list of 32 or 64 bit numbers
-    '''
-    try:
-        tc = TypeCodes.type_code(a.shape[1])
-    except KeyError:
-        raise ValueError('a must have a second dimension with shape 32 or 64')
-    
-    b = bitarray()
-    b.extend(a.ravel())
-    return np.fromstring(b.tobytes(),dtype = TypeCodes.np_dtype(tc))
-
-# TODO: Write tests
-def unpack(a):
-    '''
-    Expand a N-length list of 32 or 64 bit numbers into an Nx(32|64) boolean
-    numpy array 
-    '''
-    try:
-        bits = TypeCodes.bits(a.dtype)
-    except KeyError:
-        raise ValueError('a must have a 32 or 64 bit dtype')
-    
-    b = bitarray()
-    b.frombytes(a.tostring())
-    return np.array(b).reshape((a.size,bits))
-    
-
-class Packer(object):
-    
-    def __init__(self,totalbits,chunkbits = 64):
-        try:
-            self._typecode = TypeCodes.type_code(chunkbits)
-        except KeyError:
-            raise ValueError('chunkbits must be one of %s' % \
-                             (str(TypeCodes._type_codes)))
-        self._nchunks = int(np.ceil(totalbits / chunkbits))
-        self._padding = (self._nchunks*chunkbits) - totalbits
-        self._dtype = TypeCodes.np_dtype(self._typecode) 
-    
-    def allocate(self,l):
-        '''
-        Allocate memory for l packed examples
-        '''
-        return np.ndarray((l,self._nchunks),dtype = self._dtype)
-    
-    def __call__(self,a):
-        l = a.shape[0]
-        z = np.zeros((l,self._padding),dtype = a.dtype)
-        padded = np.concatenate([a,z],axis = 1)
-        b = bitarray()
-        b.extend(padded.ravel())
-        return np.fromstring(b.tobytes(),dtype = self._dtype)\
-                .reshape((l,self._nchunks))
-
-
-
 
 class Growable(object):
     '''

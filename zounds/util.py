@@ -166,25 +166,6 @@ class PsychicIter(object):
         except IndexError:
             raise StopIteration
 
-# KLUDGE: There have been a couple instances (the multiprocess 
-# FileSystemFrameController.sync() method being the most recent), where 
-# multiprocessing.Pool.map() just starts, and hangs. No exceptions are thrown,
-# and the program does not terminate.  New python processes are created, but
-# they sit and do nothing.  I've found that invoking multiprocess.Process
-# directly avoids this problem.
-class PoolX(object):
-    
-    def __init__(self,nprocesses):
-        object.__init__(self)
-        self._nprocesses = nprocesses
-    
-    def map(self,target,args):
-        for i in range(0,len(args),self._nprocesses):
-            argchunk = args[i : i + self._nprocesses]
-            procs = [Process(target = target, args = a) for a in argchunk]
-            [p.start() for p in procs]
-            [p.join() for p in procs]
-
 
 def ensure_path_exists(filename_or_directory):
     '''
@@ -247,77 +228,3 @@ def notes(events,envelope,sr=44100.):
         note = testsignal(e[1],els) * envelope
         sig[ts : ts + le] += note
     return sig
-        
-
-
-# TODO: This is used in analyze.extractor and model.frame. Can it be
-# factored out into a *better*, common location?
-def recurse(fn):
-    '''
-    For classes with a nested, tree-like structure, whose nodes
-    are of the same class, or at least implement the same interface,
-    this function can be used as a decorator which will perform 
-    a depth-first flattening of the tree, e.g.
-    
-    class Node:
-    
-        @recurse
-        def descendants(self):
-            return self.children
-    '''
-    def wrapped(inst,accum=None):
-        if accum == None:
-            accum = []
-        s = fn(inst)
-        funcname = fn.__name__
-        try:
-            accum.extend(s)
-            for q in s:
-                getattr(q,funcname)(accum)
-        except TypeError:
-            # the object was not iterable
-            accum.append(s)
-        
-        # We don't want to return any node more than once
-        return list(set(accum))
-    
-    return wrapped 
-        
-def sort_by_lineage(class_method):
-    '''
-    Return a function that will compare two objects of or
-    inherited from the same class based on their ancestry
-    '''
-    def _sort(lhs,rhs):
-        # the lineages of the left and right hand sides
-        lhs_l = class_method(lhs)
-        rhs_l = class_method(rhs)
-        
-        if lhs in rhs_l and rhs in lhs_l:
-            raise ValueError('lhs and rhs are ancestors of each other')
-        
-        if rhs in lhs_l:
-            # lhs depends on rhs, directly or indirectly
-            return 1
-        
-        if lhs in rhs_l:
-            # rhs depends on lhs, directly or indirectly
-            return -1
-        
-        
-        rhs_l_len = len(rhs_l)
-        lhs_l_len = len(lhs_l)
-        
-        if rhs_l_len < lhs_l_len:
-            # rhs has fewer dependencies than lhs
-            return 1
-        
-        if lhs_l_len < rhs_l_len:
-            # lhs has fewer dependencies than rhs
-            return -1
-        
-        # lhs and rhs have no direct relationship, and have the same number
-        # of dependencies
-        return 0
-    
-    return _sort
