@@ -1,61 +1,84 @@
 # Usage
-Zounds is a dataflow library for building directed acyclic graphs that transform audio.  For example, here's the definition of a pipeline that computes a sliding short-time fourier transform of some audio, and then computes spectrograms on the bark and chroma scales.
+Zounds is a dataflow library for building directed acyclic graphs that transform audio. It uses the 
+[flow](https://bitbucket.org/jvinyard/flow/) library to define the processing pipelines.
+  
+
+For example, here's the definition of a pipeline that computes a sliding short-time fourier transform of some audio, 
+and then computes spectrograms on the bark and chroma scales.
 
 ```
-windowing_scheme = HalfLapped()
-samplerate = SR44100()
+import flow
+import zounds
 
-class Settings(PersistenceSettings):
-    id_provider = UuidProvider()
-    key_builder = StringDelimitedKeyBuilder()
-    database = InMemoryDatabase(key_builder=key_builder)
+windowing = zounds.HalfLapped()
+samplerate = zounds.SR44100()
 
-class Document(BaseModel, Settings):
 
-    meta = JSONFeature(
-        MetaData,
-        store = True,
-        encoder = AudioMetaDataEncoder)
+class Settings(flow.PersistenceSettings):
+    id_provider = flow.UuidProvider()
+    key_builder = flow.StringDelimitedKeyBuilder()
+    database = flow.FileSystemDatabase(path='data', key_builder=key_builder)
 
-    raw = ByteStreamFeature(
-        ByteStream,
-        chunksize=2 * 44100 * 30 * 2,
+
+class AudioGraph(flow.BaseModel):
+
+    meta = flow.JSONFeature(
+        zounds.MetaData,
+        encoder=zounds.AudioMetaDataEncoder,
         store=True)
 
-    pcm = ConstantRateTimeSeriesFeature(
-        AudioStream,
+    raw = flow.ByteStreamFeature(
+        flow.ByteStream,
+        chunksize=2 * 44100 * 30 * 2,
+        needs=meta,
+        store=False)
+
+    ogg = zounds.OggVorbisFeature(
+        zounds.OggVorbis,
+        needs=raw,
+        store=True)
+
+    pcm = zounds.ConstantRateTimeSeriesFeature(
+        zounds.AudioStream,
         needs=raw,
         store=False)
 
-    resampled = ConstantRateTimeSeriesFeature(
-        Resampler,
+    resampled = zounds.ConstantRateTimeSeriesFeature(
+        zounds.Resampler,
         needs=pcm,
         samplerate=samplerate,
         store=False)
 
-    windowed = ConstantRateTimeSeriesFeature(
-        SlidingWindow,
+    windowed = zounds.ConstantRateTimeSeriesFeature(
+        zounds.SlidingWindow,
         needs=resampled,
-        wscheme=windowing_scheme,
-        wfunc=OggVorbisWindowingFunc(),
+        wscheme=zounds.HalfLapped(),
+        wfunc=zounds.OggVorbisWindowingFunc(),
         store=False)
 
-    fft = ConstantRateTimeSeriesFeature(
-        FFT,
+    fft = zounds.ConstantRateTimeSeriesFeature(
+        zounds.FFT,
         needs=windowed,
+        store=False)
+
+    bark = zounds.ConstantRateTimeSeriesFeature(
+        zounds.BarkBands,
+        needs=fft,
         store=True)
 
-    chroma = ConstantRateTimeSeriesFeature(
-        Chroma,
+    chroma = zounds.ConstantRateTimeSeriesFeature(
+        zounds.Chroma,
         needs=fft,
-        samplerate=samplerate,
         store=True)
 
-    bark = ConstantRateTimeSeriesFeature(
-        BarkBands,
+    bfcc = zounds.ConstantRateTimeSeriesFeature(
+        zounds.BFCC,
         needs=fft,
-        samplerate=samplerate,
         store=True)
+
+
+class Document(AudioGraph, Settings):
+    pass
 ```
 
 Data can be processed, and later retrieved as follows:
@@ -63,12 +86,14 @@ Data can be processed, and later retrieved as follows:
 ```
 >>> import requests
 >>> req = requests.Request(method = 'GET', url = 'https://example.com/audio.wav')
->>> _id = doc = Document.process(raw=req)
+>>> _id = doc = Document.process(meta=req)
 >>> doc = Document(_id)
 >>> doc.chroma.shape
 (321, 12)
 ```
 # Installation
+## Flow
+
 ## Numpy and Scipy
 The [Anaconda](https://www.continuum.io/downloads) python distribution is highly recommended
 ## PySoundFile

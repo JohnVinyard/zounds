@@ -12,3 +12,4 @@ python
 doc/build
 Zounds.egg-info
 dist
+build
