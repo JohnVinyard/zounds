@@ -106,6 +106,7 @@ class BFCC(Node):
         self._exclude = exclude
     
     def _process(self, data):
+        data = np.abs(data)
         bfcc = dct(safe_log(data),axis = 1)\
             [:,self._exclude : self._exclude + self._n_coeffs]
         yield ConstantRateTimeSeries(\
