@@ -36,8 +36,10 @@ class ZoundsApp(object):
         if isinstance(data, ConstantRateTimeSeries) and len(data.shape) == 2:
             data = np.abs(data)
             data *= (255. / data.max())
-            return 'image/jpg', Image.fromarray(np.rot90(data)) \
-                .convert('RGB').tobytes('jpeg', 'RGB')
+            new_shape = tuple(np.array(data.shape) * 10)
+            img = Image.fromarray(np.rot90(data))
+            img = img.resize(new_shape, resample=Image.ANTIALIAS)
+            return 'image/jpg', img.convert('RGB').tobytes('jpeg', 'RGB')
 
     def feature_handler(self):
         document = self.model
