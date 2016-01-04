@@ -36,3 +36,5 @@ from node.template_match import TemplateMatch
 from node.timeseries import \
     TimeSlice, ConstantRateTimeSeriesEncoder, ConstantRateTimeSeriesFeature, \
     GreedyConstantRateTimeSeriesDecoder
+
+from node.api import ZoundsApp
