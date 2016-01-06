@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+    <script src="/zounds.js"></script>
+    <style>
+        body {
+            background-color: #96999A;
+        }
+        #app {
+            width: 100%;
+            height: 100%;
+            padding: 0px;
+            border: 0px;
+            margin: 0px;
+            display: flex;
+            flex-direction: row;
+        }
+        #console, #visualization {
+            padding: 1em;
+        }
+        #console {
+            flex: 0 0 50%;
+        }
+        #visualization {
+            flex: 1;
+        }
+        #console,
+        input[type="text"] {
+            background-color: #313335;
+            color: #A9B7C6;
+            font-size: 1em;
+            font-family: 'Lucida Console', 'Lucida Sans Typewriter', monaco, 'Bitstream Vera Sans Mono', monospace;
+        }
+        input {
+            width: 90%;
+        }
+        input:focus, input {
+            outline: none;
+            border: 0px;
+        }
+        #input-container:before,
+        .statement:before {
+            content: '>>> ';
+            margin-bottom: 10px;
+        }
+        .error {
+            color: #AA4926;
+        }
+        .result {
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div id="console">
+            <div id="output"></div>
+            <div id="input-container">
+                <input id="input" type="text" spellcheck="false" autofocus />
+            </div>
+        </div>
+
+        <div id="visualization">
+
+        </div>
+    </div>
+
+
+</body>
+</html>
