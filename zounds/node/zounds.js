@@ -1,5 +1,34 @@
 $(function() {
 
+    var events = {
+        FEATURE_RECEIVED: 'FEATURE_RECEIVED'
+    };
+
+    function MessageBus() {
+
+        this.publish = function(event, data) {
+            $(document).trigger(event, data);
+        }
+
+        this.subscribe = function(event, func) {
+            $(document).on(event, func);
+        }
+
+    }
+
+    function Visualization(selector, bus) {
+        var el = $(selector);
+
+        bus.subscribe(events.FEATURE_RECEIVED, function(event, data) {
+            el.empty();
+            if(data.contentType == 'image/png') {
+                $('<img>').attr('src', data.url).appendTo(el);
+                return;
+            }
+        });
+
+    }
+
     function ZoundsClient() {
 
         this.interpret = function(command) {
@@ -37,7 +66,7 @@ $(function() {
         }
     }
 
-    function Console(inputSelector, outputSelector) {
+    function Console(inputSelector, outputSelector, messageBus) {
         var
             input = $(inputSelector),
             output = $(outputSelector),
@@ -76,12 +105,14 @@ $(function() {
                 client
                     .interpret(command)
                     .always(function(data) {
-                        console.log(data);
                         history.push(command);
                         history_pos = 0;
                         output.append($('<div>').addClass('statement').text(command));
                     })
                     .done(function(data) {
+                        if(data.url && data.contentType) {
+                            messageBus.publish(events.FEATURE_RECEIVED, data);
+                        }
                         output.append($('<div>').addClass('result').text(data.result));
                         window.scrollTo(0,document.body.scrollHeight);
                     })
@@ -94,5 +125,7 @@ $(function() {
         });
     }
 
-    var input = new Console('#input', '#output');
+    var bus = new MessageBus();
+    var input = new Console('#input', '#output', bus);
+    var vis = new Visualization('#visualization', bus);
 });
