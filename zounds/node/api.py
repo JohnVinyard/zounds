@@ -60,7 +60,7 @@ class ConstantRateTimeSeriesSerializer(object):
         if len(data.shape) == 1:
             plt.plot(data)
         elif len(data.shape) == 2:
-            plt.matshow(np.rot90(data))
+            plt.matshow(data.T)
         else:
             raise ValueError('cannot handle dimensions > 2')
         bio = BytesIO()
