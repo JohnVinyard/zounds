@@ -21,8 +21,16 @@ $(function() {
 
         bus.subscribe(events.FEATURE_RECEIVED, function(event, data) {
             el.empty();
+
             if(data.contentType == 'image/png') {
                 $('<img>').attr('src', data.url).appendTo(el);
+                return;
+            }
+
+            if(data.contentType == 'audio/ogg') {
+                var audio = $('<audio>').attr('controls', true);
+                $('<source>').attr('src', data.url).appendTo(audio);
+                audio.appendTo(el);
                 return;
             }
         });
