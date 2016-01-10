@@ -3,19 +3,27 @@ import json
 import tornado.ioloop
 import tornado.web
 import httplib
-from timeseries import ConstantRateTimeSeriesFeature
 import numpy as np
-from tornado.httputil import _parse_request_range
 from flow import Decoder
 from urlparse import urljoin
 import traceback
 from matplotlib import pyplot as plt
 from io import BytesIO
 import ast
+import uuid
+import datetime
 
 
 class NoMatchingSerializerException(Exception):
     pass
+
+
+class TempResult(object):
+
+    def __init__(self, data, content_type):
+        self.data = data
+        self.content_type = content_type
+        self.timestamp = datetime.datetime.utcnow()
 
 
 class DefaultSerializer(object):
@@ -24,49 +32,54 @@ class DefaultSerializer(object):
         super(DefaultSerializer, self).__init__()
         self._content_type = content_type
 
-    def matches(self, feature):
+    def matches(self, feature, value):
+        if feature is None:
+            return False
         return feature.encoder.content_type == self._content_type
 
     @property
     def content_type(self):
         return self._content_type
 
-    def serialize(self, _id, feature, slce, document):
-        flo = feature(_id=_id, decoder=Decoder(), persistence=document)
+    def serialize(self, feature, slce, document, value):
+        flo = feature(_id=document._id, decoder=Decoder(), persistence=document)
         if slce.start:
             flo.seek(slce.start)
         if slce.stop:
             value = flo.read(slce.stop - slce.start)
         else:
             value = flo.read()
-        return self._content_type, value
+        return TempResult(value, self.content_type)
 
 
-class ConstantRateTimeSeriesSerializer(object):
+class NumpySerializer(object):
 
     def __init__(self):
-        super(ConstantRateTimeSeriesSerializer, self).__init__()
+        super(NumpySerializer, self).__init__()
 
-    def matches(self, feature):
-        return isinstance(feature, ConstantRateTimeSeriesFeature)
+    def matches(self, feature, value):
+        return isinstance(value, np.ndarray) and len(value.shape) < 3
 
     @property
     def content_type(self):
         return 'image/png'
 
-    def serialize(self, _id, feature, slce, document):
-        data = feature(_id=_id, persistence=document)
+    # TODO: Bundle all these parameters up in some kind of context object
+    def serialize(self, feature, slce, document, value):
+        data = value
         plt.figure()
         if len(data.shape) == 1:
             plt.plot(data)
         elif len(data.shape) == 2:
-            plt.matshow(data.T)
+            fig = plt.matshow(data.T, cmap=plt.cm.gray)
+            fig.axes.get_xaxis().set_visible(False)
+            fig.axes.get_yaxis().set_visible(False)
         else:
             raise ValueError('cannot handle dimensions > 2')
         bio = BytesIO()
-        plt.savefig(bio, format='png')
+        plt.savefig(bio, bbox_inches='tight', pad_inches=0, format='png')
         bio.seek(0)
-        return self.content_type, bio.read()
+        return TempResult(bio.read(), self.content_type)
 
 
 class ZoundsApp(object):
@@ -82,8 +95,9 @@ class ZoundsApp(object):
         self.serializers = [
             DefaultSerializer('application/json'),
             DefaultSerializer('audio/ogg'),
-            ConstantRateTimeSeriesSerializer()
+            NumpySerializer()
         ]
+        self.temp = {}
 
         path, fn = os.path.split(__file__)
         with open(os.path.join(path, 'zounds.js')) as f:
@@ -99,43 +113,38 @@ class ZoundsApp(object):
             self.base_path,
             '{_id}/{feature}'.format(_id=_id, feature=feature_name))
 
-    def find_serializer(self, feature):
+    def find_serializer(self, feature, value):
         try:
             return filter(
-                lambda x: x.matches(feature), self.serializers)[0]
+                lambda x: x.matches(feature, value), self.serializers)[0]
         except IndexError:
             raise NoMatchingSerializerException()
 
-    def serialize(self, _id, feature, slce, document):
+    def serialize(self, feature, slce, document, value):
         return self\
-            .find_serializer(feature)\
-            .serialize(_id, feature, slce, document)
+            .find_serializer(feature, value)\
+            .serialize(feature, slce, document, value)
 
-    def content_type(self, feature):
-        return self.find_serializer(feature).content_type
+    def temp_handler(self):
 
-    def feature_handler(self):
-        document = self.model
         app = self
 
-        class FeatureHandler(tornado.web.RequestHandler):
+        class TempHandler(tornado.web.RequestHandler):
 
-            def get(self, _id, feature):
-                feature = getattr(document, feature)
-                range_header = self.request.headers.get('Range')
-                if range_header:
-                    sl = slice(*_parse_request_range(range_header))
-                else:
-                    sl = slice(None)
-                content_type, serialized = app.serialize(
-                        _id, feature, sl, document)
-                self.set_header('Content-Type', content_type)
+            def get(self, _id):
+                try:
+                    result = app.temp[_id]
+                except KeyError:
+                    self.set_status(httplib.NOT_FOUND)
+                    self.finish()
+                    return
+                self.set_header('Content-Type', result.content_type)
                 self.set_header('Accept-Ranges', 'bytes')
-                self.write(serialized[sl])
+                self.write(result.data)
                 self.set_status(httplib.OK)
                 self.finish()
 
-        return FeatureHandler
+        return TempHandler
 
     def repl_handler(self):
         document = self.model
@@ -145,10 +154,11 @@ class ZoundsApp(object):
 
         class ReplHandler(tornado.web.RequestHandler):
 
-            def _add_url(self, statement, output):
+            def _extract_feature(self, statement):
                 root = ast.parse(statement)
                 nodes = list(ast.walk(root))
                 doc = None
+                feature = None
                 feature_name = None
 
                 for node in nodes:
@@ -166,21 +176,32 @@ class ZoundsApp(object):
                         feature_name = node.attr
                         continue
 
-                if not (doc and feature_name):
-                    return
+                if feature_name:
+                    feature = document.features[feature_name]
 
-                feature = document.features[feature_name]
-                output['url'] = app.feature_link(doc._id, feature_name)
-                output['contentType'] = app.content_type(feature)
+                return doc, feature
+
+            def _add_url(self, statement, output, value):
+                doc, feature = self._extract_feature(statement)
+                try:
+                    result = app.serialize(feature, slice(None), doc, value)
+                    temp_id = uuid.uuid4().hex
+                    app.temp[temp_id] = result
+                    output['url'] = '/zounds/temp/{temp_id}'.format(temp_id=temp_id)
+                    output['contentType'] = result.content_type
+                except NoMatchingSerializerException:
+                    pass
 
             def post(self):
                 statement = self.request.body
                 self.set_header('Content-Type', 'application/json')
                 output = dict()
+
                 try:
                     try:
                         value = eval(statement, globals, locals)
                         output['result'] = str(value)
+                        self._add_url(statement, output, value)
                     except SyntaxError:
                         exec(statement, globals, locals)
                         output['result'] = ''
@@ -188,38 +209,11 @@ class ZoundsApp(object):
                 except:
                     output['error'] = traceback.format_exc()
                     self.set_status(httplib.BAD_REQUEST)
-                self._add_url(statement, output)
+
                 self.write(json.dumps(output))
                 self.finish()
 
         return ReplHandler
-
-    def main_handler(self):
-        document = self.model
-        stored_features = \
-            [f.key for f in document.features.itervalues() if f.store]
-        app = self
-
-        class MainHandler(tornado.web.RequestHandler):
-
-            def get(self):
-                # KLUDGE: I should figure out a way to do paging here
-                _ids = list(document.database.iter_ids())
-                output = dict()
-                items = []
-                output['items'] = items
-                for _id in _ids:
-                    links = [app.feature_link(_id, x) for x in stored_features]
-                    items.append({
-                        '_id': _id,
-                        'links': links
-                    })
-                self.set_header('Content-Type', 'application/json')
-                self.write(json.dumps(output))
-                self.set_status(httplib.OK)
-                self.finish()
-
-        return MainHandler
 
     def ui_handler(self):
         app = self
@@ -237,13 +231,11 @@ class ZoundsApp(object):
     def build_app(self):
         return tornado.web.Application([
             (r'/', self.ui_handler()),
-            (r'/zounds/?', self.main_handler()),
-            (r'/zounds/(.+?)/(.+?)/?', self.feature_handler()),
+            (r'/zounds/temp/(.+?)/?', self.temp_handler()),
             (r'/zounds/repl/?', self.repl_handler())
         ])
 
     def start(self, port=8888):
-        print __file__
         app = self.build_app()
         app.listen(port)
         tornado.ioloop.IOLoop.current().start()
