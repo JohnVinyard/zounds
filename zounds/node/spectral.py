@@ -17,8 +17,8 @@ class FFT(Node):
         transformed = np.fft.fft(data, axis=self._axis)
         sl = [slice(None) for _ in xrange(len(transformed.shape))]
         positive = data.shape[self._axis] // 2
-        sl[self._axis] = slice(positive, None)
-        yield ConstantRateTimeSeries( \
+        sl[self._axis] = slice(0, positive, None)
+        yield ConstantRateTimeSeries(
                 transformed[sl],
                 data.frequency,
                 data.duration)

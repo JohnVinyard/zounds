@@ -38,3 +38,5 @@ from node.timeseries import \
     GreedyConstantRateTimeSeriesDecoder
 
 from node.api import ZoundsApp
+
+from node.util import process_dir

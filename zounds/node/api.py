@@ -67,18 +67,20 @@ class NumpySerializer(object):
     # TODO: Bundle all these parameters up in some kind of context object
     def serialize(self, feature, slce, document, value):
         data = value
-        plt.figure()
+        fig = plt.figure()
         if len(data.shape) == 1:
             plt.plot(data)
         elif len(data.shape) == 2:
-            fig = plt.matshow(data.T, cmap=plt.cm.gray)
-            fig.axes.get_xaxis().set_visible(False)
-            fig.axes.get_yaxis().set_visible(False)
+            mat = plt.matshow(np.rot90(data), cmap=plt.cm.gray)
+            mat.axes.get_xaxis().set_visible(False)
+            mat.axes.get_yaxis().set_visible(False)
         else:
             raise ValueError('cannot handle dimensions > 2')
         bio = BytesIO()
         plt.savefig(bio, bbox_inches='tight', pad_inches=0, format='png')
         bio.seek(0)
+        fig.clf()
+        plt.close()
         return TempResult(bio.read(), self.content_type)
 
 
