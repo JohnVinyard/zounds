@@ -58,7 +58,7 @@ class NumpySerializer(object):
         super(NumpySerializer, self).__init__()
 
     def matches(self, feature, value):
-        return isinstance(value, np.ndarray) and len(value.shape) < 3
+        return isinstance(value, np.ndarray) and len(value.shape) in (1, 2)
 
     @property
     def content_type(self):
