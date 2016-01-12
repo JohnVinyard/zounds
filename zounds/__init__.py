@@ -15,7 +15,7 @@ from node.learn import KMeans, BinaryRbm, LinearRbm, Learned
 
 from node.onset import \
     MeasureOfTransience, MovingAveragePeakPicker, SparseTimestampDecoder, \
-    SparseTimestampEncoder, TimeSliceDecoder, TimeSliceFeature
+    SparseTimestampEncoder, TimeSliceDecoder, TimeSliceFeature, ComplexDomain
 
 from node.preprocess import \
     MeanStdNormalization, UnitNorm, PreprocessingPipeline
