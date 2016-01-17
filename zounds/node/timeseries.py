@@ -5,14 +5,14 @@ from samplerate import SampleRate
 
 
 class TimeSlice(object):
-    def __init__(self, duration, start=None):
+    def __init__(self, duration=None, start=None):
         super(TimeSlice, self).__init__()
 
-        if not isinstance(duration, np.timedelta64):
+        if duration is not None and not isinstance(duration, np.timedelta64):
             raise ValueError('duration must be of type {t} but was {t2}'.format( \
                     t=np.timedelta64, t2=duration.__class__))
 
-        if start != None and not isinstance(start, np.timedelta64):
+        if start is not None and not isinstance(start, np.timedelta64):
             raise ValueError('start must be of type {t} but was {t2}'.format( \
                     t=np.timedelta64, t2=start.__class__))
 
@@ -269,7 +269,8 @@ class ConstantRateTimeSeries(np.ndarray):
         return self.span.end
 
     def __array_finalize__(self, obj):
-        if obj is None: return
+        if obj is None:
+            return
         self.frequency = getattr(obj, 'frequency', None)
         self.duration = getattr(obj, 'duration', None)
 
@@ -278,7 +279,8 @@ class ConstantRateTimeSeries(np.ndarray):
             diff = self.duration - self.frequency
             start_index = \
                 max(0, np.floor((index.start - diff) / self.frequency))
-            stop_index = np.ceil(index.end / self.frequency)
+            end = self.end if index.duration is None else index.end
+            stop_index = np.ceil(end / self.frequency)
             return self[start_index: stop_index]
 
         return super(ConstantRateTimeSeries, self).__getitem__(index)
