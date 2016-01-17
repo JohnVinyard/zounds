@@ -35,8 +35,12 @@ from node.template_match import TemplateMatch
 
 from node.timeseries import \
     TimeSlice, ConstantRateTimeSeriesEncoder, ConstantRateTimeSeriesFeature, \
-    GreedyConstantRateTimeSeriesDecoder
+    GreedyConstantRateTimeSeriesDecoder, PackedConstantRateTimeSeriesEncoder
 
 from node.api import ZoundsApp
+
+from node.index import \
+    Index, Offsets, Contiguous, HammingDistanceSearch, \
+    PackedHammingDistanceSearch, SearchResults
 
 from node.util import process_dir
