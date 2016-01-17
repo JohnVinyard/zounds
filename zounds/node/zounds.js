@@ -22,16 +22,26 @@ $(function() {
         bus.subscribe(events.FEATURE_RECEIVED, function(event, data) {
             el.empty();
 
-            if(data.contentType == 'image/png') {
+            if(data.contentType === 'image/png') {
                 $('<img>').attr('src', data.url).appendTo(el);
                 return;
             }
 
-            if(data.contentType == 'audio/ogg') {
+            if(data.contentType === 'audio/ogg') {
                 var audio = $('<audio>').attr('controls', true);
                 $('<source>').attr('src', data.url).appendTo(audio);
                 audio.appendTo(el);
                 return;
+            }
+
+            if(data.contentType == 'application/vnd.zounds.searchresults+json') {
+                $.ajax({
+                    method: 'GET',
+                    url: data.url,
+                    dataType: 'json'
+                }).done(function(resp) {
+                    console.log(resp);
+                });
             }
         });
 
