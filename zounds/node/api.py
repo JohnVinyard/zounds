@@ -9,11 +9,63 @@ import traceback
 from matplotlib import pyplot as plt
 from io import BytesIO
 import ast
+import re
 import uuid
 import datetime
 from timeseries import ConstantRateTimeSeriesFeature
 from index import SearchResults
-from duration import Seconds
+from duration import Seconds, Picoseconds
+from timeseries import TimeSlice
+
+
+class RangeUnitUnsupportedException(Exception):
+    pass
+
+
+class RangeRequest(object):
+    def __init__(self, range_header):
+        self.range_header = range_header
+        self.re = re.compile(
+            r'^(?P<unit>[^=]+)=(?P<start>[^-]+)-?(P<stop>.+)?$')
+
+    def time_slice(self, start, stop):
+        start = float(start)
+        try:
+            stop = float(stop)
+        except ValueError:
+            stop = None
+        duration = \
+            None if stop is None else Picoseconds(int(1e12 * (stop - start)))
+        start = Picoseconds(int(1e12 * start))
+        return TimeSlice(duration, start=start)
+
+    def byte_slice(self, start, stop):
+        start = int(start)
+        try:
+            stop = int(stop)
+        except ValueError:
+            stop = None
+        return slice(start, stop)
+
+    def range(self):
+        raw = self.range_header
+        if not raw:
+            return slice(None)
+
+        m = self.re.match(raw)
+        if not m:
+            return slice(None)
+
+        units = m.groupdict()['unit']
+        start = m.groupdict()['start']
+        stop = m.groupdict()['stop']
+
+        if units == 'bytes':
+            return self.byte_slice(start, stop)
+        elif units == 'seconds':
+            return self.time_slice(start, stop)
+        else:
+            raise RangeUnitUnsupportedException(units)
 
 
 class NoMatchingSerializerException(Exception):
