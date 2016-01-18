@@ -291,6 +291,14 @@ class TimeSeriesTests(unittest2.TestCase):
         self.assertIsInstance(ts2, ConstantRateTimeSeries)
         self.assertTrue(np.all(np.arange(10) == ts2))
 
+    def test_can_get_entire_time_series_with_empty_time_slice(self):
+        arr = np.arange(10)
+        freq = Seconds(1)
+        ts = ConstantRateTimeSeries(arr, freq)
+        sl = TimeSlice()
+        ts2 = ts[sl]
+        self.assertEqual(10, len(ts2))
+
     def test_span_freq_and_duration_equal(self):
         arr = np.arange(10)
         freq = Seconds(1)
