@@ -37,7 +37,7 @@ from node.timeseries import \
     TimeSlice, ConstantRateTimeSeriesEncoder, ConstantRateTimeSeriesFeature, \
     GreedyConstantRateTimeSeriesDecoder, PackedConstantRateTimeSeriesEncoder
 
-from node.api import ZoundsApp
+from node.api import ZoundsApp, RangeUnitUnsupportedException
 
 from node.index import \
     Index, Offsets, Contiguous, HammingDistanceSearch, \

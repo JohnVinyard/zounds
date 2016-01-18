@@ -26,7 +26,7 @@ class RangeRequest(object):
     def __init__(self, range_header):
         self.range_header = range_header
         self.re = re.compile(
-            r'^(?P<unit>[^=]+)=(?P<start>[^-]+)-?(P<stop>.+)?$')
+            r'^(?P<unit>[^=]+)=(?P<start>[^-]+)-(?P<stop>.*?)$')
 
     def time_slice(self, start, stop):
         start = float(start)
@@ -59,6 +59,8 @@ class RangeRequest(object):
         units = m.groupdict()['unit']
         start = m.groupdict()['start']
         stop = m.groupdict()['stop']
+
+        print units, start, stop
 
         if units == 'bytes':
             return self.byte_slice(start, stop)
