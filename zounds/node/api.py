@@ -16,9 +16,15 @@ from timeseries import ConstantRateTimeSeriesFeature
 from index import SearchResults
 from duration import Seconds, Picoseconds
 from timeseries import TimeSlice
+from ogg_vorbis import OggVorbisFeature
+from soundfile import SoundFile
 
 
 class RangeUnitUnsupportedException(Exception):
+    pass
+
+
+class UnsatisfiableRangeRequestException(Exception):
     pass
 
 
@@ -26,7 +32,7 @@ class RangeRequest(object):
     def __init__(self, range_header):
         self.range_header = range_header
         self.re = re.compile(
-            r'^(?P<unit>[^=]+)=(?P<start>[^-]+)-(?P<stop>.*?)$')
+                r'^(?P<unit>[^=]+)=(?P<start>[^-]+)-(?P<stop>.*?)$')
 
     def time_slice(self, start, stop):
         start = float(start)
@@ -75,29 +81,46 @@ class NoMatchingSerializerException(Exception):
 
 
 class TempResult(object):
-
-    def __init__(self, data, content_type):
+    def __init__(self, data, content_type, is_partial=False):
         self.data = data
         self.content_type = content_type
         self.timestamp = datetime.datetime.utcnow()
+        self.is_partial = is_partial
 
 
+class RequestContext(object):
+    def __init__(
+            self,
+            document=None,
+            feature=None,
+            slce=None,
+            value=None):
+        self.value = value
+        self.slce = slce
+        self.feature = feature
+        self.document = document
+
+
+# TODO: Seperate serializer for ConstantRateTimeSeries
+# TODO: Seperate serializer for ogg vorbis with time slice
 class DefaultSerializer(object):
-
     def __init__(self, content_type):
         super(DefaultSerializer, self).__init__()
         self._content_type = content_type
 
-    def matches(self, feature, value):
-        if feature is None:
+    def matches(self, context):
+        if context.feature is None:
             return False
-        return feature.encoder.content_type == self._content_type
+        return context.feature.encoder.content_type == self._content_type
 
     @property
     def content_type(self):
         return self._content_type
 
-    def serialize(self, feature, slce, document, value):
+    def serialize(self, context):
+        document = context.document
+        feature = context.feature
+        slce = context.slce
         flo = feature(_id=document._id, decoder=Decoder(), persistence=document)
         if slce.start:
             flo.seek(slce.start)
@@ -108,53 +131,113 @@ class DefaultSerializer(object):
         return TempResult(value, self.content_type)
 
 
-class NumpySerializer(object):
-
+class OggVorbisSerializer(object):
     def __init__(self):
-        super(NumpySerializer, self).__init__()
+        super(OggVorbisSerializer, self).__init__()
 
-    def matches(self, feature, value):
-        if isinstance(feature, ConstantRateTimeSeriesFeature):
-            return True
+    def matches(self, context):
+        if context.feature is None:
+            return False
+        return \
+            isinstance(context.feature, OggVorbisFeature) \
+            and isinstance(context.slce, TimeSlice)
 
-        return isinstance(value, np.ndarray) and len(value.shape) in (1, 2)
+    @property
+    def content_type(self):
+        return 'audio/ogg'
+
+    def serialize(self, context):
+        feature = context.feature
+        document = context.document
+        slce = context.slce
+        wrapper = feature(_id=document._id, persistence=document)
+        samples = wrapper[slce]
+        bio = BytesIO()
+        with SoundFile(
+                bio,
+                mode='w',
+                samplerate=wrapper.samplerate,
+                channels=wrapper.channels,
+                format='OGG', subtype='VORBIS') as sf:
+            sf.write(samples)
+        bio.seek(0)
+        return TempResult(
+                bio.read(), 'audio/ogg', is_partial=slce == TimeSlice())
+
+
+def generate_image(data):
+    fig = plt.figure()
+    if len(data.shape) == 1:
+        plt.plot(data)
+    elif len(data.shape) == 2:
+        mat = plt.matshow(np.rot90(data), cmap=plt.cm.gray)
+        mat.axes.get_xaxis().set_visible(False)
+        mat.axes.get_yaxis().set_visible(False)
+    else:
+        raise ValueError('cannot handle dimensions > 2')
+    bio = BytesIO()
+    plt.savefig(bio, bbox_inches='tight', pad_inches=0, format='png')
+    bio.seek(0)
+    fig.clf()
+    plt.close()
+    return TempResult(bio.read(), 'image/png')
+
+
+class ConstantRateTimeSeriesSerializer(object):
+    def __init__(self):
+        super(ConstantRateTimeSeriesSerializer, self).__init__()
+
+    def matches(self, context):
+        return \
+            isinstance(context.feature, ConstantRateTimeSeriesFeature) \
+            and isinstance(context.slce, TimeSlice)
 
     @property
     def content_type(self):
         return 'image/png'
 
-    # TODO: Bundle all these parameters up in some kind of context object
-    def serialize(self, feature, slce, document, value):
+    def serialize(self, context):
+        feature = context.feature
+        document = context.document
+        data = feature(_id=document._id, persistence=document)[context.slce]
+        return generate_image(data)
+
+
+class NumpySerializer(object):
+    def __init__(self):
+        super(NumpySerializer, self).__init__()
+
+    def matches(self, context):
+        if isinstance(context.feature, ConstantRateTimeSeriesFeature):
+            return True
+
+        return \
+            isinstance(context.value, np.ndarray) \
+            and len(context.value.shape) in (1, 2)
+
+    @property
+    def content_type(self):
+        return 'image/png'
+
+    def serialize(self, context):
+        feature = context.feature
+        document = context.document
+        value = context.value
         if value is None:
             data = feature(_id=document._id, persistence=document)
         else:
             data = value
-        fig = plt.figure()
-        if len(data.shape) == 1:
-            plt.plot(data)
-        elif len(data.shape) == 2:
-            mat = plt.matshow(np.rot90(data), cmap=plt.cm.gray)
-            mat.axes.get_xaxis().set_visible(False)
-            mat.axes.get_yaxis().set_visible(False)
-        else:
-            raise ValueError('cannot handle dimensions > 2')
-        bio = BytesIO()
-        plt.savefig(bio, bbox_inches='tight', pad_inches=0, format='png')
-        bio.seek(0)
-        fig.clf()
-        plt.close()
-        return TempResult(bio.read(), self.content_type)
+        return generate_image(data)
 
 
 class SearchResultsSerializer(object):
-
     def __init__(self, visualization_feature, audio_feature):
         super(SearchResultsSerializer, self).__init__()
         self.visualization_feature = visualization_feature
         self.audio_feature = audio_feature
 
-    def matches(self, feature, value):
-        return isinstance(value, SearchResults)
+    def matches(self, context):
+        return isinstance(context.value, SearchResults)
 
     @property
     def content_type(self):
@@ -176,13 +259,12 @@ class SearchResultsSerializer(object):
             'slice': self._seconds(ts)
         }
 
-    def serialize(self, feature, slce, document, value):
-        output = { 'results': map(self._result, value)}
+    def serialize(self, context):
+        output = {'results': map(self._result, context.value)}
         return TempResult(json.dumps(output), self.content_type)
 
 
 class ZoundsApp(object):
-
     def __init__(
             self,
             base_path=r'/zounds/',
@@ -200,6 +282,8 @@ class ZoundsApp(object):
         self.audio_feature = audio_feature
         self.base_path = base_path
         self.serializers = [
+            OggVorbisSerializer(),
+            ConstantRateTimeSeriesSerializer(),
             DefaultSerializer('application/json'),
             DefaultSerializer('audio/ogg'),
             NumpySerializer(),
@@ -215,20 +299,19 @@ class ZoundsApp(object):
 
         with open(os.path.join(path, 'index.html')) as f:
             self._html_content = f.read().replace(
-                '<script src="/zounds.js"></script>',
-                '<script>{}</script>'.format(script))
+                    '<script src="/zounds.js"></script>',
+                    '<script>{}</script>'.format(script))
 
-    def find_serializer(self, feature, value):
+    def find_serializer(self, context):
         try:
             return filter(
-                lambda x: x.matches(feature, value), self.serializers)[0]
+                    lambda x: x.matches(context), self.serializers)[0]
         except IndexError:
             raise NoMatchingSerializerException()
 
-    def serialize(self, feature, slce, document, value):
-        return self\
-            .find_serializer(feature, value)\
-            .serialize(feature, slce, document, value)
+    def serialize(self, context):
+        serializer = self.find_serializer(context)
+        return serializer.serialize(context)
 
     def temp_handler(self):
 
@@ -289,10 +372,16 @@ class ZoundsApp(object):
             def _add_url(self, statement, output, value):
                 doc, feature = self._extract_feature(statement)
                 try:
-                    result = app.serialize(feature, slice(None), doc, value)
+                    context = RequestContext(
+                        document=doc,
+                        feature=feature,
+                        value=value,
+                        slce=slice(None))
+                    result = app.serialize(context)
                     temp_id = uuid.uuid4().hex
                     app.temp[temp_id] = result
-                    output['url'] = '/zounds/temp/{temp_id}'.format(temp_id=temp_id)
+                    output['url'] = '/zounds/temp/{temp_id}'.format(
+                        temp_id=temp_id)
                     output['contentType'] = result.content_type
                 except NoMatchingSerializerException:
                     pass
@@ -308,7 +397,7 @@ class ZoundsApp(object):
                         output['result'] = str(value)
                         self._add_url(statement, output, value)
                     except SyntaxError:
-                        exec(statement, globals, locals)
+                        exec (statement, globals, locals)
                         output['result'] = ''
                     self.set_status(httplib.OK)
                 except:
@@ -330,11 +419,23 @@ class ZoundsApp(object):
             def get(self, _id, feature):
                 doc = document(_id)
                 feature = document.features[feature]
-                result = app.serialize(feature, slice(None), doc, None)
+                try:
+                    slce = RangeRequest(self.request.headers['Range']).range()
+                except KeyError:
+                    slce = slice(None)
+                context = RequestContext(
+                        document=doc, feature=feature, slce=slce)
+                try:
+                    result = app.serialize(context)
+                except UnsatisfiableRangeRequestException:
+                    self.set_status(httplib.REQUESTED_RANGE_NOT_SATISFIABLE)
+                    self.finish()
                 self.set_header('Content-Type', result.content_type)
                 self.set_header('Accept-Ranges', 'bytes')
                 self.write(result.data)
-                self.set_status(httplib.OK)
+                self.set_status(
+                        httplib.PARTIAL_CONTENT if result.is_partial
+                        else httplib.OK)
                 self.finish()
 
         return FeatureHandler
@@ -343,7 +444,6 @@ class ZoundsApp(object):
         app = self
 
         class UIHandler(tornado.web.RequestHandler):
-
             def get(self):
                 self.set_header('Content-Type', 'text-html')
                 self.write(app._html_content)
@@ -364,4 +464,3 @@ class ZoundsApp(object):
         app = self.build_app()
         app.listen(port)
         tornado.ioloop.IOLoop.current().start()
-
