@@ -21,10 +21,18 @@ from soundfile import SoundFile
 
 
 class RangeUnitUnsupportedException(Exception):
+    """
+    Raised when an HTTP range request is made with a unit not supported by this
+    application
+    """
     pass
 
 
 class UnsatisfiableRangeRequestException(Exception):
+    """
+    Exception raised when an HTTP range request cannot be satisfied for a
+    particular resource
+    """
     pass
 
 
@@ -80,8 +88,26 @@ class NoMatchingSerializerException(Exception):
     pass
 
 
+class ContentRange(object):
+    def __init__(self, unit, start, stop, total):
+        self.unit = unit
+        self.total = total
+        self.stop = stop
+        self.start = start
+
+    def __str__(self):
+        return '{unit} {start}-{stop}/{total}'.format(**self.__dict__)
+
+
 class TempResult(object):
-    def __init__(self, data, content_type, is_partial=False):
+    def __init__(
+            self,
+            data,
+            content_type,
+            is_partial=False,
+            content_range=None):
+
+        self.content_range = content_range
         self.data = data
         self.content_type = content_type
         self.timestamp = datetime.datetime.utcnow()
@@ -101,8 +127,6 @@ class RequestContext(object):
         self.document = document
 
 
-# TODO: Seperate serializer for ConstantRateTimeSeries
-# TODO: Seperate serializer for ogg vorbis with time slice
 class DefaultSerializer(object):
     def __init__(self, content_type):
         super(DefaultSerializer, self).__init__()
@@ -373,15 +397,15 @@ class ZoundsApp(object):
                 doc, feature = self._extract_feature(statement)
                 try:
                     context = RequestContext(
-                        document=doc,
-                        feature=feature,
-                        value=value,
-                        slce=slice(None))
+                            document=doc,
+                            feature=feature,
+                            value=value,
+                            slce=slice(None))
                     result = app.serialize(context)
                     temp_id = uuid.uuid4().hex
                     app.temp[temp_id] = result
                     output['url'] = '/zounds/temp/{temp_id}'.format(
-                        temp_id=temp_id)
+                            temp_id=temp_id)
                     output['contentType'] = result.content_type
                 except NoMatchingSerializerException:
                     pass
