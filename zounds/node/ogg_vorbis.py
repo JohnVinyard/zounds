@@ -21,6 +21,10 @@ class OggVorbisWrapper(object):
     def channels(self):
         return self._sf.channels
 
+    @property
+    def duration_seconds(self):
+        return len(self._sf) / self.samplerate
+
     def _n_samples(self, duration):
         return int(duration / self._freq)
 

@@ -129,6 +129,9 @@ class IntegrationTests(unittest2.TestCase):
         self.doc = Document(_id)
         self.signal = signal
 
+    def test_ogg_wrapper_has_correct_duration_seconds(self):
+        self.assertEqual(10, self.doc.ogg.duration_seconds)
+
     def test_windowed_and_fft_have_same_first_dimension(self):
         self.assertEqual(self.doc.windowed.shape[0], self.doc.fft.shape[0])
 
