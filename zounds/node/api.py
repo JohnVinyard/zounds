@@ -89,14 +89,18 @@ class NoMatchingSerializerException(Exception):
 
 
 class ContentRange(object):
-    def __init__(self, unit, start, stop, total):
+    def __init__(self, unit, start, total, stop=None):
         self.unit = unit
         self.total = total
         self.stop = stop
         self.start = start
 
     def __str__(self):
-        return '{unit} {start}-{stop}/{total}'.format(**self.__dict__)
+        unit = self.unit
+        start = self.start
+        stop = self.stop or self.total
+        total = self.total
+        return '{unit} {start}-{stop}/{total}'.format(**locals())
 
 
 class TempResult(object):
