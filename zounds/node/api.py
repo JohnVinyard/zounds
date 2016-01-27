@@ -95,6 +95,23 @@ class ContentRange(object):
         self.stop = stop
         self.start = start
 
+    @staticmethod
+    def from_timeslice(timeslice, total):
+        one_second = Seconds(1)
+        stop = None
+        start = timeslice.start / one_second
+        if timeslice.duration is not None:
+            stop = start + (timeslice.duration / one_second)
+        return ContentRange(
+            'seconds',
+            timeslice.start / one_second,
+            total / one_second,
+            stop)
+
+    @staticmethod
+    def from_slice(slce, total):
+        return ContentRange('bytes', slce.start, total, slce.stop)
+
     def __str__(self):
         unit = self.unit
         start = self.start
@@ -156,10 +173,19 @@ class DefaultSerializer(object):
             value = flo.read(slce.stop - slce.start)
         else:
             value = flo.read()
-        return TempResult(value, self.content_type)
+        key = document.key_builder(document._id, feature.key)
+        total = document.database.size(key)
+        return TempResult(
+            value,
+            self.content_type,
+            is_partial=slce.start is not None or slce.stop is not None,
+            content_range=ContentRange.from_slice(slce, total))
 
 
 class OggVorbisSerializer(object):
+    """
+    Serializer capable of handling range requests against ogg vorbis files
+    """
     def __init__(self):
         super(OggVorbisSerializer, self).__init__()
 
@@ -189,8 +215,13 @@ class OggVorbisSerializer(object):
                 format='OGG', subtype='VORBIS') as sf:
             sf.write(samples)
         bio.seek(0)
+        content_range = ContentRange.from_timeslice(
+            slce, wrapper.duration_seconds)
         return TempResult(
-                bio.read(), 'audio/ogg', is_partial=slce == TimeSlice())
+            bio.read(),
+            'audio/ogg',
+            is_partial=slce != TimeSlice(),
+            content_range=content_range)
 
 
 def generate_image(data):
@@ -211,6 +242,7 @@ def generate_image(data):
     return TempResult(bio.read(), 'image/png')
 
 
+# TODO: Support seconds range requests
 class ConstantRateTimeSeriesSerializer(object):
     def __init__(self):
         super(ConstantRateTimeSeriesSerializer, self).__init__()

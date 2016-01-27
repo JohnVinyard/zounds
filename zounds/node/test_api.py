@@ -1,7 +1,7 @@
 import unittest2
 from api import RangeRequest, RangeUnitUnsupportedException, ContentRange
 from timeseries import TimeSlice
-from duration import Seconds, Picoseconds
+from duration import Seconds, Picoseconds, Milliseconds
 
 
 class ContentRangeTests(unittest2.TestCase):
@@ -15,6 +15,26 @@ class ContentRangeTests(unittest2.TestCase):
         self.assertEqual(
             'seconds 10-90/100',
             str(ContentRange('seconds', 10, 100, stop=90)))
+
+    def test_from_timeslce_full_slice(self):
+        ts = TimeSlice()
+        self.assertEqual(
+            'seconds 0.0-100.0/100.0',
+            str(ContentRange.from_timeslice(ts, Seconds(100))))
+
+    def test_from_timeslice_open_ended(self):
+        ts = TimeSlice(start=Picoseconds(int(1e12)) * 2.5)
+        self.assertEqual(
+            'seconds 2.5-100.0/100.0',
+            str(ContentRange.from_timeslice(ts, Seconds(100))))
+
+    def test_from_timeslice_closed(self):
+        ts = TimeSlice(
+            start=Picoseconds(int(1e12)) * 2.5,
+            duration=Milliseconds(2000))
+        self.assertEqual(
+            'seconds 2.5-4.5/100.0',
+            str(ContentRange.from_timeslice(ts, Seconds(100))))
 
 
 class RangeRequestTests(unittest2.TestCase):
