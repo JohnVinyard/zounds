@@ -1,7 +1,20 @@
 import unittest2
-from api import RangeRequest, RangeUnitUnsupportedException
+from api import RangeRequest, RangeUnitUnsupportedException, ContentRange
 from timeseries import TimeSlice
 from duration import Seconds, Picoseconds
+
+
+class ContentRangeTests(unittest2.TestCase):
+
+    def test_open_content_range(self):
+        self.assertEqual(
+            'bytes 10-100/100',
+            str(ContentRange('bytes', 10, 100)))
+
+    def test_closed_content_range(self):
+        self.assertEqual(
+            'seconds 10-90/100',
+            str(ContentRange('seconds', 10, 100, stop=90)))
 
 
 class RangeRequestTests(unittest2.TestCase):
