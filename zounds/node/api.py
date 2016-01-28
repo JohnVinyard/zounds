@@ -224,7 +224,7 @@ class OggVorbisSerializer(object):
             content_range=content_range)
 
 
-def generate_image(data):
+def generate_image(data, is_partial=False, content_range=None):
     fig = plt.figure()
     if len(data.shape) == 1:
         plt.plot(data)
@@ -239,10 +239,13 @@ def generate_image(data):
     bio.seek(0)
     fig.clf()
     plt.close()
-    return TempResult(bio.read(), 'image/png')
+    return TempResult(
+        bio.read(),
+        'image/png',
+        is_partial=is_partial,
+        content_range=content_range)
 
 
-# TODO: Support seconds range requests
 class ConstantRateTimeSeriesSerializer(object):
     def __init__(self):
         super(ConstantRateTimeSeriesSerializer, self).__init__()
@@ -259,8 +262,13 @@ class ConstantRateTimeSeriesSerializer(object):
     def serialize(self, context):
         feature = context.feature
         document = context.document
-        data = feature(_id=document._id, persistence=document)[context.slce]
-        return generate_image(data)
+        data = feature(_id=document._id, persistence=document)
+        sliced_data = data[context.slce]
+        content_range = ContentRange.from_slice(context.slce, sliced_data.end)
+        return generate_image(
+            sliced_data,
+            is_partial=True,
+            content_range=content_range)
 
 
 class NumpySerializer(object):
