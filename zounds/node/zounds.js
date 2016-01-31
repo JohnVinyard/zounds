@@ -62,6 +62,49 @@ $(function() {
         });
     }
 
+    function SearchResults(data, root, context) {
+        var
+            position = 0,
+            container = $('<div>'),
+            el = $('<div>'),
+            self = this;
+
+        this.render = function() {
+            container.empty();
+            new AudioSlice(data[position], container, context);
+        }
+
+        this.next = function() {
+            position += 1;
+            if(position >= data.length){
+                position = 0;
+            }
+            self.render();
+        }
+
+        this.previous = function() {
+            position -= 1;
+            if(position < 0) {
+                position = data.length - 1;
+            }
+            self.render();
+        }
+
+        el.append(container);
+        $('<a href="javascript:void(0);">previous</a>')
+            .appendTo(el)
+            .click(function() {
+                self.previous();
+            });
+        $('<a href="javascript:void(0);">next</a>')
+            .appendTo(el)
+            .click(function() {
+                self.next();
+            });
+        root.append(el);
+        self.render();
+    }
+
     function Visualization(selector, bus, context) {
         var
             el = $(selector),
@@ -88,7 +131,7 @@ $(function() {
                     url: data.url,
                     dataType: 'json'
                 }).done(function(resp) {
-                    new AudioSlice(resp.results[0], el, context);
+                    new SearchResults(resp.results, el, context);
                 });
             }
         });
