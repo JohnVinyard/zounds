@@ -173,7 +173,7 @@ class DefaultSerializer(object):
             value = flo.read(slce.stop - slce.start)
         else:
             value = flo.read()
-        key = document.key_builder(document._id, feature.key)
+        key = document.key_builder.build(document._id, feature.key)
         total = document.database.size(key)
         return TempResult(
             value,
@@ -216,7 +216,7 @@ class OggVorbisSerializer(object):
             sf.write(samples)
         bio.seek(0)
         content_range = ContentRange.from_timeslice(
-            slce, wrapper.duration_seconds)
+            slce, Picoseconds(int(1e12 * wrapper.duration_seconds)))
         return TempResult(
             bio.read(),
             'audio/ogg',
@@ -264,7 +264,8 @@ class ConstantRateTimeSeriesSerializer(object):
         document = context.document
         data = feature(_id=document._id, persistence=document)
         sliced_data = data[context.slce]
-        content_range = ContentRange.from_slice(context.slce, sliced_data.end)
+        content_range = ContentRange.from_timeslice(
+                context.slce, data.end)
         return generate_image(
             sliced_data,
             is_partial=True,
@@ -504,6 +505,8 @@ class ZoundsApp(object):
                 self.set_status(
                         httplib.PARTIAL_CONTENT if result.is_partial
                         else httplib.OK)
+                if result.content_range:
+                    self.set_header('Content-Range', str(result.content_range))
                 self.finish()
 
         return FeatureHandler
