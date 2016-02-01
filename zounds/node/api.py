@@ -13,6 +13,7 @@ import re
 import uuid
 import datetime
 from timeseries import ConstantRateTimeSeriesFeature
+from onset import TimeSliceFeature
 from index import SearchResults
 from duration import Seconds, Picoseconds
 from timeseries import TimeSlice
@@ -147,6 +148,16 @@ class RequestContext(object):
         self.feature = feature
         self.document = document
 
+    def __repr__(self):
+        return '''RequestContext(
+    document={document},
+    feature={feature},
+    slce={slce},
+    value={value})'''.format(**self.__dict__)
+
+    def __str__(self):
+        return self.__repr__()
+
 
 class DefaultSerializer(object):
     def __init__(self, content_type):
@@ -212,7 +223,8 @@ class OggVorbisSerializer(object):
                 mode='w',
                 samplerate=wrapper.samplerate,
                 channels=wrapper.channels,
-                format='OGG', subtype='VORBIS') as sf:
+                format='OGG',
+                subtype='VORBIS') as sf:
             sf.write(samples)
         bio.seek(0)
         content_range = ContentRange.from_timeslice(
@@ -299,18 +311,19 @@ class NumpySerializer(object):
         return generate_image(data)
 
 
-class SearchResultsSerializer(object):
-    def __init__(self, visualization_feature, audio_feature):
-        super(SearchResultsSerializer, self).__init__()
-        self.visualization_feature = visualization_feature
+class AudioSliceSerializer(object):
+    def __init__(
+            self,
+            content_type,
+            visualization_feature,
+            audio_feature):
         self.audio_feature = audio_feature
-
-    def matches(self, context):
-        return isinstance(context.value, SearchResults)
+        self.visualization_feature = visualization_feature
+        self._content_type = content_type
 
     @property
     def content_type(self):
-        return 'application/vnd.zounds.searchresults+json'
+        return self._content_type
 
     def _seconds(self, ts):
         return {
@@ -318,8 +331,7 @@ class SearchResultsSerializer(object):
             'duration': ts.duration / Seconds(1)
         }
 
-    def _result(self, result):
-        _id, ts = result
+    def _result(self, ts, _id):
         template = '/zounds/{_id}/{feature}'
         return {
             'audio': template.format(_id=_id, feature=self.audio_feature.key),
@@ -328,9 +340,43 @@ class SearchResultsSerializer(object):
             'slice': self._seconds(ts)
         }
 
+    def iter_results(self, context):
+        raise NotImplementedError()
+
     def serialize(self, context):
-        output = {'results': map(self._result, context.value)}
+        results = map(lambda x: self._result(*x), self.iter_results(context))
+        output = {'results': results}
         return TempResult(json.dumps(output), self.content_type)
+
+
+class OnsetsSerializer(AudioSliceSerializer):
+    def __init__(self, visualization_feature, audio_feature):
+        super(OnsetsSerializer, self).__init__(
+            'application/vnd.zounds.onsets+json',
+            visualization_feature,
+            audio_feature)
+
+    def matches(self, context):
+        return isinstance(context.feature, TimeSliceFeature)
+
+    def iter_results(self, context):
+        for ts in context.value:
+            yield ts, context.document._id
+
+
+class SearchResultsSerializer(AudioSliceSerializer):
+    def __init__(self, visualization_feature, audio_feature):
+        super(SearchResultsSerializer, self).__init__(
+            'application/vnd.zounds.searchresults+json',
+            visualization_feature,
+            audio_feature)
+
+    def matches(self, context):
+        return isinstance(context.value, SearchResults)
+
+    def iter_results(self, context):
+        for _id, ts in context.value:
+            yield ts, _id
 
 
 class ZoundsApp(object):
@@ -356,9 +402,12 @@ class ZoundsApp(object):
             DefaultSerializer('application/json'),
             DefaultSerializer('audio/ogg'),
             NumpySerializer(),
+            OnsetsSerializer(
+                self.visualization_feature,
+                self.audio_feature),
             SearchResultsSerializer(
-                    self.visualization_feature,
-                    self.audio_feature)
+                self.visualization_feature,
+                self.audio_feature)
         ]
         self.temp = {}
 
@@ -446,6 +495,7 @@ class ZoundsApp(object):
                             feature=feature,
                             value=value,
                             slce=slice(None))
+                    print context
                     result = app.serialize(context)
                     temp_id = uuid.uuid4().hex
                     app.temp[temp_id] = result
@@ -502,6 +552,7 @@ class ZoundsApp(object):
                 self.set_header('Content-Type', result.content_type)
                 self.set_header('Accept-Ranges', 'bytes')
                 self.write(result.data)
+                self.set_header('ETag', self.compute_etag())
                 self.set_status(
                         httplib.PARTIAL_CONTENT if result.is_partial
                         else httplib.OK)
