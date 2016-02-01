@@ -42,7 +42,7 @@ $(function() {
         bus.subscribe(events.PLAY, function(event, data) {
             if(self.isPlaying()) {
                 audio[0].pause();
-            }else {
+            } else {
                 audio[0].play();
             }
         });
@@ -124,21 +124,19 @@ $(function() {
             self.render();
         }
 
+        this.play = function() {
+            self.slice.play();
+        }
+
         el.append(container);
         root.append(el);
         self.render();
 
-        bus.subscribe(events.PLAY, function(event, data) {
-            self.slice.play();
-        });
+        bus.subscribe(events.PLAY, self.play);
 
-        bus.subscribe(events.PREVIOUS, function(event, data) {
-            self.previous();
-        });
+        bus.subscribe(events.PREVIOUS, self.previous);
 
-        bus.subscribe(events.NEXT, function(event, data) {
-            self.next();
-        });
+        bus.subscribe(events.NEXT, self.next);
 
         this.destroy = function() {
             bus.unsubscribe([events.PLAY, events.PREVIOUS, events.NEXT]);
