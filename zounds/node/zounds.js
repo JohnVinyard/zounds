@@ -1,7 +1,10 @@
 $(function() {
 
     var events = {
-        FEATURE_RECEIVED: 'FEATURE_RECEIVED'
+        FEATURE_RECEIVED: 'FEATURE_RECEIVED',
+        PLAY: 'PLAY',
+        NEXT: 'NEXT',
+        PREVIOUS: 'PREVIOUS'
     };
 
     function MessageBus() {
@@ -14,12 +17,43 @@ $(function() {
             $(document).on(event, func);
         }
 
+        this.unsubscribe = function(events) {
+            $(document).off(events.join(' '));
+        }
+
     }
 
-    function AudioSlice(data, root, context) {
+    function PngImage(url, root) {
+        $('<img>').attr('src', url).appendTo(root);
+    }
+
+    function BasicAudio(url, root, bus) {
         var
             self = this,
-            client = new ZoundsClient();
+            audio = $('<audio>').attr('controls', true);
+        $('<source>').attr('src', url).appendTo(audio);
+        audio.appendTo(root);
+
+        this.isPlaying = function() {
+            var el = audio[0];
+            return el.duration > 0 && !el.paused;
+        }
+
+        bus.subscribe(events.PLAY, function(event, data) {
+            if(self.isPlaying()) {
+                audio[0].pause();
+            }else {
+                audio[0].play();
+            }
+        });
+
+        this.destroy = function() {
+            bus.unsubscribe([events.PLAY]);
+        }
+    }
+
+    function AudioSlice(data, root, context, client) {
+        var self = this;
 
         var
             slice = {
@@ -62,7 +96,7 @@ $(function() {
         });
     }
 
-    function SearchResults(data, root, context) {
+    function SearchResults(data, root, context, client, bus) {
         var
             position = 0,
             container = $('<div>'),
@@ -71,7 +105,7 @@ $(function() {
 
         this.render = function() {
             container.empty();
-            new AudioSlice(data[position], container, context);
+            self.slice = new AudioSlice(data[position], container, context, client, bus);
         }
 
         this.next = function() {
@@ -91,54 +125,76 @@ $(function() {
         }
 
         el.append(container);
-        $('<a href="javascript:void(0);">previous</a>')
-            .appendTo(el)
-            .click(function() {
-                self.previous();
-            });
-        $('<a href="javascript:void(0);">next</a>')
-            .appendTo(el)
-            .click(function() {
-                self.next();
-            });
         root.append(el);
         self.render();
+
+        bus.subscribe(events.PLAY, function(event, data) {
+            self.slice.play();
+        });
+
+        bus.subscribe(events.PREVIOUS, function(event, data) {
+            self.previous();
+        });
+
+        bus.subscribe(events.NEXT, function(event, data) {
+            self.next();
+        });
+
+        this.destroy = function() {
+            bus.unsubscribe([events.PLAY, events.PREVIOUS, events.NEXT]);
+        }
     }
 
-    function Visualization(selector, bus, context) {
+    function Visualization(selector, bus, context, client) {
         var
-            el = $(selector),
-            client = new ZoundsClient();
+            self = this,
+            el = $(selector);
 
         bus.subscribe(events.FEATURE_RECEIVED, function(event, data) {
+
             el.empty();
+            if(self.view && self.view.destroy) {
+                self.view.destroy();
+            }
 
             if(data.contentType === 'image/png') {
-                $('<img>').attr('src', data.url).appendTo(el);
+                self.view = new PngImage(data.url, el);
                 return;
             }
 
             if(data.contentType === 'audio/ogg') {
-                var audio = $('<audio>').attr('controls', true);
-                $('<source>').attr('src', data.url).appendTo(audio);
-                audio.appendTo(el);
+                self.view = new BasicAudio(data.url, el, bus);
                 return;
             }
 
-            if(data.contentType == 'application/vnd.zounds.searchresults+json') {
+            if(data.contentType == 'application/vnd.zounds.searchresults+json'
+                || data.contentType == 'application/vnd.zounds.onsets+json') {
                 $.ajax({
                     method: 'GET',
                     url: data.url,
                     dataType: 'json'
                 }).done(function(resp) {
-                    new SearchResults(resp.results, el, context);
+                    console.log(resp);
+                    self.view = new SearchResults(resp.results, el, context, client, bus);
                 });
+            }
+        });
+
+        el.keydown(function(e) {
+            if(e.which === 32) {
+                bus.publish(events.PLAY);
+            } else if(e.which === 37) {
+                bus.publish(events.PREVIOUS);
+            } else if(e.which === 39) {
+                bus.publish(events.NEXT);
             }
         });
 
     }
 
     function ZoundsClient() {
+
+        var etags = {};
 
         this.interpret = function(command) {
             return $.ajax({
@@ -208,13 +264,12 @@ $(function() {
         }
     }
 
-    function Console(inputSelector, outputSelector, messageBus) {
+    function Console(inputSelector, outputSelector, messageBus, client) {
         var
             input = $(inputSelector),
             output = $(outputSelector),
             history = new History(),
-            history_pos = 0,
-            client = new ZoundsClient();
+            history_pos = 0;
 
         function fetch() {
             value = history.fetch(history_pos);
@@ -226,7 +281,6 @@ $(function() {
         }
 
         $(document).keydown(function(e) {
-
             if(e.which === 38 && history_pos < history.count()) {
                 history_pos += 1;
                 fetch();
@@ -267,8 +321,9 @@ $(function() {
         });
     }
 
+    var client = new ZoundsClient();
     var audioContext = new AudioContext();
     var bus = new MessageBus();
-    var input = new Console('#input', '#output', bus);
-    var vis = new Visualization('#visualization', bus, audioContext);
+    var input = new Console('#input', '#output', bus, client);
+    var vis = new Visualization('#visualization', bus, audioContext, client);
 });
