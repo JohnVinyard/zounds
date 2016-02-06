@@ -28,7 +28,4 @@ python-pip \
 libfreetype6-dev \
 libpng-dev \
 g++ \
-libjack0 \
-jackd \
-libjack-dev \
 mongodb
