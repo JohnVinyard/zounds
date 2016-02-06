@@ -15,7 +15,7 @@ class SampleRate(object):
     def __mul__(self, other):
         try:
             if len(other) == 1:
-                other = other * 2
+                other *= 2
         except TypeError:
             other = (other, other)
 
@@ -58,6 +58,15 @@ class SR11025(AudioSampleRate):
     def __init__(self):
         super(SR11025, self).__init__(11025)
 
+_samplerates = (SR96000(), SR48000(), SR44100(), SR22050(), SR11025())
+
+
+def audio_sample_rate(samples_per_second):
+    for sr in _samplerates:
+        if samples_per_second == sr.samples_per_second:
+            return sr
+    raise ValueError(
+        '{samples_per_second} is an invalid sample rate'.format(**locals()))
 
 class HalfLapped(SampleRate):
     def __init__(self, window_at_44100=2048, hop_at_44100=1024):
