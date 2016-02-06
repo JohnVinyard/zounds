@@ -104,10 +104,10 @@ class ContentRange(object):
         if timeslice.duration is not None:
             stop = start + (timeslice.duration / one_second)
         return ContentRange(
-            'seconds',
-            timeslice.start / one_second,
-            total / one_second,
-            stop)
+                'seconds',
+                timeslice.start / one_second,
+                total / one_second,
+                stop)
 
     @staticmethod
     def from_slice(slce, total):
@@ -128,7 +128,6 @@ class TempResult(object):
             content_type,
             is_partial=False,
             content_range=None):
-
         self.content_range = content_range
         self.data = data
         self.content_type = content_type
@@ -187,16 +186,17 @@ class DefaultSerializer(object):
         key = document.key_builder.build(document._id, feature.key)
         total = document.database.size(key)
         return TempResult(
-            value,
-            self.content_type,
-            is_partial=slce.start is not None or slce.stop is not None,
-            content_range=ContentRange.from_slice(slce, total))
+                value,
+                self.content_type,
+                is_partial=slce.start is not None or slce.stop is not None,
+                content_range=ContentRange.from_slice(slce, total))
 
 
 class OggVorbisSerializer(object):
     """
     Serializer capable of handling range requests against ogg vorbis files
     """
+
     def __init__(self):
         super(OggVorbisSerializer, self).__init__()
 
@@ -228,12 +228,12 @@ class OggVorbisSerializer(object):
             sf.write(samples)
         bio.seek(0)
         content_range = ContentRange.from_timeslice(
-            slce, Picoseconds(int(1e12 * wrapper.duration_seconds)))
+                slce, Picoseconds(int(1e12 * wrapper.duration_seconds)))
         return TempResult(
-            bio.read(),
-            'audio/ogg',
-            is_partial=slce != TimeSlice(),
-            content_range=content_range)
+                bio.read(),
+                'audio/ogg',
+                is_partial=slce != TimeSlice(),
+                content_range=content_range)
 
 
 def generate_image(data, is_partial=False, content_range=None):
@@ -252,10 +252,10 @@ def generate_image(data, is_partial=False, content_range=None):
     fig.clf()
     plt.close()
     return TempResult(
-        bio.read(),
-        'image/png',
-        is_partial=is_partial,
-        content_range=content_range)
+            bio.read(),
+            'image/png',
+            is_partial=is_partial,
+            content_range=content_range)
 
 
 class ConstantRateTimeSeriesSerializer(object):
@@ -279,9 +279,9 @@ class ConstantRateTimeSeriesSerializer(object):
         content_range = ContentRange.from_timeslice(
                 context.slce, data.end)
         return generate_image(
-            sliced_data,
-            is_partial=True,
-            content_range=content_range)
+                sliced_data,
+                is_partial=True,
+                content_range=content_range)
 
 
 class NumpySerializer(object):
@@ -289,7 +289,8 @@ class NumpySerializer(object):
         super(NumpySerializer, self).__init__()
 
     def matches(self, context):
-        if isinstance(context.feature, ConstantRateTimeSeriesFeature):
+        if context.document is not None \
+                and isinstance(context.feature, ConstantRateTimeSeriesFeature):
             return True
 
         return \
@@ -352,9 +353,9 @@ class AudioSliceSerializer(object):
 class OnsetsSerializer(AudioSliceSerializer):
     def __init__(self, visualization_feature, audio_feature):
         super(OnsetsSerializer, self).__init__(
-            'application/vnd.zounds.onsets+json',
-            visualization_feature,
-            audio_feature)
+                'application/vnd.zounds.onsets+json',
+                visualization_feature,
+                audio_feature)
 
     def matches(self, context):
         return isinstance(context.feature, TimeSliceFeature)
@@ -367,9 +368,9 @@ class OnsetsSerializer(AudioSliceSerializer):
 class SearchResultsSerializer(AudioSliceSerializer):
     def __init__(self, visualization_feature, audio_feature):
         super(SearchResultsSerializer, self).__init__(
-            'application/vnd.zounds.searchresults+json',
-            visualization_feature,
-            audio_feature)
+                'application/vnd.zounds.searchresults+json',
+                visualization_feature,
+                audio_feature)
 
     def matches(self, context):
         return isinstance(context.value, SearchResults)
@@ -403,11 +404,11 @@ class ZoundsApp(object):
             DefaultSerializer('audio/ogg'),
             NumpySerializer(),
             OnsetsSerializer(
-                self.visualization_feature,
-                self.audio_feature),
+                    self.visualization_feature,
+                    self.audio_feature),
             SearchResultsSerializer(
-                self.visualization_feature,
-                self.audio_feature)
+                    self.visualization_feature,
+                    self.audio_feature)
         ]
         self.temp = {}
 
