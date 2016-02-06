@@ -1,17 +1,19 @@
 from __future__ import division
+
+import os
+from io import BytesIO
+from random import choice
+from uuid import uuid4
+
+import numpy as np
+import unittest2
+from soundfile import *
+
+from audiostream import AudioStream
 from flow import \
     BaseModel, ByteStream, ByteStreamFeature, Feature, UuidProvider, \
     InMemoryDatabase, StringDelimitedKeyBuilder, PersistenceSettings
 from flow.nmpy import NumpyFeature
-import unittest2
-from soundfile import *
-import numpy as np
-from uuid import uuid4
-import os
-from io import BytesIO
-from random import choice
-
-from audiostream import AudioStream
 from ogg_vorbis import OggVorbis
 from resample import Resampler
 from samplerate import SR44100

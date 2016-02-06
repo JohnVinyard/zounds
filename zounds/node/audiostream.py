@@ -3,6 +3,8 @@ from soundfile import SoundFile
 from io import BytesIO
 from byte_depth import chunk_size_samples
 from timeseries import ConstantRateTimeSeries, Picoseconds
+from samplerate import audio_sample_rate
+from audiosamples import AudioSamples
 from os import SEEK_END
 
 
@@ -31,8 +33,9 @@ class AudioStream(Node):
         samples = self._sf.read(self._chunk_size_samples)
         if self._sum_to_mono and len(samples.shape) > 1:
             samples = samples.sum(axis=1) * 0.5
-        freq = Picoseconds(int(1e12)) / self._sf.samplerate
-        return ConstantRateTimeSeries(samples, freq)
+        # freq = Picoseconds(int(1e12)) / self._sf.samplerate
+        return AudioSamples(samples, audio_sample_rate(self._sf.samplerate))
+        # return ConstantRateTimeSeries(samples, freq)
 
     def _process(self, data):
         b = data
