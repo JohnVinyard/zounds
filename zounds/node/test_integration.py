@@ -14,6 +14,7 @@ from duration import Seconds, Milliseconds
 from timeseries import ConstantRateTimeSeriesFeature, TimeSlice
 from samplerate import SR44100, HalfLapped
 from basic import Max
+from audiosamples import AudioSamples, AudioSamplesFeature
 
 from soundfile import SoundFile
 import numpy as np
@@ -39,12 +40,12 @@ class Document(BaseModel, Settings):
             needs=raw,
             store=True)
 
-    pcm = ConstantRateTimeSeriesFeature(
+    pcm = AudioSamplesFeature(
             AudioStream,
             needs=raw,
             store=True)
 
-    resampled = ConstantRateTimeSeriesFeature(
+    resampled = AudioSamplesFeature(
             Resampler,
             needs=pcm,
             samplerate=samplerate,
@@ -128,6 +129,15 @@ class IntegrationTests(unittest2.TestCase):
         _id = Document.process(raw=bio)
         self.doc = Document(_id)
         self.signal = signal
+
+    def test_pcm_returns_audio_samples(self):
+        self.assertIsInstance(self.doc.pcm, AudioSamples)
+
+    def test_resampled_returns_audio_samples(self):
+        self.assertIsInstance(self.doc.resampled, AudioSamples)
+
+    def test_ogg_vorbis_wrapper_returns_audio_samples(self):
+        self.assertIsInstance(self.doc.ogg[:], AudioSamples)
 
     def test_ogg_wrapper_has_correct_duration_seconds(self):
         self.assertEqual(10, self.doc.ogg.duration_seconds)

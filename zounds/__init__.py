@@ -9,6 +9,10 @@ from node.ogg_vorbis import \
 
 from node.audiostream import AudioStream
 
+from node.audiosamples import \
+    AudioSamples, AudioSamplesEncoder, GreedyAudioSamplesDecoder, \
+    AudioSamplesFeature
+
 from node.basic import Slice, Sum, Max
 
 from node.learn import KMeans, BinaryRbm, LinearRbm, Learned
