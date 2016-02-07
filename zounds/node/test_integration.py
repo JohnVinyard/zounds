@@ -1,23 +1,22 @@
 from __future__ import division
 
-from flow import *
-from flow.nmpy import *
 from io import BytesIO
-import unittest2
 
+import numpy as np
+import unittest2
+from soundfile import SoundFile
+
+from audiosamples import AudioSamples, AudioSamplesFeature
 from audiostream import AudioStream
+from basic import Max
+from duration import Seconds, Milliseconds
+from flow import *
 from ogg_vorbis import OggVorbis, OggVorbisFeature
 from resample import Resampler
-from spectral import FFT, Chroma, BarkBands, BFCC
-from sliding_window import SlidingWindow, OggVorbisWindowingFunc
-from duration import Seconds, Milliseconds
-from timeseries import ConstantRateTimeSeriesFeature, TimeSlice
 from samplerate import SR44100, HalfLapped
-from basic import Max
-from audiosamples import AudioSamples, AudioSamplesFeature
-
-from soundfile import SoundFile
-import numpy as np
+from sliding_window import SlidingWindow, OggVorbisWindowingFunc
+from spectral import FFT, Chroma, BarkBands, BFCC
+from timeseries import ConstantRateTimeSeriesFeature, TimeSlice
 
 windowing_scheme = HalfLapped()
 samplerate = SR44100()
@@ -105,7 +104,7 @@ def signal(hz=440, seconds=5., sr=44100.):
     # total samples
     ts = seconds * sr
     mono = np.sin(np.arange(0, ts * cps, cps) * (2 * np.pi))
-    return np.vstack((mono, mono)).T
+    return np.column_stack((mono, mono))
 
 
 def soundfile(hz=440, seconds=5., sr=44100.):
@@ -132,6 +131,9 @@ class IntegrationTests(unittest2.TestCase):
 
     def test_pcm_returns_audio_samples(self):
         self.assertIsInstance(self.doc.pcm, AudioSamples)
+
+    def test_pcm_is_summed_to_mono(self):
+        self.assertEqual(1, self.doc.pcm.channels)
 
     def test_resampled_returns_audio_samples(self):
         self.assertIsInstance(self.doc.resampled, AudioSamples)
