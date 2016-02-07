@@ -41,7 +41,6 @@ class OggVorbisWrapper(object):
         return AudioSamples(self._sf.read(n_samples), sr)
 
     def iter_chunks(self):
-        sr = audio_sample_rate(self.samplerate)
         chunksize = Seconds(1)
         ts = TimeSlice(chunksize)
         sl = self[ts]
@@ -49,7 +48,7 @@ class OggVorbisWrapper(object):
         while len(sl) >= self._n_samples(chunksize):
             ts += chunksize
             sl = self[ts]
-            yield AudioSamples(sl, sr)
+            yield sl
 
 
 class OggVorbisEncoder(IdentityEncoder):

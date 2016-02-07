@@ -138,6 +138,11 @@ class IntegrationTests(unittest2.TestCase):
     def test_resampled_returns_audio_samples(self):
         self.assertIsInstance(self.doc.resampled, AudioSamples)
 
+    def test_ogg_vorbis_iter_chunks_returns_audio_samples(self):
+        chunks = list(self.doc.ogg.iter_chunks())
+        self.assertTrue(
+            all(isinstance(chunk, AudioSamples) for chunk in chunks))
+
     def test_ogg_vorbis_wrapper_returns_audio_samples(self):
         self.assertIsInstance(self.doc.ogg[:], AudioSamples)
 
