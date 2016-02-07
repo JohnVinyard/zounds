@@ -10,7 +10,7 @@ class AudioSamplesTest(unittest2.TestCase):
         arr = np.zeros(44100 * 2.5)
         one = Seconds(1)
         self.assertRaises(
-            TypeError, lambda: AudioSamples(arr, SampleRate(one, one)))
+                TypeError, lambda: AudioSamples(arr, SampleRate(one, one)))
 
     def test_can_create_instance(self):
         arr = np.zeros(44100 * 2.5)
@@ -18,3 +18,27 @@ class AudioSamplesTest(unittest2.TestCase):
         self.assertIsInstance(instance, AudioSamples)
         length_seconds = instance.end / Seconds(1)
         self.assertAlmostEqual(2.5, length_seconds, places=6)
+
+    def test_channels_returns_one_for_one_dimensional_array(self):
+        arr = np.zeros(44100 * 2.5)
+        instance = AudioSamples(arr, SR44100())
+        self.assertEqual(1, instance.channels)
+
+    def test_channels_returns_two_for_two_dimensional_array(self):
+        arr = np.zeros(44100 * 2.5)
+        arr = np.column_stack((arr, arr))
+        instance = AudioSamples(arr, SR44100())
+        self.assertEqual(2, instance.channels)
+
+    def test_samplerate_returns_correct_value(self):
+        arr = np.zeros(44100 * 2.5)
+        instance = AudioSamples(arr, SR44100())
+        self.assertIsInstance(instance.samplerate, SR44100)
+
+    def test_can_sum_to_mono(self):
+        arr = np.zeros(44100 * 2.5)
+        arr = np.column_stack((arr, arr))
+        instance = AudioSamples(arr, SR44100())
+        mono = instance.mono
+        self.assertEqual(1, mono.channels)
+        self.assertIsInstance(mono.samplerate, SR44100)
