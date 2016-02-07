@@ -13,6 +13,22 @@ class AudioSamples(ConstantRateTimeSeries):
         return ConstantRateTimeSeries.__new__(
                 cls, array, samplerate.frequency, samplerate.duration)
 
+    @property
+    def channels(self):
+        if len(self.shape) == 1:
+            return 1
+        return self.shape[1]
+
+    @property
+    def samplerate(self):
+        return audio_sample_rate(self.samples_per_second)
+
+    @property
+    def mono(self):
+        if self.channels == 1:
+            return self
+        return AudioSamples(self.sum(axis=1) * 0.5, self.samplerate)
+
 
 class AudioSamplesEncoder(Node):
     content_type = 'application/octet-stream'

@@ -13,6 +13,7 @@ import re
 import uuid
 import datetime
 from timeseries import ConstantRateTimeSeriesFeature
+from audiosamples import AudioSamples
 from onset import TimeSliceFeature
 from index import SearchResults
 from duration import Seconds, Picoseconds
@@ -190,6 +191,35 @@ class DefaultSerializer(object):
                 self.content_type,
                 is_partial=slce.start is not None or slce.stop is not None,
                 content_range=ContentRange.from_slice(slce, total))
+
+
+class AudioSamplesSerializer(object):
+
+    def __init__(self):
+        super(AudioSamplesSerializer, self).__init__()
+
+    def matches(self, context):
+        return isinstance(context.value, AudioSamples)
+
+    @property
+    def content_type(self):
+        return 'audio/ogg'
+
+    def serialize(self, context):
+        bio = BytesIO()
+        samples = context.value
+        print samples.samples_per_second
+        print samples.channels
+        with SoundFile(
+                bio,
+                mode='w',
+                samplerate=samples.samples_per_second,
+                channels=samples.channels,
+                format='OGG',
+                subtype='VORBIS') as sf:
+            sf.write(samples)
+        bio.seek(0)
+        return TempResult(bio.read(), 'audio/ogg')
 
 
 class OggVorbisSerializer(object):
@@ -398,6 +428,7 @@ class ZoundsApp(object):
         self.audio_feature = audio_feature
         self.base_path = base_path
         self.serializers = [
+            AudioSamplesSerializer(),
             OggVorbisSerializer(),
             ConstantRateTimeSeriesSerializer(),
             DefaultSerializer('application/json'),
