@@ -325,52 +325,6 @@ class Loudness(SingleInput):
         
         return summed.reshape((1,))
 
-class SpectralCentroid(SingleInput):
-    '''
-    .. epigraph::
-        Indicates where the "center of mass" of the spectrum is. Perceptually, 
-        it has a robust connection with the impression of "brightness" of a 
-        sound.  It is calculated as the weighted mean of the frequencies 
-        present in the signal, determined using a Fourier transform, with 
-        their magnitudes as the weights...
-    
-        -- http://en.wikipedia.org/wiki/Spectral_centroid
-    
-    This feature's :code:`needs` parameter usually points to a feature which \
-    computes spectral coefficients, such as :py:class:`FFT`, or \
-    :py:class:`BarkBands`, e.g::
-    
-        class FrameModel(Frames):
-            fft = Feature(FFT)
-            bark = Feature(BarkBands, needs = FFT)
-            centroid = Feature(SpectralCentroid, needs = bark)
-    '''
-    
-    def __init__(self,needs = None,key = None):
-        '''__init__
-        
-        :param needs: A feature which probably consists of spectral coefficients
-        '''
-        SingleInput.__init__(self,needs = needs,key = key)
-        self._bins = None
-        self._bins_sum = None
-    
-    def dim(self,env):
-        return ()
-    
-    @property
-    def dtype(self):
-        return np.float32
-    
-    def _process(self):
-        spectrum = self.in_data
-        if self._bins is None:
-            self._bins = np.arange(1,spectrum.shape[-1] + 1)
-            self._bins_sum = np.sum(self._bins)
-        
-        return (spectrum*self._bins).sum(axis = 1) / self._bins_sum
-
-
 class SpectralFlatness(SingleInput):
     '''
     .. epigraph::
