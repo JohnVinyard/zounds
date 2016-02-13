@@ -76,8 +76,6 @@ class RangeRequest(object):
         start = m.groupdict()['start']
         stop = m.groupdict()['stop']
 
-        print units, start, stop
-
         if units == 'bytes':
             return self.byte_slice(start, stop)
         elif units == 'seconds':
@@ -208,8 +206,6 @@ class AudioSamplesSerializer(object):
     def serialize(self, context):
         bio = BytesIO()
         samples = context.value
-        print samples.samples_per_second
-        print samples.channels
         with SoundFile(
                 bio,
                 mode='w',
@@ -527,7 +523,6 @@ class ZoundsApp(object):
                             feature=feature,
                             value=value,
                             slce=slice(None))
-                    print context
                     result = app.serialize(context)
                     temp_id = uuid.uuid4().hex
                     app.temp[temp_id] = result
