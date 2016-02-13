@@ -98,6 +98,31 @@ class BarkBands(Node):
                 data.duration)
 
 
+class SpectralCentroid(Node):
+    """
+    Indicates where the "center of mass" of the spectrum is. Perceptually,
+    it has a robust connection with the impression of "brightness" of a
+    sound.  It is calculated as the weighted mean of the frequencies
+    present in the signal, determined using a Fourier transform, with
+    their magnitudes as the weights...
+
+    -- http://en.wikipedia.org/wiki/Spectral_centroid
+    """
+    def __init__(self, needs = None):
+        super(SpectralCentroid, self).__init__(needs=needs)
+
+    def _first_chunk(self, data):
+        self._bins = np.arange(1, data.shape[-1] + 1)
+        self._bins_sum = np.sum(self._bins)
+        return data
+
+    def _process(self, data):
+        yield ConstantRateTimeSeries(
+            (data * self._bins).sum(axis=1) / self._bins_sum,
+            data.frequency,
+            data.duration)
+
+
 class BFCC(Node):
     def __init__(self, needs=None, n_coeffs=13, exclude=1):
         super(BFCC, self).__init__(needs=needs)
