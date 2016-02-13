@@ -1,6 +1,7 @@
 from flow import Node
 import numpy as np
 from scipy.fftpack import dct
+from scipy.stats.mstats import gmean
 from zounds.analyze.psychoacoustics import \
     Chroma as ChromaScale, Bark as BarkScale
 from zounds.nputil import safe_log
@@ -108,7 +109,7 @@ class SpectralCentroid(Node):
 
     -- http://en.wikipedia.org/wiki/Spectral_centroid
     """
-    def __init__(self, needs = None):
+    def __init__(self, needs=None):
         super(SpectralCentroid, self).__init__(needs=needs)
 
     def _first_chunk(self, data):
@@ -119,6 +120,36 @@ class SpectralCentroid(Node):
     def _process(self, data):
         yield ConstantRateTimeSeries(
             (data * self._bins).sum(axis=1) / self._bins_sum,
+            data.frequency,
+            data.duration)
+
+
+class SpectralFlatness(Node):
+    """
+    Spectral flatness or tonality coefficient, also known as Wiener
+    entropy, is a measure used in digital signal processing to characterize an
+    audio spectrum. Spectral flatness is typically measured in decibels, and
+    provides a way to quantify how tone-like a sound is, as opposed to being
+    noise-like. The meaning of tonal in this context is in the sense of the
+    amount of peaks or resonant structure in a power spectrum, as opposed to
+    flat spectrum of a white noise. A high spectral flatness indicates that
+    the spectrum has a similar amount of power in all spectral bands - this
+    would sound similar to white noise, and the graph of the spectrum would
+    appear relatively flat and smooth. A low spectral flatness indicates that
+    the spectral power is concentrated in a relatively small number of
+    bands - this would typically sound like a mixture of sine waves, and the
+    spectrum would appear "spiky"...
+
+    -- http://en.wikipedia.org/wiki/Spectral_flatness
+    """
+    def __init__(self, needs=None):
+        super(SpectralFlatness, self).__init__(needs=needs)
+
+    def _process(self, data):
+        m = data.mean(axis=1)
+        m[m == 0] = -1e5
+        yield ConstantRateTimeSeries(
+            gmean(data, axis=1) / m,
             data.frequency,
             data.duration)
 

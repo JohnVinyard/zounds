@@ -325,55 +325,6 @@ class Loudness(SingleInput):
         
         return summed.reshape((1,))
 
-class SpectralFlatness(SingleInput):
-    '''
-    .. epigraph::
-        Spectral flatness or tonality coefficient, also known as Wiener 
-        entropy, is a measure used in digital signal processing to characterize an
-        audio spectrum. Spectral flatness is typically measured in decibels, and 
-        provides a way to quantify how tone-like a sound is, as opposed to being 
-        noise-like. The meaning of tonal in this context is in the sense of the 
-        amount of peaks or resonant structure in a power spectrum, as opposed to 
-        flat spectrum of a white noise. A high spectral flatness indicates that 
-        the spectrum has a similar amount of power in all spectral bands - this 
-        would sound similar to white noise, and the graph of the spectrum would 
-        appear relatively flat and smooth. A low spectral flatness indicates that
-        the spectral power is concentrated in a relatively small number of 
-        bands - this would typically sound like a mixture of sine waves, and the
-        spectrum would appear "spiky"...
-        
-        -- http://en.wikipedia.org/wiki/Spectral_flatness
-    
-    This feature's :code:`needs` parameter usually points to a feature which \
-    computes spectral coefficients, such as :py:class:`FFT`, or \
-    :py:class:`BarkBands`, e.g::
-    
-        class FrameModel(Frames):
-            fft = Feature(FFT)
-            bark = Feature(BarkBands, needs = FFT)
-            centroid = Feature(SpectralFlatness, needs = bark)
-    '''
-    
-    def __init__(self, needs = None, key = None):
-        '''__init__
-        
-        :param needs: A feature which probably consists of spectral coefficients
-        '''
-        SingleInput.__init__(self,needs = needs, key = key)
-    
-    def dim(self,env):
-        return ()
-    
-    @property
-    def dtype(self):
-        return np.float32
-    
-    def _process(self):
-        spectrum = self.in_data
-        m = spectrum.mean(axis = 1)
-        m[m == 0] = -1e5
-        return (gmean(spectrum,axis = 1) / m)
-
 class Kurtosis(SingleInput):
     
     def __init__(self, needs = None, key = None):
