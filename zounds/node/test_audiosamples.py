@@ -1,7 +1,7 @@
 import unittest2
 import numpy as np
 from duration import Seconds
-from samplerate import SR44100, SampleRate
+from samplerate import SR44100, SR11025, SampleRate
 from audiosamples import AudioSamples
 
 
@@ -42,3 +42,25 @@ class AudioSamplesTest(unittest2.TestCase):
         mono = instance.mono
         self.assertEqual(1, mono.channels)
         self.assertIsInstance(mono.samplerate, SR44100)
+
+    def test_class_concat_returns_audio_samples(self):
+        s1 = AudioSamples(np.zeros(44100 * 2), SR44100())
+        s2 = AudioSamples(np.zeros(44100), SR44100())
+        s3 = AudioSamples.concat([s1, s2])
+        self.assertIsInstance(s3, AudioSamples)
+        self.assertEqual(44100 * 3, len(s3))
+
+    def test_instance_concat_returns_audio_samples(self):
+        s1 = AudioSamples(np.zeros(44100 * 2), SR44100())
+        s2 = AudioSamples(np.zeros(44100), SR44100())
+        s3 = s1.concat([s1, s2])
+        self.assertIsInstance(s3, AudioSamples)
+        self.assertEqual(44100 * 3, len(s3))
+
+    def test_concat_raises_for_different_sample_rates(self):
+        s1 = AudioSamples(np.zeros(44100 * 2), SR44100())
+        s2 = AudioSamples(np.zeros(44100), SR11025())
+        self.assertRaises(ValueError, lambda: AudioSamples.concat([s1, s2]))
+
+
+

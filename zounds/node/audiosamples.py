@@ -13,6 +13,10 @@ class AudioSamples(ConstantRateTimeSeries):
         return ConstantRateTimeSeries.__new__(
                 cls, array, samplerate.frequency, samplerate.duration)
 
+    @classmethod
+    def from_example(cls, arr, example):
+        return cls(arr, example.samplerate)
+
     @property
     def channels(self):
         if len(self.shape) == 1:

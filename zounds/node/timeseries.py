@@ -58,15 +58,6 @@ class TimeSlice(object):
         return self.__repr__()
 
 
-class TimeSeries(object):
-    '''
-    TimeSeries interface
-    '''
-
-    def __init__(self):
-        super(TimeSeries, self).__init__()
-
-
 class ConstantRateTimeSeriesMetadata(NumpyMetaData):
     def __init__( \
             self,
@@ -199,10 +190,10 @@ class ConstantRateTimeSeriesFeature(Feature):
 
 
 class ConstantRateTimeSeries(np.ndarray):
-    '''
-    A TimeSeries implementation with samples of a constant duration and 
+    """
+    A TimeSeries implementation with samples of a constant duration and
     frequency.
-    '''
+    """
     __array_priority__ = 10.0
 
     def __new__(cls, input_array, frequency, duration=None):
@@ -210,8 +201,8 @@ class ConstantRateTimeSeries(np.ndarray):
             raise ValueError('duration must be of type {t} but was {t2}'.format( \
                     t=np.timedelta64, t2=frequency.__class__))
 
-        if duration != None and not isinstance(duration, np.timedelta64):
-            raise ValueError('start must be of type {t} but was {t2}'.format( \
+        if duration is not None and not isinstance(duration, np.timedelta64):
+            raise ValueError('start must be of type {t} but was {t2}'.format(
                     t=np.timedelta64, t2=duration.__class__))
 
         obj = np.asarray(input_array).view(cls)
@@ -219,17 +210,18 @@ class ConstantRateTimeSeries(np.ndarray):
         obj.duration = duration or frequency
         return obj
 
+    @classmethod
+    def from_example(cls, arr, example):
+        return cls(arr, frequency=example.frequency, duration=example.duration)
+
     def concatenate(self, other):
         if self.frequency == other.frequency and self.duration == other.duration:
-            return ConstantRateTimeSeries( \
-                    np.concatenate([self, other]),
-                    frequency=self.frequency,
-                    duration=self.duration)
+            return self.from_example(np.concatenate([self, other]), self)
         raise ValueError( \
                 'self and other must have the same sample frequency and sample duration')
 
-    @staticmethod
-    def concat(arrs, axis=0):
+    @classmethod
+    def concat(cls, arrs, axis=0):
         freqs = set(x.frequency for x in arrs)
         if len(freqs) > 1:
             raise ValueError('all timeseries must have same frequency')
@@ -238,10 +230,7 @@ class ConstantRateTimeSeries(np.ndarray):
         if len(durations) > 1:
             raise ValueError('all timeseries must have same duration')
 
-        return ConstantRateTimeSeries( \
-                np.concatenate(arrs, axis=axis),
-                frequency=list(freqs)[0],
-                duration=list(durations)[0])
+        return cls.from_example(np.concatenate(arrs, axis=axis), arrs[0])
 
     @property
     def samples_per_second(self):
@@ -249,7 +238,7 @@ class ConstantRateTimeSeries(np.ndarray):
 
     @property
     def duration_in_seconds(self):
-        return int(Picoseconds(int(1e12)) / self.duration)
+        return self.duration / Picoseconds(int(1e12))
 
     @property
     def samplerate(self):

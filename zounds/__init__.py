@@ -41,6 +41,8 @@ from node.timeseries import \
     TimeSlice, ConstantRateTimeSeriesEncoder, ConstantRateTimeSeriesFeature, \
     GreedyConstantRateTimeSeriesDecoder, PackedConstantRateTimeSeriesEncoder
 
+from node.synthesize import FFTSynthesizer, DCTSynthesizer
+
 from node.api import ZoundsApp, RangeUnitUnsupportedException
 
 from node.index import \
