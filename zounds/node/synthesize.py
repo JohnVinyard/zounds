@@ -3,6 +3,7 @@ import numpy as np
 from scipy.fftpack import idct
 from samplerate import audio_sample_rate
 from audiosamples import AudioSamples
+from timeseries import ConstantRateTimeSeries
 
 
 class ShortTimeTransformSynthesizer(object):
@@ -14,7 +15,8 @@ class ShortTimeTransformSynthesizer(object):
         return frames
 
     def _overlap_add(self, frames):
-        samples_per_second = frames.duration_in_seconds / frames.shape[-1]
+        sample_length_seconds = frames.duration_in_seconds / frames.shape[-1]
+        samples_per_second = int(1 / sample_length_seconds)
         samplerate = audio_sample_rate(samples_per_second)
         windowsize = int(frames.duration / samplerate.frequency)
         hopsize = int(frames.frequency / samplerate.frequency)
@@ -27,22 +29,23 @@ class ShortTimeTransformSynthesizer(object):
 
     def synthesize(self, frames):
         audio = self._transform(frames)
-        return self._overlap_add(audio)
+        ts = ConstantRateTimeSeries.from_example(audio, frames)
+        return self._overlap_add(ts)
 
 
-class ShortTimeFourierTransformSynthesizer(ShortTimeTransformSynthesizer):
+class FFTSynthesizer(ShortTimeTransformSynthesizer):
 
     def __init__(self):
-        super(ShortTimeFourierTransformSynthesizer, self).__init__()
+        super(FFTSynthesizer, self).__init__()
 
     def _transform(self, frames):
         return np.fft.fftpack.ifft(frames)
 
 
-class ShortTimeDiscreteCosineTransformSynthesizer(ShortTimeTransformSynthesizer):
+class DCTSynthesizer(ShortTimeTransformSynthesizer):
 
     def __init__(self):
-        super(ShortTimeDiscreteCosineTransformSynthesizer, self).__init__()
+        super(DCTSynthesizer, self).__init__()
 
     def _transform(self, frames):
         return idct(frames, norm='ortho')

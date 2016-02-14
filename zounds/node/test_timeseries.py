@@ -319,6 +319,18 @@ class TimeSeriesTests(unittest2.TestCase):
         ts = ConstantRateTimeSeries(arr, freq, duration)
         self.assertEqual(TimeSlice(Milliseconds(9500)), ts.span)
 
+    def test_duration_in_seconds_half_second(self):
+        arr = np.arange(10)
+        freq = Milliseconds(500)
+        ts = ConstantRateTimeSeries(arr, freq)
+        self.assertEqual(0.5, ts.duration_in_seconds)
+
+    def test_duration_in_seconds_two_seconds(self):
+        arr = np.arange(10)
+        freq = Seconds(2)
+        ts = ConstantRateTimeSeries(arr, freq)
+        self.assertEqual(2, ts.duration_in_seconds)
+
     def test_samplerate_one_per_second(self):
         arr = np.arange(10)
         freq = Seconds(1)
