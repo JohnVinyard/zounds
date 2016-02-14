@@ -2,7 +2,7 @@ from __future__ import division
 from abc import ABCMeta,abstractmethod
 import numpy as np
 from scipy.signal import triang
-from zounds.visualize.plot import plot
+
 
 def fft_index(freq_hz,ws,sr,rnd = np.round):
     '''
