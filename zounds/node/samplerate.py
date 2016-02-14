@@ -68,6 +68,7 @@ def audio_sample_rate(samples_per_second):
     raise ValueError(
         '{samples_per_second} is an invalid sample rate'.format(**locals()))
 
+
 class HalfLapped(SampleRate):
     def __init__(self, window_at_44100=2048, hop_at_44100=1024):
         one_sample_at_44100 = Picoseconds(int(1e12)) / 44100.
