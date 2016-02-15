@@ -33,7 +33,8 @@ from node.samplerate import \
 
 from node.sliding_window import SlidingWindow, OggVorbisWindowingFunc
 
-from node.spectral import FFT, DCT, BarkBands, Chroma, BFCC
+from node.spectral import FFT, DCT, BarkBands, Chroma, BFCC, SpectralCentroid, \
+    SpectralFlatness
 
 from node.template_match import TemplateMatch
 
