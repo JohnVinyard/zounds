@@ -2,7 +2,7 @@ from flow import Node
 import numpy as np
 from scipy.fftpack import dct
 from scipy.stats.mstats import gmean
-from zounds.analyze.psychoacoustics import \
+from psychoacoustics import \
     Chroma as ChromaScale, Bark as BarkScale
 from zounds.nputil import safe_log
 from zounds.node.timeseries import ConstantRateTimeSeries

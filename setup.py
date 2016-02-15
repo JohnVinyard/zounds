@@ -19,7 +19,7 @@ setup(
     author_email='john.vinyard@gmail.com',
     long_description=read('README.md'),
     packages=['zounds', 'zounds.node', 'zounds.learn', 'zounds.learn.nnet',
-              'zounds.nputil', 'zounds.analyze'],
+              'zounds.nputil'],
     install_requires=['nose', 'unittest2', 'requests', 'tornado'],
     package_data={
         'nputil': ['*.pyx', '*.pyxbld'],
