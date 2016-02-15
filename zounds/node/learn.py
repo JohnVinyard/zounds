@@ -2,7 +2,7 @@ from flow import Node
 from preprocess import Op, PreprocessResult, Preprocessor
 from timeseries import ConstantRateTimeSeries
 from scipy.cluster.vq import kmeans
-from zounds.learn.nnet.rbm import Rbm, LinearRbm as LinRbm
+from rbm import Rbm, RealValuedRbm
 
 
 class KMeans(Preprocessor):
@@ -87,7 +87,7 @@ class LinearRbm(BaseRbm):
             learning_rate=0.001,
             needs=None):
         super(LinearRbm, self).__init__(
-                cls=LinRbm,
+                cls=RealValuedRbm,
                 hdim=hdim,
                 sparsity_target=sparsity_target,
                 epochs=epochs,

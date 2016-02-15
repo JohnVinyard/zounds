@@ -1,4 +1,5 @@
 import os
+import numpy as np
 
 
 def iter_files(base_path):
@@ -10,3 +11,10 @@ def process_dir(base_path, process_func):
     for fp in iter_files(base_path):
         process_func(fp)
 
+
+def sigmoid(a):
+    return 1. / (1 + np.exp(-a))
+
+
+def stochastic_binary(a):
+    return a > np.random.random_sample(a.shape)
