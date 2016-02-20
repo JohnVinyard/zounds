@@ -1,4 +1,5 @@
 import os
+import sys
 import json
 import tornado.ioloop
 import tornado.web
@@ -8,6 +9,7 @@ from flow import Decoder
 import traceback
 from matplotlib import pyplot as plt
 from io import BytesIO
+from cStringIO import StringIO
 import ast
 import re
 import uuid
@@ -543,8 +545,12 @@ class ZoundsApp(object):
                         output['result'] = str(value)
                         self._add_url(statement, output, value)
                     except SyntaxError:
+                        orig_stdout = sys.stdout
+                        sys.stdout = sio = StringIO()
                         exec (statement, globals, locals)
-                        output['result'] = ''
+                        sio.seek(0)
+                        output['result'] = sio.read()
+                        sys.stdout = orig_stdout
                     self.set_status(httplib.OK)
                 except:
                     output['error'] = traceback.format_exc()
