@@ -1,6 +1,7 @@
 from flow import Node, NotEnoughData
 import marshal
 import types
+from collections import OrderedDict
 
 
 class Op(object):
@@ -18,18 +19,22 @@ class Op(object):
         except KeyError:
             raise AttributeError(key)
 
-    def __call__(self, arg):
+    def __call__(self, arg, **kwargs):
         code = marshal.loads(self._func)
         f = types.FunctionType(
                 code,
                 globals(),
                 'preprocess')
-        return f(arg, **self._kwargs)
+        kwargs.update(self._kwargs)
+        return f(arg, **kwargs)
 
 
 class PreprocessResult(object):
-    def __init__(self, data, op):
+    def __init__(self, data, op, inversion_data=None, inverse=None, name=None):
         super(PreprocessResult, self).__init__()
+        self.name = name
+        self.inverse = inverse
+        self.inversion_data = inversion_data
         self.data = data
         self.op = op
 
@@ -38,69 +43,188 @@ class Preprocessor(Node):
     def __init__(self, needs=None):
         super(Preprocessor, self).__init__(needs=needs)
 
+    def _forward_func(self):
+        """
+        Return a function that represents this processor's
+        forward transform
+        """
+
+        def x(data, example_arg=None, another_one=None):
+            return data
+
+        return x
+
+    def transform(self, **kwargs):
+        return Op(self._forward_func(), **kwargs)
+
+    def _inversion_data(self):
+        """
+        Return a function that computes any data needed for
+        an inverse transform, if one is possible.  Otherwise,
+        raise NotImplemented
+        """
+
+        def x(data, **kwargs):
+            return kwargs
+
+        return x
+
+    def inversion_data(self, **kwargs):
+        return Op(self._inversion_data(), **kwargs)
+
+    def _backward_func(self):
+        """
+        Return a function that computes this processor's
+        inverse transform, if one is possible.  Otherwise,
+        raise NotImplemented
+        """
+
+        def x(data, **inversion_args):
+            return data
+
+        return x
+
+    def inverse_transform(self):
+        return Op(self._backward_func())
+
     def _extract_data(self, data):
         if isinstance(data, PreprocessResult):
             return data.data
         return data
 
 
+class UnitNorm(Preprocessor):
+    def __init__(self, needs=None):
+        super(UnitNorm, self).__init__(needs=needs)
+
+    def _forward_func(self):
+        def x(d):
+            from zounds.nputil import safe_unit_norm
+            return safe_unit_norm(d.reshape(d.shape[0], -1))
+
+        return x
+
+    def _inversion_data(self):
+        def x(d):
+            import numpy as np
+            return dict(norm=np.linalg.norm(d, axis=1))
+
+        return x
+
+    def _backward_func(self):
+        def x(d, norm=None):
+            return d * norm[:, None]
+
+        return x
+
+    def _process(self, data):
+        data = self._extract_data(data)
+        op = self.transform()
+        inv_data = self.inversion_data()
+        inv = self.inverse_transform()
+        data = op(data)
+        yield PreprocessResult(
+                data, op, inversion_data=inv_data, inverse=inv, name='UnitNorm')
+
+
 class MeanStdNormalization(Preprocessor):
     def __init__(self, needs=None):
         super(MeanStdNormalization, self).__init__(needs=needs)
+
+    def _forward_func(self):
+        def x(d, mean=None, std=None):
+            return (d - mean) / std
+
+        return x
+
+    def _backward_func(self):
+        def x(d, mean=None, std=None):
+            arr = d.copy()
+            arr *= std
+            arr += mean
+            return arr
+
+        return x
 
     def _process(self, data):
         data = self._extract_data(data)
         mean = data.mean(axis=0)
         std = data.std(axis=0)
-
-        def x(d, mean=None, std=None):
-            return (d - mean) / std
-
-        op = Op(x, mean=mean, std=std)
+        op = self.transform(mean=mean, std=std)
+        inv_data = self.inversion_data(mean=mean, std=std)
+        inv = self.inverse_transform()
         data = op(data)
-        yield PreprocessResult(data, op)
+        yield PreprocessResult(
+            data, op, inversion_data=inv_data, inverse=inv, name='MeanStd')
 
 
-class UnitNorm(Preprocessor):
-    def __init__(self, needs=None):
-        super(UnitNorm, self).__init__(needs=needs)
+class Binarize(Preprocessor):
+    def __init__(self, threshold=0.5, needs=None):
+        super(Binarize, self).__init__(needs=needs)
+        self.threshold = threshold
+
+    def _forward_func(self):
+        def x(d, threshold=None):
+            import numpy as np
+            data = np.zeros(d.shape, dtype=np.uint8)
+            data[np.where(d > threshold)] = 1
+            return data
+
+        return x
+
+    def _backward_func(self):
+        def x(d):
+            raise NotImplementedError()
+
+        return x
 
     def _process(self, data):
         data = self._extract_data(data)
-
-        def x(d):
-            from zounds.nputil import safe_unit_norm
-            return safe_unit_norm(d.reshape(d.shape[0], -1))
-
-        op = Op(x)
+        op = self.transform(threshold=self.threshold)
+        inv_data = self.inversion_data()
+        inv = self.inverse_transform()
         data = op(data)
-        yield PreprocessResult(data, op)
+        yield PreprocessResult(
+            data, op, inversion_data=inv_data, inverse=inv, name='Binarize')
+
+
+class Pipeline(object):
+    def __init__(self, preprocess_results):
+        self.processors = preprocess_results
+
+    def transform(self, data):
+        inversion_data = []
+        for p in self.processors:
+            inversion_data.append(p.inversion_data(data))
+            data = p.op(data)
+        return PipelineResult(data, self.processors, inversion_data)
+
+
+class PipelineResult(object):
+    def __init__(self, data, processors, inversion_data):
+        super(PipelineResult, self).__init__()
+        self.processors = processors[::-1]
+        self.inversion_data = inversion_data[::-1]
+        self.data = data
+
+    def inverse_transform(self):
+        data = self.data
+        for inv_data, p in zip(self.inversion_data, self.processors):
+            data = p.inverse(data, **inv_data)
+        return data
 
 
 class PreprocessingPipeline(Node):
     def __init__(self, needs=None):
         super(PreprocessingPipeline, self).__init__(needs=needs)
-        self._pipeline = [None] * len(self._needs)
+        self._pipeline = OrderedDict((id(n), None) for n in needs)
 
     def _enqueue(self, data, pusher):
-        # BUG: the memory address of _needs and pusher won't be the same.
-        # the former is a Feature instance, and the latter is an 
-        # Extractor instance
-        i = self._needs.index(pusher)
-        if i < 0:
-            raise Exception('pusher not found')
-        self._pipeline[i] = data.op
-
-    def _compute_op(self, pipeline):
-        def x(d, pipeline=None):
-            for p in pipeline:
-                d = p(d)
-            return d
-
-        return Op(x, pipeline=pipeline)
+        self._pipeline[id(pusher)] = data
 
     def _dequeue(self):
-        if not self._finalized or not all(self._pipeline):
+        # TODO: Make this an aggregator
+        if not self._finalized or not all(self._pipeline.itervalues()):
             raise NotEnoughData()
 
-        return self._compute_op(pipeline=self._pipeline)
+        return Pipeline(self._pipeline.values())

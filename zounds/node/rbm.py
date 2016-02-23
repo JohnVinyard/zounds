@@ -236,7 +236,6 @@ class Rbm(object):
 
         """
 
-        print 'RBM', samples
         batch_size = 100
         nbatches = int(len(samples) / batch_size)
         # If the number of samples isn't evenly divisible by batch size, we're

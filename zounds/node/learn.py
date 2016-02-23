@@ -1,8 +1,9 @@
-from flow import Node
-from preprocess import Op, PreprocessResult, Preprocessor
-from timeseries import ConstantRateTimeSeries
 from scipy.cluster.vq import kmeans
+
+from flow import Node
+from preprocess import PreprocessResult, Preprocessor
 from rbm import Rbm, RealValuedRbm
+from timeseries import ConstantRateTimeSeries
 
 
 class KMeans(Preprocessor):
@@ -10,10 +11,7 @@ class KMeans(Preprocessor):
         super(KMeans, self).__init__(needs=needs)
         self._centroids = centroids
 
-    def _process(self, data):
-        data = self._extract_data(data)
-        codebook, _ = kmeans(data, self._centroids)
-
+    def _forward_func(self):
         def x(d, codebook=None):
             import numpy as np
             from scipy.spatial.distance import cdist
@@ -24,9 +22,25 @@ class KMeans(Preprocessor):
             feature[np.arange(l), best] = 1
             return feature
 
-        op = Op(x, codebook=codebook)
+        return x
+
+    def _backward_func(self):
+        def x(d, codebook=None):
+            import numpy as np
+            indices = np.where(d == 1)
+            return codebook[indices[1]]
+
+        return x
+
+    def _process(self, data):
+        data = self._extract_data(data)
+        codebook, _ = kmeans(data, self._centroids)
+        op = self.transform(codebook=codebook)
+        inv_data = self.inversion_data(codebook=codebook)
+        inv = self.inverse_transform()
         data = op(data)
-        yield PreprocessResult(data, op)
+        yield PreprocessResult(
+                data, op, inversion_data=inv_data, inverse=inv, name='KMeans')
 
 
 class BaseRbm(Preprocessor):
@@ -45,6 +59,18 @@ class BaseRbm(Preprocessor):
         self._epochs = epochs
         self._cls = cls
 
+    def _forward_func(self):
+        def x(d, rbm=None):
+            return rbm(d)
+
+        return x
+
+    def _backward_func(self):
+        def x(d, rbm=None):
+            return rbm.fromfeatures(d, binarize=False)
+
+        return x
+
     def _process(self, data):
         data = self._extract_data(data)
         rbm = self._cls(
@@ -53,13 +79,16 @@ class BaseRbm(Preprocessor):
                 sparsity_target=self._sparsity,
                 learning_rate=self._learning_rate)
         rbm.train(data, lambda epoch, error: epoch > self._epochs)
-
-        def x(d, rbm=None):
-            return rbm(d)
-
-        op = Op(x, rbm=rbm)
+        op = self.transform(rbm=rbm)
+        inv_data = self.inversion_data(rbm=rbm)
+        inv = self.inverse_transform()
         data = op(data)
-        yield PreprocessResult(data, op)
+        yield PreprocessResult(
+                data,
+                op,
+                inversion_data=inv_data,
+                inverse=inv,
+                name=self.__class__.__name__)
 
 
 class BinaryRbm(BaseRbm):
@@ -91,7 +120,7 @@ class LinearRbm(BaseRbm):
                 hdim=hdim,
                 sparsity_target=sparsity_target,
                 epochs=epochs,
-                learning_rate=0.001,
+                learning_rate=learning_rate,
                 needs=needs)
 
 
