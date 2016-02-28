@@ -190,6 +190,12 @@ class IntegrationTests(unittest2.TestCase):
         samples = ogg[:]
         self.assertEqual(441000, len(samples))
 
+    def test_can_read_ogg_samples_twice(self):
+        ogg = self.doc.ogg
+        s1 = ogg[:]
+        s2 = ogg[:]
+        self.assertEqual(s1.shape, s2.shape)
+
     def test_can_get_end_of_ogg_vorbis_feature_with_slice(self):
         ogg = self.doc.ogg
         samples = ogg[TimeSlice(Seconds(1), Milliseconds(9500))]

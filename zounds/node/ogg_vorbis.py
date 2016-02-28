@@ -30,6 +30,8 @@ class OggVorbisWrapper(object):
         return int(duration / self._freq)
 
     def __getitem__(self, timeslice):
+        self._flo.seek(0)
+        self._sf = SoundFile(self._flo)
         sr = audio_sample_rate(self.samplerate)
 
         if timeslice == slice(None):
