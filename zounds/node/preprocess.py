@@ -127,6 +127,47 @@ class UnitNorm(Preprocessor):
                 data, op, inversion_data=inv_data, inverse=inv, name='UnitNorm')
 
 
+class Log(Preprocessor):
+    def __init__(self, needs=None):
+        super(Log, self).__init__(needs=needs)
+
+    def _forward_func(self):
+        def x(d):
+            import numpy as np
+            m = np.min(d)
+            if m > 0:
+                return np.log(m)
+            pos = d + -np.min(d) + 1
+            return np.log(pos)
+
+        return x
+
+    def _inversion_data(self):
+        def x(d):
+            import numpy as np
+            return dict(min=np.min(d))
+
+        return x
+
+    def _backward_func(self):
+        def x(d, min=None):
+            import numpy as np
+            if min > 0:
+                return np.exp(d)
+            return np.exp(d) - (-min) - 1
+
+        return x
+
+    def _process(self, data):
+        data = self._extract_data(data)
+        op = self.transform()
+        inv_data = self.inversion_data()
+        inv = self.inverse_transform()
+        data = op(data)
+        yield PreprocessResult(
+                data, op, inversion_data=inv_data, inverse=inv, name='Log')
+
+
 class MeanStdNormalization(Preprocessor):
     def __init__(self, needs=None):
         super(MeanStdNormalization, self).__init__(needs=needs)
@@ -155,7 +196,7 @@ class MeanStdNormalization(Preprocessor):
         inv = self.inverse_transform()
         data = op(data)
         yield PreprocessResult(
-            data, op, inversion_data=inv_data, inverse=inv, name='MeanStd')
+                data, op, inversion_data=inv_data, inverse=inv, name='MeanStd')
 
 
 class Binarize(Preprocessor):
@@ -185,7 +226,7 @@ class Binarize(Preprocessor):
         inv = self.inverse_transform()
         data = op(data)
         yield PreprocessResult(
-            data, op, inversion_data=inv_data, inverse=inv, name='Binarize')
+                data, op, inversion_data=inv_data, inverse=inv, name='Binarize')
 
 
 class Pipeline(object):

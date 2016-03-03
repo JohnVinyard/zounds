@@ -22,7 +22,7 @@ from node.onset import \
     SparseTimestampEncoder, TimeSliceDecoder, TimeSliceFeature, ComplexDomain
 
 from node.preprocess import \
-    MeanStdNormalization, UnitNorm, PreprocessingPipeline
+    MeanStdNormalization, UnitNorm, Log, PreprocessingPipeline
 
 from node.random_samples import ReservoirSampler
 
