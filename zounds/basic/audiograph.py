@@ -1,12 +1,10 @@
 from flow import BaseModel, JSONFeature, ByteStream, ByteStreamFeature
-from audio_metadata import MetaData, AudioMetaDataEncoder
-from ogg_vorbis import OggVorbis, OggVorbisFeature
-from timeseries import ConstantRateTimeSeriesFeature
-from audiostream import AudioStream
-from resample import Resampler
-from samplerate import SR44100, HalfLapped
-from sliding_window import SlidingWindow, OggVorbisWindowingFunc
-from spectral import FFT, BarkBands
+from zounds.soundfile import \
+    MetaData, AudioMetaDataEncoder, OggVorbis, OggVorbisFeature, AudioStream, \
+    Resampler
+from zounds.timeseries import ConstantRateTimeSeriesFeature, SR44100, HalfLapped
+from zounds.spectral import \
+    SlidingWindow, OggVorbisWindowingFunc, FFT, BarkBands
 
 
 def audio_graph(

@@ -9,14 +9,12 @@ import numpy as np
 import unittest2
 from soundfile import *
 
-from audiostream import AudioStream
+from zounds.soundfile import AudioStream, OggVorbis, Resampler
+from zounds.timeseries import SR44100
 from flow import \
     BaseModel, ByteStream, ByteStreamFeature, Feature, UuidProvider, \
     InMemoryDatabase, StringDelimitedKeyBuilder, PersistenceSettings
 from flow.nmpy import NumpyFeature
-from ogg_vorbis import OggVorbis
-from resample import Resampler
-from samplerate import SR44100
 
 _sample_rates = (11025, 22050, 44100, 48000, 88200, 96000)
 _channels = (1, 2)

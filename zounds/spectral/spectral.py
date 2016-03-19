@@ -2,11 +2,9 @@ from flow import Node
 import numpy as np
 from scipy.fftpack import dct
 from scipy.stats.mstats import gmean
-from psychoacoustics import \
-    Chroma as ChromaScale, Bark as BarkScale
+from psychacoustics import Chroma as ChromaScale, Bark as BarkScale
 from zounds.nputil import safe_log
-from zounds.node.timeseries import ConstantRateTimeSeries
-from zounds.node.samplerate import SR44100
+from zounds.timeseries import ConstantRateTimeSeries, SR44100
 
 
 class FFT(Node):

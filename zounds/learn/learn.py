@@ -3,7 +3,7 @@ from scipy.cluster.vq import kmeans
 from flow import Node
 from preprocess import PreprocessResult, Preprocessor
 from rbm import Rbm, RealValuedRbm
-from timeseries import ConstantRateTimeSeries
+from zounds.timeseries import ConstantRateTimeSeries
 
 
 class KMeans(Preprocessor):

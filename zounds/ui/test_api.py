@@ -1,7 +1,6 @@
 import unittest2
 from api import RangeRequest, RangeUnitUnsupportedException, ContentRange
-from timeseries import TimeSlice
-from duration import Seconds, Picoseconds, Milliseconds
+from zounds.timeseries import TimeSlice, Seconds, Picoseconds, Milliseconds
 
 
 class ContentRangeTests(unittest2.TestCase):

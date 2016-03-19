@@ -1,7 +1,7 @@
 from flow import Node, NotEnoughData
 import numpy as np
 from collections import OrderedDict
-from timeseries import ConstantRateTimeSeries
+from zounds.timeseries import ConstantRateTimeSeries
 
 
 class Merge(Node):

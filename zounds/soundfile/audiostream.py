@@ -3,10 +3,9 @@ from os import SEEK_END
 
 from soundfile import SoundFile
 
-from audiosamples import AudioSamples
+from zounds.timeseries import AudioSamples, audio_sample_rate
 from byte_depth import chunk_size_samples
 from flow import Node
-from samplerate import audio_sample_rate
 
 
 class AudioStream(Node):
@@ -33,7 +32,7 @@ class AudioStream(Node):
     def _get_samples(self):
         raw_samples = self._sf.read(self._chunk_size_samples)
         samples = AudioSamples(
-            raw_samples, audio_sample_rate(self._sf.samplerate))
+                raw_samples, audio_sample_rate(self._sf.samplerate))
         if self._sum_to_mono:
             return samples.mono
         return samples
@@ -73,6 +72,7 @@ class MemoryBuffer(object):
         - it maintains the span of its buffer/BytesIO instance
         -
     """
+
     def __init__(self, content_length, max_size=10 * 1024 * 1024):
         super(MemoryBuffer, self).__init__()
         self._content_length = content_length

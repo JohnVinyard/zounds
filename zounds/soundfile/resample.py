@@ -4,8 +4,7 @@ from ctypes import *
 
 import numpy as np
 
-from audiosamples import AudioSamples
-from samplerate import SR44100
+from zounds.timeseries import AudioSamples, SR44100
 
 libsamplerate = CDLL('libsamplerate.so')
 
