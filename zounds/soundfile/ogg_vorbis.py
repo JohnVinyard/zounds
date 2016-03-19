@@ -1,11 +1,10 @@
 from __future__ import division
 from flow import IdentityEncoder, Node, Decoder, Feature
 from audiostream import MemoryBuffer
-from audiosamples import AudioSamples, audio_sample_rate
+from zounds.timeseries import AudioSamples, audio_sample_rate, TimeSlice
 from soundfile import *
 from byte_depth import chunk_size_samples
-from duration import Picoseconds, Seconds
-from timeseries import TimeSlice
+from zounds.timeseries import Picoseconds, Seconds
 
 
 class OggVorbisWrapper(object):

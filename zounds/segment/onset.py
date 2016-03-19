@@ -1,9 +1,10 @@
-from flow import Node, Feature, Decoder, NotEnoughData
-from timeseries import ConstantRateTimeSeries, TimeSlice
-import numpy as np
-from zounds.nputil import safe_unit_norm
-from duration import Picoseconds
 import struct
+
+import numpy as np
+from flow import Node, Feature, Decoder
+
+from zounds.nputil import safe_unit_norm
+from zounds.timeseries import ConstantRateTimeSeries, TimeSlice, Picoseconds
 
 
 class MeasureOfTransience(Node):

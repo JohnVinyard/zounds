@@ -6,17 +6,15 @@ import numpy as np
 import unittest2
 from soundfile import SoundFile
 
-from audiosamples import AudioSamples, AudioSamplesFeature
-from audiostream import AudioStream
-from basic import Max
-from duration import Seconds, Milliseconds
+from zounds.timeseries import \
+    TimeSlice, ConstantRateTimeSeriesFeature, AudioSamples, AudioSamplesFeature, \
+    SR44100, HalfLapped, Seconds, Milliseconds
+from zounds.soundfile import \
+    AudioStream, OggVorbis, OggVorbisFeature, Resampler
+from zounds.spectral import \
+    SlidingWindow, OggVorbisWindowingFunc, FFT, Chroma, BarkBands, BFCC
+from zounds.basic import Max
 from flow import *
-from ogg_vorbis import OggVorbis, OggVorbisFeature
-from resample import Resampler
-from samplerate import SR44100, HalfLapped
-from sliding_window import SlidingWindow, OggVorbisWindowingFunc
-from spectral import FFT, Chroma, BarkBands, BFCC
-from timeseries import ConstantRateTimeSeriesFeature, TimeSlice
 
 windowing_scheme = HalfLapped()
 samplerate = SR44100()
@@ -141,7 +139,7 @@ class IntegrationTests(unittest2.TestCase):
     def test_ogg_vorbis_iter_chunks_returns_audio_samples(self):
         chunks = list(self.doc.ogg.iter_chunks())
         self.assertTrue(
-            all(isinstance(chunk, AudioSamples) for chunk in chunks))
+                all(isinstance(chunk, AudioSamples) for chunk in chunks))
 
     def test_ogg_vorbis_wrapper_returns_audio_samples(self):
         self.assertIsInstance(self.doc.ogg[:], AudioSamples)

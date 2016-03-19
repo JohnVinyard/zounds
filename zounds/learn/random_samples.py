@@ -1,6 +1,6 @@
 from flow import Node, Feature, DatabaseIterator, BaseModel, NotEnoughData
 from flow.nmpy import NumpyFeature
-from sliding_window import NDSlidingWindow
+from zounds.spectral import NDSlidingWindow
 import numpy as np
 
 

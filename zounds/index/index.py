@@ -1,9 +1,9 @@
 from flow import Node, Aggregator, BaseModel, Feature, PickleFeature
 import numpy as np
 from bisect import bisect_left
-from timeseries import TimeSlice, ConstantRateTimeSeriesFeature
-from timeseries import ConstantRateTimeSeriesEncoder
-from timeseries import PackedConstantRateTimeSeriesEncoder
+from zounds.timeseries import \
+    TimeSlice, ConstantRateTimeSeriesFeature, ConstantRateTimeSeriesEncoder, \
+    PackedConstantRateTimeSeriesEncoder
 from zounds.nputil import packed_hamming_distance
 
 

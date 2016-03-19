@@ -1,13 +1,11 @@
 from __future__ import division
 import numpy as np
 from scipy.fftpack import idct
-from samplerate import audio_sample_rate
-from audiosamples import AudioSamples
-from timeseries import ConstantRateTimeSeries
+from zounds.timeseries import \
+    audio_sample_rate, AudioSamples, ConstantRateTimeSeries
 
 
 class ShortTimeTransformSynthesizer(object):
-
     def __init__(self):
         super(ShortTimeTransformSynthesizer, self).__init__()
 
@@ -34,7 +32,6 @@ class ShortTimeTransformSynthesizer(object):
 
 
 class FFTSynthesizer(ShortTimeTransformSynthesizer):
-
     def __init__(self):
         super(FFTSynthesizer, self).__init__()
 
@@ -43,7 +40,6 @@ class FFTSynthesizer(ShortTimeTransformSynthesizer):
 
 
 class DCTSynthesizer(ShortTimeTransformSynthesizer):
-
     def __init__(self):
         super(DCTSynthesizer, self).__init__()
 

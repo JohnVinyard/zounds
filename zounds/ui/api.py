@@ -14,13 +14,11 @@ import ast
 import re
 import uuid
 import datetime
-from timeseries import ConstantRateTimeSeriesFeature
-from audiosamples import AudioSamples
-from onset import TimeSliceFeature
-from index import SearchResults
-from duration import Seconds, Picoseconds
-from timeseries import TimeSlice
-from ogg_vorbis import OggVorbisFeature
+from zounds.timeseries import \
+    ConstantRateTimeSeriesFeature, AudioSamples, Seconds, Picoseconds, TimeSlice
+from zounds.segment import TimeSliceFeature
+from zounds.index import SearchResults
+from zounds.soundfile import OggVorbisFeature
 from soundfile import SoundFile
 
 

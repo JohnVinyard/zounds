@@ -12,18 +12,29 @@ def read(fname):
 
 
 setup(
-    name='zounds',
-    version='0.02',
-    url='http://www.johnvinyard.com',
-    author='John Vinyard',
-    author_email='john.vinyard@gmail.com',
-    long_description=read('README.md'),
-    packages=['zounds', 'zounds.node', 'zounds.learn', 'zounds.learn.nnet',
-              'zounds.nputil'],
-    install_requires=['nose', 'unittest2', 'requests', 'tornado'],
-    package_data={
-        'nputil': ['*.pyx', '*.pyxbld'],
-        'node': ['*.html', '*.js']
-    },
-    include_package_data=True
+        name='zounds',
+        version='0.02',
+        url='http://www.johnvinyard.com',
+        author='John Vinyard',
+        author_email='john.vinyard@gmail.com',
+        long_description=read('README.md'),
+        packages=[
+            'zounds',
+            'zounds.basic',
+            'zounds.index',
+            'zounds.learn',
+            'zounds.nputil',
+            'zounds.segment',
+            'zounds.soundfile',
+            'zounds.spectral',
+            'zounds.synthesize',
+            'zounds.timeseries',
+            'zounds.ui'
+        ],
+        install_requires=['nose', 'unittest2', 'requests', 'tornado'],
+        package_data={
+            'nputil': ['*.pyx', '*.pyxbld'],
+            'ui': ['*.html', '*.js']
+        },
+        include_package_data=True
 )
