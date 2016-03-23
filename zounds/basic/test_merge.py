@@ -1,6 +1,6 @@
 import unittest2
 import numpy as np
-from flow import BaseModel, Node, PersistenceSettings
+from featureflow import BaseModel, Node, PersistenceSettings
 from basic import Merge
 from zounds.timeseries import \
     ConstantRateTimeSeries, ConstantRateTimeSeriesFeature, Milliseconds

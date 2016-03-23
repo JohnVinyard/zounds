@@ -14,7 +14,7 @@ from zounds.soundfile import \
 from zounds.spectral import \
     SlidingWindow, OggVorbisWindowingFunc, FFT, Chroma, BarkBands, BFCC
 from zounds.basic import Max
-from flow import *
+from featureflow import *
 
 windowing_scheme = HalfLapped()
 samplerate = SR44100()

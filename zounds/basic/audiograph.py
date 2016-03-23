@@ -1,4 +1,4 @@
-from flow import BaseModel, JSONFeature, ByteStream, ByteStreamFeature
+from featureflow import BaseModel, JSONFeature, ByteStream, ByteStreamFeature
 from zounds.soundfile import \
     MetaData, AudioMetaDataEncoder, OggVorbis, OggVorbisFeature, AudioStream, \
     Resampler

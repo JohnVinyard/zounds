@@ -1,5 +1,5 @@
 import unittest2
-import flow
+import featureflow
 from random_samples import ReservoirSampler
 from preprocess import \
     UnitNorm, MeanStdNormalization, PreprocessingPipeline, Pipeline
@@ -7,7 +7,7 @@ from learn import LinearRbm
 import numpy as np
 
 
-class Iterator(flow.Node):
+class Iterator(featureflow.Node):
     def __init__(self, needs=None):
         super(Iterator, self).__init__(needs=needs)
 
@@ -18,41 +18,41 @@ class Iterator(flow.Node):
 
 class RbmTests(unittest2.TestCase):
     def test_can_retrieve_rbm_pipeline(self):
-        class Settings(flow.PersistenceSettings):
+        class Settings(featureflow.PersistenceSettings):
             _id = 'rbm'
-            id_provider = flow.StaticIdProvider(_id)
-            key_builder = flow.StringDelimitedKeyBuilder()
-            database = flow.InMemoryDatabase(key_builder=key_builder)
+            id_provider = featureflow.StaticIdProvider(_id)
+            key_builder = featureflow.StringDelimitedKeyBuilder()
+            database = featureflow.InMemoryDatabase(key_builder=key_builder)
 
-        class Learned(flow.BaseModel, Settings):
-            iterator = flow.Feature(
+        class Learned(featureflow.BaseModel, Settings):
+            iterator = featureflow.Feature(
                     Iterator,
                     store=False)
 
-            shuffle = flow.NumpyFeature(
+            shuffle = featureflow.NumpyFeature(
                     ReservoirSampler,
                     nsamples=1000,
                     needs=iterator,
                     store=True)
 
-            unitnorm = flow.PickleFeature(
+            unitnorm = featureflow.PickleFeature(
                     UnitNorm,
                     needs=shuffle,
                     store=False)
 
-            meanstd = flow.PickleFeature(
+            meanstd = featureflow.PickleFeature(
                     MeanStdNormalization,
                     needs=unitnorm,
                     store=False)
 
-            rbm = flow.PickleFeature(
+            rbm = featureflow.PickleFeature(
                     LinearRbm,
                     hdim=64,
                     epochs=5,
                     needs=meanstd,
                     store=False)
 
-            pipeline = flow.PickleFeature(
+            pipeline = featureflow.PickleFeature(
                     PreprocessingPipeline,
                     needs=(unitnorm, meanstd, rbm),
                     store=True)

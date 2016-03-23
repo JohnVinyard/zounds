@@ -1,4 +1,4 @@
-from flow import Node, Aggregator
+from featureflow import Node, Aggregator
 import os
 from soundfile import SoundFile
 import requests

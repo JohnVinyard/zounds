@@ -1,4 +1,4 @@
-from flow import Node, Feature, Decoder
+from featureflow import Node, Feature, Decoder
 from timeseries import \
     ConstantRateTimeSeries, ConstantRateTimeSeriesMetadata
 from samplerate import AudioSampleRate, audio_sample_rate

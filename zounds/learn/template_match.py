@@ -1,4 +1,4 @@
-from flow import Node
+from featureflow import Node
 import numpy as np
 from scipy.spatial.distance import cdist
 from zounds.nputil import safe_unit_norm, sliding_window

@@ -8,7 +8,7 @@ from zounds.timeseries import AudioSamples, SR44100
 
 libsamplerate = CDLL('libsamplerate.so')
 
-from flow import Node
+from featureflow import Node
 
 
 class SRC_DATA(Structure):

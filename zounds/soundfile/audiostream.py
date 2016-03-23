@@ -5,7 +5,7 @@ from soundfile import SoundFile
 
 from zounds.timeseries import AudioSamples, audio_sample_rate
 from byte_depth import chunk_size_samples
-from flow import Node
+from featureflow import Node
 
 
 class AudioStream(Node):

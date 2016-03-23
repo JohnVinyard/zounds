@@ -1,4 +1,4 @@
-from flow import NumpyMetaData, Node, Feature, Decoder
+from featureflow import NumpyMetaData, Node, Feature, Decoder
 import numpy as np
 from duration import Picoseconds
 from samplerate import SampleRate

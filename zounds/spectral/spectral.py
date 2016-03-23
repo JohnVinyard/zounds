@@ -1,4 +1,4 @@
-from flow import Node
+from featureflow import Node
 import numpy as np
 from scipy.fftpack import dct
 from scipy.stats.mstats import gmean

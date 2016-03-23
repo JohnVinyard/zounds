@@ -1,4 +1,4 @@
-from flow import Node, NotEnoughData
+from featureflow import Node, NotEnoughData
 import marshal
 import types
 from collections import OrderedDict

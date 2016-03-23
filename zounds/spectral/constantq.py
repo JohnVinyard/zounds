@@ -4,7 +4,6 @@ from zounds.timeseries import ConstantRateTimeSeries, SR44100
 from zounds.visualize import plot
 
 
-
 class OctaveScale(object):
     def __init__(self, freq_min, freq_max, bands_per_octave):
         self.bands = int( \

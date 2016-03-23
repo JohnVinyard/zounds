@@ -1,4 +1,4 @@
-from flow import Node, Aggregator, BaseModel, Feature, PickleFeature
+from featureflow import Node, Aggregator, BaseModel, Feature, PickleFeature
 import numpy as np
 from bisect import bisect_left
 from zounds.timeseries import \

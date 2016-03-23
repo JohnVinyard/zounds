@@ -5,7 +5,7 @@ import tornado.ioloop
 import tornado.web
 import httplib
 import numpy as np
-from flow import Decoder
+from featureflow import Decoder
 import traceback
 from matplotlib import pyplot as plt
 from io import BytesIO

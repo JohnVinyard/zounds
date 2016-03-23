@@ -1,4 +1,4 @@
-from flow import Node, NotEnoughData
+from featureflow import Node, NotEnoughData
 import numpy as np
 from zounds.nputil import windowed, sliding_window
 from zounds.timeseries import ConstantRateTimeSeries

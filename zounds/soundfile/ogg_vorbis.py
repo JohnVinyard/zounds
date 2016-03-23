@@ -1,5 +1,5 @@
 from __future__ import division
-from flow import IdentityEncoder, Node, Decoder, Feature
+from featureflow import IdentityEncoder, Node, Decoder, Feature
 from audiostream import MemoryBuffer
 from zounds.timeseries import AudioSamples, audio_sample_rate, TimeSlice
 from soundfile import *
