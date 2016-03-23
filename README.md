@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/JohnVinyard/featureflow.svg?branch=master)](https://travis-ci.org/JohnVinyard/zounds)
+
 # Usage
 Zounds is a dataflow library for building directed acyclic graphs that transform audio. It uses the 
 [flow](https://bitbucket.org/jvinyard/flow/) library to define the processing pipelines.
