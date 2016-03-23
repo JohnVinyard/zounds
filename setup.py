@@ -32,7 +32,14 @@ setup(
             'zounds.timeseries',
             'zounds.ui'
         ],
-        install_requires=['featureflow', 'nose', 'unittest2', 'requests', 'tornado'],
+        install_requires=[
+            'featureflow',
+            'nose',
+            'unittest2',
+            'requests',
+            'tornado',
+            'pysoundfile'
+        ],
         package_data={
             'nputil': ['*.pyx', '*.pyxbld'],
             'ui': ['*.html', '*.js']
