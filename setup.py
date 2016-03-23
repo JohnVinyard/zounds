@@ -13,11 +13,12 @@ def read(fname):
 
 setup(
         name='zounds',
-        version='0.02',
+        version='0.1',
         url='http://www.johnvinyard.com',
         author='John Vinyard',
         author_email='john.vinyard@gmail.com',
         long_description=read('README.md'),
+        download_url='https://github.com/jvinyard/zounds/tarball/0.1',
         packages=[
             'zounds',
             'zounds.basic',
