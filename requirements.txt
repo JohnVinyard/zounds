@@ -5,3 +5,4 @@ requests
 tornado
 pysoundfile
 cython
+matplotlib
