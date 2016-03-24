@@ -29,5 +29,5 @@ def chunk_size_samples(sf, buf):
     channels = sf.channels
     bytes_per_second = byte_depth * sf.samplerate * channels
     secs = len(buf) / bytes_per_second
-    secs = max(1, secs - 9)
+    secs = max(1, secs - 6)
     return int(secs * sf.samplerate)

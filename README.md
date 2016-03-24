@@ -1,14 +1,15 @@
 [![Build Status](https://travis-ci.org/JohnVinyard/zounds.svg?branch=master)](https://travis-ci.org/JohnVinyard/zounds)
+[![Coverage Status](https://coveralls.io/repos/github/JohnVinyard/zounds/badge.svg?branch=master)](https://coveralls.io/github/JohnVinyard/zounds?branch=master)
 
 # Usage
 Zounds is a dataflow library for building directed acyclic graphs that transform audio. It uses the 
-[flow](https://bitbucket.org/jvinyard/flow/) library to define the processing pipelines.
+[featureflow](https://github.com/JohnVinyard/featureflow) library to define the processing pipelines.
   
 
 For example, here's the definition of a pipeline that computes a sliding short-time fourier transform of some audio, 
 and then computes spectrograms on the bark and chroma scales.
 
-```
+```python
 import flow
 import zounds
 
@@ -85,7 +86,7 @@ class Document(AudioGraph, Settings):
 
 Data can be processed, and later retrieved as follows:
 
-```
+```python
 >>> import requests
 >>> req = requests.Request(method = 'GET', url = 'https://example.com/audio.wav')
 >>> _id = doc = Document.process(meta=req)
