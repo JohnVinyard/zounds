@@ -10,7 +10,7 @@ For example, here's the definition of a pipeline that computes a sliding short-t
 and then computes spectrograms on the bark and chroma scales.
 
 ```python
-import flow
+import featureflow as ff
 import zounds
 
 windowing = zounds.HalfLapped()
@@ -25,13 +25,13 @@ class Settings(flow.PersistenceSettings):
 
 class AudioGraph(flow.BaseModel):
 
-    meta = flow.JSONFeature(
+    meta = ff.JSONFeature(
         zounds.MetaData,
         encoder=zounds.AudioMetaDataEncoder,
         store=True)
 
-    raw = flow.ByteStreamFeature(
-        flow.ByteStream,
+    raw = ff.ByteStreamFeature(
+        ff.ByteStream,
         chunksize=2 * 44100 * 30 * 2,
         needs=meta,
         store=False)
