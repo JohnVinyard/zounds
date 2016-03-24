@@ -38,7 +38,8 @@ setup(
             'unittest2',
             'requests',
             'tornado',
-            'pysoundfile'
+            'pysoundfile',
+            'cython'
         ],
         package_data={
             'nputil': ['*.pyx', '*.pyxbld'],

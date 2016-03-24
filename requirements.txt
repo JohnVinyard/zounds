@@ -4,3 +4,4 @@ unittest2
 requests
 tornado
 pysoundfile
+cython
