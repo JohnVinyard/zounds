@@ -11,7 +11,9 @@ apt-get install -y \
 	libogg0 \
 	libogg-dev \
 	libvorbis0a \
-	libvorbis-dev
+	libvorbis-dev \
+	libsamplerate0 \
+	libsamplerate0-dev
 
 # get libflac 1.3.1, build and install
 wget http://downloads.xiph.org/releases/flac/flac-1.3.1.tar.xz
