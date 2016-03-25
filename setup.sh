@@ -23,7 +23,7 @@ cd flac-1.3.1
 # get libsndfile 1.0.26, build and install
 cd ..
 wget https://github.com/erikd/libsndfile/archive/1.0.26.tar.gz
-tar -xzf
+tar -xzf 1.0.26.tar.gz
 cd libsndfile-1.0.26
 ./autogen.sh
 ./configure --prefix=/usr/bin && make && make install
