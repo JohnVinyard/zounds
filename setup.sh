@@ -19,7 +19,7 @@ apt-get install -y \
 wget http://downloads.xiph.org/releases/flac/flac-1.3.1.tar.xz
 tar xf flac-1.3.1.tar.xz
 cd flac-1.3.1
-./configure --prefix=/usr/bin && make && make install
+./configure && make && make install
 # get libsndfile 1.0.26, build and install
 cd ..
 wget https://github.com/erikd/libsndfile/archive/master.zip
