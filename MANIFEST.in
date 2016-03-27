@@ -1,4 +1,6 @@
-include zounds/node/index.html
-include zounds/node/zounds.js
+include zounds/ui/index.html
+include zounds/ui/zounds.js
+include zounds/nputil/countbits.pyx
+include zounds/nputil/countbits.pyxbld
 include README.md
 include MANIFEST.in
