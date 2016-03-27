@@ -1,3 +1,5 @@
+__version__ = '0.1.1'
+
 from timeseries import \
     Hours, Minutes, Seconds, Milliseconds, Microseconds, Picoseconds, \
     AudioSamples, AudioSamplesEncoder, GreedyAudioSamplesDecoder, \

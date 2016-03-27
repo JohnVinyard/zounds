@@ -1,24 +1,29 @@
 from setuptools import setup
-import os
+import re
 
+try:
+    import pypandoc
+    long_description = pypandoc.convert('README.md', 'rst')
+except(IOError, ImportError):
+    long_description = open('README.md').read()
 
-def read(fname):
-    """
-    This is yanked from the setuptools documentation at
-    http://packages.python.org/an_example_pypi_project/setuptools.html. It is
-    used to read the text from the README file.
-    """
-    return open(os.path.join(os.path.dirname(__file__), fname)).read()
+with open('zounds/__init__.py', 'r') as fd:
+    version = re.search(
+            r'^__version__\s*=\s*[\'"]([^\'"]*)[\'"]',
+            fd.read(),
+            re.MULTILINE).group(1)
 
+download_url = 'https://github.com/jvinyard/zounds/tarball/{version}'\
+    .format(**locals())
 
 setup(
         name='zounds',
-        version='0.1',
+        version=version,
         url='http://www.johnvinyard.com',
         author='John Vinyard',
         author_email='john.vinyard@gmail.com',
-        long_description=read('README.md'),
-        download_url='https://github.com/jvinyard/zounds/tarball/0.1',
+        long_description=long_description,
+        download_url=download_url,
         packages=[
             'zounds',
             'zounds.basic',
