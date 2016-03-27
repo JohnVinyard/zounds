@@ -95,15 +95,18 @@ Data can be processed, and later retrieved as follows:
 (321, 12)
 ```
 # Installation
-## Flow
+ 
+## Libsndfile Issues
+Installation currently requires you to build lbiflac and libsndfile from source, because of [an outstanding issue that
+will be corrected when the apt package is updated to `libsndfile 1.0.26`](https://github.com/bastibe/PySoundFile/issues/130).  
+Download and run [this script](https://raw.githubusercontent.com/JohnVinyard/zounds/master/setup.sh) to handle this step.
 
 ## Numpy and Scipy
-The [Anaconda](https://www.continuum.io/downloads) python distribution is highly recommended
-## PySoundFile
-`libsndfile 1.0.26` is required.  Ubuntu 14.04 is still on `libsndfile 1.0.25`.  This means that there are some extra steps involved to get PySoundfile working.
+The [Anaconda](https://www.continuum.io/downloads) python distribution is highly recommended.
 
-- Ensure that you've got all the dependencies here (https://github.com/erikd/libsndfile). Flac must be >= 1.3.1, so you can't use the package manager (yet)
-- Build [libsndfile(https://github.com/erikd/libsndfile) from source
-- Get the source for [PySoundfile](https://github.com/bastibe/PySoundFile)
-- modify the code to load the libsndfile library from `/usr/local/lib/libsndfile.so`
-- install PySoundfile (`python setup.py install`)
+## Zounds
+Finall, just:
+
+```bash
+pip install zounds
+```
