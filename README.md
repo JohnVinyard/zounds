@@ -94,12 +94,14 @@ Data can be processed, and later retrieved as follows:
 >>> doc.chroma.shape
 (321, 12)
 ```
+
 # Installation
  
 ## Libsndfile Issues
-Installation currently requires you to build lbiflac and libsndfile from source, because of [an outstanding issue that
-will be corrected when the apt package is updated to `libsndfile 1.0.26`](https://github.com/bastibe/PySoundFile/issues/130).  
-Download and run [this script](https://raw.githubusercontent.com/JohnVinyard/zounds/master/setup.sh) to handle this step.
+Installation currently requires you to build lbiflac and libsndfile from source, because of 
+[an outstanding issue](https://github.com/bastibe/PySoundFile/issues/130) that will be corrected when the apt package 
+is updated to `libsndfile 1.0.26`.  Download and run 
+[this script](https://raw.githubusercontent.com/JohnVinyard/zounds/master/setup.sh) to handle this step.
 
 ## Numpy and Scipy
 The [Anaconda](https://www.continuum.io/downloads) python distribution is highly recommended.
