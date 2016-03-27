@@ -17,13 +17,13 @@ windowing = zounds.HalfLapped()
 samplerate = zounds.SR44100()
 
 
-class Settings(flow.PersistenceSettings):
-    id_provider = flow.UuidProvider()
-    key_builder = flow.StringDelimitedKeyBuilder()
-    database = flow.FileSystemDatabase(path='data', key_builder=key_builder)
+class Settings(ff.PersistenceSettings):
+    id_provider = ff.UuidProvider()
+    key_builder = ff.StringDelimitedKeyBuilder()
+    database = ff.FileSystemDatabase(path='data', key_builder=key_builder)
 
 
-class AudioGraph(flow.BaseModel):
+class AudioGraph(ff.BaseModel):
 
     meta = ff.JSONFeature(
         zounds.MetaData,
