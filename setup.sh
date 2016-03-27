@@ -28,6 +28,6 @@ cd flac-1.3.1
 cd ..
 wget http://www.mega-nerd.com/tmp/libsndfile-1.0.26pre5.tar.gz
 tar -xzf libsndfile-1.0.26pre5.tar.gz
-cd libsndfile-1.0.26pre5.tar.gz
+cd libsndfile-1.0.26pre5
 ./autogen.sh
-./configure --prefix=/usr/bin && make && make install
+./configure --prefix=/usr && make && make install
