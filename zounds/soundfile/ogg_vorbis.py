@@ -34,7 +34,7 @@ class OggVorbisWrapper(object):
         sr = audio_sample_rate(self.samplerate)
 
         if timeslice == slice(None):
-            return AudioSamples(self._sf.read(), sr)
+            return AudioSamples(self._sf.read(len(self._sf)), sr)
 
         start_sample = int(timeslice.start / self._freq)
         self._sf.seek(start_sample)

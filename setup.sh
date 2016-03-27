@@ -24,10 +24,10 @@ wget http://downloads.xiph.org/releases/flac/flac-1.3.1.tar.xz
 tar xf flac-1.3.1.tar.xz
 cd flac-1.3.1
 ./configure && make && make install
-# get libsndfile 1.0.26, build and install
 cd ..
+# get libsndfile 1.0.26, build and install
 wget http://www.mega-nerd.com/tmp/libsndfile-1.0.26pre5.tar.gz
 tar -xzf libsndfile-1.0.26pre5.tar.gz
 cd libsndfile-1.0.26pre5
 ./autogen.sh
-./configure --prefix=/usr && make && make install
+./configure --libdir=/usr/lib/x86_64-linux-gnu && make && make install

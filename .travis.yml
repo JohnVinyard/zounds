@@ -25,6 +25,7 @@ install:
   - source activate test-environment
   - python setup.py install
   - pip install coveralls
+  - ls /usr/lib/x86_64-linux-gnu/libsndfile.*
 script:
   nosetests  --with-coverage --cover-package=zounds
 after_success:
