@@ -4,7 +4,8 @@ from zounds.soundfile import \
     Resampler
 from zounds.timeseries import ConstantRateTimeSeriesFeature, SR44100, HalfLapped
 from zounds.spectral import \
-    SlidingWindow, OggVorbisWindowingFunc, FFT, BarkBands
+    SlidingWindow, OggVorbisWindowingFunc, FFT, BarkBands, SpectralCentroid, \
+    Chroma, BFCC
 
 
 def audio_graph(
@@ -23,7 +24,6 @@ def audio_graph(
     class AudioGraph(BaseModel):
         meta = JSONFeature(
                 MetaData,
-                freesound_api_key=freesound_api_key,
                 store=True,
                 encoder=AudioMetaDataEncoder)
 
@@ -46,7 +46,8 @@ def audio_graph(
         resampled = ConstantRateTimeSeriesFeature(
                 Resampler,
                 needs=pcm,
-                samplerate=resample_to)
+                samplerate=resample_to,
+                store=False)
 
         windowed = ConstantRateTimeSeriesFeature(
                 SlidingWindow,
@@ -60,22 +61,26 @@ def audio_graph(
                 needs=windowed,
                 store=store_fft)
 
-        short_windowed = ConstantRateTimeSeriesFeature(
-                SlidingWindow,
-                needs=resampled,
-                wscheme=HalfLapped(512, 256),
-                wfunc=OggVorbisWindowingFunc(),
-                store=False)
-
-        short_fft = ConstantRateTimeSeriesFeature(
-                FFT,
-                needs=short_windowed,
-                store=store_fft)
-
         bark = ConstantRateTimeSeriesFeature(
                 BarkBands,
                 needs=fft,
                 samplerate=resample_to,
+                store=True)
+
+        centroid = ConstantRateTimeSeriesFeature(
+                SpectralCentroid,
+                needs=bark,
+                store=True)
+
+        chroma = ConstantRateTimeSeriesFeature(
+                Chroma,
+                needs=fft,
+                samplerate=resample_to,
+                store=True)
+
+        bfcc = ConstantRateTimeSeriesFeature(
+                BFCC,
+                needs=fft,
                 store=True)
 
     return AudioGraph

@@ -45,7 +45,8 @@ setup(
             'tornado',
             'pysoundfile',
             'cython',
-            'matplotlib'
+            'matplotlib',
+            'argparse'
         ],
         package_data={
             'nputil': ['*.pyx', '*.pyxbld'],

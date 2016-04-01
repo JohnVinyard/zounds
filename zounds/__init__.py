@@ -37,4 +37,4 @@ from index import \
     Index, Offsets, Contiguous, HammingDistanceSearch, \
     PackedHammingDistanceSearch, SearchResults
 
-from basic import Slice, Sum, Max, process_dir
+from basic import Slice, Sum, Max, process_dir, audio_graph

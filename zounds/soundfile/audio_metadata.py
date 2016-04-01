@@ -3,6 +3,7 @@ import os
 from soundfile import SoundFile
 import requests
 import json
+from urlparse import urlparse
 
 
 class AudioMetaData(object):
@@ -22,6 +23,14 @@ class AudioMetaData(object):
         self.description = description
         self.tags = tags
 
+    def __eq__(self, other):
+        return self.uri == other.uri \
+               and self.samplerate == other.samplerate \
+               and self.channels == other.channels \
+               and self.licensing == other.licensing \
+               and self.description == other.description \
+               and self.tags == other.tags
+
 
 class AudioMetaDataEncoder(Aggregator, Node):
     content_type = 'application/json'
@@ -31,8 +40,8 @@ class AudioMetaDataEncoder(Aggregator, Node):
 
     def _process(self, data):
         yield json.dumps({
-            'uri': data.uri.url \
-                if isinstance(data.uri, requests.Request) else data.uri,
+            'uri': data.uri.url
+            if isinstance(data.uri, requests.Request) else data.uri,
             'samplerate': data.samplerate,
             'channels': data.channels,
             'licensing': data.licensing,
@@ -41,45 +50,68 @@ class AudioMetaDataEncoder(Aggregator, Node):
         })
 
 
+class FreesoundOrgConfig(object):
+    def __init__(self, api_key):
+        super(FreesoundOrgConfig, self).__init__()
+        self.api_key = api_key
+
+    def request(self, uri):
+        params = {'api_key': self.api_key}
+        metadata = requests.get(uri, params=params)
+        request = requests.Request('GET', metadata['serve'], params=params)
+        return AudioMetaData(
+                uri=request,
+                samplerate=metadata['samplerate'],
+                channels=metadata['channels'],
+                licensing=metadata['license'],
+                description=metadata['description'],
+                tags=metadata['tags'])
+
+
 class MetaData(Node):
-    def __init__(
-            self,
-            needs=None,
-            freesound_api_key=None):
-
+    def __init__(self, needs=None):
         super(MetaData, self).__init__(needs=needs)
-        self._freesound_api_key = freesound_api_key
 
-    def _ensure_freesound_api_key(self):
-        if self._freesound_api_key is not None:
-            return
-        msg = \
-            'A freesound uri was requested, but no freesound API key was provided'
-        raise Exception(msg)
+    @staticmethod
+    def _is_url(s):
+        if not isinstance(s, str):
+            return False
+        parsed = urlparse(s)
+        return parsed.scheme and parsed.netloc
+
+    @staticmethod
+    def _is_local_file(s):
+        try:
+            return os.path.exists(s)
+        except TypeError:
+            return False
+
+    @staticmethod
+    def _is_file(s):
+        try:
+            s.tell()
+            return True
+        except AttributeError:
+            return False
 
     def _process(self, data):
-        uri = data
-        if isinstance(data, requests.Request):
-            yield AudioMetaData(uri=uri)
-        elif os.path.exists(uri):
-            sf = SoundFile(uri)
+        if isinstance(data, AudioMetaData):
+            yield data
+        if self._is_url(data):
+            req = requests.Request(
+                    method='GET',
+                    url=data,
+                    headers={'Range': 'bytes=0-'})
+            yield AudioMetaData(uri=req)
+        elif isinstance(data, requests.Request):
+            if 'range' not in data.headers:
+                data.headers['range'] = 'bytes=0-'
+            yield AudioMetaData(uri=data)
+        elif self._is_local_file(data) or self._is_file(data):
+            sf = SoundFile(data)
             yield AudioMetaData(
-                    uri=uri,
+                    uri=data,
                     samplerate=sf.samplerate,
                     channels=sf.channels)
-        elif 'freesound.org' in uri:
-            self._ensure_freesound_api_key()
-            params = {'api_key': self._freesound_api_key}
-            meta = requests.get(
-                    uri, params=params).json()
-            req = requests.Request(
-                    'GET', meta['serve'], params=params)
-            yield AudioMetaData(
-                    uri=req,
-                    samplerate=meta['samplerate'],
-                    channels=meta['channels'],
-                    licensing=meta['license'],
-                    description=meta['description'],
-                    tags=meta['tags'])
         else:
-            raise Exception('Cannot handle uri {uri}'.format(**locals()))
+            yield AudioMetaData(uri=data)
