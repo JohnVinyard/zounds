@@ -1,4 +1,4 @@
-__version__ = '0.1.3'
+__version__ = '0.1.6'
 
 from timeseries import \
     Hours, Minutes, Seconds, Milliseconds, Microseconds, Picoseconds, \
@@ -9,7 +9,7 @@ from timeseries import \
     GreedyConstantRateTimeSeriesDecoder, PackedConstantRateTimeSeriesEncoder
 
 from soundfile import \
-    MetaData, AudioMetaDataEncoder, \
+    MetaData, AudioMetaDataEncoder, FreesoundOrgConfig, \
     OggVorbis, OggVorbisDecoder, OggVorbisEncoder, OggVorbisFeature, \
     OggVorbisWrapper, \
     AudioStream, \

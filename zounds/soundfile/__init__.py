@@ -1,4 +1,4 @@
-from audio_metadata import MetaData, AudioMetaDataEncoder
+from audio_metadata import MetaData, AudioMetaDataEncoder, FreesoundOrgConfig
 
 from ogg_vorbis import \
     OggVorbis, OggVorbisDecoder, OggVorbisEncoder, OggVorbisFeature, \

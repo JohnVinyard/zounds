@@ -192,7 +192,6 @@ class DefaultSerializer(object):
 
 
 class AudioSamplesSerializer(object):
-
     def __init__(self):
         super(AudioSamplesSerializer, self).__init__()
 
@@ -213,7 +212,8 @@ class AudioSamplesSerializer(object):
                 channels=samples.channels,
                 format='OGG',
                 subtype='VORBIS') as sf:
-            sf.write(samples)
+            for i in xrange(0, len(samples), samples.samples_per_second):
+                sf.write(samples[i: i + samples.samples_per_second])
         bio.seek(0)
         return TempResult(bio.read(), 'audio/ogg')
 

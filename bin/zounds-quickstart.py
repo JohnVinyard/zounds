@@ -17,8 +17,13 @@ if __name__ == '__main__':
        required=False,
        type=int,
        default=8888)
+    aa('--freesoundkey',
+       help='freesound.org api key',
+       required=False,
+       type=str)
 
     args = parser.parse_args()
+
 
     class Settings(ff.PersistenceSettings):
         id_provider = ff.UuidProvider()
@@ -26,16 +31,15 @@ if __name__ == '__main__':
         database = ff.LmdbDatabase(
                 path=args.datadir, key_builder=key_builder)
 
-
     AudioGraph = zounds.audio_graph()
-
 
     class Document(AudioGraph, Settings):
         pass
 
-
     if not os.path.exists(args.datadir):
         os.makedirs(args.datadir)
+
+    synth = zounds.DCTSynthesizer()
 
     app = zounds.ZoundsApp(
             model=Document,

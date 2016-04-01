@@ -5,7 +5,7 @@ from zounds.soundfile import \
 from zounds.timeseries import ConstantRateTimeSeriesFeature, SR44100, HalfLapped
 from zounds.spectral import \
     SlidingWindow, OggVorbisWindowingFunc, FFT, BarkBands, SpectralCentroid, \
-    Chroma, BFCC
+    Chroma, BFCC, DCT
 
 
 def audio_graph(
@@ -55,6 +55,11 @@ def audio_graph(
                 wscheme=HalfLapped(),
                 wfunc=OggVorbisWindowingFunc(),
                 store=False)
+
+        dct = ConstantRateTimeSeriesFeature(
+                DCT,
+                needs=windowed,
+                store=True)
 
         fft = ConstantRateTimeSeriesFeature(
                 FFT,
