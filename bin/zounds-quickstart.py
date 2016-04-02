@@ -32,8 +32,9 @@ if __name__ == '__main__':
                 path=args.datadir, key_builder=key_builder)
 
     AudioGraph = zounds.audio_graph()
+    WithOnsets = zounds.with_onsets(AudioGraph.fft)
 
-    class Document(AudioGraph, Settings):
+    class Document(AudioGraph, WithOnsets, Settings):
         pass
 
     if not os.path.exists(args.datadir):

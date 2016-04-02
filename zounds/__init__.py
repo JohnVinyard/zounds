@@ -4,7 +4,7 @@ from timeseries import \
     Hours, Minutes, Seconds, Milliseconds, Microseconds, Picoseconds, \
     AudioSamples, AudioSamplesEncoder, GreedyAudioSamplesDecoder, \
     AudioSamplesFeature, \
-    SR11025, SR22050, SR44100, SR48000, SR96000, HalfLapped, \
+    SR11025, SR22050, SR44100, SR48000, SR96000, HalfLapped, Stride, \
     TimeSlice, ConstantRateTimeSeriesEncoder, ConstantRateTimeSeriesFeature, \
     GreedyConstantRateTimeSeriesDecoder, PackedConstantRateTimeSeriesEncoder
 
@@ -37,4 +37,4 @@ from index import \
     Index, Offsets, Contiguous, HammingDistanceSearch, \
     PackedHammingDistanceSearch, SearchResults
 
-from basic import Slice, Sum, Max, process_dir, audio_graph
+from basic import Slice, Sum, Max, process_dir, audio_graph, with_onsets

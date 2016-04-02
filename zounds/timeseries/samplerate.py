@@ -1,5 +1,8 @@
 from __future__ import division
 from duration import Picoseconds
+from collections import namedtuple
+
+Stride = namedtuple('Stride', ['frequency', 'duration'])
 
 
 class SampleRate(object):
@@ -58,6 +61,7 @@ class SR11025(AudioSampleRate):
     def __init__(self):
         super(SR11025, self).__init__(11025)
 
+
 _samplerates = (SR96000(), SR48000(), SR44100(), SR22050(), SR11025())
 
 
@@ -66,7 +70,7 @@ def audio_sample_rate(samples_per_second):
         if samples_per_second == sr.samples_per_second:
             return sr
     raise ValueError(
-        '{samples_per_second} is an invalid sample rate'.format(**locals()))
+            '{samples_per_second} is an invalid sample rate'.format(**locals()))
 
 
 class HalfLapped(SampleRate):
@@ -75,5 +79,3 @@ class HalfLapped(SampleRate):
         window = one_sample_at_44100 * window_at_44100
         step = one_sample_at_44100 * hop_at_44100
         super(HalfLapped, self).__init__(step, window)
-
-
