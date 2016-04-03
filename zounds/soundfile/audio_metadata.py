@@ -55,10 +55,14 @@ class FreesoundOrgConfig(object):
         super(FreesoundOrgConfig, self).__init__()
         self.api_key = api_key
 
-    def request(self, uri):
-        params = {'api_key': self.api_key}
-        metadata = requests.get(uri, params=params)
-        request = requests.Request('GET', metadata['serve'], params=params)
+    def request(self, _id):
+        uri = 'http://freesound.org/apiv2/sounds/{_id}/'.format(_id=_id)
+        params = {'token': self.api_key}
+        metadata = requests.get(uri, params=params).json()
+        request = requests.Request(
+                method='GET',
+                url=metadata['previews']['preview-hq-ogg'],
+                params=params)
         return AudioMetaData(
                 uri=request,
                 samplerate=metadata['samplerate'],
@@ -97,7 +101,7 @@ class MetaData(Node):
     def _process(self, data):
         if isinstance(data, AudioMetaData):
             yield data
-        if self._is_url(data):
+        elif self._is_url(data):
             req = requests.Request(
                     method='GET',
                     url=data,

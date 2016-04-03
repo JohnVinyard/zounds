@@ -40,6 +40,9 @@ if __name__ == '__main__':
     if not os.path.exists(args.datadir):
         os.makedirs(args.datadir)
 
+    if args.freesoundkey:
+        freesound = zounds.FreesoundOrgConfig(args.freesoundkey)
+
     synth = zounds.DCTSynthesizer()
 
     app = zounds.ZoundsApp(
