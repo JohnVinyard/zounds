@@ -7,6 +7,9 @@ import httplib
 import numpy as np
 from featureflow import Decoder
 import traceback
+import matplotlib
+
+matplotlib.use('Agg')
 from matplotlib import pyplot as plt
 from io import BytesIO
 from cStringIO import StringIO
