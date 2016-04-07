@@ -52,6 +52,6 @@ setup(
             'nputil': ['*.pyx', '*.pyxbld'],
             'ui': ['*.html', '*.js']
         },
-        scripts=['bin/zounds-quickstart.py'],
+        scripts=['bin/zounds-quickstart'],
         include_package_data=True
 )

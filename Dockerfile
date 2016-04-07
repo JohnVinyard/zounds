@@ -55,4 +55,4 @@ RUN pip install zounds
 
 EXPOSE 9999
 
-CMD zounds-quickstart.py --datadir data --port 9999
+CMD zounds-quickstart --datadir data --port 9999
