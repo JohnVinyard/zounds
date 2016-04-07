@@ -88,9 +88,7 @@ class Document(AudioGraph, Settings):
 Data can be processed, and later retrieved as follows:
 
 ```python
->>> import requests
->>> req = requests.Request(method = 'GET', url = 'https://example.com/audio.wav')
->>> _id = doc = Document.process(meta=req)
+>>> _id = doc = Document.process(meta='https://example.com/audio.wav')
 >>> doc = Document(_id)
 >>> doc.chroma.shape
 (321, 12)
