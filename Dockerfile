@@ -44,12 +44,14 @@ RUN wget http://www.mega-nerd.com/tmp/libsndfile-1.0.26pre5.tar.gz \
     && ./configure --libdir=/usr/lib/x86_64-linux-gnu && make && make install \
     && cd ..
 
-RUN echo 'export PATH=/opt/conda/bin:$PATH' > /etc/profile.d/conda.sh && \
-    wget --quiet https://repo.continuum.io/archive/Anaconda2-2.5.0-Linux-x86_64.sh && \
-    /bin/bash /Anaconda2-2.5.0-Linux-x86_64.sh -b -p /opt/conda && \
-    rm /Anaconda2-2.5.0-Linux-x86_64.sh
+RUN echo 'export PATH=/opt/conda/bin:$PATH' > /etc/profile.d/conda.sh \
+    && wget https://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh \
+    && /bin/bash /Miniconda-latest-Linux-x86_64.sh -b -p /opt/conda \
+    && rm /Miniconda-latest-Linux-x86_64.sh
 
 ENV PATH /opt/conda/bin:$PATH
+
+RUN conda install -y numpy scipy
 
 RUN pip install zounds
 
