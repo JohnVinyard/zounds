@@ -20,12 +20,17 @@ class MeasureOfTransience(Node):
         super(MeasureOfTransience, self).__init__(needs=needs)
 
     def _first_chunk(self, data):
+        data = np.abs(data)
         self._bin_numbers = np.arange(1, data.shape[1] + 1)
         padding = np.zeros(data.shape[1])
-        padding[:] = 1e-12
-        return np.concatenate([padding[None, :], data])
+        padding[:] = data[0]
+        return ConstantRateTimeSeries(
+                np.concatenate([padding[None, :], data]),
+                data.frequency,
+                data.duration)
 
     def _process(self, data):
+        data = np.abs(data)
         magnitude = (data[:, 2:] ** 2)
         energy = magnitude.sum(axis=1)
         hfc = (magnitude * self._bin_numbers[2:]).sum(axis=1)
