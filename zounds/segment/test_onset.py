@@ -14,15 +14,16 @@ from io import BytesIO
 
 class OnsetTests(unittest2.TestCase):
 
-    def ticks(self, samplerate, seconds=4, ticks_per_second=1):
+    def ticks(self, samplerate, duration, tick_frequency):
         sr = samplerate.samples_per_second
-        # create a short, percussive tick
+        # create a short, tick sound
         tick = np.random.random_sample(int(sr * .05))
         tick *= np.linspace(1, 0, len(tick))
-        # create the samples, filled with silence
-        samples = np.zeros(sr * seconds)
-        # create a periodic ticking sound
-        step = sr // ticks_per_second
+        # create silence
+        samples = np.zeros(sr * (duration / Seconds(1)))
+        ticks_per_second = Seconds(1) / tick_frequency
+        # introduce periodic ticking sound
+        step = int(sr // ticks_per_second)
         for i in xrange(0, len(samples), step):
             samples[i:i+len(tick)] = tick
         # write the samples to a file-like object
@@ -68,7 +69,7 @@ class OnsetTests(unittest2.TestCase):
                 aggregate=np.median,
                 store=True)
 
-        raw = self.ticks(samplerate, seconds=4, ticks_per_second=1)
+        raw = self.ticks(samplerate, Seconds(4), Seconds(1))
         _id = WithOnsets.process(meta=raw)
         doc = WithOnsets(_id)
         slices = list(doc.slices)
