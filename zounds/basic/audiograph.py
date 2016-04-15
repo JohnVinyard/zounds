@@ -12,6 +12,55 @@ from zounds.spectral import \
     Chroma, BFCC, DCT
 
 
+def stft(
+        chunksize_bytes=2 * 44100 * 30 * 2,
+        resample_to=SR44100(),
+        wscheme=HalfLapped(),
+        store_fft=False):
+
+    class ShortTimeFourierTransform(BaseModel):
+        meta = JSONFeature(
+                MetaData,
+                store=True,
+                encoder=AudioMetaDataEncoder)
+
+        raw = ByteStreamFeature(
+                ByteStream,
+                chunksize=chunksize_bytes,
+                needs=meta,
+                store=False)
+
+        ogg = OggVorbisFeature(
+                OggVorbis,
+                needs=raw,
+                store=True)
+
+        pcm = ConstantRateTimeSeriesFeature(
+                AudioStream,
+                needs=raw,
+                store=False)
+
+        resampled = ConstantRateTimeSeriesFeature(
+                Resampler,
+                needs=pcm,
+                samplerate=resample_to,
+                store=False)
+
+        windowed = ConstantRateTimeSeriesFeature(
+                SlidingWindow,
+                needs=resampled,
+                wscheme=wscheme,
+                wfunc=OggVorbisWindowingFunc(),
+                store=False)
+
+        fft = ConstantRateTimeSeriesFeature(
+                FFT,
+                needs=windowed,
+                store=store_fft)
+
+    return ShortTimeFourierTransform
+
+
 def audio_graph(
         chunksize_bytes=2 * 44100 * 30 * 2,
         resample_to=SR44100(),
@@ -101,6 +150,7 @@ def with_onsets(fft_feature):
     :param fft_feature: The short-time fourier transform feature
     :return: A mixin class that extracts onsets
     """
+
     class Onsets(BaseModel):
         onset_prep = ConstantRateTimeSeriesFeature(
                 SlidingWindow,
