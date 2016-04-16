@@ -6,38 +6,17 @@ from zounds.basic import stft
 from zounds.timeseries import \
     ConstantRateTimeSeriesFeature, HalfLapped, Stride, SR44100, Seconds
 from zounds.spectral import SlidingWindow
+from zounds.synthesize import TickSynthesizer
 from onset import \
     MeasureOfTransience, MovingAveragePeakPicker, TimeSliceFeature
-from soundfile import SoundFile
-from io import BytesIO
 
 
 class OnsetTests(unittest2.TestCase):
 
     def ticks(self, samplerate, duration, tick_frequency):
-        sr = samplerate.samples_per_second
-        # create a short, tick sound
-        tick = np.random.random_sample(int(sr * .05))
-        tick *= np.linspace(1, 0, len(tick))
-        # create silence
-        samples = np.zeros(sr * (duration / Seconds(1)))
-        ticks_per_second = Seconds(1) / tick_frequency
-        # introduce periodic ticking sound
-        step = int(sr // ticks_per_second)
-        for i in xrange(0, len(samples), step):
-            samples[i:i+len(tick)] = tick
-        # write the samples to a file-like object
-        bio = BytesIO()
-        with SoundFile(
-                bio,
-                mode='w',
-                channels=1,
-                format='WAV',
-                subtype='PCM_16',
-                samplerate=sr) as f:
-            f.write(samples)
-        bio.seek(0)
-        return bio
+        synth = TickSynthesizer(samplerate)
+        samples = synth.synthesize(duration, tick_frequency)
+        return samples.encode()
 
     @unittest2.skip
     def test_onset_positions(self):

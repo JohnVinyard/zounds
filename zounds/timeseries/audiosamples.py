@@ -4,6 +4,8 @@ from timeseries import \
 from samplerate import AudioSampleRate, audio_sample_rate
 import numpy as np
 from duration import Seconds
+from soundfile import SoundFile
+from io import BytesIO
 
 
 class AudioSamples(ConstantRateTimeSeries):
@@ -32,6 +34,19 @@ class AudioSamples(ConstantRateTimeSeries):
         if self.channels == 1:
             return self
         return AudioSamples(self.sum(axis=1) * 0.5, self.samplerate)
+
+    def encode(self, flo=None, fmt='WAV', subtype='PCM_16'):
+        flo = flo or BytesIO()
+        with SoundFile(
+                flo,
+                mode='w',
+                channels=self.channels,
+                format=fmt,
+                subtype=subtype,
+                samplerate=self.samples_per_second) as f:
+            f.write(self)
+        flo.seek(0)
+        return flo
 
 
 class AudioSamplesEncoder(Node):

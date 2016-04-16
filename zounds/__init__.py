@@ -23,7 +23,7 @@ from segment import \
     MeasureOfTransience, MovingAveragePeakPicker, SparseTimestampDecoder, \
     SparseTimestampEncoder, TimeSliceDecoder, TimeSliceFeature, ComplexDomain
 
-from synthesize import FFTSynthesizer, DCTSynthesizer
+from synthesize import FFTSynthesizer, DCTSynthesizer, TickSynthesizer
 
 from learn import \
     KMeans, BinaryRbm, LinearRbm, Learned, \
