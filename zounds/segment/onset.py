@@ -29,6 +29,17 @@ class MeasureOfTransience(Node):
                 data.frequency,
                 data.duration)
 
+    def _enqueue(self, data, pusher):
+        if self._cache is None:
+            self._cache = data
+        else:
+            self._cache = self._cache.concatenate(data)
+
+    def _dequeue(self):
+        data = self._cache
+        self._cache = self._cache[None, -1]
+        return data
+
     def _process(self, data):
         data = np.abs(data)
         magnitude = (data[:, 2:] ** 2)
@@ -153,6 +164,7 @@ class MovingAveragePeakPicker(BasePeakPicker):
         return data
 
     def _onset_indices(self, data):
+        # compute the threshold for onsets
         agg = self._aggregate(data, axis=1) * 1.25
         # find indices that are peaks
         diff = np.diff(data[:, self._center - 2: self._center + 1])
