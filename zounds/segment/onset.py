@@ -29,6 +29,9 @@ class MeasureOfTransience(Node):
                 data.frequency,
                 data.duration)
 
+    # TODO: this pattern of hanging on to the last sample of the previous chunk,
+    # and appending to the next chunk probably happens somewhere else, and
+    # should be generalized
     def _enqueue(self, data, pusher):
         if self._cache is None:
             self._cache = data
@@ -59,15 +62,6 @@ class ComplexDomain(Node):
 
     def __init__(self, needs=None):
         super(ComplexDomain, self).__init__(needs=needs)
-
-    def _first_chunk(self, data):
-        first = np.zeros((2, 3, data.shape[-1]), dtype=np.complex128)
-        first[0, 2:, :] = data[0, :1]
-        first[1, 1:, :] = data[0, :2]
-        return ConstantRateTimeSeries( \
-                np.concatenate([first, data]),
-                data.frequency,
-                data.duration)
 
     def _process(self, data):
         # delta between expected and actual phase
@@ -100,7 +94,7 @@ class ComplexDomain(Node):
 
         # TODO: This duration isn't right.  It should probably be 
         # data.duration // 3
-        yield ConstantRateTimeSeries( \
+        yield ConstantRateTimeSeries(
                 detect.sum(axis=1),
                 data.frequency,
                 data.duration)
