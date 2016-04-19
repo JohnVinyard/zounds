@@ -35,7 +35,7 @@ class OnsetTests(unittest2.TestCase):
         frame_hop = self.wscheme.frequency
 
         detector = feature_func(doc)
-        #self.assertGreaterEqual(len(detector), len(doc.fft))
+        # self.assertGreaterEqual(len(detector), len(doc.fft))
 
         self.assertLess(abs(Seconds(0) - slices[0].start), frame_hop)
         self.assertLess(abs(Seconds(1) - slices[1].start), frame_hop)

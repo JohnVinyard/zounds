@@ -58,7 +58,7 @@ class TickSynthesizer(object):
     def synthesize(self, duration, tick_frequency):
         sr = self.samplerate.samples_per_second
         # create a short, tick sound
-        tick = np.random.random_sample(int(sr * .05))
+        tick = np.random.random_sample(int(sr * .1))
         tick *= np.linspace(1, 0, len(tick))
         # create silence
         samples = np.zeros(sr * (duration / Seconds(1)))

@@ -92,12 +92,11 @@ class ComplexDomain(Node):
              (2 * expected * actual * np.cos(angle))) ** 0.5)[
             nonzero_phase_delta_indices]
 
-        # TODO: This duration isn't right.  It should probably be 
-        # data.duration // 3
-        yield ConstantRateTimeSeries(
+        output = ConstantRateTimeSeries(
                 detect.sum(axis=1),
                 data.frequency,
-                data.duration)
+                data.duration // 3)
+        yield output
 
 
 class Flux(Node):
