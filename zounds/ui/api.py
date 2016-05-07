@@ -7,8 +7,8 @@ import httplib
 import numpy as np
 from featureflow import Decoder
 import traceback
+import urllib
 import matplotlib
-
 matplotlib.use('Agg')
 from matplotlib import pyplot as plt
 from io import BytesIO
@@ -346,10 +346,12 @@ class AudioSliceSerializer(object):
             self,
             content_type,
             visualization_feature,
-            audio_feature):
+            audio_feature,
+            path_builder):
         self.audio_feature = audio_feature
         self.visualization_feature = visualization_feature
         self._content_type = content_type
+        self._path_builder = path_builder
 
     @property
     def content_type(self):
@@ -362,11 +364,10 @@ class AudioSliceSerializer(object):
         }
 
     def _result(self, ts, _id):
-        template = '/zounds/{_id}/{feature}'
         return {
-            'audio': template.format(_id=_id, feature=self.audio_feature.key),
-            'visualization': template.format(
-                    _id=_id, feature=self.visualization_feature.key),
+            'audio': self._path_builder(_id, self.audio_feature.key),
+            'visualization': self._path_builder(
+                    _id, self.visualization_feature.key),
             'slice': self._seconds(ts)
         }
 
@@ -380,11 +381,12 @@ class AudioSliceSerializer(object):
 
 
 class OnsetsSerializer(AudioSliceSerializer):
-    def __init__(self, visualization_feature, audio_feature):
+    def __init__(self, visualization_feature, audio_feature, path_builder):
         super(OnsetsSerializer, self).__init__(
                 'application/vnd.zounds.onsets+json',
                 visualization_feature,
-                audio_feature)
+                audio_feature,
+                path_builder)
 
     def matches(self, context):
         return isinstance(context.feature, TimeSliceFeature)
@@ -395,11 +397,12 @@ class OnsetsSerializer(AudioSliceSerializer):
 
 
 class SearchResultsSerializer(AudioSliceSerializer):
-    def __init__(self, visualization_feature, audio_feature):
+    def __init__(self, visualization_feature, audio_feature, path_builder):
         super(SearchResultsSerializer, self).__init__(
                 'application/vnd.zounds.searchresults+json',
                 visualization_feature,
-                audio_feature)
+                audio_feature,
+                path_builder)
 
     def matches(self, context):
         return isinstance(context.value, SearchResults)
@@ -435,10 +438,12 @@ class ZoundsApp(object):
             NumpySerializer(),
             OnsetsSerializer(
                     self.visualization_feature,
-                    self.audio_feature),
+                    self.audio_feature,
+                    self.feature_path),
             SearchResultsSerializer(
                     self.visualization_feature,
-                    self.audio_feature)
+                    self.audio_feature,
+                    self.feature_path)
         ]
         self.temp = {}
 
@@ -450,6 +455,11 @@ class ZoundsApp(object):
             self._html_content = f.read().replace(
                     '<script src="/zounds.js"></script>',
                     '<script>{}</script>'.format(script))
+
+    def feature_path(self, _id, feature):
+        _id = urllib.quote(_id, safe='')
+        return '{base_path}{_id}/{feature}'.format(
+                base_path=self.base_path, _id=_id, feature=feature)
 
     def find_serializer(self, context):
         try:
