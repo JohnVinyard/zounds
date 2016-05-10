@@ -78,27 +78,10 @@ class Search(object):
     def _score(self, query):
         raise NotImplementedError()
 
-    # def _bisect(self, l, x):
-    #     i = bisect_left(l, x)
-    #     if i == len(l):
-    #         return len(l) - 1
-    #     if x < l[i]:
-    #         i -= 1
-    #     return i
-
     def search(self, query, n_results=5):
         scores = self._score(query)
         indices = np.argsort(scores)[:n_results]
         return SearchResults(self._contiguous, self._offsets, indices, query)
-        # _ids, positions = self._offsets
-        # for i in indices:
-        #     start_index = self._bisect(positions, i)
-        #     diff = i - positions[start_index]
-        #     _id = _ids[start_index]
-        #     start_time = self._contiguous.frequency * diff
-        #     duration = self._contiguous.duration
-        #     ts = TimeSlice(duration, start_time)
-        #     yield _id, ts
 
 
 class HammingDistanceSearch(Search):
