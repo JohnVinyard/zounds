@@ -130,7 +130,7 @@ class Learned(Node):
         self._learned = learned
 
     def _process(self, data):
-        transformed = self._learned(data)
+        transformed = self._learned.pipeline.transform(data).data
         if isinstance(data, ConstantRateTimeSeries):
             yield ConstantRateTimeSeries(
                     transformed,
