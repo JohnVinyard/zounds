@@ -2,6 +2,8 @@ from featureflow import Node, NotEnoughData
 import marshal
 import types
 from collections import OrderedDict
+import hashlib
+import numpy as np
 
 
 class Op(object):
@@ -9,6 +11,20 @@ class Op(object):
         super(Op, self).__init__()
         self._kwargs = kwargs
         self._func = marshal.dumps(func.func_code)
+        self._version = self._compute_version()
+
+    @property
+    def version(self):
+        return self._version
+
+    def _compute_version(self):
+        h = hashlib.md5(self._func)
+        for v in self._kwargs.itervalues():
+            try:
+                h.update(v.version)
+            except AttributeError:
+                h.update(np.array(v))
+        return h.hexdigest()
 
     def __getattr__(self, key):
         if key == '_kwargs':
@@ -232,6 +248,8 @@ class Binarize(Preprocessor):
 class Pipeline(object):
     def __init__(self, preprocess_results):
         self.processors = preprocess_results
+        self.version = hashlib.md5(
+                ''.join([p.op.version for p in self.processors])).hexdigest()
 
     def transform(self, data):
         inversion_data = []

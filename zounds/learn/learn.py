@@ -129,6 +129,10 @@ class Learned(Node):
         super(Learned, self).__init__(needs=needs)
         self._learned = learned
 
+    @property
+    def version(self):
+        return self._learned.pipeline.version
+
     def _process(self, data):
         transformed = self._learned.pipeline.transform(data).data
         if isinstance(data, ConstantRateTimeSeries):

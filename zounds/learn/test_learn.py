@@ -74,3 +74,14 @@ class LearnedTests(unittest2.TestCase):
         l = Learned(learned=Rbm())
         results = list(l._process(np.random.random_sample((33, 3))))[0]
         self.assertEqual((33, 64), results.shape)
+
+    def test_pipeline_changes_version_when_recomputed(self):
+        Rbm.process(iterator=data())
+        v1 = Learned(learned=Rbm()).version
+        v2 = Learned(learned=Rbm()).version
+        self.assertEqual(v1, v2)
+        Rbm.process(iterator=data())
+        v3 = Learned(learned=Rbm()).version
+        self.assertNotEqual(v1, v3)
+
+

@@ -1,5 +1,6 @@
 import numpy as np
 from util import sigmoid, stochastic_binary as sb
+import hashlib
 
 
 class Rbm(object):
@@ -84,6 +85,13 @@ class Rbm(object):
         self._weight_decay = weight_decay
         self._initial_momentum = initial_momentum
         self._final_momentum = final_momentum
+
+    @property
+    def version(self):
+        h = hashlib.md5(self._weights)
+        h.update(self._vbias)
+        h.update(self._hbias)
+        return h.hexdigest()
 
     @property
     def indim(self):
@@ -346,10 +354,10 @@ class RealValuedRbm(Rbm):
 
         """
         super(RealValuedRbm, self).__init__(
-            indim,
-            hdim,
-            learning_rate=learning_rate,
-            sparsity_target=sparsity_target)
+                indim,
+                hdim,
+                learning_rate=learning_rate,
+                sparsity_target=sparsity_target)
 
     def _gibbs_hvh(self, h):
         """

@@ -6,6 +6,7 @@ from preprocess import \
 
 
 class TestPipeline(unittest2.TestCase):
+    
     def test_cannot_invert_pipeline_if_any_steps_are_missing(self):
         class Settings(featureflow.PersistenceSettings):
             id_provider = featureflow.UuidProvider()
