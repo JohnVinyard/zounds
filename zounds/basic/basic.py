@@ -8,6 +8,7 @@ class Merge(Node):
     """
     Combine two or more sources into a single feature
     """
+
     def __init__(self, needs=None):
         super(Merge, self).__init__(needs=needs)
         exc_msg = 'you must supply two or more dependencies'
@@ -34,9 +35,9 @@ class Merge(Node):
             raise NotEnoughData()
         shortest = min(len(v) for v in self._cache.itervalues())
         output = OrderedDict(
-            (k, v[:shortest]) for k, v in self._cache.iteritems())
+                (k, v[:shortest]) for k, v in self._cache.iteritems())
         self._cache = OrderedDict(
-            (k, v[shortest:]) for k, v in self._cache.iteritems())
+                (k, v[shortest:]) for k, v in self._cache.iteritems())
         return output
 
     def _process(self, data):
@@ -82,4 +83,3 @@ class Max(Node):
             data = data
         if data.shape[0]:
             yield data
-

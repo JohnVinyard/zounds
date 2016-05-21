@@ -64,25 +64,25 @@ class SearchResults(object):
 
 
 class Scorer(object):
-    def __init__(self, contiguous):
+    def __init__(self, index):
         super(Scorer, self).__init__()
-        self.contiguous = contiguous
+        self.contiguous = index.contiguous
 
     def score(self, query):
         raise NotImplementedError()
 
 
 class HammingDistanceScorer(Scorer):
-    def __init__(self, contiguous):
-        super(HammingDistanceScorer, self).__init__(contiguous)
+    def __init__(self, index):
+        super(HammingDistanceScorer, self).__init__(index)
 
     def score(self, query):
         return np.logical_xor(query, self.contiguous).sum(axis=1)
 
 
 class PackedHammingDistanceScorer(Scorer):
-    def __init__(self, contiguous):
-        super(PackedHammingDistanceScorer, self).__init__(contiguous)
+    def __init__(self, index):
+        super(PackedHammingDistanceScorer, self).__init__(index)
 
     def score(self, query):
         return packed_hamming_distance(
@@ -90,19 +90,18 @@ class PackedHammingDistanceScorer(Scorer):
 
 
 class TimeSliceBuilder(object):
-    def __init__(self, contiguous, offsets):
+    def __init__(self, index):
         super(TimeSliceBuilder, self).__init__()
-        self.offsets = offsets
-        self.contiguous = contiguous
+        self.offsets = index.offsets
+        self.contiguous = index.contiguous
 
     def build(self, _id, diff):
         raise NotImplementedError()
 
 
 class ConstantRateTimeSliceBuilder(TimeSliceBuilder):
-    def __init__(self, contiguous, offsets):
-        super(ConstantRateTimeSliceBuilder, self).__init__(
-                contiguous, offsets)
+    def __init__(self, index):
+        super(ConstantRateTimeSliceBuilder, self).__init__(index)
 
     def build(self, _id, diff):
         start_time = self.contiguous.frequency * diff
@@ -111,8 +110,8 @@ class ConstantRateTimeSliceBuilder(TimeSliceBuilder):
 
 
 class VariableRateTimeSliceBuilder(TimeSliceBuilder):
-    def __init__(self, contiguous, offsets, feature_func):
-        super(VariableRateTimeSliceBuilder, self).__init__(contiguous, offsets)
+    def __init__(self, index, feature_func):
+        super(VariableRateTimeSliceBuilder, self).__init__(index)
         self.feature_func = feature_func
 
     def build(self, _id, diff):
@@ -121,9 +120,9 @@ class VariableRateTimeSliceBuilder(TimeSliceBuilder):
 
 
 class Search(object):
-    def __init__(self, offsets, scorer, time_slice_builder):
+    def __init__(self, index, scorer, time_slice_builder):
         super(Search, self).__init__()
-        self.offsets = offsets
+        self.offsets = index.offsets
         self.time_slice_builder = time_slice_builder
         self.scorer = scorer
 
