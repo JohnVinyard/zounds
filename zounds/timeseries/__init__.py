@@ -13,3 +13,5 @@ from timeseries import \
     TimeSlice, ConstantRateTimeSeriesEncoder, ConstantRateTimeSeriesFeature, \
     GreedyConstantRateTimeSeriesDecoder, PackedConstantRateTimeSeriesEncoder, \
     ConstantRateTimeSeries
+
+from variablerate import VariableRateTimeSeries
