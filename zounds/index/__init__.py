@@ -1,3 +1,4 @@
 from index import \
-    Index, Offsets, Contiguous, HammingDistanceSearch, \
-    PackedHammingDistanceSearch, SearchResults
+    Contiguous, Offsets, HammingDistanceScorer, PackedHammingDistanceScorer, \
+    ConstantRateTimeSliceBuilder, VariableRateTimeSliceBuilder, Search, \
+    SearchResults

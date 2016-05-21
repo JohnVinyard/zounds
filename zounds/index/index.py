@@ -1,9 +1,7 @@
-from featureflow import Node, Aggregator, BaseModel, Feature, PickleFeature
+from featureflow import Node, Aggregator
 import numpy as np
 from bisect import bisect_left
-from zounds.timeseries import \
-    TimeSlice, ConstantRateTimeSeriesFeature, ConstantRateTimeSeriesEncoder, \
-    PackedConstantRateTimeSeriesEncoder
+from zounds.timeseries import TimeSlice
 from zounds.nputil import packed_hamming_distance
 
 
@@ -41,12 +39,11 @@ class Offsets(Aggregator, Node):
 
 
 class SearchResults(object):
-    def __init__(self, contiguous, offsets, indices, query):
+    def __init__(self, offsets, indices, time_slice_builder):
         super(SearchResults, self).__init__()
-        self._contiguous = contiguous
-        self._offsets = offsets
         self._indices = indices
-        self._query = query
+        self._time_slice_builder = time_slice_builder
+        self._offsets = offsets
 
     @staticmethod
     def _bisect(l, x):
@@ -63,64 +60,74 @@ class SearchResults(object):
             start_index = self._bisect(positions, i)
             diff = i - positions[start_index]
             _id = _ids[start_index]
-            start_time = self._contiguous.frequency * diff
-            duration = self._contiguous.duration
-            ts = TimeSlice(duration, start_time)
-            yield _id, ts
+            yield _id, self._time_slice_builder.build(_id, diff)
+
+
+class Scorer(object):
+    def __init__(self, contiguous):
+        super(Scorer, self).__init__()
+        self.contiguous = contiguous
+
+    def score(self, query):
+        raise NotImplementedError()
+
+
+class HammingDistanceScorer(Scorer):
+    def __init__(self, contiguous):
+        super(HammingDistanceScorer, self).__init__(contiguous)
+
+    def score(self, query):
+        return np.logical_xor(query, self.contiguous).sum(axis=1)
+
+
+class PackedHammingDistanceScorer(Scorer):
+    def __init__(self, contiguous):
+        super(PackedHammingDistanceScorer, self).__init__(contiguous)
+
+    def score(self, query):
+        return packed_hamming_distance(
+                query.view(np.uint64), self.contiguous.view(np.uint64))
+
+
+class TimeSliceBuilder(object):
+    def __init__(self, contiguous, offsets):
+        super(TimeSliceBuilder, self).__init__()
+        self.offsets = offsets
+        self.contiguous = contiguous
+
+    def build(self, _id, diff):
+        raise NotImplementedError()
+
+
+class ConstantRateTimeSliceBuilder(TimeSliceBuilder):
+    def __init__(self, contiguous, offsets):
+        super(ConstantRateTimeSliceBuilder, self).__init__(
+                contiguous, offsets)
+
+    def build(self, _id, diff):
+        start_time = self.contiguous.frequency * diff
+        duration = self.contiguous.duration
+        return TimeSlice(duration, start_time)
+
+
+class VariableRateTimeSliceBuilder(TimeSliceBuilder):
+    def __init__(self, contiguous, offsets, feature_func):
+        super(VariableRateTimeSliceBuilder, self).__init__(contiguous, offsets)
+        self.feature_func = feature_func
+
+    def build(self, _id, diff):
+        slices = list(self.feature_func(_id))
+        return slices[diff]
 
 
 class Search(object):
-    def __init__(self, contiguous, offsets):
+    def __init__(self, offsets, scorer, time_slice_builder):
         super(Search, self).__init__()
-        self._contiguous = contiguous
-        self._offsets = offsets
-
-    def _score(self, query):
-        raise NotImplementedError()
+        self.offsets = offsets
+        self.time_slice_builder = time_slice_builder
+        self.scorer = scorer
 
     def search(self, query, n_results=5):
-        scores = self._score(query)
+        scores = self.scorer.score(query)
         indices = np.argsort(scores)[:n_results]
-        return SearchResults(self._contiguous, self._offsets, indices, query)
-
-
-class HammingDistanceSearch(Search):
-    def __init__(self, contiguous, offsets):
-        super(HammingDistanceSearch, self).__init__(contiguous, offsets)
-
-    def _score(self, query):
-        return np.logical_xor(query, self._contiguous).sum(axis=1)
-
-
-class PackedHammingDistanceSearch(Search):
-    def __init__(self, contiguous, offsets):
-        super(PackedHammingDistanceSearch, self).__init__(contiguous, offsets)
-
-    def _score(self, query):
-        return packed_hamming_distance( \
-                query.view(np.uint64), self._contiguous.view(np.uint64))
-
-
-def hamming_distance_index(feature_func, packed):
-    encoder = \
-        PackedConstantRateTimeSeriesEncoder if packed \
-            else ConstantRateTimeSeriesEncoder
-
-    class Index(BaseModel):
-        index = Feature( \
-                Index,
-                func=feature_func,
-                store=False)
-
-        contiguous = ConstantRateTimeSeriesFeature( \
-                Contiguous,
-                needs=index,
-                encoder=encoder,
-                store=True)
-
-        offsets = PickleFeature( \
-                Offsets,
-                needs=index,
-                store=True)
-
-    return Index
+        return SearchResults(self.offsets, indices, self.time_slice_builder)
