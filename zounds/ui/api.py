@@ -185,7 +185,8 @@ class DefaultSerializer(object):
             value = flo.read(slce.stop - slce.start)
         else:
             value = flo.read()
-        key = document.key_builder.build(document._id, feature.key)
+        key = document.key_builder.build(
+                document._id, feature.key, feature.version)
         total = document.database.size(key)
         return TempResult(
                 value,
