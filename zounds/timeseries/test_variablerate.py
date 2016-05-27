@@ -4,7 +4,6 @@ from timeseries import TimeSlice
 from duration import Seconds, Milliseconds
 import numpy as np
 
-
 @unittest2.SkipTest
 class VariableRateTimeSeriesTests(unittest2.TestCase):
     def test_can_slice_time_series_with_time_slice(self):
@@ -80,7 +79,7 @@ class VariableRateTimeSeriesTests(unittest2.TestCase):
                 start=Milliseconds(500), duration=Milliseconds(100))
         sliced = ts[timeslice]
         self.assertIsInstance(sliced, VariableRateTimeSeries)
-        self.assertEqual(0, len(sliced))
+        self.assertEqual(1, len(sliced))
 
     def test_time_slice_spanning_multiple_examples_returns_all_examples(self):
         ts = VariableRateTimeSeries((
@@ -91,7 +90,7 @@ class VariableRateTimeSeriesTests(unittest2.TestCase):
         timeslice = TimeSlice(start=Milliseconds(500), duration=Seconds(1))
         sliced = ts[timeslice]
         self.assertIsInstance(sliced, VariableRateTimeSeries)
-        self.assertIsEqual(2, len(sliced))
+        self.assertEqual(2, len(sliced))
 
     def test_can_get_entire_time_series_with_empty_slice(self):
         ts = VariableRateTimeSeries((
@@ -101,7 +100,7 @@ class VariableRateTimeSeriesTests(unittest2.TestCase):
         ))
         sliced = ts[:]
         self.assertIsInstance(sliced, VariableRateTimeSeries)
-        self.assertIsEqual(3, len(sliced))
+        self.assertEqual(3, len(sliced))
 
     def test_sorts_input(self):
         ts = VariableRateTimeSeries((
@@ -114,11 +113,11 @@ class VariableRateTimeSeriesTests(unittest2.TestCase):
                 TimeSlice(start=Seconds(0), duration=Seconds(1)), timeslice)
 
     def raises_if_data_is_of_variable_size(self):
-        data = (
+        data = ((
             (TimeSlice(start=Seconds(3), duration=Seconds(1)), np.zeros(11)),
             (TimeSlice(start=Seconds(0), duration=Seconds(1)), np.zeros(10)),
             (TimeSlice(start=Seconds(1), duration=Seconds(2)), np.zeros(10))
-        )
+        ))
         self.assertRaises(ValueError, VariableRateTimeSeries(data))
 
     def test_span(self):

@@ -9,11 +9,11 @@ class TimeSlice(object):
         super(TimeSlice, self).__init__()
 
         if duration is not None and not isinstance(duration, np.timedelta64):
-            raise ValueError('duration must be of type {t} but was {t2}'.format( \
+            raise ValueError('duration must be of type {t} but was {t2}'.format(
                     t=np.timedelta64, t2=duration.__class__))
 
         if start is not None and not isinstance(start, np.timedelta64):
-            raise ValueError('start must be of type {t} but was {t2}'.format( \
+            raise ValueError('start must be of type {t} but was {t2}'.format(
                     t=np.timedelta64, t2=start.__class__))
 
         self.duration = duration
@@ -30,14 +30,14 @@ class TimeSlice(object):
         return self.start + self.duration
 
     def __and__(self, other):
-        delta = max( \
+        delta = max(
                 np.timedelta64(0, 's'),
                 min(self.end, other.end) - max(self.start, other.start))
         return TimeSlice(delta)
 
     def __contains__(self, other):
         if isinstance(other, np.timedelta64):
-            return other > self.start and other < self.end
+            return self.start < other < self.end
         if isinstance(other, TimeSlice):
             return other.start > self.start and other.end < self.end
         raise ValueError

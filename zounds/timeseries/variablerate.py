@@ -1,5 +1,6 @@
 import numpy as np
 from timeseries import TimeSlice
+from duration import Seconds
 
 
 class VariableRateTimeSeries(object):
@@ -18,23 +19,34 @@ class VariableRateTimeSeries(object):
             shape = (0,)
             dtype = np.uint8
         self._data = np.array(data, dtype=[
-                ('timeslice', TimeSlice),
-                ('data', dtype, shape)])
+            ('timeslice', TimeSlice),
+            ('data', dtype, shape)])
 
     def __len__(self):
         return self._data.__len__()
 
     @property
     def span(self):
-        start = self._data.timeslice[0].start
-        return TimeSlice(start=start, duration=self.end-start)
+        try:
+            start = self._data['timeslice'][0].start
+            return TimeSlice(start=start, duration=self.end - start)
+        except IndexError:
+            return TimeSlice(start=Seconds(0), duration=Seconds(0))
 
     @property
     def end(self):
-        return self._data.timeslice[-1].end
+        try:
+            return self._data['timeslice'][-1].end
+        except IndexError:
+            return Seconds(0)
 
     def __getitem__(self, index):
         if isinstance(index, TimeSlice):
-            raise NotImplementedError()
-        return VariableRateTimeSeries(self._data[index])
-
+            g = ((x['timeslice'], x['data']) for x in self._data
+                 if x['timeslice'].end > index.start
+                 and (index.duration is None or x['timeslice'].start < index.end))
+            return VariableRateTimeSeries(g)
+        if isinstance(index, int):
+            return VariableRateTimeSeries((self._data[index],))
+        else:
+            return VariableRateTimeSeries(self._data[index])
