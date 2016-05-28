@@ -29,6 +29,18 @@ class TimeSlice(object):
     def end(self):
         return self.start + self.duration
 
+    def __lt__(self, other):
+        return self.start.__lt__(other.start)
+
+    def __gt__(self, other):
+        return self.start.__gt__(other.start)
+
+    def __le__(self, other):
+        return self.start.__le__(other.start)
+
+    def __ge__(self, other):
+        return self.start.__ge__(other.start)
+
     def __and__(self, other):
         delta = max(
                 np.timedelta64(0, 's'),

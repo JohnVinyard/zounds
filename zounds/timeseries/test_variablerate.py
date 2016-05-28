@@ -4,7 +4,7 @@ from timeseries import TimeSlice
 from duration import Seconds, Milliseconds
 import numpy as np
 
-@unittest2.SkipTest
+
 class VariableRateTimeSeriesTests(unittest2.TestCase):
     def test_can_slice_time_series_with_time_slice(self):
         ts = VariableRateTimeSeries((
@@ -33,12 +33,12 @@ class VariableRateTimeSeriesTests(unittest2.TestCase):
             (TimeSlice(start=Seconds(3), duration=Seconds(1)), np.zeros(10))
         ))
         sliced = ts[1]
-        self.assertIsInstance(sliced, tuple)
+        self.assertIsInstance(sliced, np.record)
         timeslice, data = sliced
         self.assertEqual(
                 TimeSlice(start=Seconds(1), duration=Seconds(2)), timeslice)
-        self.assertIsInstance(data, np.array)
-        self.assertAreEqual((10,), data.shape)
+        self.assertIsInstance(data, np.ndarray)
+        self.assertEqual((10,), data.shape)
 
     def test_can_slice_time_series_with_integer_indices(self):
         ts = VariableRateTimeSeries((

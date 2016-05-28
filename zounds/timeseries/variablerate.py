@@ -10,7 +10,7 @@ class VariableRateTimeSeries(object):
             self._data = data
             return
 
-        data = list(data)
+        data = sorted(list(data), key=lambda x: x[0])
         try:
             example = data[0][1]
             shape = example.shape
@@ -18,9 +18,10 @@ class VariableRateTimeSeries(object):
         except IndexError:
             shape = (0,)
             dtype = np.uint8
-        self._data = np.array(data, dtype=[
+        self._data = np.recarray(len(data), dtype=[
             ('timeslice', TimeSlice),
             ('data', dtype, shape)])
+        self._data[:] = data
 
     def __len__(self):
         return self._data.__len__()
@@ -47,6 +48,6 @@ class VariableRateTimeSeries(object):
                  and (index.duration is None or x['timeslice'].start < index.end))
             return VariableRateTimeSeries(g)
         if isinstance(index, int):
-            return VariableRateTimeSeries((self._data[index],))
+            return self._data[index]
         else:
             return VariableRateTimeSeries(self._data[index])
