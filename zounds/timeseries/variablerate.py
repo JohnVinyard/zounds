@@ -20,7 +20,7 @@ class VariableRateTimeSeries(object):
             dtype = np.uint8
         self._data = np.recarray(len(data), dtype=[
             ('timeslice', TimeSlice),
-            ('data', dtype, shape)])
+            ('slicedata', dtype, shape)])
         self._data[:] = data
 
     def __len__(self):
@@ -29,25 +29,27 @@ class VariableRateTimeSeries(object):
     @property
     def span(self):
         try:
-            start = self._data['timeslice'][0].start
+            start = self._data.timeslice[0].start
             return TimeSlice(start=start, duration=self.end - start)
         except IndexError:
-            return TimeSlice(start=Seconds(0), duration=Seconds(0))
+            return TimeSlice(duration=Seconds(0))
 
     @property
     def end(self):
         try:
-            return self._data['timeslice'][-1].end
+            return self._data.timeslice[-1].end
         except IndexError:
             return Seconds(0)
 
     def __getitem__(self, index):
         if isinstance(index, TimeSlice):
-            g = ((x['timeslice'], x['data']) for x in self._data
-                 if x['timeslice'].end > index.start
-                 and (index.duration is None or x['timeslice'].start < index.end))
+            # TODO: Consider using a bisection approach here to make this much
+            # faster than this brute-force, O(n) approach
+            g = ((x.timeslice, x.slicedata) for x in self._data
+                 if x.timeslice.end > index.start and
+                 (index.duration is None or x.timeslice.start < index.end))
             return VariableRateTimeSeries(g)
-        if isinstance(index, int):
+        elif isinstance(index, int):
             return self._data[index]
         else:
             return VariableRateTimeSeries(self._data[index])

@@ -17,7 +17,7 @@ class TimeSlice(object):
                     t=np.timedelta64, t2=start.__class__))
 
         self.duration = duration
-        self.start = start or np.timedelta64(0, 's')
+        self.start = start or Picoseconds(0)
 
     def __add__(self, other):
         return TimeSlice(self.duration, start=self.start + other)
@@ -30,24 +30,37 @@ class TimeSlice(object):
         return self.start + self.duration
 
     def __lt__(self, other):
-        return self.start.__lt__(other.start)
+        try:
+            return self.start.__lt__(other.start)
+        except AttributeError:
+            return self.start.__lt__(other)
 
     def __gt__(self, other):
-        return self.start.__gt__(other.start)
+        try:
+            return self.start.__gt__(other.start)
+        except AttributeError:
+            return self.start.__get__(other)
 
     def __le__(self, other):
-        return self.start.__le__(other.start)
+        try:
+            return self.start.__le__(other.start)
+        except AttributeError:
+            return self.start.__le__(other)
 
     def __ge__(self, other):
-        return self.start.__ge__(other.start)
+        try:
+            return self.start.__ge__(other.start)
+        except AttributeError:
+            return self.start.__ge__(other)
 
     def __and__(self, other):
         delta = max(
-                np.timedelta64(0, 's'),
+                Picoseconds(0),
                 min(self.end, other.end) - max(self.start, other.start))
         return TimeSlice(delta)
 
     def __contains__(self, other):
+        print other
         if isinstance(other, np.timedelta64):
             return self.start < other < self.end
         if isinstance(other, TimeSlice):
@@ -61,7 +74,7 @@ class TimeSlice(object):
         return not self.__eq__(other)
 
     def __repr__(self):
-        return '{cls}(duration = {duration}, start = {start})'.format( \
+        return '{cls}(duration = {duration}, start = {start})'.format(
                 cls=self.__class__.__name__,
                 duration=str(self.duration),
                 start=str(self.start))
