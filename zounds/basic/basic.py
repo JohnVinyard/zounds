@@ -48,7 +48,7 @@ class Merge(Node):
 # it will receive only timestamps, and the logic will break.  This is a bug
 # in the BasePeakPicker class that needs to be fixed.  It should emit
 # timeslices, and not timestamps
-class Pooled(Aggregator, Node):
+class Pooled(Node):
     def __init__(self, op=None, axis=None, needs=None):
         super(Pooled, self).__init__(needs=needs)
         self._timeslices = []
@@ -66,9 +66,15 @@ class Pooled(Aggregator, Node):
             self._timeslices.extend(data)
 
     def _dequeue(self):
-        examples = [(ts, self._op(self._timeseries[ts], axis=self._axis))
-                for ts in self._timeslices]
-        return VariableRateTimeSeries(examples)
+        if not self._finalized:
+            raise NotEnoughData()
+        return self._timeslices, self._timeseries
+
+    def _process(self, data):
+        slices, series = data
+        examples = [(ts, self._op(series[ts], axis=self._axis))
+                    for ts in slices]
+        yield VariableRateTimeSeries(examples)
 
 
 class Slice(Node):

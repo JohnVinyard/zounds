@@ -1,6 +1,7 @@
 import numpy as np
 from timeseries import TimeSlice
-from duration import Seconds
+from duration import Seconds, Picoseconds
+from featureflow import Feature, BaseNumpyDecoder, NumpyEncoder
 
 
 class VariableRateTimeSeries(object):
@@ -25,6 +26,14 @@ class VariableRateTimeSeries(object):
 
     def __len__(self):
         return self._data.__len__()
+
+    @property
+    def slicedata(self):
+        return self._data.slicedata
+
+    @property
+    def raw_data(self):
+        return self._data
 
     @property
     def span(self):
@@ -55,3 +64,58 @@ class VariableRateTimeSeries(object):
             return self._data[index]
         else:
             return VariableRateTimeSeries(self._data[index])
+
+
+class VariableRateTimeSeriesEncoder(NumpyEncoder):
+    def __init__(self, needs=None):
+        super(VariableRateTimeSeriesEncoder, self).__init__(needs=needs)
+
+    def _prepare_data(self, data):
+        output = np.recarray(len(data), dtype=[
+            ('start', long),
+            ('duration', long),
+            ('slicedata', data.slicedata.dtype, data.slicedata.shape[1:])
+        ])
+        for i, d in enumerate(data):
+            timeslice, slicedata = d
+            output.start[i] = timeslice.start / Picoseconds(1)
+            output.duration[i] = timeslice.duration / Picoseconds(1)
+            output.slicedata[i] = slicedata
+        return output
+
+
+class VariableRateTimeSeriesDecoder(BaseNumpyDecoder):
+    def __init__(self):
+        super(VariableRateTimeSeriesDecoder, self).__init__()
+
+    def _gen(self, raw):
+        for r in raw:
+            print r.dtype
+            print r.start, r.duration
+            ts = TimeSlice(
+                    start=Picoseconds(r.start),
+                    duration=Picoseconds(r.duration))
+            yield (ts, r.slicedata)
+
+    def _wrap_array(self, raw, metadata):
+        return VariableRateTimeSeries(self._gen(raw))
+
+
+class VariableRateTimeSeriesFeature(Feature):
+    def __init__(
+            self,
+            extractor,
+            needs=None,
+            store=False,
+            key=None,
+            encoder=VariableRateTimeSeriesEncoder,
+            decoder=VariableRateTimeSeriesDecoder(),
+            **extractor_args):
+        super(VariableRateTimeSeriesFeature, self).__init__(
+                extractor,
+                needs=needs,
+                store=store,
+                encoder=encoder,
+                decoder=decoder,
+                key=key,
+                **extractor_args)

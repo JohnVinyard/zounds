@@ -1,1 +1,2 @@
-from synthesize import FFTSynthesizer, DCTSynthesizer, TickSynthesizer
+from synthesize import \
+    FFTSynthesizer, DCTSynthesizer, TickSynthesizer, NoiseSynthesizer

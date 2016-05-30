@@ -1,4 +1,4 @@
-from basic import Slice, Sum, Max
+from basic import Slice, Sum, Max, Pooled
 
 from util import process_dir
 

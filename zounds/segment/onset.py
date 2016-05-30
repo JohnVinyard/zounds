@@ -110,7 +110,7 @@ class Flux(Node):
             self._cache = np.vstack((data[0], data))
         else:
             self._cache = np.vstack((self._memory, data))
-        self._cache = ConstantRateTimeSeries( \
+        self._cache = ConstantRateTimeSeries(
                 self._cache,
                 data.frequency,
                 data.duration)
@@ -120,7 +120,7 @@ class Flux(Node):
         if self._unit_norm:
             data = safe_unit_norm(data)
         diff = np.diff(data, axis=0)
-        yield ConstantRateTimeSeries( \
+        yield ConstantRateTimeSeries(
                 np.linalg.norm(diff, axis=-1),
                 data.frequency,
                 data.duration)
@@ -189,7 +189,6 @@ class SparseTimestampEncoder(Node):
 
 
 # TODO: Encode/decode tests
-# TODO: A subclass of this that turns each pair into a timeslice
 # TODO: Should PeakPicker always emit the *end* of the timeseries, so that the
 # final timeslice can be produced correctly?
 class SparseTimestampDecoder(Decoder):
@@ -213,14 +212,15 @@ class TimeSliceDecoder(SparseTimestampDecoder):
     def __call__(self, flo):
         timestamps = super(TimeSliceDecoder, self).__call__(flo)
         durations = np.diff(timestamps)
-        return [TimeSlice(d, s) for s, d in zip(timestamps, durations)]
+        slices = [TimeSlice(d, s) for s, d in zip(timestamps, durations)]
+        return slices
 
     def __iter__(self, flo):
         yield self(flo)
 
 
 class SparseTimestampFeature(Feature):
-    def __init__( \
+    def __init__(
             self,
             extractor,
             needs=None,
@@ -229,7 +229,7 @@ class SparseTimestampFeature(Feature):
             encoder=SparseTimestampEncoder,
             decoder=SparseTimestampDecoder(),
             **extractor_args):
-        super(SparseTimestampFeature, self).__init__( \
+        super(SparseTimestampFeature, self).__init__(
                 extractor,
                 needs=needs,
                 store=store,
@@ -240,7 +240,7 @@ class SparseTimestampFeature(Feature):
 
 
 class TimeSliceFeature(Feature):
-    def __init__( \
+    def __init__(
             self,
             extractor,
             needs=None,
@@ -249,7 +249,7 @@ class TimeSliceFeature(Feature):
             encoder=SparseTimestampEncoder,
             decoder=TimeSliceDecoder(),
             **extractor_args):
-        super(TimeSliceFeature, self).__init__( \
+        super(TimeSliceFeature, self).__init__(
                 extractor,
                 needs=needs,
                 store=store,

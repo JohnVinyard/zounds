@@ -1,8 +1,58 @@
-import unittest2
-from variablerate import VariableRateTimeSeries
-from timeseries import TimeSlice
-from duration import Seconds, Milliseconds
+from random import random
+
+import featureflow as ff
 import numpy as np
+import unittest2
+
+from duration import Milliseconds
+from timeseries import TimeSlice
+from variablerate import VariableRateTimeSeries, VariableRateTimeSeriesFeature
+from zounds.basic import Pooled, stft
+from zounds.segment import TimeSliceFeature
+from zounds.synthesize import NoiseSynthesizer
+from zounds.timeseries import Picoseconds, Seconds, SR44100
+
+
+class VariableRateTimeSeriesFeatureTests(unittest2.TestCase):
+    def test_can_encode_and_decode_variable_rate_time_Series(self):
+
+        class TimestampEmitter(ff.Node):
+            def __init__(self, needs=None):
+                super(TimestampEmitter, self).__init__(needs=needs)
+                self.pos = Picoseconds(0)
+
+            def _process(self, data):
+                for i, d in enumerate(data):
+                    if random() > 0.9:
+                        yield self.pos + (i * data.frequency)
+                self.pos += data.frequency * len(data)
+
+        class Settings(ff.PersistenceSettings):
+            id_provider = ff.UuidProvider()
+            key_builder = ff.StringDelimitedKeyBuilder()
+            database = ff.InMemoryDatabase(key_builder=key_builder)
+
+        graph = stft(store_fft=True)
+
+        class Document(graph, Settings):
+            slices = TimeSliceFeature(
+                    TimestampEmitter,
+                    needs=graph.fft,
+                    store=True)
+
+            pooled = VariableRateTimeSeriesFeature(
+                    Pooled,
+                    op=np.max,
+                    axis=0,
+                    needs=(slices, graph.fft),
+                    store=False)
+
+        signal = NoiseSynthesizer(SR44100()).synthesize(Seconds(10)).encode()
+        _id = Document.process(meta=signal)
+        doc = Document(_id)
+        self.assertIsInstance(doc.pooled, VariableRateTimeSeries)
+        self.assertEqual(doc.fft.shape[1], doc.pooled.slicedata.shape[1])
+        self.assertTrue(True)
 
 
 class VariableRateTimeSeriesTests(unittest2.TestCase):
@@ -145,3 +195,4 @@ class VariableRateTimeSeriesTests(unittest2.TestCase):
     def test_end_empty(self):
         ts = VariableRateTimeSeries(())
         self.assertEqual(Seconds(0), ts.end)
+

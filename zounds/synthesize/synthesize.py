@@ -51,6 +51,7 @@ class TickSynthesizer(object):
     """
     Synthesize short, percussive, periodic "ticks"
     """
+
     def __init__(self, samplerate):
         super(TickSynthesizer, self).__init__()
         self.samplerate = samplerate
@@ -66,5 +67,20 @@ class TickSynthesizer(object):
         # introduce periodic ticking sound
         step = int(sr // ticks_per_second)
         for i in xrange(0, len(samples), step):
-            samples[i:i+len(tick)] = tick
+            samples[i:i + len(tick)] = tick
         return AudioSamples(samples, self.samplerate)
+
+
+class NoiseSynthesizer(object):
+    """
+    Synthesize white noise
+    """
+    def __init__(self, samplerate):
+        super(NoiseSynthesizer, self).__init__()
+        self.samplerate = samplerate
+
+    def synthesize(self, duration):
+        sr = self.samplerate.samples_per_second
+        seconds = duration / Seconds(1)
+        return AudioSamples(
+                np.random.random_sample(sr*seconds), self.samplerate)
