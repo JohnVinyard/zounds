@@ -1,4 +1,5 @@
-from featureflow import NumpyEncoder, NumpyMetaData, Node, Feature, Decoder
+from featureflow import \
+    NumpyEncoder, NumpyMetaData, Feature, BaseNumpyDecoder
 import numpy as np
 from duration import Picoseconds
 from samplerate import SampleRate
@@ -124,7 +125,6 @@ class ConstantRateTimeSeriesMetadata(NumpyMetaData):
 
 
 class BaseConstantRateTimeSeriesEncoder(NumpyEncoder):
-
     def __init__(self, needs=None):
         super(BaseConstantRateTimeSeriesEncoder, self).__init__(needs=needs)
 
@@ -157,34 +157,16 @@ class PackedConstantRateTimeSeriesEncoder(BaseConstantRateTimeSeriesEncoder):
                 duration=data.duration)
 
 
-def _np_from_buffer(b, shape, dtype, freq, duration):
-    f = np.frombuffer if len(b) else np.fromstring
-    shape = tuple(int(x) for x in shape)
-    f = f(b, dtype=dtype).reshape(shape)
-    return ConstantRateTimeSeries(f, freq, duration)
-
-
-class GreedyConstantRateTimeSeriesDecoder(Decoder):
+class GreedyConstantRateTimeSeriesDecoder(BaseNumpyDecoder):
     def __init__(self):
         super(GreedyConstantRateTimeSeriesDecoder, self).__init__()
 
-    def __call__(self, flo):
-        metadata, bytes_read = ConstantRateTimeSeriesMetadata.unpack(flo)
+    def _unpack_metadata(self, flo):
+        return ConstantRateTimeSeriesMetadata.unpack(flo)
 
-        leftovers = flo.read()
-        leftover_bytes = len(leftovers)
-        first_dim = leftover_bytes / metadata.totalsize
-        dim = (first_dim,) + metadata.shape
-        out = _np_from_buffer(
-                leftovers,
-                dim,
-                metadata.dtype,
-                metadata.frequency,
-                metadata.duration)
-        return out
-
-    def __iter__(self, flo):
-        yield self(flo)
+    def _wrap_array(self, raw, metadata):
+        return ConstantRateTimeSeries(
+                raw, metadata.frequency, metadata.duration)
 
 
 class ConstantRateTimeSeriesFeature(Feature):
@@ -197,7 +179,7 @@ class ConstantRateTimeSeriesFeature(Feature):
             encoder=ConstantRateTimeSeriesEncoder,
             decoder=GreedyConstantRateTimeSeriesDecoder(),
             **extractor_args):
-        super(ConstantRateTimeSeriesFeature, self).__init__( \
+        super(ConstantRateTimeSeriesFeature, self).__init__(
                 extractor,
                 needs=needs,
                 store=store,
@@ -216,7 +198,7 @@ class ConstantRateTimeSeries(np.ndarray):
 
     def __new__(cls, input_array, frequency, duration=None):
         if not isinstance(frequency, np.timedelta64):
-            raise ValueError('duration must be of type {t} but was {t2}'.format( \
+            raise ValueError('duration must be of type {t} but was {t2}'.format(
                     t=np.timedelta64, t2=frequency.__class__))
 
         if duration is not None and not isinstance(duration, np.timedelta64):
