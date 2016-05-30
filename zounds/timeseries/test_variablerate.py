@@ -52,7 +52,6 @@ class VariableRateTimeSeriesFeatureTests(unittest2.TestCase):
         doc = Document(_id)
         self.assertIsInstance(doc.pooled, VariableRateTimeSeries)
         self.assertEqual(doc.fft.shape[1], doc.pooled.slicedata.shape[1])
-        self.assertTrue(True)
 
 
 class VariableRateTimeSeriesTests(unittest2.TestCase):
@@ -195,4 +194,3 @@ class VariableRateTimeSeriesTests(unittest2.TestCase):
     def test_end_empty(self):
         ts = VariableRateTimeSeries(())
         self.assertEqual(Seconds(0), ts.end)
-

@@ -28,6 +28,10 @@ class VariableRateTimeSeries(object):
         return self._data.__len__()
 
     @property
+    def slices(self):
+        return self._data.timeslice
+
+    @property
     def slicedata(self):
         return self._data.slicedata
 
@@ -72,15 +76,15 @@ class VariableRateTimeSeriesEncoder(NumpyEncoder):
 
     def _prepare_data(self, data):
         output = np.recarray(len(data), dtype=[
-            ('start', long),
-            ('duration', long),
+            ('start', np.long),
+            ('duration', np.long),
             ('slicedata', data.slicedata.dtype, data.slicedata.shape[1:])
         ])
-        for i, d in enumerate(data):
-            timeslice, slicedata = d
-            output.start[i] = timeslice.start / Picoseconds(1)
-            output.duration[i] = timeslice.duration / Picoseconds(1)
-            output.slicedata[i] = slicedata
+        ps = Picoseconds(1)
+        output.slicedata[:] = data.slicedata
+        for i, ts in enumerate(data.slices):
+            output.start[i] = ts.start / ps
+            output.duration[i] = ts.duration / ps
         return output
 
 
@@ -90,8 +94,6 @@ class VariableRateTimeSeriesDecoder(BaseNumpyDecoder):
 
     def _gen(self, raw):
         for r in raw:
-            print r.dtype
-            print r.start, r.duration
             ts = TimeSlice(
                     start=Picoseconds(r.start),
                     duration=Picoseconds(r.duration))
