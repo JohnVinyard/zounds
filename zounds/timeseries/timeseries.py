@@ -1,4 +1,4 @@
-from featureflow import NumpyMetaData, Node, Feature, Decoder
+from featureflow import NumpyEncoder, NumpyMetaData, Node, Feature, Decoder
 import numpy as np
 from duration import Picoseconds
 from samplerate import SampleRate
@@ -84,20 +84,20 @@ class TimeSlice(object):
 
 
 class ConstantRateTimeSeriesMetadata(NumpyMetaData):
-    def __init__( \
+    def __init__(
             self,
             dtype=None,
             shape=None,
             frequency=None,
             duration=None):
-        super(ConstantRateTimeSeriesMetadata, self).__init__( \
+        super(ConstantRateTimeSeriesMetadata, self).__init__(
                 dtype=dtype, shape=shape)
         self.frequency = self._decode_timedelta(frequency)
         self.duration = self._decode_timedelta(duration)
 
     @staticmethod
     def from_timeseries(timeseries):
-        return ConstantRateTimeSeriesMetadata( \
+        return ConstantRateTimeSeriesMetadata(
                 dtype=timeseries.dtype,
                 shape=timeseries.shape[1:],
                 frequency=timeseries.frequency,
@@ -123,29 +123,22 @@ class ConstantRateTimeSeriesMetadata(NumpyMetaData):
         ))
 
 
-class BaseConstantRateTimeSeriesEncoder(Node):
-    content_type = 'application/octet-stream'
+class BaseConstantRateTimeSeriesEncoder(NumpyEncoder):
 
     def __init__(self, needs=None):
         super(BaseConstantRateTimeSeriesEncoder, self).__init__(needs=needs)
-        self.metadata = None
 
     def _prepare_data(self, data):
         raise NotImplementedError()
 
-    def _process(self, data):
-        data = self._prepare_data(data)
-        if not self.metadata:
-            self.metadata = ConstantRateTimeSeriesMetadata \
-                .from_timeseries(data)
-            packed = self.metadata.pack()
-            yield packed
-
-        encoded = data.tostring()
-        yield encoded
+    def _prepare_metadata(self, data):
+        return ConstantRateTimeSeriesMetadata.from_timeseries(data)
 
 
 class ConstantRateTimeSeriesEncoder(BaseConstantRateTimeSeriesEncoder):
+    def __init__(self, needs=None):
+        super(ConstantRateTimeSeriesEncoder, self).__init__(needs=needs)
+
     def _prepare_data(self, data):
         return data
 
@@ -158,7 +151,7 @@ class PackedConstantRateTimeSeriesEncoder(BaseConstantRateTimeSeriesEncoder):
     def _prepare_data(self, data):
         packedbits = np.packbits(data.astype(np.uint8), axis=self.axis)
 
-        return ConstantRateTimeSeries( \
+        return ConstantRateTimeSeries(
                 packedbits,
                 frequency=data.frequency,
                 duration=data.duration)
@@ -182,7 +175,7 @@ class GreedyConstantRateTimeSeriesDecoder(Decoder):
         leftover_bytes = len(leftovers)
         first_dim = leftover_bytes / metadata.totalsize
         dim = (first_dim,) + metadata.shape
-        out = _np_from_buffer( \
+        out = _np_from_buffer(
                 leftovers,
                 dim,
                 metadata.dtype,
@@ -195,7 +188,7 @@ class GreedyConstantRateTimeSeriesDecoder(Decoder):
 
 
 class ConstantRateTimeSeriesFeature(Feature):
-    def __init__( \
+    def __init__(
             self,
             extractor,
             needs=None,

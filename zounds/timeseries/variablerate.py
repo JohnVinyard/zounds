@@ -45,6 +45,8 @@ class VariableRateTimeSeries(object):
         if isinstance(index, TimeSlice):
             # TODO: Consider using a bisection approach here to make this much
             # faster than this brute-force, O(n) approach
+            # compare the beginning of the index to the _end_ of each sample
+            # compare the end of the index to the beginning of each sample
             g = ((x.timeslice, x.slicedata) for x in self._data
                  if x.timeslice.end > index.start and
                  (index.duration is None or x.timeslice.start < index.end))
