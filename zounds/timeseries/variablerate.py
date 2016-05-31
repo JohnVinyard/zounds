@@ -76,15 +76,14 @@ class VariableRateTimeSeriesEncoder(NumpyEncoder):
 
     def _prepare_data(self, data):
         output = np.recarray(len(data), dtype=[
-            ('start', np.long),
-            ('duration', np.long),
+            ('start', np.int64),
+            ('duration', np.int64),
             ('slicedata', data.slicedata.dtype, data.slicedata.shape[1:])
         ])
         ps = Picoseconds(1)
         output.slicedata[:] = data.slicedata
-        for i, ts in enumerate(data.slices):
-            output.start[i] = ts.start / ps
-            output.duration[i] = ts.duration / ps
+        output.start[:] = [ts.start / ps for ts in data.slices]
+        output.duration[:] = [ts.duration / ps for ts in data.slices]
         return output
 
 
