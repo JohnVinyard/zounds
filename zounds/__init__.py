@@ -6,7 +6,8 @@ from timeseries import \
     AudioSamplesFeature, \
     SR11025, SR22050, SR44100, SR48000, SR96000, HalfLapped, Stride, \
     TimeSlice, ConstantRateTimeSeriesEncoder, ConstantRateTimeSeriesFeature, \
-    GreedyConstantRateTimeSeriesDecoder, PackedConstantRateTimeSeriesEncoder
+    GreedyConstantRateTimeSeriesDecoder, PackedConstantRateTimeSeriesEncoder, \
+    VariableRateTimeSeries, VariableRateTimeSeriesFeature
 
 from soundfile import \
     MetaData, AudioMetaDataEncoder, FreesoundOrgConfig, \
@@ -23,7 +24,8 @@ from segment import \
     MeasureOfTransience, MovingAveragePeakPicker, SparseTimestampDecoder, \
     SparseTimestampEncoder, TimeSliceDecoder, TimeSliceFeature, ComplexDomain
 
-from synthesize import FFTSynthesizer, DCTSynthesizer, TickSynthesizer
+from synthesize import \
+    FFTSynthesizer, DCTSynthesizer, TickSynthesizer, NoiseSynthesizer
 
 from learn import \
     KMeans, BinaryRbm, LinearRbm, Learned, \
@@ -38,4 +40,5 @@ from index import \
     ConstantRateTimeSliceBuilder, VariableRateTimeSliceBuilder, Search, \
     SearchResults
 
-from basic import Slice, Sum, Max, process_dir, stft, audio_graph, with_onsets
+from basic import \
+    Slice, Sum, Max, Pooled, process_dir, stft, audio_graph, with_onsets

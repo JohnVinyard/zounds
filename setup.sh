@@ -19,6 +19,7 @@ apt-get install -y \
 	libfreetype6-dev \
 	libpng12-dev \
 	libffi-dev
+
 # get libflac 1.3.1, build and install
 wget http://downloads.xiph.org/releases/flac/flac-1.3.1.tar.xz
 tar xf flac-1.3.1.tar.xz

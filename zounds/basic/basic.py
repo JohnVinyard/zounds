@@ -1,6 +1,8 @@
-from featureflow import Node, NotEnoughData, Aggregator
-import numpy as np
 from collections import OrderedDict
+
+import numpy as np
+from featureflow import Node, NotEnoughData
+
 from zounds.timeseries import ConstantRateTimeSeries, VariableRateTimeSeries
 
 

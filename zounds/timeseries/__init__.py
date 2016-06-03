@@ -14,4 +14,4 @@ from timeseries import \
     GreedyConstantRateTimeSeriesDecoder, PackedConstantRateTimeSeriesEncoder, \
     ConstantRateTimeSeries
 
-from variablerate import VariableRateTimeSeries
+from variablerate import VariableRateTimeSeries, VariableRateTimeSeriesFeature

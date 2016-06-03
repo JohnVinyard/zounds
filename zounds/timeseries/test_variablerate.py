@@ -194,3 +194,4 @@ class VariableRateTimeSeriesTests(unittest2.TestCase):
     def test_end_empty(self):
         ts = VariableRateTimeSeries(())
         self.assertEqual(Seconds(0), ts.end)
+
