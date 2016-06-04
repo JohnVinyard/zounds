@@ -271,7 +271,7 @@ def generate_image(data, is_partial=False, content_range=None):
     if len(data.shape) == 1:
         plt.plot(data)
     elif len(data.shape) == 2:
-        mat = plt.matshow(np.rot90(data), cmap=plt.cm.gray)
+        mat = plt.matshow(np.rot90(data), cmap=plt.cm.viridis)
         mat.axes.get_xaxis().set_visible(False)
         mat.axes.get_yaxis().set_visible(False)
     else:
