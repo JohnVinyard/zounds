@@ -630,4 +630,5 @@ class ZoundsApp(object):
     def start(self, port=8888):
         app = self.build_app()
         app.listen(port)
+        print 'Interactive REPL at http://localhost:{port}'.format(port=port)
         tornado.ioloop.IOLoop.current().start()
