@@ -19,7 +19,7 @@ download_url = 'https://github.com/jvinyard/zounds/tarball/{version}'\
 setup(
         name='zounds',
         version=version,
-        url='http://www.johnvinyard.com',
+        url='https://github.com/JohnVinyard/zounds',
         author='John Vinyard',
         author_email='john.vinyard@gmail.com',
         long_description=long_description,
