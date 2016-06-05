@@ -6,3 +6,5 @@ from preprocess import \
 from random_samples import ReservoirSampler
 
 from template_match import TemplateMatch
+
+from util import simple_settings

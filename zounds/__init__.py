@@ -30,8 +30,7 @@ from synthesize import \
 from learn import \
     KMeans, BinaryRbm, LinearRbm, Learned, \
     MeanStdNormalization, UnitNorm, Log, PreprocessingPipeline, \
-    ReservoirSampler, \
-    TemplateMatch
+    ReservoirSampler, TemplateMatch, simple_settings
 
 from ui import ZoundsApp, RangeUnitUnsupportedException
 
