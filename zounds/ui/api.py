@@ -280,7 +280,7 @@ def generate_image(data, is_partial=False, content_range=None):
     plt.savefig(bio, bbox_inches='tight', pad_inches=0, format='png')
     bio.seek(0)
     fig.clf()
-    plt.close()
+    plt.close('all')
     return TempResult(
             bio.read(),
             'image/png',
