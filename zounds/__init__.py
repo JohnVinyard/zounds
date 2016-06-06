@@ -1,4 +1,4 @@
-__version__ = '0.4.4'
+__version__ = '0.5.4'
 
 from timeseries import \
     Hours, Minutes, Seconds, Milliseconds, Microseconds, Picoseconds, \
@@ -37,7 +37,7 @@ from ui import ZoundsApp, RangeUnitUnsupportedException
 from index import \
     Contiguous, Offsets, HammingDistanceScorer, PackedHammingDistanceScorer, \
     ConstantRateTimeSliceBuilder, VariableRateTimeSliceBuilder, Search, \
-    SearchResults
+    SearchResults, hamming_index
 
 from basic import \
     Slice, Sum, Max, Pooled, process_dir, stft, audio_graph, with_onsets

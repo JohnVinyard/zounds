@@ -7,8 +7,8 @@ import urlparse
 
 windowing = zounds.HalfLapped()
 
-# Segment audio files #########################################################
 
+# Segment audio files #########################################################
 
 class Settings(ff.PersistenceSettings):
     id_provider = ff.UserSpecifiedIdProvider(key='_id')
@@ -75,12 +75,8 @@ class BarkKmeans(ff.BaseModel):
             store=True)
 
 
-def learn_kmeans():
-    BarkKmeans.process(
-            docs=(WithOnsets(_id).bark for _id in Settings.database))
-
-
 # Store the K-Means representation of Bark Bands ##############################
+
 class WithCodes(WithOnsets):
     bark_kmeans = zounds.ConstantRateTimeSeriesFeature(
             zounds.Learned,
@@ -113,63 +109,23 @@ def get_audio():
             pass
 
 
-# Create an index over the K-Keans codes for the onsets
-
-def iter_codes():
-    """
-    Iterate over every summarized slice in the database
-    """
-    for _id in Settings.database:
-        wc = WithCodes(_id)
-        yield _id, wc.pooled.slicedata
-
+# Create an index over the K-Keans codes for the onsets #######################
 
 @zounds.simple_settings
-class BarkKmeansIndex(ff.BaseModel):
-    codes = ff.Feature(
-            ff.IteratorNode,
-            store=False)
-
-    contiguous = ff.NumpyFeature(
-            zounds.Contiguous,
-            needs=codes,
-            encoder=ff.PackedNumpyEncoder,
-            store=True)
-
-    offsets = ff.PickleFeature(
-            zounds.Offsets,
-            needs=codes,
-            store=True)
-
-
-def build_kmeans_index():
-    BarkKmeansIndex.process(codes=iter_codes())
-
-
-def get_results(index):
-    query_index = np.random.randint(0, len(index.contiguous))
-    query = index.contiguous[query_index]
-    return search.search(query)
+class BarkKmeansIndex(zounds.hamming_index(WithCodes, WithCodes.pooled)):
+    pass
 
 
 if __name__ == '__main__':
     print 'getting audio...'
     get_audio()
     print 'learning k-means...'
-    learn_kmeans()
+    BarkKmeans.process(docs=(wo.bark for wo in WithOnsets))
     print 'building index...'
-    build_kmeans_index()
+    BarkKmeansIndex.build()
 
     index = BarkKmeansIndex()
-
-    search = zounds.Search(
-            index,
-            scorer=zounds.PackedHammingDistanceScorer(index),
-            time_slice_builder=zounds.VariableRateTimeSliceBuilder(
-                    index,
-                    lambda x: WithCodes(x).pooled.slices))
-
-    results = get_results(index)
+    results = index.random_search()
 
     _ids = list(Settings.database.iter_ids())
     app = zounds.ZoundsApp(

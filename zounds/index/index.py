@@ -3,17 +3,9 @@ import numpy as np
 from bisect import bisect_left
 from zounds.timeseries import TimeSlice
 from zounds.nputil import packed_hamming_distance
-
-
-class Index(Node):
-    def __init__(self, func=None, needs=None):
-        super(Index, self).__init__(needs=needs)
-        self._func = func
-
-    def _process(self, data):
-        for _id in data.iter_ids():
-            print _id
-            yield _id, self._func(_id)
+import featureflow as ff
+from zounds.timeseries import \
+    ConstantRateTimeSeriesFeature, VariableRateTimeSeriesFeature
 
 
 class Contiguous(Node):
@@ -130,3 +122,65 @@ class Search(object):
         scores = self.scorer.score(query)
         indices = np.argsort(scores)[:n_results]
         return SearchResults(self.offsets, indices, self.time_slice_builder)
+
+
+def hamming_index(document, feature, packed=True):
+    if isinstance(feature, ConstantRateTimeSeriesFeature):
+        iterator = ((d._id, feature(_id=d._id, persistence=document)) \
+                    for d in document)
+        constant_rate = True
+    elif isinstance(feature, VariableRateTimeSeriesFeature):
+        iterator = ((d._id, feature(_id=d._id, persistence=document).slicedata) \
+                    for d in document)
+        constant_rate = False
+    else:
+        raise ValueError(
+                'feature must be either constant or variable rate timeseries')
+
+    class Index(ff.BaseModel):
+        codes = ff.Feature(
+                ff.IteratorNode,
+                store=False)
+
+        contiguous = ff.NumpyFeature(
+                Contiguous,
+                needs=codes,
+                encoder=ff.PackedNumpyEncoder if packed else ff.NumpyEncoder,
+                store=True)
+
+        offsets = ff.PickleFeature(
+                Offsets,
+                needs=codes,
+                store=True)
+
+        def __init__(self):
+            super(Index, self).__init__()
+            scorer = PackedHammingDistanceScorer \
+                if packed else HammingDistanceScorer
+            self._scorer = scorer(self)
+            if constant_rate:
+                self._slice_builder = ConstantRateTimeSliceBuilder(self)
+            else:
+                self._slice_builder = VariableRateTimeSliceBuilder(
+                        self,
+                        lambda x: feature(_id=x, persistence=document).slices)
+            self._search = Search(
+                    self,
+                    scorer=self._scorer,
+                    time_slice_builder=self._slice_builder)
+
+        def random_query(self):
+            query_index = np.random.randint(0, len(self.contiguous))
+            return self.contiguous[query_index]
+
+        def random_search(self, n_results=5):
+            return self.search(self.random_query(), n_results=n_results)
+
+        def search(self, query, n_results=5):
+            return self._search.search(query, n_results=n_results)
+
+        @classmethod
+        def build(cls):
+            cls.process(codes=iterator)
+
+    return Index
