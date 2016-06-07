@@ -5,7 +5,8 @@ from zounds.timeseries import TimeSlice
 from zounds.nputil import packed_hamming_distance
 import featureflow as ff
 from zounds.timeseries import \
-    ConstantRateTimeSeriesFeature, VariableRateTimeSeriesFeature
+    ConstantRateTimeSeriesFeature, VariableRateTimeSeriesFeature, \
+    PackedConstantRateTimeSeriesEncoder, ConstantRateTimeSeriesEncoder
 
 
 class Contiguous(Node):
@@ -129,10 +130,15 @@ def hamming_index(document, feature, packed=True):
         iterator = ((d._id, feature(_id=d._id, persistence=document)) \
                     for d in document)
         constant_rate = True
+        feat = ConstantRateTimeSeriesFeature
+        encoder = PackedConstantRateTimeSeriesEncoder \
+            if packed else ConstantRateTimeSeriesEncoder
     elif isinstance(feature, VariableRateTimeSeriesFeature):
         iterator = ((d._id, feature(_id=d._id, persistence=document).slicedata) \
                     for d in document)
         constant_rate = False
+        feat = ff.NumpyFeature
+        encoder = ff.PackedNumpyEncoder if packed else ff.NumpyEncoder
     else:
         raise ValueError(
                 'feature must be either constant or variable rate timeseries')
@@ -142,10 +148,10 @@ def hamming_index(document, feature, packed=True):
                 ff.IteratorNode,
                 store=False)
 
-        contiguous = ff.NumpyFeature(
+        contiguous = feat(
                 Contiguous,
                 needs=codes,
-                encoder=ff.PackedNumpyEncoder if packed else ff.NumpyEncoder,
+                encoder=encoder,
                 store=True)
 
         offsets = ff.PickleFeature(
