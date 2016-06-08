@@ -5,12 +5,12 @@ from zounds.timeseries import ConstantRateTimeSeries
 
 
 def oggvorbis(s):
-    '''
-    This is taken from the ogg vorbis spec 
+    """
+    This is taken from the ogg vorbis spec
     (http://xiph.org/vorbis/doc/Vorbis_I_spec.html)
 
-    s is the total length of the window, in samples
-    '''
+    :param s: the total length of the window, in samples
+    """
     try:
         s = np.arange(s)
     except TypeError:
@@ -56,7 +56,7 @@ class SlidingWindow(Node):
 
     def _first_chunk(self, data):
         padding = np.zeros((self._padwith,) + data.shape[1:], dtype=data.dtype)
-        padding_ts = ConstantRateTimeSeries( \
+        padding_ts = ConstantRateTimeSeries(
                 padding,
                 data.frequency,
                 data.duration)
@@ -74,7 +74,7 @@ class SlidingWindow(Node):
             self._cache = np.concatenate([self._cache, data])
 
     def _dequeue(self):
-        leftover, arr = windowed( \
+        leftover, arr = windowed(
                 self._cache,
                 self._windowsize,
                 self._stepsize,
@@ -89,7 +89,7 @@ class SlidingWindow(Node):
         # why does that statement result in __rmul__ being called for each
         # scalar value in arr?
         out = (self._func * arr) if self._func else arr
-        out = ConstantRateTimeSeries( \
+        out = ConstantRateTimeSeries(
                 out, self._scheme.frequency, self._scheme.duration)
         return out
 
