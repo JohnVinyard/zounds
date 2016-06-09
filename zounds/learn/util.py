@@ -18,7 +18,8 @@ def simple_settings(cls):
         _id = cls.__name__
         id_provider = ff.StaticIdProvider(_id)
         key_builder = ff.StringDelimitedKeyBuilder()
-        database = ff.FileSystemDatabase(path=_id, key_builder=key_builder)
+        database = ff.FileSystemDatabase(
+                path=_id, key_builder=key_builder, createdirs=True)
 
     class Model(cls, Settings):
         pass
