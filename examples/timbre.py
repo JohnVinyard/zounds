@@ -1,5 +1,8 @@
 import featureflow as ff
 import zounds
+import requests
+import os
+from urlparse import urlparse
 
 
 class Settings(ff.PersistenceSettings):
@@ -83,22 +86,36 @@ class BfccKmeansIndex(BaseIndex):
 
 if __name__ == '__main__':
 
-    # process all the files in the zipfile
-    for zf in ff.iter_zip('/home/user/Downloads/FlavioGaete22.zip'):
+    # Download the zip archive
+    url = 'https://archive.org/download/FlavioGaete/FlavioGaete22.zip'
+    filename = os.path.split(urlparse(url).path)[-1]
+
+    resp = requests.get(url, stream=True)
+
+    print 'Downloading {url} -> {filename}...'.format(**locals())
+
+    with open(filename, 'wb') as f:
+        for chunk in resp.iter_content(chunk_size=4096):
+            f.write(chunk)
+
+    # stream all the audio files from the zip archive
+    print 'Processing Audio...'
+    for zf in ff.iter_zip(filename):
         if '._' in zf.filename:
             continue
         print zf.filename
         WithTimbre.process(meta=zf)
 
     # learn k-means codes for the bfcc frames
+    print 'Learning K-Means clusters...'
     BfccKmeans.process(docs=(wt.bfcc for wt in WithTimbre))
 
     # build an index
+    print 'Building index...'
     BfccKmeansIndex.build()
     index = BfccKmeansIndex()
     results = index.random_search()
 
-    _ids = list(Settings.database.iter_ids())
     app = zounds.ZoundsApp(
             model=WithTimbre,
             audio_feature=WithTimbre.ogg,
