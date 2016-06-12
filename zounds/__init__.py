@@ -1,4 +1,4 @@
-__version__ = '0.7.4'
+__version__ = '0.8.4'
 
 from timeseries import \
     Hours, Minutes, Seconds, Milliseconds, Microseconds, Picoseconds, \
@@ -41,3 +41,5 @@ from index import \
 
 from basic import \
     Slice, Sum, Max, Pooled, process_dir, stft, audio_graph, with_onsets
+
+from util import simple_lmdb_settings

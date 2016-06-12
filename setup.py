@@ -35,7 +35,8 @@ setup(
             'zounds.spectral',
             'zounds.synthesize',
             'zounds.timeseries',
-            'zounds.ui'
+            'zounds.ui',
+            'zounds.util'
         ],
         install_requires=[
             'featureflow',

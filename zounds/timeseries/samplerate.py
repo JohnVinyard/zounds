@@ -28,38 +28,45 @@ class SampleRate(object):
 
 
 class AudioSampleRate(SampleRate):
-    def __init__(self, samples_per_second):
-        one_sample = Picoseconds(int(1e12)) // samples_per_second
-        super(AudioSampleRate, self).__init__(one_sample, one_sample)
+    def __init__(self, samples_per_second, suggested_window, suggested_hop):
+        self.suggested_hop = suggested_hop
+        self.suggested_window = suggested_window
+        self.one_sample = Picoseconds(int(1e12)) // samples_per_second
+        super(AudioSampleRate, self).__init__(self.one_sample, self.one_sample)
 
     @property
     def samples_per_second(self):
         return int(Picoseconds(int(1e12)) / self.frequency)
 
+    def half_lapped(self):
+        return SampleRate(
+                self.one_sample * self.suggested_hop,
+                self.one_sample * self.suggested_window)
+
 
 class SR96000(AudioSampleRate):
     def __init__(self):
-        super(SR96000, self).__init__(96000)
+        super(SR96000, self).__init__(96000, 4096, 2048)
 
 
 class SR48000(AudioSampleRate):
     def __init__(self):
-        super(SR48000, self).__init__(48000)
+        super(SR48000, self).__init__(48000, 2048, 1024)
 
 
 class SR44100(AudioSampleRate):
     def __init__(self):
-        super(SR44100, self).__init__(44100)
+        super(SR44100, self).__init__(44100, 2048, 1024)
 
 
 class SR22050(AudioSampleRate):
     def __init__(self):
-        super(SR22050, self).__init__(22050)
+        super(SR22050, self).__init__(22050, 1024, 512)
 
 
 class SR11025(AudioSampleRate):
     def __init__(self):
-        super(SR11025, self).__init__(11025)
+        super(SR11025, self).__init__(11025, 512, 256)
 
 
 _samplerates = (SR96000(), SR48000(), SR44100(), SR22050(), SR11025())
