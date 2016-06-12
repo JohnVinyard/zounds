@@ -38,6 +38,10 @@ class AudioSampleRate(SampleRate):
     def samples_per_second(self):
         return int(Picoseconds(int(1e12)) / self.frequency)
 
+    @property
+    def nyquist(self):
+        return self.samples_per_second // 2
+
     def half_lapped(self):
         return SampleRate(
                 self.one_sample * self.suggested_hop,

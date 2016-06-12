@@ -5,6 +5,13 @@ from samplerate import \
 
 
 class SampleRateTests(unittest2.TestCase):
+
+    def test_nyquist_22050(self):
+        self.assertEqual(11025, SR22050().nyquist)
+
+    def test_nyquist_44100(self):
+        self.assertEqual(22050, SR44100().nyquist)
+
     def test_raises_for_unknown_audio_samplerate(self):
         self.assertRaises(ValueError, lambda: audio_sample_rate(1))
 
