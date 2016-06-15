@@ -16,45 +16,48 @@ class Iterator(featureflow.Node):
             yield d
 
 
-class Settings(featureflow.PersistenceSettings):
-    _id = 'rbm'
-    id_provider = featureflow.StaticIdProvider(_id)
-    key_builder = featureflow.StringDelimitedKeyBuilder()
-    database = featureflow.InMemoryDatabase(key_builder=key_builder)
+def build_classes():
 
+    class Settings(featureflow.PersistenceSettings):
+        _id = 'rbm'
+        id_provider = featureflow.StaticIdProvider(_id)
+        key_builder = featureflow.StringDelimitedKeyBuilder()
+        database = featureflow.InMemoryDatabase(key_builder=key_builder)
 
-class Rbm(featureflow.BaseModel, Settings):
-    iterator = featureflow.Feature(
-            Iterator,
-            store=False)
+    class Rbm(featureflow.BaseModel, Settings):
+        iterator = featureflow.Feature(
+                Iterator,
+                store=False)
 
-    shuffle = featureflow.NumpyFeature(
-            ReservoirSampler,
-            nsamples=1000,
-            needs=iterator,
-            store=True)
+        shuffle = featureflow.NumpyFeature(
+                ReservoirSampler,
+                nsamples=1000,
+                needs=iterator,
+                store=True)
 
-    unitnorm = featureflow.PickleFeature(
-            UnitNorm,
-            needs=shuffle,
-            store=False)
+        unitnorm = featureflow.PickleFeature(
+                UnitNorm,
+                needs=shuffle,
+                store=False)
 
-    meanstd = featureflow.PickleFeature(
-            MeanStdNormalization,
-            needs=unitnorm,
-            store=False)
+        meanstd = featureflow.PickleFeature(
+                MeanStdNormalization,
+                needs=unitnorm,
+                store=False)
 
-    rbm = featureflow.PickleFeature(
-            LinearRbm,
-            hdim=64,
-            epochs=5,
-            needs=meanstd,
-            store=False)
+        rbm = featureflow.PickleFeature(
+                LinearRbm,
+                hdim=64,
+                epochs=5,
+                needs=meanstd,
+                store=False)
 
-    pipeline = featureflow.PickleFeature(
-            PreprocessingPipeline,
-            needs=(unitnorm, meanstd, rbm),
-            store=True)
+        pipeline = featureflow.PickleFeature(
+                PreprocessingPipeline,
+                needs=(unitnorm, meanstd, rbm),
+                store=True)
+
+    return Settings, Rbm
 
 
 def data():
@@ -64,18 +67,21 @@ def data():
 
 class RbmTests(unittest2.TestCase):
     def test_can_retrieve_rbm_pipeline(self):
+        Settings, Rbm = build_classes()
         Rbm.process(iterator=data())
         self.assertIsInstance(Rbm().pipeline, Pipeline)
 
 
 class LearnedTests(unittest2.TestCase):
     def test_can_use_learned_feature(self):
+        Settings, Rbm = build_classes()
         Rbm.process(iterator=data())
         l = Learned(learned=Rbm())
         results = list(l._process(np.random.random_sample((33, 3))))[0]
         self.assertEqual((33, 64), results.shape)
 
     def test_pipeline_changes_version_when_recomputed(self):
+        Settings, Rbm = build_classes()
         Rbm.process(iterator=data())
         v1 = Learned(learned=Rbm()).version
         v2 = Learned(learned=Rbm()).version
@@ -84,4 +90,9 @@ class LearnedTests(unittest2.TestCase):
         v3 = Learned(learned=Rbm()).version
         self.assertNotEqual(v1, v3)
 
-
+    def test_pipeline_does_not_store_computed_data_from_training(self):
+        Settings, Rbm = build_classes()
+        Rbm.process(iterator=data())
+        rbm = Rbm()
+        pipeline_data = rbm.pipeline.processors[-1].data
+        self.assertIsNone(pipeline_data)

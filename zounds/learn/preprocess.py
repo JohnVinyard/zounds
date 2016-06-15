@@ -54,6 +54,14 @@ class PreprocessResult(object):
         self.data = data
         self.op = op
 
+    def for_storage(self):
+        return PreprocessResult(
+                None,
+                self.op,
+                self.inversion_data,
+                self.inverse,
+                self.name)
+
 
 class Preprocessor(Node):
     def __init__(self, needs=None):
@@ -148,29 +156,28 @@ class Log(Preprocessor):
         super(Log, self).__init__(needs=needs)
 
     def _forward_func(self):
+
         def x(d):
             import numpy as np
-            m = np.min(d)
-            if m > 0:
-                return np.log(m)
-            pos = d + -np.min(d) + 1
+            pos = np.abs(d)
+            pos[pos == 0] = 1e-12
             return np.log(pos)
 
         return x
 
     def _inversion_data(self):
+
         def x(d):
             import numpy as np
-            return dict(min=np.min(d))
+            return dict(sign=np.sign(d))
 
         return x
 
     def _backward_func(self):
-        def x(d, min=None):
+
+        def x(d, sign=None):
             import numpy as np
-            if min > 0:
-                return np.exp(d)
-            return np.exp(d) - (-min) - 1
+            return np.exp(d) * sign
 
         return x
 
@@ -247,7 +254,7 @@ class Binarize(Preprocessor):
 
 class Pipeline(object):
     def __init__(self, preprocess_results):
-        self.processors = preprocess_results
+        self.processors = list(preprocess_results)
         self.version = hashlib.md5(
                 ''.join([p.op.version for p in self.processors])).hexdigest()
 
@@ -286,4 +293,6 @@ class PreprocessingPipeline(Node):
         if not self._finalized or not all(self._pipeline.itervalues()):
             raise NotEnoughData()
 
-        return Pipeline(self._pipeline.values())
+        return Pipeline(map(
+                lambda x: x.for_storage(),
+                self._pipeline.itervalues()))
