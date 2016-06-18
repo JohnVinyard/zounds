@@ -32,7 +32,7 @@ from learn import \
     MeanStdNormalization, UnitNorm, Log, PreprocessingPipeline, \
     ReservoirSampler, TemplateMatch, simple_settings
 
-from ui import ZoundsApp, RangeUnitUnsupportedException
+from ui import ZoundsApp, ZoundsSearch, RangeUnitUnsupportedException
 
 from index import \
     Contiguous, Offsets, HammingDistanceScorer, PackedHammingDistanceScorer, \

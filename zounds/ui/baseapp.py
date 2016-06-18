@@ -1,4 +1,5 @@
 import os
+import re
 import tornado.ioloop
 import tornado.web
 import httplib
@@ -43,8 +44,7 @@ class BaseZoundsApp(object):
             model=None,
             visualization_feature=None,
             audio_feature=None,
-            html=None,
-            javascript=None):
+            html=None):
 
         super(BaseZoundsApp, self).__init__()
         self.locals = locals
@@ -69,15 +69,24 @@ class BaseZoundsApp(object):
                     self.audio_feature,
                     self.feature_path)
         ]
+        self._html_content = self._get_html(html)
 
+    SCRIPT_TAG = re.compile('<script\s+src="/(?P<filename>[^"]+)"></script>')
+
+    def _get_html(self, html_filename):
         path, fn = os.path.split(__file__)
-        with open(os.path.join(path, javascript)) as f:
-            script = f.read()
+        with open(os.path.join(path, html_filename)) as f:
+            html = f.read()
 
-        with open(os.path.join(path, html)) as f:
-            self._html_content = f.read().replace(
-                    '<script src="/{}"></script>'.format(javascript),
-                    '<script>{}</script>'.format(script))
+        to_replace = [(m.groupdict()['filename'], html[m.start(): m.end()])
+                      for m in self.SCRIPT_TAG.finditer(html)]
+
+        for filename, tag in to_replace:
+            with open(os.path.join(path, filename)) as scriptfile:
+                html = html.replace(
+                        tag, '<script>{}</script>'.format(scriptfile.read()))
+
+        return html
 
     def feature_path(self, _id, feature):
         _id = urllib.quote(_id, safe='')

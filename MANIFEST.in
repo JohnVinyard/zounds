@@ -1,5 +1,5 @@
-include zounds/ui/index.html
-include zounds/ui/zounds.js
+include zounds/ui/*.html
+include zounds/ui/*.js
 include zounds/nputil/countbits.pyx
 include zounds/nputil/countbits.pyxbld
 include README.md

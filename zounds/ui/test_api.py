@@ -74,8 +74,7 @@ class ZoundsAppTests(unittest2.TestCase):
     def test_feature_paths_are_url_encoded(self):
         app = BaseZoundsApp(
                 base_path='/zounds/',
-                html='index.html',
-                javascript='zounds.js')
+                html='index.html')
         _id = 'http://example.com/resource'
         feature = 'bark'
         path = app.feature_path(_id, feature)

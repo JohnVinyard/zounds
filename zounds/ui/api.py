@@ -28,8 +28,7 @@ class ZoundsApp(BaseZoundsApp):
             model=model,
             visualization_feature=visualization_feature,
             audio_feature=audio_feature,
-            html='index.html',
-            javascript='zounds.js')
+            html='index.html')
 
         self.globals = globals
         self.locals = locals
