@@ -43,3 +43,5 @@ from basic import \
     Slice, Sum, Max, Pooled, process_dir, stft, audio_graph, with_onsets
 
 from util import simple_lmdb_settings
+
+from nputil import sliding_window

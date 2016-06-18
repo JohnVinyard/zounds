@@ -1,6 +1,7 @@
 import unittest2
-from api import \
-    RangeRequest, RangeUnitUnsupportedException, ContentRange, ZoundsApp
+from contentrange import \
+    ContentRange, RangeUnitUnsupportedException, RangeRequest
+from baseapp import BaseZoundsApp
 from zounds.timeseries import TimeSlice, Seconds, Picoseconds, Milliseconds
 
 
@@ -71,7 +72,10 @@ class RangeRequestTests(unittest2.TestCase):
 
 class ZoundsAppTests(unittest2.TestCase):
     def test_feature_paths_are_url_encoded(self):
-        app = ZoundsApp(base_path='/zounds/')
+        app = BaseZoundsApp(
+                base_path='/zounds/',
+                html='index.html',
+                javascript='zounds.js')
         _id = 'http://example.com/resource'
         feature = 'bark'
         path = app.feature_path(_id, feature)
