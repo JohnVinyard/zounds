@@ -16,8 +16,7 @@ class ZoundsSearch(BaseZoundsApp):
                 model=model,
                 visualization_feature=visualization_feature,
                 audio_feature=audio_feature,
-                html='search.html',
-                javascript='search.js')
+                html='search.html')
         self.n_results = n_results
         self.search = search
 
@@ -31,7 +30,7 @@ class ZoundsSearch(BaseZoundsApp):
 
         class SearchHandler(tornado.web.RequestHandler):
             def get(self):
-                results = self.search.random_search(n_results=self.n_results)
+                results = app.search.random_search(n_results=app.n_results)
                 context = RequestContext(value=results)
                 output = app.serialize(context)
                 self.set_header('Content-Type', output.content_type)
