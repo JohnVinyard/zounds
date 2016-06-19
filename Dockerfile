@@ -51,7 +51,7 @@ RUN echo 'export PATH=/opt/conda/bin:$PATH' > /etc/profile.d/conda.sh \
 
 ENV PATH /opt/conda/bin:$PATH
 
-RUN conda install -y numpy scipy
+RUN conda install -y numpy=1.10.4 scipy=0.17
 
 RUN pip install zounds
 
