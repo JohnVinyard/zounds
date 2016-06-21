@@ -1,5 +1,7 @@
 import tornado
 from baseapp import BaseZoundsApp, RequestContext
+import base64
+import urllib
 
 
 class ZoundsSearch(BaseZoundsApp):
@@ -30,7 +32,14 @@ class ZoundsSearch(BaseZoundsApp):
 
         class SearchHandler(tornado.web.RequestHandler):
             def get(self):
-                results = app.search.random_search(n_results=app.n_results)
+                b64_encoded_query = urllib.unquote(
+                        self.get_argument('query', default=''))
+                if b64_encoded_query:
+                    binary_query = base64.b64decode(b64_encoded_query)
+                    query = app.search.decode_query(binary_query)
+                    results = app.search.search(query, n_results=app.n_results)
+                else:
+                    results = app.search.random_search(n_results=app.n_results)
                 context = RequestContext(value=results)
                 output = app.serialize(context)
                 self.set_header('Content-Type', output.content_type)

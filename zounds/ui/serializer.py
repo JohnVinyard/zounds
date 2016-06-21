@@ -10,6 +10,7 @@ import numpy as np
 from featureflow import Decoder
 import matplotlib
 import json
+import base64
 
 matplotlib.use('Agg')
 from matplotlib import pyplot as plt
@@ -245,9 +246,13 @@ class AudioSliceSerializer(object):
     def iter_results(self, context):
         raise NotImplementedError()
 
+    def additional_data(self, context):
+        return dict()
+
     def serialize(self, context):
         results = map(lambda x: self._result(*x), self.iter_results(context))
         output = {'results': results}
+        output.update(self.additional_data(context))
         return TempResult(json.dumps(output), self.content_type)
 
 
@@ -277,6 +282,9 @@ class SearchResultsSerializer(AudioSliceSerializer):
 
     def matches(self, context):
         return isinstance(context.value, SearchResults)
+
+    def additional_data(self, context):
+        return {'query': base64.b64encode(context.value.query)}
 
     def iter_results(self, context):
         for _id, ts in context.value:

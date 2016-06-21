@@ -1,10 +1,11 @@
 $(function() {
 
     var client = new ZoundsClient({
-        randomSearch : function() {
+        randomSearch : function(query) {
             return {
                 method: 'GET',
                 url: '/zounds/search',
+                data: query ? { query: query } : null,
                 dataType: 'json'
             };
         }
@@ -12,18 +13,22 @@ $(function() {
 
     var audioContext = new AudioContext();
 
-    function showResults() {
+    function showResults(honorQueryString) {
         var root = $('#results');
-        client.randomSearch().then(function(resp) {
+        var query = honorQueryString ?
+            window.location.search.substring(1).split('query=')[1]
+            : null;
+        client.randomSearch(query).then(function(resp) {
             root.empty();
-            console.log(resp.results);
             for(var i = 0; i < resp.results.length; i++) {
                 new AudioSlice(resp.results[i], root, audioContext, client);
             }
+            var newUrl = '/?query=' + encodeURIComponent(resp.query);
+            history.pushState({}, '', newUrl);
         });
     }
 
-    $('#random-search').click(showResults);
+    $('#random-search').click(function() { showResults(false); });
 
-    showResults();
+    showResults(true);
 });

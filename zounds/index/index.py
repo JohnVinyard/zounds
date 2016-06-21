@@ -32,8 +32,9 @@ class Offsets(Aggregator, Node):
 
 
 class SearchResults(object):
-    def __init__(self, offsets, indices, time_slice_builder):
+    def __init__(self, query, offsets, indices, time_slice_builder):
         super(SearchResults, self).__init__()
+        self.query = query
         self._indices = indices
         self._time_slice_builder = time_slice_builder
         self._offsets = offsets
@@ -61,11 +62,15 @@ class Scorer(object):
         super(Scorer, self).__init__()
         self.contiguous = index.contiguous
 
+    def decode_query(self, binary_query):
+        return np.fromstring(binary_query, dtype=self.contiguous.dtype)
+
     def score(self, query):
         raise NotImplementedError()
 
 
 class HammingDistanceScorer(Scorer):
+
     def __init__(self, index):
         super(HammingDistanceScorer, self).__init__(index)
 
@@ -74,6 +79,7 @@ class HammingDistanceScorer(Scorer):
 
 
 class PackedHammingDistanceScorer(Scorer):
+
     def __init__(self, index):
         super(PackedHammingDistanceScorer, self).__init__(index)
 
@@ -119,10 +125,13 @@ class Search(object):
         self.time_slice_builder = time_slice_builder
         self.scorer = scorer
 
+    def decode_query(self, binary_query):
+        return self.scorer.decode_query(binary_query)
+
     def search(self, query, n_results=5):
         scores = self.scorer.score(query)
         indices = np.argsort(scores)[:n_results]
-        return SearchResults(self.offsets, indices, self.time_slice_builder)
+        return SearchResults(query, self.offsets, indices, self.time_slice_builder)
 
 
 def hamming_index(document, feature, packed=True):
@@ -174,6 +183,9 @@ def hamming_index(document, feature, packed=True):
                     self,
                     scorer=self._scorer,
                     time_slice_builder=self._slice_builder)
+
+        def decode_query(self, binary_query):
+            return self._search.decode_query(binary_query)
 
         def random_query(self):
             query_index = np.random.randint(0, len(self.contiguous))
