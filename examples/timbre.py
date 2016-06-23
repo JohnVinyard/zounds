@@ -1,8 +1,9 @@
-import featureflow as ff
-import zounds
-import requests
 import os
 from urlparse import urlparse
+import argparse
+import featureflow as ff
+import requests
+import zounds
 
 
 class Settings(ff.PersistenceSettings):
@@ -84,8 +85,7 @@ class BfccKmeansIndex(BaseIndex):
     pass
 
 
-if __name__ == '__main__':
-
+def build():
     # Download the zip archive
     url = 'https://archive.org/download/FlavioGaete/FlavioGaete22.zip'
     filename = os.path.split(urlparse(url).path)[-1]
@@ -95,7 +95,7 @@ if __name__ == '__main__':
     print 'Downloading {url} -> {filename}...'.format(**locals())
 
     with open(filename, 'wb') as f:
-        for chunk in resp.iter_content(chunk_size=4096):
+        for chunk in resp.iter_content(chunk_size=1000000):
             f.write(chunk)
 
     # stream all the audio files from the zip archive
@@ -113,13 +113,33 @@ if __name__ == '__main__':
     # build an index
     print 'Building index...'
     BfccKmeansIndex.build()
-    index = BfccKmeansIndex()
-    results = index.random_search()
 
-    app = zounds.ZoundsApp(
-            model=WithTimbre,
-            audio_feature=WithTimbre.ogg,
-            visualization_feature=WithTimbre.bark,
-            globals=globals(),
-            locals=locals())
-    app.start(8888)
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+            '--build',
+            action='store_true',
+            help='Download audio and learn features')
+    parser.add_argument(
+            '--run',
+            action='store_true',
+            help='Run the service')
+    parser.add_argument(
+            '--port',
+            type=int,
+            help='The port to run the service on')
+
+    args = parser.parse_args()
+    if args.build:
+        build()
+
+    if args.run:
+        index = BfccKmeansIndex()
+        app = zounds.ZoundsSearch(
+                model=WithTimbre,
+                audio_feature=WithTimbre.ogg,
+                visualization_feature=WithTimbre.bark,
+                search=index,
+                n_results=10)
+        app.start(args.port)
