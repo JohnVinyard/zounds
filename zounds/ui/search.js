@@ -23,7 +23,7 @@ $(function() {
             for(var i = 0; i < resp.results.length; i++) {
                 new AudioSlice(resp.results[i], root, audioContext, client);
             }
-            if(!honorQueryString) {
+            if(!query) {
                 var newUrl = '/?query=' + encodeURIComponent(resp.query);
                 history.pushState({}, '', newUrl);
             }
@@ -31,6 +31,11 @@ $(function() {
     }
 
     $('#random-search').click(function() { showResults(false); });
+
+    window.addEventListener('popstate', function(event) {
+        if(!event.state) { return; }
+        showResults(true);
+    });
 
     showResults(true);
 });
