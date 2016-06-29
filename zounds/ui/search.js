@@ -23,8 +23,10 @@ $(function() {
             for(var i = 0; i < resp.results.length; i++) {
                 new AudioSlice(resp.results[i], root, audioContext, client);
             }
-            var newUrl = '/?query=' + encodeURIComponent(resp.query);
-            history.pushState({}, '', newUrl);
+            if(!honorQueryString) {
+                var newUrl = '/?query=' + encodeURIComponent(resp.query);
+                history.pushState({}, '', newUrl);
+            }
         });
     }
 
