@@ -1,3 +1,4 @@
+from __future__ import division
 from featureflow import Node
 import numpy as np
 from scipy.fftpack import dct
@@ -24,6 +25,9 @@ class FFT(Node):
 
 
 class DCT(Node):
+    """
+    Type II Discrete Cosine Transform
+    """
     def __init__(self, needs=None, axis=-1):
         super(DCT, self).__init__(needs=needs)
         self._axis = axis
@@ -35,10 +39,27 @@ class DCT(Node):
                 data.duration)
 
 
+class DCTIV(Node):
+    """
+    Type IV Discrete Cosine Transform.  This transform is its own inverse
+    """
+    def __init__(self, needs=None):
+        super(DCTIV, self).__init__(needs=needs)
+
+    def _process(self, data):
+        l = len(data)
+        tf = np.arange(0, l)
+        z = np.zeros((l, data.shape[1] * 2))
+        z[:, :l] = data * np.exp(-1j * np.pi * tf / 2 / l)
+        z = np.fft.fft(z)[:, :l]
+        yield np.sqrt(2 / l) * \
+            np.real(z * np.exp(-1j * np.pi * (tf + 0.5) / 2 / l))
+
+
 # TODO: This constructor should not take a samplerate; that information should
 # be encapsulated in the data that's passed in
 class Chroma(Node):
-    def __init__( \
+    def __init__(
             self,
             needs=None,
             samplerate=SR44100(),
@@ -107,6 +128,7 @@ class SpectralCentroid(Node):
 
     -- http://en.wikipedia.org/wiki/Spectral_centroid
     """
+
     def __init__(self, needs=None):
         super(SpectralCentroid, self).__init__(needs=needs)
 
@@ -117,9 +139,9 @@ class SpectralCentroid(Node):
 
     def _process(self, data):
         yield ConstantRateTimeSeries(
-            (data * self._bins).sum(axis=1) / self._bins_sum,
-            data.frequency,
-            data.duration)
+                (data * self._bins).sum(axis=1) / self._bins_sum,
+                data.frequency,
+                data.duration)
 
 
 class SpectralFlatness(Node):
@@ -140,6 +162,7 @@ class SpectralFlatness(Node):
 
     -- http://en.wikipedia.org/wiki/Spectral_flatness
     """
+
     def __init__(self, needs=None):
         super(SpectralFlatness, self).__init__(needs=needs)
 
@@ -147,9 +170,9 @@ class SpectralFlatness(Node):
         m = data.mean(axis=1)
         m[m == 0] = -1e5
         yield ConstantRateTimeSeries(
-            gmean(data, axis=1) / m,
-            data.frequency,
-            data.duration)
+                gmean(data, axis=1) / m,
+                data.frequency,
+                data.duration)
 
 
 class BFCC(Node):

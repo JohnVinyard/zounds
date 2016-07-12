@@ -11,6 +11,11 @@ class SampleRate(object):
         self.duration = duration
         super(SampleRate, self).__init__()
 
+    def __eq__(self, other):
+        return \
+            self.frequency == other.frequency \
+            and self.duration == other.duration
+
     @property
     def overlap(self):
         return self.duration - self.frequency

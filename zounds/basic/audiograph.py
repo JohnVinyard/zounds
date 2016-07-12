@@ -12,12 +12,56 @@ from zounds.spectral import \
     Chroma, BFCC, DCT
 
 
+def resampled(
+        chunksize_bytes=2 * 44100 * 30 * 2,
+        resample_to=SR44100(),
+        store_resampled=False):
+    """
+    Create a basic processing pipeline that can resample all incoming audio
+    to a normalized sampling rate for downstream processing, and store a
+    convenient, compressed version for playback
+
+    :param chunksize_bytes: The number of bytes from the raw stream to process
+    at once
+    :param resample_to: The new, normalized sampling rate
+    :return: A simple processing pipeline
+    """
+    class Resampled(BaseModel):
+        meta = JSONFeature(
+                MetaData,
+                store=True,
+                encoder=AudioMetaDataEncoder)
+
+        raw = ByteStreamFeature(
+                ByteStream,
+                chunksize=chunksize_bytes,
+                needs=meta,
+                store=False)
+
+        ogg = OggVorbisFeature(
+                OggVorbis,
+                needs=raw,
+                store=True)
+
+        pcm = ConstantRateTimeSeriesFeature(
+                AudioStream,
+                needs=raw,
+                store=False)
+
+        resampled = ConstantRateTimeSeriesFeature(
+                Resampler,
+                needs=pcm,
+                samplerate=resample_to,
+                store=store_resampled)
+
+    return Resampled
+
+
 def stft(
         chunksize_bytes=2 * 44100 * 30 * 2,
         resample_to=SR44100(),
         wscheme=HalfLapped(),
         store_fft=False):
-
     class ShortTimeFourierTransform(BaseModel):
         meta = JSONFeature(
                 MetaData,

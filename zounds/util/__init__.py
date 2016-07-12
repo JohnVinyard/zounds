@@ -1,1 +1,1 @@
-from persistence import simple_lmdb_settings
+from persistence import simple_lmdb_settings, simple_in_memory_settings
