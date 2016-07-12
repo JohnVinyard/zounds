@@ -2,6 +2,7 @@ from featureflow import Node, NotEnoughData
 import numpy as np
 from zounds.nputil import windowed, sliding_window
 from zounds.timeseries import ConstantRateTimeSeries
+import scipy
 
 
 def oggvorbis(s):
@@ -44,6 +45,14 @@ class OggVorbisWindowingFunc(WindowingFunc):
 
     def _wdata(self, size):
         return oggvorbis(size)
+
+
+class HannWindowingFunc(WindowingFunc):
+    def __init__(self):
+        super(HannWindowingFunc, self).__init__()
+
+    def _wdata(self, size):
+        return scipy.signal.hann(size)
 
 
 class SlidingWindow(Node):
