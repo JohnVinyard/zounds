@@ -3,6 +3,8 @@ from abc import ABCMeta, abstractmethod
 import numpy as np
 from scipy.signal import triang
 
+# TODO: Depracate all of this in favor of the new frequencyscale stuff
+
 
 def fft_index(freq_hz, ws, sr, rnd=np.round):
     """
