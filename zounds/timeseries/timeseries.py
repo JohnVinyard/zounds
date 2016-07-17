@@ -86,7 +86,6 @@ class TimeSlice(object):
 
 
 class ConstantRateTimeSeriesMetadata(NumpyMetaData):
-
     DTYPE_RE = re.compile(r'\[(?P<dtype>[^\]]+)\]')
 
     def __init__(
@@ -268,13 +267,21 @@ class ConstantRateTimeSeries(np.ndarray):
         self.frequency = getattr(obj, 'frequency', None)
         self.duration = getattr(obj, 'duration', None)
 
-    def __getitem__(self, index):
-        if isinstance(index, TimeSlice):
-            diff = self.duration - self.frequency
-            start_index = \
-                max(0, np.floor((index.start - diff) / self.frequency))
-            end = self.end if index.duration is None else index.end
-            stop_index = np.ceil(end / self.frequency)
-            return self[start_index: stop_index]
+    def _ts_to_integer_indices(self, ts):
+        if not isinstance(ts, TimeSlice):
+            return ts
 
-        return super(ConstantRateTimeSeries, self).__getitem__(index)
+        diff = self.duration - self.frequency
+        start_index = \
+            max(0, np.floor((ts.start - diff) / self.frequency))
+        end = self.end if ts.duration is None else ts.end
+        stop_index = np.ceil(end / self.frequency)
+        return slice(start_index, stop_index)
+
+    def __getitem__(self, index):
+        try:
+            slices = map(self._ts_to_integer_indices, index)
+        except TypeError:
+            slices = (self._ts_to_integer_indices(index),)
+
+        return super(ConstantRateTimeSeries, self).__getitem__(slices)

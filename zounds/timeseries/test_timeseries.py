@@ -30,7 +30,7 @@ class TimeSliceTests(unittest2.TestCase):
         self.assertRaises(ValueError, lambda: TimeSlice(1))
 
     def test_raises_if_start_is_provided_and_is_not_timedelta_instance(self):
-        self.assertRaises( \
+        self.assertRaises(
                 ValueError, lambda: TimeSlice(Nanoseconds(100), 1))
 
     def test_can_instantiate_time_slice_instance_without_start_argument(self):
@@ -123,7 +123,7 @@ class TimeSeriesTests(unittest2.TestCase):
     def test_raises_if_duration_is_not_timedelta_instance(self):
         arr = np.arange(10)
         freq = Seconds(1)
-        self.assertRaises( \
+        self.assertRaises(
                 ValueError, lambda: ConstantRateTimeSeries(arr, freq, 1))
 
     def test_duration_is_equal_to_frequency_if_not_provided(self):
@@ -154,6 +154,14 @@ class TimeSeriesTests(unittest2.TestCase):
         ts = ConstantRateTimeSeries(arr, freq)
         ts2 = ts[5]
         self.assertEqual(5, ts2)
+
+    def test_can_mix_time_slice_and_integer_indices(self):
+        arr = np.ones((10, 5))
+        freq = Seconds(1)
+        ts = ConstantRateTimeSeries(arr, freq)
+        sl = TimeSlice(duration=Seconds(5), start=Seconds(5))
+        ts2 = ts[sl, 2:]
+        self.assertEqual((5, 3), ts2.shape)
 
     def test_can_slice_constant_rate_time_series_with_integer_indices(self):
         arr = np.arange(10)
@@ -356,11 +364,11 @@ class TimeSeriesTests(unittest2.TestCase):
         self.assertEqual(44100, int(ts.samples_per_second))
 
     def test_concatenation_with_differing_freqs_and_durations_raises(self):
-        ts = ConstantRateTimeSeries( \
+        ts = ConstantRateTimeSeries(
                 np.arange(10),
                 Seconds(1),
                 Seconds(2))
-        ts2 = ConstantRateTimeSeries( \
+        ts2 = ConstantRateTimeSeries(
                 np.arange(10, 20),
                 Seconds(1),
                 Seconds(1))
@@ -368,11 +376,11 @@ class TimeSeriesTests(unittest2.TestCase):
 
     def test_concatenation_with_matching_freqs_and_duration_results_in_crts(
             self):
-        ts = ConstantRateTimeSeries( \
+        ts = ConstantRateTimeSeries(
                 np.ones((10, 3)),
                 Seconds(1),
                 Seconds(2))
-        ts2 = ConstantRateTimeSeries( \
+        ts2 = ConstantRateTimeSeries(
                 np.ones((13, 3)),
                 Seconds(1),
                 Seconds(2))
@@ -381,11 +389,11 @@ class TimeSeriesTests(unittest2.TestCase):
         self.assertEqual((23, 3), result.shape)
 
     def test_concat_with_differing_freqs(self):
-        ts = ConstantRateTimeSeries( \
+        ts = ConstantRateTimeSeries(
                 np.ones((10, 3)),
                 Seconds(2),
                 Seconds(2))
-        ts2 = ConstantRateTimeSeries( \
+        ts2 = ConstantRateTimeSeries(
                 np.ones((13, 3)),
                 Seconds(1),
                 Seconds(2))
@@ -393,23 +401,23 @@ class TimeSeriesTests(unittest2.TestCase):
                 ValueError, lambda: ConstantRateTimeSeries.concat([ts, ts2]))
 
     def test_concat_with_differing_durations(self):
-        ts = ConstantRateTimeSeries( \
+        ts = ConstantRateTimeSeries(
                 np.ones((10, 3)),
                 Seconds(1),
                 Seconds(2))
-        ts2 = ConstantRateTimeSeries( \
+        ts2 = ConstantRateTimeSeries(
                 np.ones((13, 3)),
                 Seconds(1),
                 Seconds(3))
-        self.assertRaises( \
+        self.assertRaises(
                 ValueError, lambda: ConstantRateTimeSeries.concat([ts, ts2]))
 
     def test_concat_along_first_axis(self):
-        ts = ConstantRateTimeSeries( \
+        ts = ConstantRateTimeSeries(
                 np.ones((10, 3)),
                 Seconds(1),
                 Seconds(2))
-        ts2 = ConstantRateTimeSeries( \
+        ts2 = ConstantRateTimeSeries(
                 np.ones((13, 3)),
                 Seconds(1),
                 Seconds(2))
@@ -417,11 +425,11 @@ class TimeSeriesTests(unittest2.TestCase):
         self.assertEqual((23, 3), result.shape)
 
     def test_concat_along_second_axis(self):
-        ts = ConstantRateTimeSeries( \
+        ts = ConstantRateTimeSeries(
                 np.ones((10, 3)),
                 Seconds(1),
                 Seconds(2))
-        ts2 = ConstantRateTimeSeries( \
+        ts2 = ConstantRateTimeSeries(
                 np.ones((10, 5)),
                 Seconds(1),
                 Seconds(2))
