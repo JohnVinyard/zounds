@@ -3,6 +3,7 @@ import numpy as np
 from scipy.fftpack import idct
 from zounds.timeseries import \
     audio_sample_rate, AudioSamples, ConstantRateTimeSeries, Seconds
+from zounds.spectral import DCTIV
 
 
 class ShortTimeTransformSynthesizer(object):
@@ -47,6 +48,34 @@ class DCTSynthesizer(ShortTimeTransformSynthesizer):
         return idct(frames, norm='ortho')
 
 
+class DCTIVSynthesizer(ShortTimeTransformSynthesizer):
+    def __init__(self):
+        super(DCTIVSynthesizer, self).__init__()
+
+    def _transform(self, frames):
+        return list(DCTIV()._process(frames))[0]
+
+
+class SineSynthesizer(object):
+    """
+    Synthesize sine waves
+    """
+
+    def __init__(self, samplerate):
+        super(SineSynthesizer, self).__init__()
+        self.samplerate = samplerate
+
+    def synthesize(self, duration, freqs_in_hz=[440.]):
+        freqs = np.array(freqs_in_hz)
+        scaling = 1 / len(freqs)
+        sr = int(self.samplerate)
+        cps = freqs / sr
+        ts = (duration / Seconds(1)) * sr
+        ranges = np.array([np.arange(0, ts * c, c) for c in cps])
+        raw = (np.sin(ranges * (2 * np.pi)) * scaling).sum(axis=0)
+        return AudioSamples(raw, self.samplerate)
+
+
 class TickSynthesizer(object):
     """
     Synthesize short, percussive, periodic "ticks"
@@ -75,6 +104,7 @@ class NoiseSynthesizer(object):
     """
     Synthesize white noise
     """
+
     def __init__(self, samplerate):
         super(NoiseSynthesizer, self).__init__()
         self.samplerate = samplerate
@@ -83,4 +113,4 @@ class NoiseSynthesizer(object):
         sr = self.samplerate.samples_per_second
         seconds = duration / Seconds(1)
         return AudioSamples(
-                np.random.random_sample(sr*seconds), self.samplerate)
+                np.random.random_sample(sr * seconds), self.samplerate)

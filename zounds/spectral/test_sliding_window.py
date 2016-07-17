@@ -1,6 +1,10 @@
 from sliding_window import SlidingWindow
 from zounds.timeseries import \
-    AudioSamples, SR22050, SR44100, SR11025, SR48000, SR96000
+    AudioSamples, SR22050, SR44100, SR11025, SR48000, SR96000, SampleRate, \
+    Seconds, Milliseconds, ConstantRateTimeSeriesFeature
+from zounds.util import simple_in_memory_settings
+from zounds.basic import resampled
+from zounds.synthesize import NoiseSynthesizer
 import numpy as np
 import unittest2
 
@@ -29,3 +33,26 @@ class SlidingWindowTests(unittest2.TestCase):
 
     def test_correct_window_and_step_size_at_11025(self):
         self._check(SR11025(), 512, 256)
+
+    def test_can_persist_and_retrieve_with_second_long_windowing_scheme(self):
+        samplerate = SR22050()
+        rs = resampled(resample_to=samplerate)
+
+        window_size = Seconds(1)
+        wscheme = SampleRate(window_size, window_size)
+
+        @simple_in_memory_settings
+        class Document(rs):
+            windowed = ConstantRateTimeSeriesFeature(
+                SlidingWindow,
+                wscheme=wscheme,
+                needs=rs.resampled,
+                store=True)
+
+        synth = NoiseSynthesizer(samplerate)
+        audio = synth.synthesize(Milliseconds(5500))
+
+        _id = Document.process(meta=audio.encode())
+        doc = Document(_id)
+
+        self.assertEqual(6, len(doc.windowed))

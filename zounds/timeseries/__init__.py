@@ -7,7 +7,7 @@ from audiosamples import \
 
 from samplerate import \
     SR11025, SR22050, SR44100, SR48000, SR96000, HalfLapped, audio_sample_rate,\
-    Stride
+    Stride, SampleRate
 
 from timeseries import \
     TimeSlice, ConstantRateTimeSeriesEncoder, ConstantRateTimeSeriesFeature, \

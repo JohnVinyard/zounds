@@ -12,6 +12,9 @@ class SampleRateTests(unittest2.TestCase):
     def test_nyquist_44100(self):
         self.assertEqual(22050, SR44100().nyquist)
 
+    def test_can_convert_to_int(self):
+        self.assertEqual(22050, int(SR22050()))
+
     def test_raises_for_unknown_audio_samplerate(self):
         self.assertRaises(ValueError, lambda: audio_sample_rate(1))
 

@@ -33,7 +33,7 @@ class DCT(Node):
         self._axis = axis
 
     def _process(self, data):
-        yield ConstantRateTimeSeries( \
+        yield ConstantRateTimeSeries(
                 dct(data, norm='ortho', axis=self._axis),
                 data.frequency,
                 data.duration)
@@ -47,13 +47,14 @@ class DCTIV(Node):
         super(DCTIV, self).__init__(needs=needs)
 
     def _process(self, data):
-        l = len(data)
+        l = data.shape[1]
         tf = np.arange(0, l)
-        z = np.zeros((l, data.shape[1] * 2))
+        z = np.zeros((len(data), l * 2))
         z[:, :l] = data * np.exp(-1j * np.pi * tf / 2 / l)
         z = np.fft.fft(z)[:, :l]
-        yield np.sqrt(2 / l) * \
+        raw = np.sqrt(2 / l) * \
             np.real(z * np.exp(-1j * np.pi * (tf + 0.5) / 2 / l))
+        yield ConstantRateTimeSeries(raw, data.frequency, data.duration)
 
 
 # TODO: This constructor should not take a samplerate; that information should

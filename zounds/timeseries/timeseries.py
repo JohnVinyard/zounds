@@ -3,6 +3,7 @@ from featureflow import \
 import numpy as np
 from duration import Picoseconds
 from samplerate import SampleRate
+import re
 
 
 class TimeSlice(object):
@@ -85,6 +86,9 @@ class TimeSlice(object):
 
 
 class ConstantRateTimeSeriesMetadata(NumpyMetaData):
+
+    DTYPE_RE = re.compile(r'\[(?P<dtype>[^\]]+)\]')
+
     def __init__(
             self,
             dtype=None,
@@ -105,7 +109,8 @@ class ConstantRateTimeSeriesMetadata(NumpyMetaData):
                 duration=timeseries.duration)
 
     def _encode_timedelta(self, td):
-        return (td.astype(np.uint64).tostring(), str(td.dtype)[-3:-1])
+        dtype = self.DTYPE_RE.search(str(td.dtype)).groupdict()['dtype']
+        return td.astype(np.uint64).tostring(), dtype
 
     def _decode_timedelta(self, t):
         if isinstance(t, np.timedelta64):

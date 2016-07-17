@@ -1,4 +1,4 @@
-__version__ = '0.12.9'
+__version__ = '0.13.9'
 
 from timeseries import \
     Hours, Minutes, Seconds, Milliseconds, Microseconds, Picoseconds, \
@@ -7,7 +7,7 @@ from timeseries import \
     SR11025, SR22050, SR44100, SR48000, SR96000, HalfLapped, Stride, \
     TimeSlice, ConstantRateTimeSeriesEncoder, ConstantRateTimeSeriesFeature, \
     GreedyConstantRateTimeSeriesDecoder, PackedConstantRateTimeSeriesEncoder, \
-    VariableRateTimeSeries, VariableRateTimeSeriesFeature
+    VariableRateTimeSeries, VariableRateTimeSeriesFeature, SampleRate
 
 from soundfile import \
     MetaData, AudioMetaDataEncoder, FreesoundOrgConfig, \
@@ -18,14 +18,15 @@ from soundfile import \
 
 from spectral import \
     SlidingWindow, OggVorbisWindowingFunc, \
-    FFT, DCT, BarkBands, Chroma, BFCC, SpectralCentroid, SpectralFlatness
+    FFT, DCT, DCTIV, BarkBands, Chroma, BFCC, SpectralCentroid, SpectralFlatness
 
 from segment import \
     MeasureOfTransience, MovingAveragePeakPicker, SparseTimestampDecoder, \
     SparseTimestampEncoder, TimeSliceDecoder, TimeSliceFeature, ComplexDomain
 
 from synthesize import \
-    FFTSynthesizer, DCTSynthesizer, TickSynthesizer, NoiseSynthesizer
+    FFTSynthesizer, DCTSynthesizer, TickSynthesizer, NoiseSynthesizer, \
+    SineSynthesizer, DCTIVSynthesizer
 
 from learn import \
     KMeans, BinaryRbm, LinearRbm, Learned, \
@@ -42,6 +43,6 @@ from index import \
 from basic import \
     Slice, Sum, Max, Pooled, process_dir, stft, audio_graph, with_onsets
 
-from util import simple_lmdb_settings
+from util import simple_lmdb_settings, simple_in_memory_settings
 
 from nputil import sliding_window
