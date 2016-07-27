@@ -32,6 +32,16 @@ class LinearScaleTests(unittest2.TestCase):
         print diff.min(), diff.max()
         np.testing.assert_allclose(diff, np.zeros(len(diff)), atol=1e-11)
 
+    def test_get_slice_on_boundary(self):
+        scale = LinearScale(FrequencyBand(0, 1000), 100)
+        sl = scale.get_slice(FrequencyBand(500, 700))
+        self.assertEqual(slice(49, 70), sl)
+
+    def test_get_slice_between_boundary(self):
+        scale = LinearScale(FrequencyBand(0, 1000), 10)
+        sl = scale.get_slice(FrequencyBand(495, 705))
+        self.assertEqual(slice(4, 7), sl)
+
 
 class LogScaleTests(unittest2.TestCase):
     def test_variable_bandwidth(self):

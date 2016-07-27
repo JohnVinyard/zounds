@@ -1,5 +1,6 @@
 from __future__ import division
 import numpy as np
+import bisect
 
 
 # TODO: What commonalities can be factored out of this class and TimeSlice?
@@ -71,6 +72,9 @@ class FrequencyScale(object):
         self.n_bands = n_bands
         self.frequency_band = frequency_band
 
+    def __len__(self):
+        return self.n_bands
+
     @property
     def center_frequencies(self):
         return (band.center_frequency for band in self)
@@ -87,17 +91,21 @@ class FrequencyScale(object):
     def stop_hz(self):
         return self.frequency_band.stop_hz
 
-    def get_slice(self, frequency_band, n_samples):
+    def get_slice(self, frequency_band):
         """
         Given a frequency band, and a frequency dimension comprised of n_samples,
-        return a slice that may be used to extract only the frequency samples
-        that intersect with the frequency band
+        return a slice using integer indices that may be used to extract only
+        the frequency samples that intersect with the frequency band
         :param frequency_band: The range of frequencies for which a slice should
         be produced
-        :param n_samples: The number of frequency samples
         :return: a slice
         """
-        raise NotImplementedError()
+        bands = list(self)
+        starts = [b.start_hz for b in bands]
+        stops = [b.stop_hz for b in bands]
+        start_index = bisect.bisect_left(stops, frequency_band.start_hz)
+        stop_index = bisect.bisect_left(starts, frequency_band.stop_hz)
+        return slice(start_index, stop_index)
 
     def __iter__(self):
         raise NotImplementedError()
@@ -109,6 +117,7 @@ class LinearScale(FrequencyScale):
     with transforms whose coefficients also lie on a linear frequency scale,
     e.g. the FFT or DCT transforms.
     """
+
     def __init__(self, frequency_band, n_bands):
         super(LinearScale, self).__init__(frequency_band, n_bands)
 
@@ -119,7 +128,7 @@ class LinearScale(FrequencyScale):
 
     def __iter__(self):
         freqs = np.linspace(self.start_hz, self.stop_hz, self.n_bands)
-        # constant bandwidth
+        # constant, non-overlapping bandwidth
         bandwidth = freqs[1] - freqs[0]
         return (FrequencyBand(f, f + bandwidth) for f in freqs)
 

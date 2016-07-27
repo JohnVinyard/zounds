@@ -214,6 +214,12 @@ class ConstantRateTimeSeries(np.ndarray):
         obj.duration = duration or frequency
         return obj
 
+    def __array_finalize__(self, obj):
+        if obj is None:
+            return
+        self.frequency = getattr(obj, 'frequency', None)
+        self.duration = getattr(obj, 'duration', None)
+
     @classmethod
     def from_example(cls, arr, example):
         return cls(arr, frequency=example.frequency, duration=example.duration)
@@ -260,12 +266,6 @@ class ConstantRateTimeSeries(np.ndarray):
     @property
     def end(self):
         return self.span.end
-
-    def __array_finalize__(self, obj):
-        if obj is None:
-            return
-        self.frequency = getattr(obj, 'frequency', None)
-        self.duration = getattr(obj, 'duration', None)
 
     def _ts_to_integer_indices(self, ts):
         if not isinstance(ts, TimeSlice):
