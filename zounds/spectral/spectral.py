@@ -5,7 +5,10 @@ from scipy.fftpack import dct
 from scipy.stats.mstats import gmean
 from psychacoustics import Chroma as ChromaScale, Bark as BarkScale
 from zounds.nputil import safe_log
-from zounds.timeseries import ConstantRateTimeSeries, SR44100
+from zounds.timeseries import \
+    ConstantRateTimeSeries, SR44100, audio_sample_rate, Picoseconds
+from tfrepresentation import TimeFrequencyRepresentation
+from frequencyscale import LinearScale, FrequencyBand
 
 
 class FFT(Node):
@@ -28,6 +31,7 @@ class DCT(Node):
     """
     Type II Discrete Cosine Transform
     """
+
     def __init__(self, needs=None, axis=-1):
         super(DCT, self).__init__(needs=needs)
         self._axis = axis
@@ -43,6 +47,7 @@ class DCTIV(Node):
     """
     Type IV Discrete Cosine Transform.  This transform is its own inverse
     """
+
     def __init__(self, needs=None):
         super(DCTIV, self).__init__(needs=needs)
 
@@ -53,8 +58,14 @@ class DCTIV(Node):
         z[:, :l] = data * np.exp(-1j * np.pi * tf / 2 / l)
         z = np.fft.fft(z)[:, :l]
         raw = np.sqrt(2 / l) * \
-            np.real(z * np.exp(-1j * np.pi * (tf + 0.5) / 2 / l))
-        yield ConstantRateTimeSeries(raw, data.frequency, data.duration)
+              np.real(z * np.exp(-1j * np.pi * (tf + 0.5) / 2 / l))
+        n_seconds = data.duration / Picoseconds(int(1e12))
+        sr = audio_sample_rate(l / n_seconds)
+        yield TimeFrequencyRepresentation(
+                raw,
+                frequency=data.frequency,
+                duration=data.duration,
+                scale=LinearScale.from_sample_rate(sr, l))
 
 
 # TODO: This constructor should not take a samplerate; that information should

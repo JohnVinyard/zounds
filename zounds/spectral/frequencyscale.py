@@ -56,7 +56,8 @@ bandwidth={bandwidth})'''.format(
 
 class FrequencyScale(object):
     """
-    Represents a monotonically increasing set of frequency bands
+    Represents a set of frequency bands with monotonically increasing start
+    frequencies
     """
 
     def __init__(self, frequency_band, n_bands):

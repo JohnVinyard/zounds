@@ -49,6 +49,10 @@ class DCTSynthesizer(ShortTimeTransformSynthesizer):
 
 
 class DCTIVSynthesizer(ShortTimeTransformSynthesizer):
+    """
+    Perform the inverse of the DCTIV transform, which is the same as the forward
+    transformation
+    """
     def __init__(self):
         super(DCTIVSynthesizer, self).__init__()
 

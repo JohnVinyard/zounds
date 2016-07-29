@@ -7,13 +7,14 @@ from zounds.timeseries import \
 from zounds.timeseries.samplerate import SampleRate
 from zounds.synthesize import SineSynthesizer, DCTIVSynthesizer
 from zounds.spectral import SlidingWindow, DCTIV
+from tfrepresentation import \
+    TimeFrequencyRepresentation, TimeFrequencyRepresentationFeature
 
 
 class DCTIVTests(unittest2.TestCase):
-    def test_reconstruction(self):
-
-        samplerate = SR22050()
-        rs = resampled(resample_to=samplerate)
+    def setUp(self):
+        self.samplerate = SR22050()
+        rs = resampled(resample_to=self.samplerate)
 
         window_size = Picoseconds(int(1e12))
         wscheme = SampleRate(window_size, window_size)
@@ -21,32 +22,38 @@ class DCTIVTests(unittest2.TestCase):
         @simple_in_memory_settings
         class Document(rs):
             windowed = ConstantRateTimeSeriesFeature(
-                SlidingWindow,
-                wscheme=wscheme,
-                needs=rs.resampled,
-                store=False)
+                    SlidingWindow,
+                    wscheme=wscheme,
+                    needs=rs.resampled,
+                    store=False)
 
-            dct = ConstantRateTimeSeriesFeature(
-                DCTIV,
-                needs=windowed,
-                store=True)
+            dct = TimeFrequencyRepresentationFeature(
+                    DCTIV,
+                    needs=windowed,
+                    store=True)
 
-        ss = SineSynthesizer(samplerate)
-        audio = ss.synthesize(Seconds(5), [440., 660., 880.])
+        ss = SineSynthesizer(self.samplerate)
+        self.audio = ss.synthesize(Seconds(5), [440., 660., 880.])
 
-        _id = Document.process(meta=audio.encode())
-        doc = Document(_id)
+        _id = Document.process(meta=self.audio.encode())
+        self.doc = Document(_id)
 
+    def test_is_correct_type(self):
+        self.assertIsInstance(self.doc.dct, TimeFrequencyRepresentation)
+
+    def test_has_correct_nyquist_frequency(self):
+        self.assertEqual(self.samplerate.nyquist, self.doc.dct.scale.stop_hz)
+
+    def test_reconstruction(self):
         ds = DCTIVSynthesizer()
-        recon = ds.synthesize(doc.dct)
+        recon = ds.synthesize(self.doc.dct)
 
-        self.assertEqual(len(audio), len(recon))
-        self.assertEqual(audio.samplerate, recon.samplerate)
-        orig_fft = abs(np.fft.rfft(audio))
+        self.assertEqual(len(self.audio), len(recon))
+        self.assertEqual(self.audio.samplerate, recon.samplerate)
+        orig_fft = abs(np.fft.rfft(self.audio))
         recon_fft = abs(np.fft.rfft(recon))
         orig_peaks = set(np.argsort(orig_fft)[:-3])
         recon_peaks = set(np.argsort(recon_fft)[:-3])
         # ensure that the original and reconstruction have the same three
         # spectral peaks
         self.assertEqual(orig_peaks, recon_peaks)
-
