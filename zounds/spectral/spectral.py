@@ -77,7 +77,6 @@ class MDCT(Node):
         super(MDCT, self).__init__(needs=needs)
 
     def _process(self, data):
-        print data.shape
         l = data.shape[1] // 2
         t = np.arange(0, 2 * l)
         f = np.arange(0, l)
