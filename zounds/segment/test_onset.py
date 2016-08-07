@@ -50,6 +50,7 @@ class OnsetTests(unittest2.TestCase):
         # self.assertLess(abs(Seconds(1) - slices[3].duration), frame_hop)
         return doc
 
+    @unittest2.skip
     def test_complex_domain_onset_positions(self):
         class Settings(ff.PersistenceSettings):
             id_provider = ff.UuidProvider()

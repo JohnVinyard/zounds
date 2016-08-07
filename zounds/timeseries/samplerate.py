@@ -1,6 +1,7 @@
 from __future__ import division
 from duration import Picoseconds
 from collections import namedtuple
+import numpy as np
 
 Stride = namedtuple('Stride', ['frequency', 'duration'])
 
@@ -30,6 +31,17 @@ class SampleRate(object):
         freq = self.frequency * other[0]
         duration = (self.frequency * other[1]) + self.overlap
         return SampleRate(freq, duration)
+
+    def discrete_samples(self, ts):
+        """
+        Compute the frequency and duration in discrete samples
+        :param ts: A ConstantRateTimeSeries instance
+        :return: A tuple, representing the frequency and duration in discrete
+        samples, respectively
+        """
+        windowsize = np.round((self.duration - ts.overlap) / ts.frequency)
+        stepsize = np.round(self.frequency / ts.frequency)
+        return int(stepsize), int(windowsize)
 
 
 class AudioSampleRate(SampleRate):

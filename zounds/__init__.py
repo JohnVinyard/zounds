@@ -18,7 +18,10 @@ from soundfile import \
 
 from spectral import \
     SlidingWindow, OggVorbisWindowingFunc, \
-    FFT, DCT, DCTIV, BarkBands, Chroma, BFCC, SpectralCentroid, SpectralFlatness
+    FFT, MDCT, DCT, DCTIV, BarkBands, Chroma, BFCC, SpectralCentroid, \
+    SpectralFlatness, TimeFrequencyRepresentation, \
+    TimeFrequencyRepresentationFeature, TimeFrequencyRepresentationMetaData, \
+    TimeFrequencyRepresentationEncoder, TimeFrequencyRepresentationDecoder
 
 from segment import \
     MeasureOfTransience, MovingAveragePeakPicker, SparseTimestampDecoder, \
@@ -26,7 +29,7 @@ from segment import \
 
 from synthesize import \
     FFTSynthesizer, DCTSynthesizer, TickSynthesizer, NoiseSynthesizer, \
-    SineSynthesizer, DCTIVSynthesizer
+    SineSynthesizer, DCTIVSynthesizer, MDCTSynthesizer
 
 from learn import \
     KMeans, BinaryRbm, LinearRbm, Learned, \

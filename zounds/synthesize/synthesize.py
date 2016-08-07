@@ -4,6 +4,8 @@ from scipy.fftpack import idct
 from zounds.timeseries import \
     audio_sample_rate, AudioSamples, ConstantRateTimeSeries, Seconds
 from zounds.spectral import DCTIV
+from zounds.spectral.sliding_window import \
+    IdentityWindowingFunc, OggVorbisWindowingFunc
 
 
 class ShortTimeTransformSynthesizer(object):
@@ -13,17 +15,21 @@ class ShortTimeTransformSynthesizer(object):
     def _transform(self, frames):
         return frames
 
+    def _windowing_function(self):
+        return IdentityWindowingFunc()
+
     def _overlap_add(self, frames):
         sample_length_seconds = frames.duration_in_seconds / frames.shape[-1]
         samples_per_second = int(1 / sample_length_seconds)
         samplerate = audio_sample_rate(samples_per_second)
-        windowsize = int(frames.duration / samplerate.frequency)
-        hopsize = int(frames.frequency / samplerate.frequency)
+        windowsize = int(np.round(frames.duration / samplerate.frequency))
+        hopsize = int(np.round(frames.frequency / samplerate.frequency))
         arr = np.zeros(frames.end / samplerate.frequency)
         for i, f in enumerate(frames):
             start = i * hopsize
             stop = start + windowsize
-            arr[start:stop] += f
+            l = len(arr[start:stop])
+            arr[start:stop] += (self._windowing_function() * f[:l])
         return AudioSamples(arr, samplerate)
 
     def synthesize(self, frames):
@@ -53,11 +59,29 @@ class DCTIVSynthesizer(ShortTimeTransformSynthesizer):
     Perform the inverse of the DCTIV transform, which is the same as the forward
     transformation
     """
+
     def __init__(self):
         super(DCTIVSynthesizer, self).__init__()
 
     def _transform(self, frames):
         return list(DCTIV()._process(frames))[0]
+
+
+class MDCTSynthesizer(ShortTimeTransformSynthesizer):
+    def __init__(self):
+        super(MDCTSynthesizer, self).__init__()
+
+    def _windowing_function(self):
+        return OggVorbisWindowingFunc()
+
+    def _transform(self, frames):
+        l = frames.shape[1]
+        t = np.arange(0, 2 * l)
+        f = np.arange(0, l)
+        cpi = -1j * np.pi
+        a = frames * np.exp(cpi * (f + 0.5) * (l + 1) / 2 / l)
+        b = np.fft.fft(a, 2 * l)
+        return np.sqrt(2 / l) * np.real(b * np.exp(cpi * t / 2 / l))
 
 
 class SineSynthesizer(object):

@@ -1,4 +1,5 @@
-from sliding_window import SlidingWindow
+from sliding_window import \
+    SlidingWindow, IdentityWindowingFunc, OggVorbisWindowingFunc
 from zounds.timeseries import \
     AudioSamples, SR22050, SR44100, SR11025, SR48000, SR96000, SampleRate, \
     Seconds, Milliseconds, ConstantRateTimeSeriesFeature
@@ -9,8 +10,39 @@ import numpy as np
 import unittest2
 
 
-class SlidingWindowTests(unittest2.TestCase):
+class WindowingFunctionTests(unittest2.TestCase):
+    def test_multiply_lhs(self):
+        samples = np.random.random_sample(44)
+        wf = IdentityWindowingFunc()
+        np.testing.assert_allclose(wf * samples, samples)
 
+    def test_multiply_rhs(self):
+        samples = np.random.random_sample(33)
+        wf = IdentityWindowingFunc()
+        np.testing.assert_allclose(samples * wf, samples)
+
+
+class OggVorbisWindowingFunctionTests(unittest2.TestCase):
+    def test_multilpy_many_frames(self):
+        samples = np.random.random_sample((10, 3))
+        wf = OggVorbisWindowingFunc()
+        result = wf * samples
+        self.assertEqual(samples.shape, result.shape)
+
+    def test_multiply_one_frame(self):
+        samples = np.random.random_sample((10, 1))
+        wf = OggVorbisWindowingFunc()
+        result = wf * samples
+        self.assertEqual(samples.shape, result.shape)
+
+    def test_multiply_1d(self):
+        samples = np.random.random_sample(10)
+        wf = OggVorbisWindowingFunc()
+        result = wf * samples
+        self.assertEqual(samples.shape, result.shape)
+
+
+class SlidingWindowTests(unittest2.TestCase):
     def _check(self, samplerate, expected_window_size, expected_step_size):
         sw = SlidingWindow(wscheme=samplerate.half_lapped())
         samples = AudioSamples(
@@ -44,10 +76,10 @@ class SlidingWindowTests(unittest2.TestCase):
         @simple_in_memory_settings
         class Document(rs):
             windowed = ConstantRateTimeSeriesFeature(
-                SlidingWindow,
-                wscheme=wscheme,
-                needs=rs.resampled,
-                store=True)
+                    SlidingWindow,
+                    wscheme=wscheme,
+                    needs=rs.resampled,
+                    store=True)
 
         synth = NoiseSynthesizer(samplerate)
         audio = synth.synthesize(Milliseconds(5500))

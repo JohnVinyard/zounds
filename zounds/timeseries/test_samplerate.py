@@ -1,10 +1,40 @@
 import unittest2
+import numpy as np
 from duration import Seconds
+from timeseries import ConstantRateTimeSeries
 from samplerate import \
-    SampleRate, SR96000, SR48000, SR44100, SR22050, SR11025, audio_sample_rate
+    SampleRate, SR96000, SR48000, SR44100, SR22050, SR11025, audio_sample_rate, \
+    HalfLapped
 
 
 class SampleRateTests(unittest2.TestCase):
+
+    def test_discrete_samples_11025(self):
+        sr = SR11025()
+        ts = ConstantRateTimeSeries(
+                np.zeros(sr.samples_per_second), sr.frequency, sr.duration)
+        hl = HalfLapped()
+        freq, duration = hl.discrete_samples(ts)
+        self.assertEqual(256, freq)
+        self.assertEqual(512, duration)
+
+    def test_discrete_samples_22050(self):
+        sr = SR22050()
+        ts = ConstantRateTimeSeries(
+                np.zeros(sr.samples_per_second), sr.frequency, sr.duration)
+        hl = HalfLapped()
+        freq, duration = hl.discrete_samples(ts)
+        self.assertEqual(512, freq)
+        self.assertEqual(1024, duration)
+
+    def test_discrete_samples_44100(self):
+        sr = SR44100()
+        ts = ConstantRateTimeSeries(
+                np.zeros(sr.samples_per_second), sr.frequency, sr.duration)
+        hl = HalfLapped()
+        freq, duration = hl.discrete_samples(ts)
+        self.assertEqual(1024, freq)
+        self.assertEqual(2048, duration)
 
     def test_nyquist_22050(self):
         self.assertEqual(11025, SR22050().nyquist)

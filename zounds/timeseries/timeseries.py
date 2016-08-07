@@ -198,7 +198,6 @@ class ConstantRateTimeSeries(np.ndarray):
     A TimeSeries implementation with samples of a constant duration and
     frequency.
     """
-    __array_priority__ = 10.0
 
     def __new__(cls, input_array, frequency, duration=None):
         if not isinstance(frequency, np.timedelta64):
@@ -227,7 +226,7 @@ class ConstantRateTimeSeries(np.ndarray):
     def concatenate(self, other):
         if self.frequency == other.frequency and self.duration == other.duration:
             return self.from_example(np.concatenate([self, other]), self)
-        raise ValueError( \
+        raise ValueError(
                 'self and other must have the same sample frequency and sample duration')
 
     @classmethod

@@ -25,6 +25,8 @@ class TimeFrequencyRepresentation(ConstantRateTimeSeries):
 
     def __array_finalize__(self, obj):
         super(TimeFrequencyRepresentation, self).__array_finalize__(obj)
+        if obj is None:
+            return
         self.scale = getattr(obj, 'scale', None)
 
     def _freq_band_to_integer_indices(self, index):
@@ -37,7 +39,7 @@ class TimeFrequencyRepresentation(ConstantRateTimeSeries):
         try:
             slices = map(self._freq_band_to_integer_indices, index)
         except TypeError:
-            slices = (self._freq_band_to_integer_indices(index),)
+            slices = self._freq_band_to_integer_indices(index)
         return super(TimeFrequencyRepresentation, self).__getitem__(slices)
 
 

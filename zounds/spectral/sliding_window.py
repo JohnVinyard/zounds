@@ -26,8 +26,16 @@ class WindowingFunc(object):
     def _wdata(self, size):
         return np.ones(size)
 
+    def __numpy_ufunc__(self, *args, **kwargs):
+        # KLUDGE: This seems really odd, but the mere presence of this
+        # numpy-specific magic method seems to serve as a hint to to call
+        # this instances __rmul__ implementation, instead of doing element-wise
+        # multiplication, as per:
+        # http://docs.scipy.org/doc/numpy/reference/arrays.classes.html#numpy.class.__numpy_ufunc__
+        raise NotImplementedError()
+
     def __mul__(self, other):
-        size = other.shape[1:]
+        size = other.shape[-1]
         return self._wdata(size) * other
 
     def __rmul__(self, other):
@@ -74,11 +82,8 @@ class SlidingWindow(Node):
     def _enqueue(self, data, pusher):
         if self._cache is None:
             self._cache = data
-            # BUG: I Think this may only work in cases where frequency and
-            # duration are the same
-            self._windowsize = \
-                int((self._scheme.duration - data.overlap) / data.frequency)
-            self._stepsize = int(self._scheme.frequency / data.frequency)
+            self._stepsize, self._windowsize = \
+                self._scheme.discrete_samples(data)
         else:
             self._cache = np.concatenate([self._cache, data])
 

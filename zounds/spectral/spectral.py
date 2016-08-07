@@ -68,6 +68,34 @@ class DCTIV(Node):
                 scale=LinearScale.from_sample_rate(sr, l))
 
 
+class MDCT(Node):
+    """
+    Modified Discrete Cosine Transform
+    """
+
+    def __init__(self, needs=None):
+        super(MDCT, self).__init__(needs=needs)
+
+    def _process(self, data):
+        print data.shape
+        l = data.shape[1] // 2
+        t = np.arange(0, 2 * l)
+        f = np.arange(0, l)
+        cpi = -1j * np.pi
+        a = data * np.exp(cpi * t / 2 / l)
+        b = np.fft.fft(a)
+        c = b[:, :l]
+        transformed = np.sqrt(2 / l) * np.real(
+                c * np.exp(cpi * (f + 0.5) * (l + 1) / 2 / l))
+        n_seconds = data.duration / Picoseconds(int(1e12))
+        sr = audio_sample_rate(int((l / n_seconds) * 2))
+        yield TimeFrequencyRepresentation(
+            transformed,
+            frequency=data.frequency,
+            duration=data.duration,
+            scale=LinearScale.from_sample_rate(sr, l))
+
+
 # TODO: This constructor should not take a samplerate; that information should
 # be encapsulated in the data that's passed in
 class Chroma(Node):

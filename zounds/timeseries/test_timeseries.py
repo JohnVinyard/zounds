@@ -155,6 +155,13 @@ class TimeSeriesTests(unittest2.TestCase):
         ts2 = ts[5]
         self.assertEqual(5, ts2)
 
+    def test_can_index_2d_time_series_with_single_integer_index(self):
+        arr = np.random.random_sample((10, 3))
+        freq = Seconds(1)
+        ts = ConstantRateTimeSeries(arr, freq)
+        ts2 = ts[5]
+        self.assertEqual((3,), ts2.shape)
+
     def test_can_mix_time_slice_and_integer_indices(self):
         arr = np.ones((10, 5))
         freq = Seconds(1)
