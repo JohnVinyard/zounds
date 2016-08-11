@@ -21,7 +21,8 @@ from spectral import \
     FFT, MDCT, DCT, DCTIV, BarkBands, Chroma, BFCC, SpectralCentroid, \
     SpectralFlatness, TimeFrequencyRepresentation, \
     TimeFrequencyRepresentationFeature, TimeFrequencyRepresentationMetaData, \
-    TimeFrequencyRepresentationEncoder, TimeFrequencyRepresentationDecoder
+    TimeFrequencyRepresentationEncoder, TimeFrequencyRepresentationDecoder, \
+    AWeighting, LinearScale, LogScale, FrequencyBand, FrequencyScale
 
 from segment import \
     MeasureOfTransience, MovingAveragePeakPicker, SparseTimestampDecoder, \

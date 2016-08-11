@@ -9,3 +9,7 @@ from tfrepresentation import \
     TimeFrequencyRepresentation, TimeFrequencyRepresentationFeature, \
     TimeFrequencyRepresentationMetaData, TimeFrequencyRepresentationEncoder, \
     TimeFrequencyRepresentationDecoder
+
+from weighting import AWeighting
+
+from frequencyscale import LinearScale, LogScale, FrequencyBand, FrequencyScale

@@ -2,11 +2,59 @@ from __future__ import division
 import numpy as np
 import unittest2
 from tfrepresentation import TimeFrequencyRepresentation
-from frequencyscale import LinearScale, FrequencyBand
+from frequencyscale import LinearScale, LogScale, FrequencyBand
+from weighting import AWeighting
 from zounds.timeseries import Seconds
 
 
 class TimeFrequencyRepresentationTests(unittest2.TestCase):
+
+    def test_can_multiply_by_frequency_weighting_linear_scale(self):
+        frequency = Seconds(1)
+        duration = Seconds(1)
+        scale = LinearScale(FrequencyBand(20, 22050), 100)
+        tf = TimeFrequencyRepresentation(
+                np.ones((30, 100)),
+                frequency=frequency,
+                duration=duration,
+                scale=scale)
+        result = tf * AWeighting()
+        self.assertIsInstance(result, TimeFrequencyRepresentation)
+        peak_frequency_band = FrequencyBand(9000, 11000)
+        lower_band = FrequencyBand(100, 300)
+        peak_slice = np.abs(result[:, peak_frequency_band]).max()
+        lower_slice = np.abs(result[:, lower_band]).max()
+        self.assertGreater(peak_slice, lower_slice)
+
+    def test_can_multiply_by_frequency_weighting_log_scale(self):
+        frequency = Seconds(1)
+        duration = Seconds(1)
+        scale = LogScale(FrequencyBand(20, 22050), 100)
+        tf = TimeFrequencyRepresentation(
+                np.ones((30, 100)),
+                frequency=frequency,
+                duration=duration,
+                scale=scale)
+        result = tf * AWeighting()
+        self.assertIsInstance(result, TimeFrequencyRepresentation)
+        peak_frequency_band = FrequencyBand(9000, 11000)
+        lower_band = FrequencyBand(100, 300)
+        peak_slice = np.abs(result[:, peak_frequency_band]).max()
+        lower_slice = np.abs(result[:, lower_band]).max()
+        self.assertGreater(peak_slice, lower_slice)
+
+    def test_can_multiply_by_array(self):
+        frequency = Seconds(1)
+        duration = Seconds(1)
+        scale = LinearScale(FrequencyBand(20, 22050), 100)
+        tf = TimeFrequencyRepresentation(
+                np.ones((30, 100)),
+                frequency=frequency,
+                duration=duration,
+                scale=scale)
+        result = tf * np.ones(100)
+        self.assertIsInstance(result, TimeFrequencyRepresentation)
+        np.testing.assert_allclose(tf, result)
 
     def test_can_convert_to_string(self):
         frequency = Seconds(1)
