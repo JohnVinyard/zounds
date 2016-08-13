@@ -233,13 +233,6 @@ class Multiply(Preprocessor):
 
         return x
 
-    # def _inversion_data(self):
-    #
-    #     def x(d):
-    #         return dict(factor=self.factor)
-    #
-    #     return x
-
     def _backward_func(self):
         def x(d, factor=None):
             return d * (1.0 / factor)
