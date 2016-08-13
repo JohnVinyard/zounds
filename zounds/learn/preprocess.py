@@ -222,6 +222,40 @@ class MeanStdNormalization(Preprocessor):
                 data, op, inversion_data=inv_data, inverse=inv, name='MeanStd')
 
 
+class Multiply(Preprocessor):
+    def __init__(self, factor=1, needs=None):
+        super(Multiply, self).__init__(needs=needs)
+        self.factor = factor
+
+    def _forward_func(self):
+        def x(d, factor=None):
+            return d * factor
+
+        return x
+
+    # def _inversion_data(self):
+    #
+    #     def x(d):
+    #         return dict(factor=self.factor)
+    #
+    #     return x
+
+    def _backward_func(self):
+        def x(d, factor=None):
+            return d * (1.0 / factor)
+
+        return x
+
+    def _process(self, data):
+        data = self._extract_data(data)
+        op = self.transform(factor=self.factor)
+        inv_data = self.inversion_data(factor=self.factor)
+        inv = self.inverse_transform()
+        data = op(data)
+        yield PreprocessResult(
+            data, op, inversion_data=inv_data, inverse=inv, name='Multiply')
+
+
 class Binarize(Preprocessor):
     def __init__(self, threshold=0.5, needs=None):
         super(Binarize, self).__init__(needs=needs)
