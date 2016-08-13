@@ -18,6 +18,10 @@ class Document(BaseDocument):
             needs=BaseDocument.fft,
             store=True)
 
+# compute the array needed to perceptually weight the MDCT frequencies
+scale = zounds.LinearScale.from_sample_rate(samplerate, 256)
+weights = zounds.AWeighting().weights(scale)
+
 
 @zounds.simple_settings
 class DctKmeans(ff.BaseModel):
@@ -36,9 +40,17 @@ class DctKmeans(ff.BaseModel):
             needs=shuffle,
             store=False)
 
+    # apply the perceptual weighting
+    # TOOD: Try this before and after log amplitude
+    multiply = ff.PickleFeature(
+            zounds.Multiply,
+            factor=weights,
+            needs=log,
+            store=False)
+
     unit_norm = ff.PickleFeature(
             zounds.UnitNorm,
-            needs=log,
+            needs=multiply,
             store=False)
 
     kmeans = ff.PickleFeature(
@@ -49,7 +61,7 @@ class DctKmeans(ff.BaseModel):
 
     pipeline = ff.PickleFeature(
             zounds.PreprocessingPipeline,
-            needs=(log, unit_norm, kmeans),
+            needs=(log, multiply, unit_norm, kmeans),
             store=True)
 
 
