@@ -9,6 +9,22 @@ from zounds.timeseries import Seconds
 
 class TimeFrequencyRepresentationTests(unittest2.TestCase):
 
+    def test_from_example(self):
+        frequency = Seconds(1)
+        duration = Seconds(1)
+        scale = LinearScale(FrequencyBand(20, 22050), 100)
+        tf = TimeFrequencyRepresentation(
+                np.ones((30, 100)),
+                frequency=frequency,
+                duration=duration,
+                scale=scale)
+        from_example = TimeFrequencyRepresentation.from_example(
+                np.ones((30, 100)), tf)
+        self.assertEqual(tf.shape, from_example.shape)
+        self.assertEqual(tf.frequency, from_example.frequency)
+        self.assertEqual(tf.duration, from_example.duration)
+        self.assertEqual(tf.scale, from_example.scale)
+
     def test_can_multiply_by_frequency_weighting_linear_scale(self):
         frequency = Seconds(1)
         duration = Seconds(1)

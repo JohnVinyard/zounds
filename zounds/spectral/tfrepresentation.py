@@ -12,7 +12,7 @@ class TimeFrequencyRepresentation(ConstantRateTimeSeries):
     subsequent axes contain multidimensional data about time-frequency positions
     """
 
-    def __new__(cls, arr, frequency, duration=None, scale=None):
+    def __new__(cls, arr, frequency=None, duration=None, scale=None):
         if len(arr.shape) < 2:
             raise ValueError('arr must be at least 2D')
 
@@ -22,6 +22,18 @@ class TimeFrequencyRepresentation(ConstantRateTimeSeries):
         obj = ConstantRateTimeSeries.__new__(cls, arr, frequency, duration)
         obj.scale = scale
         return obj
+
+    def kwargs(self, **kwargs):
+        return super(TimeFrequencyRepresentation, self).kwargs(
+                scale=self.scale, **kwargs)
+
+    @classmethod
+    def from_example(cls, arr, example):
+        return cls(
+                arr,
+                frequency=example.frequency,
+                duration=example.duration,
+                scale=example.scale)
 
     def __array_finalize__(self, obj):
         super(TimeFrequencyRepresentation, self).__array_finalize__(obj)

@@ -199,7 +199,7 @@ class ConstantRateTimeSeries(np.ndarray):
     frequency.
     """
 
-    def __new__(cls, input_array, frequency, duration=None):
+    def __new__(cls, input_array, frequency=None, duration=None):
         if not isinstance(frequency, np.timedelta64):
             raise ValueError('duration must be of type {t} but was {t2}'.format(
                     t=np.timedelta64, t2=frequency.__class__))
@@ -212,6 +212,9 @@ class ConstantRateTimeSeries(np.ndarray):
         obj.frequency = frequency
         obj.duration = duration or frequency
         return obj
+
+    def kwargs(self, **kwargs):
+        return dict(frequency=self.frequency, duration=self.duration, **kwargs)
 
     def __array_finalize__(self, obj):
         if obj is None:

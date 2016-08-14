@@ -285,25 +285,44 @@ class Pipeline(object):
         self.version = hashlib.md5(
                 ''.join([p.op.version for p in self.processors])).hexdigest()
 
+    def wrap_data(self, data):
+        cls = data.__class__
+        try:
+            kwargs = data.kwargs()
+        except AttributeError:
+            kwargs = None
+        return cls, kwargs
+
     def transform(self, data):
         inversion_data = []
+        wrap_data = []
         for p in self.processors:
             inversion_data.append(p.inversion_data(data))
+            wrap_data.append(self.wrap_data(data))
             data = p.op(data)
-        return PipelineResult(data, self.processors, inversion_data)
+        return PipelineResult(data, self.processors, inversion_data, wrap_data)
 
 
 class PipelineResult(object):
-    def __init__(self, data, processors, inversion_data):
+    def __init__(self, data, processors, inversion_data, wrap_data):
         super(PipelineResult, self).__init__()
         self.processors = processors[::-1]
         self.inversion_data = inversion_data[::-1]
+        self.wrap_data = wrap_data[::-1]
         self.data = data
+
+    def unwrap(self, data, wrap_data):
+        cls, kwargs = wrap_data
+        if kwargs is None:
+            return data
+        return cls(data, **kwargs)
 
     def inverse_transform(self):
         data = self.data
-        for inv_data, p in zip(self.inversion_data, self.processors):
+        for inv_data, wrap_data, p in \
+                zip(self.inversion_data, self.wrap_data,  self.processors):
             data = p.inverse(data, **inv_data)
+            data = self.unwrap(data, wrap_data)
         return data
 
 

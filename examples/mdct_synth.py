@@ -8,11 +8,14 @@ BaseDocument = zounds.stft(resample_to=samplerate)
 
 @zounds.simple_lmdb_settings('mdct_synth', map_size=1e10)
 class Document(BaseDocument):
+
+    # compute the MDCT over a sliding window of time-domain samples
     mdct = zounds.TimeFrequencyRepresentationFeature(
             zounds.MDCT,
             needs=BaseDocument.windowed,
             store=True)
 
+    # compute bark bands, for display purposes
     bark = zounds.ConstantRateTimeSeriesFeature(
             zounds.BarkBands,
             needs=BaseDocument.fft,

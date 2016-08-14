@@ -15,6 +15,44 @@ class FrequencyBandTests(unittest2.TestCase):
         self.assertNotEqual(fb, 10)
 
 
+class FrequencyScaleTests(unittest2.TestCase):
+    def test_equals(self):
+        fb1 = FrequencyBand(20, 20000)
+        scale1 = LinearScale(fb1, 100)
+
+        fb2 = FrequencyBand(20, 20000)
+        scale2 = LinearScale(fb2, 100)
+
+        self.assertEqual(scale1, scale2)
+
+    def test_not_equal_when_scale_differs(self):
+        fb1 = FrequencyBand(20, 20000)
+        scale1 = LinearScale(fb1, 100)
+
+        fb2 = FrequencyBand(20, 20000)
+        scale2 = LogScale(fb2, 100)
+
+        self.assertNotEqual(scale1, scale2)
+
+    def test_not_equal_when_span_differs(self):
+        fb1 = FrequencyBand(20, 20000)
+        scale1 = LinearScale(fb1, 100)
+
+        fb2 = FrequencyBand(20, 10000)
+        scale2 = LinearScale(fb2, 100)
+
+        self.assertNotEqual(scale1, scale2)
+
+    def test_not_equal_when_bands_differ(self):
+        fb1 = FrequencyBand(20, 20000)
+        scale1 = LinearScale(fb1, 100)
+
+        fb2 = FrequencyBand(20, 20000)
+        scale2 = LinearScale(fb2, 50)
+
+        self.assertNotEqual(scale1, scale2)
+
+
 class LinearScaleTests(unittest2.TestCase):
     def test_matches_fftfreq(self):
         samplerate = SR44100()

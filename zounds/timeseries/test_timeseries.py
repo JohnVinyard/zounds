@@ -26,6 +26,7 @@ class ConvenienceClassTests(unittest2.TestCase):
 
 
 class TimeSliceTests(unittest2.TestCase):
+
     def test_raises_if_duration_is_not_timedelta_instance(self):
         self.assertRaises(ValueError, lambda: TimeSlice(1))
 
@@ -116,6 +117,17 @@ class TimeSliceTests(unittest2.TestCase):
 
 
 class TimeSeriesTests(unittest2.TestCase):
+
+    def test_from_example(self):
+        arr = np.arange(10)
+        freq = Seconds(1)
+        duration = Seconds(2)
+        ts = ConstantRateTimeSeries(arr, freq, duration)
+        from_example = ConstantRateTimeSeries.from_example(np.arange(10), ts)
+        self.assertEqual(ts.shape, from_example.shape)
+        self.assertEqual(ts.frequency, from_example.frequency)
+        self.assertEqual(ts.duration, from_example.duration)
+
     def test_raises_if_frequency_is_not_timedelta_instance(self):
         arr = np.arange(10)
         self.assertRaises(ValueError, lambda: ConstantRateTimeSeries(arr, 1))

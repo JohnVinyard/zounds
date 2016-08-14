@@ -108,6 +108,12 @@ class FrequencyScale(object):
         stop_index = bisect.bisect_left(starts, frequency_band.stop_hz)
         return slice(start_index, stop_index)
 
+    def __eq__(self, other):
+        return \
+            self.__class__ == other.__class__ \
+            and self.frequency_band == other.frequency_band \
+            and self.n_bands == other.n_bands
+
     def __iter__(self):
         raise NotImplementedError()
 
