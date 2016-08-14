@@ -22,6 +22,7 @@ setup(
         url='https://github.com/JohnVinyard/zounds',
         author='John Vinyard',
         author_email='john.vinyard@gmail.com',
+        description='Zounds is a dataflow library for building directed acyclic graphs that transform audio',
         long_description=long_description,
         download_url=download_url,
         packages=[
