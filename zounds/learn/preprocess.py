@@ -54,6 +54,11 @@ class PreprocessResult(object):
         self.data = data
         self.op = op
 
+    def __getattr__(self, key):
+        if key == 'op':
+            raise AttributeError()
+        return getattr(self.op, key)
+
     def for_storage(self):
         return PreprocessResult(
                 None,
@@ -284,6 +289,9 @@ class Pipeline(object):
         self.processors = list(preprocess_results)
         self.version = hashlib.md5(
                 ''.join([p.op.version for p in self.processors])).hexdigest()
+
+    def __getitem__(self, index):
+        return self.processors[index]
 
     def wrap_data(self, data):
         cls = data.__class__

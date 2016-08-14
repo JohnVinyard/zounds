@@ -65,3 +65,12 @@ class UnitNormTests(unittest2.TestCase):
         self.assertEqual(Seconds(1), inverted.frequency)
         self.assertEqual(Seconds(2), inverted.duration)
         self.assertEqual(scale, inverted.scale)
+
+    def test_can_easily_get_at_codebook(self):
+        # KLUDGE: This doesn't belong here, but putting it here is convenient
+        # right now
+        training = np.random.random_sample((100, 30))
+        Model = self.get_model()
+        _id = Model.process(unitnorm=training)
+        model = Model(_id)
+        self.assertIsInstance(model.pipeline[-1].codebook, np.ndarray)
