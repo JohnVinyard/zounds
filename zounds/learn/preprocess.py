@@ -201,7 +201,7 @@ class Slicer(Preprocessor):
 
     def _forward_func(self):
         def x(d, slicex=None):
-            return d[:, slicex]
+            return d[..., slicex]
 
         return x
 
@@ -215,7 +215,7 @@ class Slicer(Preprocessor):
         def z(d, shape=None, fill_func=None, slicex=None):
             new_shape = d.shape[:1] + shape[1:]
             new_arr = fill_func(new_shape)
-            new_arr[:, slicex] = d
+            new_arr[..., slicex] = d
             return new_arr
 
         return z
