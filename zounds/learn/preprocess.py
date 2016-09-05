@@ -161,7 +161,6 @@ class Log(Preprocessor):
         super(Log, self).__init__(needs=needs)
 
     def _forward_func(self):
-
         def x(d):
             import numpy as np
             pos = np.abs(d)
@@ -171,7 +170,6 @@ class Log(Preprocessor):
         return x
 
     def _inversion_data(self):
-
         def x(d):
             import numpy as np
             return dict(sign=np.sign(d))
@@ -179,7 +177,6 @@ class Log(Preprocessor):
         return x
 
     def _backward_func(self):
-
         def x(d, sign=None):
             import numpy as np
             return np.exp(d) * sign
@@ -194,6 +191,44 @@ class Log(Preprocessor):
         data = op(data)
         yield PreprocessResult(
                 data, op, inversion_data=inv_data, inverse=inv, name='Log')
+
+
+class Slicer(Preprocessor):
+    def __init__(self, slicex=None, needs=None):
+        super(Slicer, self).__init__(needs=needs)
+        self.fill_func = np.zeros
+        self.slicex = slicex
+
+    def _forward_func(self):
+        def x(d, slicex=None):
+            return d[:, slicex]
+
+        return x
+
+    def _inversion_data(self):
+        def y(d, slicex=None, fill_func=None):
+            return dict(shape=d.shape, slicex=slicex, fill_func=fill_func)
+
+        return y
+
+    def _backward_func(self):
+        def z(d, shape=None, fill_func=None, slicex=None):
+            new_shape = d.shape[:1] + shape[1:]
+            new_arr = fill_func(new_shape)
+            new_arr[:, slicex] = d
+            return new_arr
+
+        return z
+
+    def _process(self, data):
+        data = self._extract_data(data)
+        op = self.transform(slicex=self.slicex)
+        inv_data = self.inversion_data(
+                fill_func=self.fill_func, slicex=self.slicex)
+        inv = self.inverse_transform()
+        data = op(data)
+        yield PreprocessResult(
+            data, op, inversion_data=inv_data, inverse=inv, name='Slicer')
 
 
 class MeanStdNormalization(Preprocessor):
@@ -251,7 +286,7 @@ class Multiply(Preprocessor):
         inv = self.inverse_transform()
         data = op(data)
         yield PreprocessResult(
-            data, op, inversion_data=inv_data, inverse=inv, name='Multiply')
+                data, op, inversion_data=inv_data, inverse=inv, name='Multiply')
 
 
 class Binarize(Preprocessor):
@@ -328,7 +363,7 @@ class PipelineResult(object):
     def inverse_transform(self):
         data = self.data
         for inv_data, wrap_data, p in \
-                zip(self.inversion_data, self.wrap_data,  self.processors):
+                zip(self.inversion_data, self.wrap_data, self.processors):
             data = p.inverse(data, **inv_data)
             data = self.unwrap(data, wrap_data)
         return data
