@@ -1,4 +1,4 @@
-__version__ = '0.19.9'
+__version__ = '0.20.9'
 
 from timeseries import \
     Hours, Minutes, Seconds, Milliseconds, Microseconds, Picoseconds, \
@@ -35,7 +35,7 @@ from synthesize import \
 from learn import \
     KMeans, BinaryRbm, LinearRbm, Learned, \
     MeanStdNormalization, UnitNorm, Log, Multiply, PreprocessingPipeline, \
-    ReservoirSampler, TemplateMatch, simple_settings
+    Slicer, Flatten, ReservoirSampler, TemplateMatch, simple_settings
 
 from ui import ZoundsApp, ZoundsSearch, RangeUnitUnsupportedException
 

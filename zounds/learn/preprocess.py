@@ -231,6 +231,38 @@ class Slicer(Preprocessor):
             data, op, inversion_data=inv_data, inverse=inv, name='Slicer')
 
 
+class Flatten(Preprocessor):
+    def __init__(self, needs=None):
+        super(Flatten, self).__init__(needs=needs)
+
+    def _forward_func(self):
+        def x(d):
+            return d.reshape((d.shape[0], -1))
+
+        return x
+
+    def _inversion_data(self):
+        def x(d):
+            return dict(shape=d.shape)
+
+        return x
+
+    def _backward_func(self):
+        def x(d, shape=None):
+            return d.reshape(shape)
+
+        return x
+
+    def _process(self, data):
+        data = self._extract_data(data)
+        op = self.transform()
+        inv_data = self.inversion_data()
+        inv = self.inverse_transform()
+        data = op(data)
+        yield PreprocessResult(
+                data, op, inversion_data=inv_data, inverse=inv, name='Flatten')
+
+
 class MeanStdNormalization(Preprocessor):
     def __init__(self, needs=None):
         super(MeanStdNormalization, self).__init__(needs=needs)
