@@ -317,6 +317,7 @@ def sliding_window(a, ws, ss=None, flatten=True):
     # the array's strides (tuple addition)
     newstrides = norm_shape(np.array(a.strides) * ss) + a.strides
 
+
     strided = ast(a, shape=newshape, strides=newstrides)
     if not flatten:
         return strided
