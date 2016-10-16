@@ -16,6 +16,19 @@ class FrequencyBandTests(unittest2.TestCase):
 
 
 class FrequencyScaleTests(unittest2.TestCase):
+    def test_can_get_single_band(self):
+        fb1 = FrequencyBand(20, 20000)
+        scale1 = LinearScale(fb1, 100)
+        fb2 = scale1[10]
+        self.assertIsInstance(fb2, FrequencyBand)
+
+    def test_can_get_sub_scale(self):
+        fb1 = FrequencyBand(20, 20000)
+        scale1 = LinearScale(fb1, 100)
+        scale2 = scale1[10:20]
+        self.assertIsInstance(scale2, LinearScale)
+        self.assertEqual(10, scale2.n_bands)
+
     def test_equals(self):
         fb1 = FrequencyBand(20, 20000)
         scale1 = LinearScale(fb1, 100)

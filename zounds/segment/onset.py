@@ -40,6 +40,7 @@ class MeasureOfTransience(Node):
 
     def _dequeue(self):
         data = self._cache
+        print 'CACHE', self._cache.shape
         self._cache = self._cache[None, -1]
         return data
 

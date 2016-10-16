@@ -12,6 +12,6 @@ from samplerate import \
 from timeseries import \
     TimeSlice, ConstantRateTimeSeriesEncoder, ConstantRateTimeSeriesFeature, \
     GreedyConstantRateTimeSeriesDecoder, PackedConstantRateTimeSeriesEncoder, \
-    ConstantRateTimeSeries, ConstantRateTimeSeriesMetadata
+    ConstantRateTimeSeries, ConstantRateTimeSeriesMetadata, TimeDimension
 
 from variablerate import VariableRateTimeSeries, VariableRateTimeSeriesFeature

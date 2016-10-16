@@ -2,6 +2,8 @@ from __future__ import division
 import unittest2
 import featureflow as ff
 import numpy as np
+
+from zounds.util import simple_in_memory_settings
 from zounds.basic import stft
 from zounds.timeseries import \
     ConstantRateTimeSeriesFeature, HalfLapped, Stride, SR44100, Seconds
@@ -85,12 +87,9 @@ class OnsetTests(unittest2.TestCase):
         self.do_assertions(WithOnsets, lambda x: x.complex_domain)
 
     def test_percussive_onset_positions(self):
-        class Settings(ff.PersistenceSettings):
-            id_provider = ff.UuidProvider()
-            key_builder = ff.StringDelimitedKeyBuilder()
-            database = ff.InMemoryDatabase(key_builder=key_builder)
 
-        class WithOnsets(self.STFT, Settings):
+        @simple_in_memory_settings
+        class WithOnsets(self.STFT):
             transience = ConstantRateTimeSeriesFeature(
                     MeasureOfTransience,
                     needs=self.STFT.fft,

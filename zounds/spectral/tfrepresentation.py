@@ -1,8 +1,28 @@
 import numpy as np
 import featureflow as ff
 from zounds.timeseries import \
-    ConstantRateTimeSeries, ConstantRateTimeSeriesMetadata
+    ConstantRateTimeSeries, ConstantRateTimeSeriesMetadata, TimeDimension
+from zounds.core import Dimension, IdentityDimension
 import frequencyscale
+
+
+class FrequencyDimension(Dimension):
+    def __init__(self, scale):
+        super(FrequencyDimension, self).__init__()
+        self.scale = scale
+
+    def modified_dimension(self, size, windowsize):
+        raise NotImplementedError()
+
+    def metaslice(self, index, size):
+        print 'OK', index, size
+        return FrequencyDimension(self.scale[index])
+
+    def integer_based_slice(self, index):
+        if not isinstance(index, frequencyscale.FrequencyBand):
+            return index
+
+        return self.scale.get_slice(index)
 
 
 class TimeFrequencyRepresentation(ConstantRateTimeSeries):
@@ -14,13 +34,30 @@ class TimeFrequencyRepresentation(ConstantRateTimeSeries):
 
     def __new__(cls, arr, frequency=None, duration=None, scale=None):
         if len(arr.shape) < 2:
-            raise ValueError('arr must be at least 2D')
+             raise ValueError('arr must be at least 2D')
+
+        if isinstance(frequency, tuple):
+            print frequency, arr.shape
+            # KLUDGE: This check is necessary for an initial, incremental
+            # refactoring, and should be removed once there are some nice,
+            # ArrayWithUnits-derived classes that just work
+            scale = frequency[1].scale
 
         if len(scale) != arr.shape[1]:
+            print 'DEBUG', scale, scale.n_bands, arr.shape
             raise ValueError('scale must have same size as dimension 2')
 
-        obj = ConstantRateTimeSeries.__new__(cls, arr, frequency, duration)
-        obj.scale = scale
+        if isinstance(frequency, tuple):
+            # KLUDGE: This check is necessary for an initial, incremental
+            # refactoring, and should be removed once there are some nice,
+            # ArrayWithUnits-derived classes that just work
+            dims = frequency
+        else:
+            dims = (TimeDimension(frequency, duration, len(arr)),
+                    FrequencyDimension(scale))
+            dims = dims + \
+                tuple(map(lambda x: IdentityDimension(), arr.shape[2:]))
+        obj = ConstantRateTimeSeries.__new__(cls, arr, dims)
         return obj
 
     def kwargs(self, **kwargs):
@@ -35,24 +72,28 @@ class TimeFrequencyRepresentation(ConstantRateTimeSeries):
                 duration=example.duration,
                 scale=example.scale)
 
-    def __array_finalize__(self, obj):
-        super(TimeFrequencyRepresentation, self).__array_finalize__(obj)
-        if obj is None:
-            return
-        self.scale = getattr(obj, 'scale', None)
+    @property
+    def scale(self):
+        return self.dimensions[1].scale
 
-    def _freq_band_to_integer_indices(self, index):
-        if not isinstance(index, frequencyscale.FrequencyBand):
-            return index
-
-        return self.scale.get_slice(index)
-
-    def __getitem__(self, index):
-        try:
-            slices = map(self._freq_band_to_integer_indices, index)
-        except TypeError:
-            slices = self._freq_band_to_integer_indices(index)
-        return super(TimeFrequencyRepresentation, self).__getitem__(slices)
+    # def __array_finalize__(self, obj):
+    #     super(TimeFrequencyRepresentation, self).__array_finalize__(obj)
+    #     if obj is None:
+    #         return
+    #     self.scale = getattr(obj, 'scale', None)
+    #
+    # def _freq_band_to_integer_indices(self, index):
+    #     if not isinstance(index, frequencyscale.FrequencyBand):
+    #         return index
+    #
+    #     return self.scale.get_slice(index)
+    #
+    # def __getitem__(self, index):
+    #     try:
+    #         slices = map(self._freq_band_to_integer_indices, index)
+    #     except TypeError:
+    #         slices = self._freq_band_to_integer_indices(index)
+    #     return super(TimeFrequencyRepresentation, self).__getitem__(slices)
 
 
 class TimeFrequencyRepresentationMetaData(ConstantRateTimeSeriesMetadata):
@@ -110,7 +151,7 @@ class TimeFrequencyRepresentationEncoder(ff.NumpyEncoder):
         return data
 
     def _prepare_metadata(self, data):
-        return TimeFrequencyRepresentationMetaData\
+        return TimeFrequencyRepresentationMetaData \
             .from_time_frequency_representation(data)
 
 
@@ -123,7 +164,7 @@ class TimeFrequencyRepresentationDecoder(ff.BaseNumpyDecoder):
 
     def _wrap_array(self, raw, metadata):
         return TimeFrequencyRepresentation(
-            raw, metadata.frequency, metadata.duration, metadata.scale)
+                raw, metadata.frequency, metadata.duration, metadata.scale)
 
 
 class TimeFrequencyRepresentationFeature(ff.Feature):
@@ -137,10 +178,10 @@ class TimeFrequencyRepresentationFeature(ff.Feature):
             decoder=TimeFrequencyRepresentationDecoder(),
             **extractor_args):
         super(TimeFrequencyRepresentationFeature, self).__init__(
-            extractor,
-            needs=needs,
-            store=store,
-            encoder=encoder,
-            decoder=decoder,
-            key=key,
-            **extractor_args)
+                extractor,
+                needs=needs,
+                store=store,
+                encoder=encoder,
+                decoder=decoder,
+                key=key,
+                **extractor_args)

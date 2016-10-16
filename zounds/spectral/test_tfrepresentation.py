@@ -72,6 +72,10 @@ class TimeFrequencyRepresentationTests(unittest2.TestCase):
         self.assertIsInstance(result, TimeFrequencyRepresentation)
         np.testing.assert_allclose(tf, result)
 
+    @unittest2.skip('''
+        This case is no longer valid, and should be deleted once ArrayWithUnits
+        is used universally.  str() actually does tf[0], just like the case
+        below''')
     def test_can_convert_to_string(self):
         frequency = Seconds(1)
         duration = Seconds(1)
@@ -84,6 +88,9 @@ class TimeFrequencyRepresentationTests(unittest2.TestCase):
         s = str(tf)
         self.assertTrue(len(s))
 
+    @unittest2.skip('''
+        This case is no longer valid, and should be deleted once ArrayWithUnits
+        is used universally''')
     def test_can_use_single_integer_index(self):
         frequency = Seconds(1)
         duration = Seconds(1)
@@ -182,3 +189,20 @@ class TimeFrequencyRepresentationTests(unittest2.TestCase):
         sliced = tf[:, wide_band]
         self.assertEqual((30, 10), sliced.shape)
         self.assertIsInstance(sliced, TimeFrequencyRepresentation)
+
+    def test_scale_is_modified_after_slice(self):
+        frequency = Seconds(1)
+        duration = Seconds(1)
+        scale = LinearScale(FrequencyBand(20, 22050), 100)
+        tf = TimeFrequencyRepresentation(
+                np.zeros((30, 100)),
+                frequency=frequency,
+                duration=duration,
+                scale=scale)
+        bands = list(scale)
+        wide_band = FrequencyBand(bands[0].start_hz, bands[9].stop_hz)
+        sliced = tf[:, wide_band]
+        self.assertEqual((30, 10), sliced.shape)
+        self.assertIsInstance(sliced, TimeFrequencyRepresentation)
+        self.assertLess(sliced.scale.stop_hz, scale.stop_hz)
+        self.assertEqual(10, sliced.scale.n_bands)
