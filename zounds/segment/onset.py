@@ -36,12 +36,15 @@ class MeasureOfTransience(Node):
         if self._cache is None:
             self._cache = data
         else:
+            print self._cache.__class__, data.__class__, self._cache.dimensions
             self._cache = self._cache.concatenate(data)
+            print self._cache.__class__, self._cache.dimensions
 
     def _dequeue(self):
         data = self._cache
-        print 'CACHE', self._cache.shape
+        print 'CACHE', self._cache.shape, self._cache.dimensions
         self._cache = self._cache[None, -1]
+        print 'CACHE', self._cache.shape, self._cache.dimensions
         return data
 
     def _process(self, data):

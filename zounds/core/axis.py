@@ -41,7 +41,6 @@ class CustomSlice(object):
 
 
 class ArrayWithUnits(np.ndarray):
-
     def __new__(cls, arr, dimensions):
         if arr.ndim != len(dimensions):
             raise ValueError('arr.ndim and len(dimensions) must match')
@@ -50,18 +49,30 @@ class ArrayWithUnits(np.ndarray):
                 lambda x: IdentityDimension() if x is None else x, dimensions))
         return obj
 
+    def sum(self, axis=None, dtype=None, **kwargs):
+        result = super(ArrayWithUnits, self).sum(axis, dtype, **kwargs)
+        if axis is not None:
+            new_dims = list(self.dimensions)
+            new_dims.pop(axis)
+            return self.__class__(result, new_dims)
+        else:
+            # we have a scalar
+            return result
+
+    def dot(self, b):
+        result = super(ArrayWithUnits, self).dot(b)
+        return self.__class__(result, self.dimensions[:result.ndim])
+
     def __array_finalize__(self, obj):
         if obj is None:
             return
         self.dimensions = getattr(obj, 'dimensions', None)
 
-    # def __array_prepare__(self, obj, context=None):
-    #     print 'prepare', self, obj, context
-    #     return np.ndarray.__array_prepare__(self, obj, context)
-    #
-    # def __array_wrap__(self, obj, context=None):
-    #     print 'wrap', self, obj, context
-    #     return np.ndarray.__array_wrap__(self, obj, context)
+    def __array_wrap__(self, obj, context=None):
+        if len(obj.dimensions) != obj.ndim:
+            print 'DOWNGRADE'
+            return np.asarray(self)
+        return np.ndarray.__array_wrap__(self, obj, context)
 
     def sliding_window(self, windowsize, stepsize=None):
         ws = tuple(self._compute_span(windowsize))
@@ -158,7 +169,6 @@ class ArrayWithUnits(np.ndarray):
             return a,
 
     def __getslice__(self, i, j):
-        print 'GET SLICE', i, j
         return self.__getitem__(slice(i, j))
 
     def __setitem__(self, index, value):

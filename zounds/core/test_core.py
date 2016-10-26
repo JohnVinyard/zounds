@@ -131,6 +131,21 @@ class CoreTests(unittest2.TestCase):
         self.assertIsInstance(result.dimensions[1], ContrivedDimension)
         self.assertIsInstance(result.dimensions[2], ContrivedDimension)
 
+    def test_can_multiply(self):
+        raw = np.ones((8, 9))
+        arr = ContrivedArray(
+                raw, (ContrivedDimension(10), ContrivedDimension2(10)))
+        result = arr * 10
+        np.testing.assert_allclose(result, 10)
+
+    def test_get_single_scalar_from_sum_with_no_axis(self):
+        raw = np.zeros((8, 9))
+        arr = ContrivedArray(
+                raw, (ContrivedDimension(10), ContrivedDimension2(10)))
+        result = arr.sum()
+        self.assertIsInstance(result, float)
+        self.assertEqual(0, result)
+
     def test_array_maintains_correct_dimension_after_reduction(self):
         raw = np.zeros((8, 9))
         arr = ContrivedArray(
@@ -151,6 +166,16 @@ class CoreTests(unittest2.TestCase):
         self.assertEqual(1, len(result.dimensions))
         self.assertIsInstance(result.dimensions[0], ContrivedDimension2)
 
+    def test_array_maintains_correct_dimension_after_reduction3(self):
+        raw = np.zeros((8, 9))
+        arr = ContrivedArray(
+                raw, (ContrivedDimension(10), ContrivedDimension2(10)))
+        result = np.sum(arr, axis=0)
+        self.assertEqual((9,), result.shape)
+        self.assertIsInstance(result, ArrayWithUnits)
+        self.assertEqual(1, len(result.dimensions))
+        self.assertIsInstance(result.dimensions[0], ContrivedDimension2)
+
     def test_array_cannot_maintain_correct_dimension(self):
         raw = np.zeros((10, 10))
         arr = ContrivedArray(
@@ -166,6 +191,17 @@ class CoreTests(unittest2.TestCase):
         arr = ContrivedArray(
                 raw, (ContrivedDimension(10), ContrivedDimension2(10)))
         result = arr.dot(np.zeros(9))
+        self.assertEqual((8,), result.shape)
+        self.assertIsInstance(result, ArrayWithUnits)
+        self.assertEqual(1, len(result.dimensions))
+        self.assertIsInstance(result.dimensions[0], ContrivedDimension)
+
+    @unittest2.skip('this test fails because there is no hook to intercept this call')
+    def test_array_maintains_correct_dimensions_after_dot2(self):
+        raw = np.zeros((8, 9))
+        arr = ContrivedArray(
+                raw, (ContrivedDimension(10), ContrivedDimension2(10)))
+        result = np.dot(arr, np.zeros(9))
         self.assertEqual((8,), result.shape)
         self.assertIsInstance(result, ArrayWithUnits)
         self.assertEqual(1, len(result.dimensions))

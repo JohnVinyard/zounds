@@ -10,7 +10,18 @@ from io import BytesIO
 
 class AudioSamples(ConstantRateTimeSeries):
     def __new__(cls, array, samplerate):
+
+        if isinstance(samplerate, list):
+            # KLUDGE: This is here to support an incremental refactoring.
+            # Eventually, this class will go away entirely
+            time_dim = samplerate[0]
+            samples_per_second = int(Seconds(1) / time_dim.frequency)
+            sr = audio_sample_rate(samples_per_second)
+            return ConstantRateTimeSeries.__new__(
+                    cls, array, sr.frequency, sr.duration)
+
         if not isinstance(samplerate, AudioSampleRate):
+            print samplerate
             raise TypeError('samplerate should be an AudioSampleRate instance')
         return ConstantRateTimeSeries.__new__(
                 cls, array, samplerate.frequency, samplerate.duration)
@@ -33,7 +44,9 @@ class AudioSamples(ConstantRateTimeSeries):
     def mono(self):
         if self.channels == 1:
             return self
-        return AudioSamples(self.sum(axis=1) * 0.5, self.samplerate)
+        x = self.sum(axis=1) * 0.5
+        y = x * 0.5
+        return AudioSamples(y, self.samplerate)
 
     def encode(self, flo=None, fmt='WAV', subtype='PCM_16'):
         flo = flo or BytesIO()

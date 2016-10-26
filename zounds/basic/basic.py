@@ -96,7 +96,8 @@ class Sum(Node):
     def _process(self, data):
         # TODO: This should be generalized.  Sum will have this same problem
         try:
-            data = np.sum(data, axis=self._axis)
+            # data = np.sum(data, axis=self._axis)
+            data = np.sum(axis=self._axis)
         except ValueError:
             print 'ERROR'
             data = data
@@ -112,7 +113,8 @@ class Max(Node):
     def _process(self, data):
         # TODO: This should be generalized.  Sum will have this same problem
         try:
-            data = np.max(data, axis=self._axis)
+            # data = np.max(data, axis=self._axis)
+            data = data.sum(axis=self._axis)
         except ValueError:
             print 'ERROR'
             data = data

@@ -255,8 +255,9 @@ class ConstantRateTimeSeries(ArrayWithUnits):
         # obj = np.asarray(input_array).view(cls)
         # obj.frequency = frequency
         # obj.duration = duration or frequency
-        print 'CRTS', input_array.shape, frequency, duration
-        if isinstance(frequency, tuple):
+        # print 'CRTS', input_array.shape, frequency, duration
+
+        if isinstance(frequency, tuple) or isinstance(frequency, list):
             # KLUDGE: This check is necessary for an initial, incremental
             # refactoring, and should be removed once there are some nice,
             # ArrayWithUnits-derived classes that just work

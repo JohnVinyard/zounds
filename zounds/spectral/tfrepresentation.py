@@ -34,7 +34,7 @@ class TimeFrequencyRepresentation(ConstantRateTimeSeries):
 
     def __new__(cls, arr, frequency=None, duration=None, scale=None):
         if len(arr.shape) < 2:
-             raise ValueError('arr must be at least 2D')
+            raise ValueError('arr must be at least 2D')
 
         if isinstance(frequency, tuple):
             print frequency, arr.shape
@@ -56,7 +56,7 @@ class TimeFrequencyRepresentation(ConstantRateTimeSeries):
             dims = (TimeDimension(frequency, duration, len(arr)),
                     FrequencyDimension(scale))
             dims = dims + \
-                tuple(map(lambda x: IdentityDimension(), arr.shape[2:]))
+                   tuple(map(lambda x: IdentityDimension(), arr.shape[2:]))
         obj = ConstantRateTimeSeries.__new__(cls, arr, dims)
         return obj
 
@@ -76,24 +76,24 @@ class TimeFrequencyRepresentation(ConstantRateTimeSeries):
     def scale(self):
         return self.dimensions[1].scale
 
-    # def __array_finalize__(self, obj):
-    #     super(TimeFrequencyRepresentation, self).__array_finalize__(obj)
-    #     if obj is None:
-    #         return
-    #     self.scale = getattr(obj, 'scale', None)
-    #
-    # def _freq_band_to_integer_indices(self, index):
-    #     if not isinstance(index, frequencyscale.FrequencyBand):
-    #         return index
-    #
-    #     return self.scale.get_slice(index)
-    #
-    # def __getitem__(self, index):
-    #     try:
-    #         slices = map(self._freq_band_to_integer_indices, index)
-    #     except TypeError:
-    #         slices = self._freq_band_to_integer_indices(index)
-    #     return super(TimeFrequencyRepresentation, self).__getitem__(slices)
+        # def __array_finalize__(self, obj):
+        #     super(TimeFrequencyRepresentation, self).__array_finalize__(obj)
+        #     if obj is None:
+        #         return
+        #     self.scale = getattr(obj, 'scale', None)
+        #
+        # def _freq_band_to_integer_indices(self, index):
+        #     if not isinstance(index, frequencyscale.FrequencyBand):
+        #         return index
+        #
+        #     return self.scale.get_slice(index)
+        #
+        # def __getitem__(self, index):
+        #     try:
+        #         slices = map(self._freq_band_to_integer_indices, index)
+        #     except TypeError:
+        #         slices = self._freq_band_to_integer_indices(index)
+        #     return super(TimeFrequencyRepresentation, self).__getitem__(slices)
 
 
 class TimeFrequencyRepresentationMetaData(ConstantRateTimeSeriesMetadata):
