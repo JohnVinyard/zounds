@@ -160,7 +160,14 @@ class ArrayWithUnits(np.ndarray):
 
     def _tuplify(self, a):
         if isinstance(a, list):
-            return a,
+            t = set(map(lambda x: x.__class__, a))
+            if len(t) > 1:
+                raise ValueError('a must be homogeneous')
+            t = list(t)[0]
+            if t == slice:
+                return a
+            else:
+                return a,
         if isinstance(a, np.ndarray) and a.dtype == np.bool:
             return a,
         try:
@@ -173,15 +180,10 @@ class ArrayWithUnits(np.ndarray):
 
     def __setitem__(self, index, value):
         index = self._tuplify(index)
-        # print 'SET ITEM WITH INDEX', index
         indices = tuple(self._compute_indices(index))
-        # print 'SET ITEM WITH INDICES', indices
-        # print 'PRESENT SHAPE AND DIMS', self.shape, self.dimensions
         super(ArrayWithUnits, self).__setitem__(indices, value)
-        # print 'RESULTING SHAPE AND DIMS', self.shape, self.dimensions
 
     def __getitem__(self, index):
-
         if isinstance(index, np.ndarray) \
                 and index.dtype == np.bool:
             return np.asarray(self)[index]
@@ -189,14 +191,8 @@ class ArrayWithUnits(np.ndarray):
         if self.ndim == 1 and isinstance(index, int):
             return np.asarray(self)[index]
 
-        # print '============================='
-        # print 'dims', self.dimensions
-        # print 'shape', self.shape
-        # print 'index', index
         index = self._tuplify(index)
-        # print 'tuplified', index
         indices = tuple(self._compute_indices(index))
-        # print 'indices', indices
         arr = super(ArrayWithUnits, self).__getitem__(indices)
         new_dims = tuple(self._new_dims(index, arr))
         return self.__class__(arr, new_dims)
