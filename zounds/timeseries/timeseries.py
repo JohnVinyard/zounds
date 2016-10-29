@@ -265,7 +265,11 @@ class ConstantRateTimeSeries(ArrayWithUnits):
         else:
             dims = (TimeDimension(frequency, duration, len(input_array)),) + \
                 tuple(map(lambda x: IdentityDimension(), input_array.shape[1:]))
-        obj = ArrayWithUnits.__new__(cls, input_array, dims)
+
+        if all(map(lambda x: isinstance(x, IdentityDimension), dims)):
+            obj = ArrayWithUnits.__new__(ArrayWithUnits, input_array, dims)
+        else:
+            obj = ArrayWithUnits.__new__(cls, input_array, dims)
         return obj
 
     @property

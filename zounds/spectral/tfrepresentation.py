@@ -33,6 +33,23 @@ class TimeFrequencyRepresentation(ConstantRateTimeSeries):
     """
 
     def __new__(cls, arr, frequency=None, duration=None, scale=None):
+
+        if isinstance(frequency, tuple) or isinstance(frequency, list):
+            # KLUDGE: This check is necessary for an initial, incremental
+            # refactoring, and should be removed once there are some nice,
+            # ArrayWithUnits-derived classes that just work
+            dims = frequency
+        else:
+            dims = (TimeDimension(frequency, duration, len(arr)),
+                    FrequencyDimension(scale))
+            dims = dims + \
+                   tuple(map(lambda x: IdentityDimension(), arr.shape[2:]))
+
+        if len(dims) == 1 and isinstance(dims[0], TimeDimension):
+            obj = ConstantRateTimeSeries.__new__(
+                    ConstantRateTimeSeries, arr, dims)
+            return obj
+
         if len(arr.shape) < 2:
             raise ValueError('arr must be at least 2D')
 
@@ -46,17 +63,6 @@ class TimeFrequencyRepresentation(ConstantRateTimeSeries):
         if len(scale) != arr.shape[1]:
             print 'DEBUG', scale, scale.n_bands, arr.shape
             raise ValueError('scale must have same size as dimension 2')
-
-        if isinstance(frequency, tuple):
-            # KLUDGE: This check is necessary for an initial, incremental
-            # refactoring, and should be removed once there are some nice,
-            # ArrayWithUnits-derived classes that just work
-            dims = frequency
-        else:
-            dims = (TimeDimension(frequency, duration, len(arr)),
-                    FrequencyDimension(scale))
-            dims = dims + \
-                   tuple(map(lambda x: IdentityDimension(), arr.shape[2:]))
         obj = ConstantRateTimeSeries.__new__(cls, arr, dims)
         return obj
 

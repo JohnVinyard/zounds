@@ -4,10 +4,24 @@ import unittest2
 from tfrepresentation import TimeFrequencyRepresentation
 from frequencyscale import LinearScale, LogScale, FrequencyBand
 from weighting import AWeighting
-from zounds.timeseries import Seconds
+from zounds.timeseries import Seconds, ConstantRateTimeSeries, TimeDimension
 
 
 class TimeFrequencyRepresentationTests(unittest2.TestCase):
+
+    def test_sum_along_frequency_axis(self):
+        frequency = Seconds(1)
+        duration = Seconds(1)
+        scale = LinearScale(FrequencyBand(20, 22050), 100)
+        tf = TimeFrequencyRepresentation(
+                np.ones((30, 100)),
+                frequency=frequency,
+                duration=duration,
+                scale=scale)
+        result = tf.sum(axis=1)
+        self.assertIsInstance(result, ConstantRateTimeSeries)
+        self.assertEqual(1, len(result.dimensions))
+        self.assertIsInstance(result.dimensions[0], TimeDimension)
 
     def test_from_example(self):
         frequency = Seconds(1)

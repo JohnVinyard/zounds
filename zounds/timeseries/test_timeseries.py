@@ -2,7 +2,8 @@ import numpy as np
 import unittest2
 from duration import \
     Picoseconds, Milliseconds, Seconds, Microseconds, Nanoseconds, Hours
-from timeseries import TimeSlice, ConstantRateTimeSeries
+from timeseries import TimeSlice, ConstantRateTimeSeries, TimeDimension
+from zounds.core import IdentityDimension
 
 
 class ConvenienceClassTests(unittest2.TestCase):
@@ -461,3 +462,24 @@ class TimeSeriesTests(unittest2.TestCase):
                 Seconds(2))
         result = ConstantRateTimeSeries.concat([ts, ts2], axis=1)
         self.assertEqual((10, 8), result.shape)
+
+    def test_sum_along_time_axis(self):
+        ts = ConstantRateTimeSeries(
+                np.ones((10, 3)),
+                Seconds(1),
+                Seconds(2))
+        result = ts.sum(axis=0)
+        self.assertIsInstance(result, np.ndarray)
+        self.assertNotIsInstance(result, ConstantRateTimeSeries)
+        self.assertEqual(1, len(result.dimensions))
+        self.assertIsInstance(result.dimensions[0], IdentityDimension)
+
+    def test_sum_along_second_axis(self):
+        ts = ConstantRateTimeSeries(
+                np.ones((10, 3)),
+                Seconds(1),
+                Seconds(2))
+        result = ts.sum(axis=1)
+        self.assertIsInstance(result, ConstantRateTimeSeries)
+        self.assertEqual(1, len(result.dimensions))
+        self.assertIsInstance(result.dimensions[0], TimeDimension)
