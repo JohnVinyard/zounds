@@ -244,18 +244,6 @@ class ConstantRateTimeSeries(ArrayWithUnits):
     """
 
     def __new__(cls, input_array, frequency=None, duration=None):
-        # if not isinstance(frequency, np.timedelta64):
-        #     raise ValueError('duration must be of type {t} but was {t2}'.format(
-        #             t=np.timedelta64, t2=frequency.__class__))
-        #
-        # if duration is not None and not isinstance(duration, np.timedelta64):
-        #     raise ValueError('start must be of type {t} but was {t2}'.format(
-        #             t=np.timedelta64, t2=duration.__class__))
-
-        # obj = np.asarray(input_array).view(cls)
-        # obj.frequency = frequency
-        # obj.duration = duration or frequency
-        # print 'CRTS', input_array.shape, frequency, duration
 
         if isinstance(frequency, tuple) or isinstance(frequency, list):
             # KLUDGE: This check is necessary for an initial, incremental
@@ -282,12 +270,6 @@ class ConstantRateTimeSeries(ArrayWithUnits):
 
     def kwargs(self, **kwargs):
         return dict(frequency=self.frequency, duration=self.duration, **kwargs)
-
-    # def __array_finalize__(self, obj):
-    #     if obj is None:
-    #         return
-    #     self.frequency = getattr(obj, 'frequency', None)
-    #     self.duration = getattr(obj, 'duration', None)
 
     @classmethod
     def from_example(cls, arr, example):
@@ -334,31 +316,3 @@ class ConstantRateTimeSeries(ArrayWithUnits):
     @property
     def end(self):
         return self.dimensions[0].end
-
-    # @property
-    # def span(self):
-    #     overlap = self.duration - self.frequency
-    #     return TimeSlice((len(self) * self.frequency) + overlap)
-    #
-    # @property
-    # def end(self):
-    #     return self.span.end
-
-    # def _ts_to_integer_indices(self, ts):
-    #     if not isinstance(ts, TimeSlice):
-    #         return ts
-    #
-    #     diff = self.duration - self.frequency
-    #     start_index = \
-    #         max(0, np.floor((ts.start - diff) / self.frequency))
-    #     end = self.end if ts.duration is None else ts.end
-    #     stop_index = np.ceil(end / self.frequency)
-    #     return slice(start_index, stop_index)
-    #
-    # def __getitem__(self, index):
-    #     try:
-    #         slices = map(self._ts_to_integer_indices, index)
-    #     except TypeError:
-    #         slices = (self._ts_to_integer_indices(index),)
-    #
-    #     return super(ConstantRateTimeSeries, self).__getitem__(slices)

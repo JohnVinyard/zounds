@@ -6,6 +6,7 @@ import numpy as np
 from duration import Seconds
 from soundfile import SoundFile
 from io import BytesIO
+from zounds.core import IdentityDimension, ArrayWithUnits
 
 
 class AudioSamples(ConstantRateTimeSeries):
@@ -14,15 +15,18 @@ class AudioSamples(ConstantRateTimeSeries):
         if isinstance(samplerate, list):
             # KLUDGE: This is here to support an incremental refactoring.
             # Eventually, this class will go away entirely
-            time_dim = samplerate[0]
-            samples_per_second = int(Seconds(1) / time_dim.frequency)
+            dim = samplerate[0]
+            if isinstance(dim, IdentityDimension):
+                return ArrayWithUnits.__new__(
+                    ArrayWithUnits, array, samplerate)
+            samples_per_second = int(Seconds(1) / dim.frequency)
             sr = audio_sample_rate(samples_per_second)
             return ConstantRateTimeSeries.__new__(
                     cls, array, sr.frequency, sr.duration)
 
         if not isinstance(samplerate, AudioSampleRate):
-            print samplerate
             raise TypeError('samplerate should be an AudioSampleRate instance')
+
         return ConstantRateTimeSeries.__new__(
                 cls, array, samplerate.frequency, samplerate.duration)
 

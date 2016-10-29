@@ -3,7 +3,8 @@ import numpy as np
 from duration import Seconds
 from samplerate import SR44100, SR11025, SampleRate
 from audiosamples import AudioSamples
-
+from zounds.timeseries import TimeDimension
+from zounds.core import IdentityDimension
 
 class AudioSamplesTest(unittest2.TestCase):
     def test_raises_if_not_audio_samplerate(self):
@@ -61,6 +62,25 @@ class AudioSamplesTest(unittest2.TestCase):
         s1 = AudioSamples(np.zeros(44100 * 2), SR44100())
         s2 = AudioSamples(np.zeros(44100), SR11025())
         self.assertRaises(ValueError, lambda: AudioSamples.concat([s1, s2]))
+
+    def test_sum_along_time_axis(self):
+        arr = np.zeros(44100 * 2.5)
+        arr = np.column_stack((arr, arr))
+        ts = AudioSamples(arr, SR44100())
+        result = ts.sum(axis=0)
+        self.assertIsInstance(result, np.ndarray)
+        self.assertNotIsInstance(result, AudioSamples)
+        self.assertEqual(1, len(result.dimensions))
+        self.assertIsInstance(result.dimensions[0], IdentityDimension)
+
+    def test_sum_along_second_axis(self):
+        arr = np.zeros(44100 * 2.5)
+        arr = np.column_stack((arr, arr))
+        ts = AudioSamples(arr, SR44100())
+        result = ts.sum(axis=1)
+        self.assertIsInstance(result, AudioSamples)
+        self.assertEqual(1, len(result.dimensions))
+        self.assertIsInstance(result.dimensions[0], TimeDimension)
 
 
 

@@ -54,7 +54,6 @@ class ArrayWithUnits(np.ndarray):
         if axis is not None:
             new_dims = list(self.dimensions)
             new_dims.pop(axis)
-            print 'FINAL', result.__class__, new_dims
             return self.__class__(result, new_dims)
         else:
             # we have a scalar
@@ -70,12 +69,9 @@ class ArrayWithUnits(np.ndarray):
         self.dimensions = getattr(obj, 'dimensions', None)
 
     def __array_wrap__(self, obj, context=None):
-        print 'WRAP', len(self.dimensions), obj.ndim
         if len(self.dimensions) != obj.ndim:
             if obj.ndim == 0:
                 return obj[0]
-                # return np.ndarray.__array_wrap__(self, obj, context)
-            print 'DOWNGRADE'
             return np.asarray(obj)
         return np.ndarray.__array_wrap__(self, obj, context)
 
