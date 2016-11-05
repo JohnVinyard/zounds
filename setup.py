@@ -36,6 +36,7 @@ setup(
             'zounds.synthesize',
             'zounds.timeseries',
             'zounds.ui',
+            'zounds.persistence',
             'zounds.util'
         ],
         install_requires=[
