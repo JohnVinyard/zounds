@@ -88,3 +88,9 @@ class SlidingWindowTests(unittest2.TestCase):
         doc = Document(_id)
 
         self.assertEqual(6, len(doc.windowed))
+
+    def test_can_apply_sliding_window_to_constant_rate_time_series(self):
+        self.fail()
+
+    def test_can_apply_sliding_window_to_time_frequency_representation(self):
+        self.fail()

@@ -8,7 +8,7 @@ from spectral import \
 from tfrepresentation import \
     TimeFrequencyRepresentation, TimeFrequencyRepresentationFeature, \
     TimeFrequencyRepresentationMetaData, TimeFrequencyRepresentationEncoder, \
-    TimeFrequencyRepresentationDecoder
+    TimeFrequencyRepresentationDecoder, FrequencyDimension
 
 from weighting import AWeighting
 

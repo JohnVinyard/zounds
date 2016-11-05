@@ -1,6 +1,7 @@
 import unittest2
 import numpy as np
-from axis import Dimension, ArrayWithUnits, CustomSlice, IdentityDimension
+from dimensions import Dimension, IdentityDimension
+from axis import ArrayWithUnits, CustomSlice
 from string import ascii_lowercase
 
 
