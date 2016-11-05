@@ -29,4 +29,5 @@ class BaseDimensionDecoder(object):
         return dict()
 
     def decode(self, d):
-        return self.dim_type(*self.args(d), **self.kwargs(d))
+        data = d['data']
+        return self.dim_type(*self.args(data), **self.kwargs(data))
