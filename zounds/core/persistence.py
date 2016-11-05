@@ -1,5 +1,6 @@
 from axis import ArrayWithUnits
 from featureflow import NumpyEncoder, BaseNumpyDecoder, Feature
+from dimensions import IdentityDimension
 
 
 class ArrayWithUnitsEncoder(NumpyEncoder):
@@ -13,6 +14,10 @@ class ArrayWithUnitsEncoder(NumpyEncoder):
 class ArrayWithUnitsDecoder(BaseNumpyDecoder):
     def __init__(self):
         super(ArrayWithUnitsDecoder, self).__init__()
+
+    def _wrap_array(self, raw, metadata):
+        dims = (IdentityDimension(), ) * raw.ndim
+        return ArrayWithUnits(raw, dims)
 
 
 class ArrayWithUnitsFeature(Feature):
