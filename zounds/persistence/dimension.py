@@ -11,7 +11,6 @@ class DimensionsEncoder(json.JSONEncoder):
         TimeDimensionEncoder(),
         FrequencyDimensionEncoder()
     ]
-    pass
 
 
 class DimensionsDecoder(json.JSONDecoder):

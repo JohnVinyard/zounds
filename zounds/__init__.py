@@ -50,3 +50,5 @@ from basic import \
 from util import simple_lmdb_settings, simple_in_memory_settings
 
 from nputil import sliding_window
+
+from core import IdentityDimension

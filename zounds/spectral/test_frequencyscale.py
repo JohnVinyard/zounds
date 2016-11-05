@@ -14,6 +14,9 @@ class FrequencyBandTests(unittest2.TestCase):
         fb = FrequencyBand(100, 200)
         self.assertNotEqual(fb, 10)
 
+    def test_cannot_create_with_invalid_interval(self):
+        self.assertRaises(ValueError, lambda: FrequencyBand(200, 100))
+
 
 class FrequencyScaleTests(unittest2.TestCase):
     def test_can_get_single_band(self):

@@ -17,6 +17,8 @@ class FrequencyBand(object):
         :return: a new FrequencyBand instance
         """
         super(FrequencyBand, self).__init__()
+        if stop_hz <= start_hz:
+            raise ValueError('stop_hz must be greater than start_hz')
         self.stop_hz = stop_hz
         self.start_hz = start_hz
 
