@@ -23,6 +23,9 @@ class FrequencyDimension(Dimension):
 
         return self.scale.get_slice(index)
 
+    def __eq__(self, other):
+        return self.scale == other.scale
+
 
 class TimeFrequencyRepresentation(ConstantRateTimeSeries):
     """

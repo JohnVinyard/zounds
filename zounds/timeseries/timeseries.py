@@ -236,6 +236,11 @@ class TimeDimension(Dimension):
         stop_index = np.ceil(end / self.frequency)
         return slice(start_index, stop_index)
 
+    def __eq__(self, other):
+        return \
+            self.frequency == other.frequency \
+            and self.duration == other.duration
+
 
 class ConstantRateTimeSeries(ArrayWithUnits):
     """
