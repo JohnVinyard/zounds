@@ -15,10 +15,14 @@ class DimensionEncoder(object):
         super(DimensionEncoder, self).__init__()
 
     def encode(self, o):
-        for e in self.encoders:
-            if e.matches(o):
-                return e.encode(o)
-        raise NotImplementedError('No matching strategy')
+        for dim in o:
+            for encoder in self.encoders:
+                if encoder.matches(dim):
+                    yield encoder.encode(dim)
+                    break
+            else:
+                raise NotImplementedError(
+                        'No matching strategy for {dim}'.format(**locals()))
 
 
 class DimensionDecoder(object):
@@ -32,7 +36,11 @@ class DimensionDecoder(object):
         super(DimensionDecoder, self).__init__()
 
     def decode(self, d):
-        for d in self.decoders:
-            if d.matches(d):
-                return d.decode(d)
-        raise NotImplementedError('No matching strategy')
+        for dim in d:
+            for decoder in self.decoders:
+                if decoder.matches(dim):
+                    yield decoder.decode(dim)
+                    break
+            else:
+                raise NotImplementedError(
+                        'No matching strategy for {dim}'.format(**locals()))

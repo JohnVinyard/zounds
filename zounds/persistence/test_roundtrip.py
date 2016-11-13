@@ -10,11 +10,19 @@ class RoundTripTests(unittest2.TestCase):
     def roundtrip(self, o):
         encoder = DimensionEncoder()
         decoder = DimensionDecoder()
-        encoded = encoder.encode(o)
-        return decoder.decode(encoded)
+        encoded = list(encoder.encode(o))
+        return list(decoder.decode(encoded))
 
     def test_can_round_trip_single_identity_dimension(self):
-        self.fail()
+        original = [IdentityDimension()]
+        restored = self.roundtrip(original)
+        self.assertSequenceEqual(original, restored)
 
     def test_can_round_trip_mixed_dimensions(self):
-        self.fail()
+        original = [
+            IdentityDimension(),
+            TimeDimension(Seconds(1), Milliseconds(500)),
+            FrequencyDimension(FrequencyScale(FrequencyBand(100, 1000), 10))
+        ]
+        restored = self.roundtrip(original)
+        self.assertSequenceEqual(original, restored)
