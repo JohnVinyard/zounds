@@ -21,7 +21,7 @@ class ArrayWithUnitsFeatureTests(unittest2.TestCase):
 
     def test_can_round_trip_1d_identity_dimension(self):
         raw = np.arange(10)
-        arr = ArrayWithUnits(raw, (IdentityDimension,))
+        arr = ArrayWithUnits(raw, (IdentityDimension(),))
         decoded = self._roundtrip(arr)
         self.assertIsInstance(decoded, ArrayWithUnits)
         self.assertEqual(1, len(decoded.dimensions))
