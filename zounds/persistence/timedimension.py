@@ -2,6 +2,7 @@ from zounds.timeseries import TimeDimension
 import numpy as np
 from basedimension import BaseDimensionEncoder, BaseDimensionDecoder
 import re
+import base64
 
 
 class TimeDimensionEncoder(BaseDimensionEncoder):
@@ -12,7 +13,7 @@ class TimeDimensionEncoder(BaseDimensionEncoder):
 
     def _encode_timedelta(self, td):
         dtype = self.DTYPE_RE.search(str(td.dtype)).groupdict()['dtype']
-        return td.astype(np.uint64).tostring(), dtype
+        return base64.b64encode(td.astype(np.uint64).tostring()), dtype
 
     def dict(self, o):
         return dict(
@@ -29,7 +30,7 @@ class TimeDimensionDecoder(BaseDimensionDecoder):
         if isinstance(t, np.timedelta64):
             return t
 
-        v = np.fromstring(t[0], dtype=np.uint64)[0]
+        v = np.fromstring(base64.b64decode(t[0]), dtype=np.uint64)[0]
         s = t[1]
         return np.timedelta64(long(v), s)
 

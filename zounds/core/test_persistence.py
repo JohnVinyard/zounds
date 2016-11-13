@@ -36,12 +36,13 @@ class ArrayWithUnitsFeatureTests(unittest2.TestCase):
         decoded = self._roundtrip(arr)
         self.assertIsInstance(decoded, ArrayWithUnits)
         self.assertEqual(2, len(decoded.dimensions))
-        td = decoded.dimensions[0]
+        idd = decoded.dimensions[0]
+        self.assertIsInstance(idd, IdentityDimension)
+        td = decoded.dimensions[1]
         self.assertIsInstance(td, TimeDimension)
         self.assertEqual(Seconds(1), td.frequency)
         self.assertEqual(Milliseconds(500), td.duration)
-        idd = decoded.dimensions[1]
-        self.assertIsInstance(idd, IdentityDimension)
+
         np.testing.assert_allclose(decoded, raw)
 
     def test_can_round_trip_1d_constant_rate_time_series(self):
@@ -96,8 +97,8 @@ class ArrayWithUnitsFeatureTests(unittest2.TestCase):
 
         td2 = decoded.dimensions[1]
         self.assertIsInstance(td2, TimeDimension)
-        self.assertEqual(Seconds(1), td1.frequency)
-        self.assertEqual(Milliseconds(500), td1.duration)
+        self.assertEqual(Seconds(1), td2.frequency)
+        self.assertEqual(Milliseconds(500), td2.duration)
 
         fd = decoded.dimensions[2]
         self.assertIsInstance(fd, FrequencyDimension)
