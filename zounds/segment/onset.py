@@ -4,7 +4,7 @@ import numpy as np
 from featureflow import Node, Feature, Decoder
 
 from zounds.nputil import safe_unit_norm
-from zounds.timeseries import ConstantRateTimeSeries, TimeSlice, Picoseconds
+from zounds.timeseries import TimeSlice, Picoseconds
 
 
 class MeasureOfTransience(Node):

@@ -1,10 +1,9 @@
 from __future__ import division
 import numpy as np
 import unittest2
-from tfrepresentation import TimeFrequencyRepresentation
 from frequencyscale import LinearScale, LogScale, FrequencyBand
 from weighting import AWeighting
-from zounds.timeseries import Seconds, ConstantRateTimeSeries, TimeDimension
+from zounds.timeseries import Seconds, TimeDimension
 
 
 class TimeFrequencyRepresentationTests(unittest2.TestCase):

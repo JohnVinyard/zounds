@@ -2,9 +2,9 @@ import unittest2
 import numpy as np
 from duration import Seconds
 from samplerate import SR44100, SR11025, SampleRate
-from audiosamples import AudioSamples
 from zounds.timeseries import TimeDimension
 from zounds.core import IdentityDimension
+
 
 class AudioSamplesTest(unittest2.TestCase):
     def test_raises_if_not_audio_samplerate(self):
@@ -81,6 +81,3 @@ class AudioSamplesTest(unittest2.TestCase):
         self.assertIsInstance(result, AudioSamples)
         self.assertEqual(1, len(result.dimensions))
         self.assertIsInstance(result.dimensions[0], TimeDimension)
-
-
-

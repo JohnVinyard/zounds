@@ -1,11 +1,13 @@
+from featureflow import BaseModel
 from sliding_window import \
     SlidingWindow, IdentityWindowingFunc, OggVorbisWindowingFunc
 from zounds.timeseries import \
     AudioSamples, SR22050, SR44100, SR11025, SR48000, SR96000, SampleRate, \
-    Seconds, Milliseconds, ConstantRateTimeSeriesFeature
+    Seconds, Milliseconds, ConstantRateTimeSeriesFeature, TimeDimension
 from zounds.util import simple_in_memory_settings
 from zounds.basic import resampled
 from zounds.synthesize import NoiseSynthesizer
+from zounds.core import ArrayWithUnits, ArrayWithUnitsFeature
 import numpy as np
 import unittest2
 
@@ -90,7 +92,26 @@ class SlidingWindowTests(unittest2.TestCase):
         self.assertEqual(6, len(doc.windowed))
 
     def test_can_apply_sliding_window_to_constant_rate_time_series(self):
-        self.fail()
+        arr = ArrayWithUnits(np.zeros(100), [TimeDimension(Seconds(1))])
+        sw = SlidingWindow(SampleRate(Seconds(2), Seconds(2)))
+
+        @simple_in_memory_settings
+        class Document(BaseModel):
+            windowed = ArrayWithUnitsFeature(
+                    SlidingWindow,
+                    wscheme=sw,
+                    store=True)
+
+        _id = Document.process(windowed=arr)
+        result = Document(_id).windowed
+
+        self.assertIsInstance(result, ArrayWithUnits)
+        self.assertEqual((50, 2), result.shape)
+        self.assertEqual(2, len(result.dimensions))
+        self.assertIsInstance(result.dimensions[0], TimeDimension)
+        self.assertEqual(Seconds(2), result.dimensions[0].frequency)
+        self.assertIsInstance(result.dimensions[1], TimeDimension)
+        self.assertEqual(Seconds(1), result.dimensions[1].frequency)
 
     def test_can_apply_sliding_window_to_time_frequency_representation(self):
         self.fail()

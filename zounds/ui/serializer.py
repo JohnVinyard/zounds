@@ -1,6 +1,5 @@
 import datetime
-from zounds.timeseries import \
-    ConstantRateTimeSeriesFeature, AudioSamples, Seconds, Picoseconds, TimeSlice
+from zounds.timeseries import Seconds, Picoseconds, TimeSlice
 from zounds.segment import TimeSliceFeature
 from zounds.index import SearchResults
 from zounds.soundfile import OggVorbisFeature

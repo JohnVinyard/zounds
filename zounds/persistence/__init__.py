@@ -1,1 +1,2 @@
 from dimension import DimensionEncoder, DimensionDecoder
+from arraywithunits import ArrayWithUnitsFeature

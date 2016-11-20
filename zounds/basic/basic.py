@@ -3,7 +3,7 @@ from collections import OrderedDict
 import numpy as np
 from featureflow import Node, NotEnoughData
 
-from zounds.timeseries import ConstantRateTimeSeries, VariableRateTimeSeries
+from zounds.timeseries import VariableRateTimeSeries
 
 
 class Merge(Node):

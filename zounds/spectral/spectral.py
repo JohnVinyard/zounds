@@ -5,9 +5,8 @@ from scipy.fftpack import dct
 from scipy.stats.mstats import gmean
 from psychacoustics import Chroma as ChromaScale, Bark as BarkScale
 from zounds.nputil import safe_log
-from zounds.timeseries import \
-    ConstantRateTimeSeries, SR44100, audio_sample_rate, Picoseconds
-from tfrepresentation import TimeFrequencyRepresentation
+from zounds.timeseries import SR44100, audio_sample_rate, Picoseconds
+# from tfrepresentation import TimeFrequencyRepresentation
 from frequencyscale import LinearScale, FrequencyBand
 
 

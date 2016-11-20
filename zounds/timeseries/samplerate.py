@@ -12,6 +12,12 @@ class SampleRate(object):
         self.duration = duration
         super(SampleRate, self).__init__()
 
+    def __iter__(self):
+        return iter((self.frequency, self.duration))
+
+    def __len__(self):
+        return 2
+
     def __eq__(self, other):
         return \
             self.frequency == other.frequency \

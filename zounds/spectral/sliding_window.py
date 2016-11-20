@@ -1,7 +1,7 @@
 from featureflow import Node, NotEnoughData
 import numpy as np
 from zounds.nputil import windowed, sliding_window
-from zounds.timeseries import ConstantRateTimeSeries
+# from zounds.timeseries import ConstantRateTimeSeries
 import scipy
 
 
@@ -84,6 +84,7 @@ class SlidingWindow(Node):
             self._cache = data
             self._stepsize, self._windowsize = \
                 self._scheme.discrete_samples(data)
+            print self._stepsize, self._windowsize
         else:
             self._cache = np.concatenate([self._cache, data])
 

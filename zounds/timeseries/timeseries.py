@@ -242,83 +242,83 @@ class TimeDimension(Dimension):
             and self.duration == other.duration
 
 
-class ConstantRateTimeSeries(ArrayWithUnits):
-    """
-    A TimeSeries implementation with samples of a constant duration and
-    frequency.
-    """
-
-    def __new__(cls, input_array, frequency=None, duration=None):
-
-        if isinstance(frequency, tuple) or isinstance(frequency, list):
-            # KLUDGE: This check is necessary for an initial, incremental
-            # refactoring, and should be removed once there are some nice,
-            # ArrayWithUnits-derived classes that just work
-            dims = frequency
-        else:
-            dims = (TimeDimension(frequency, duration, len(input_array)),) + \
-                   tuple(map(lambda x: IdentityDimension(),
-                             input_array.shape[1:]))
-
-        if all(map(lambda x: isinstance(x, IdentityDimension), dims)):
-            obj = ArrayWithUnits.__new__(ArrayWithUnits, input_array, dims)
-        else:
-            obj = ArrayWithUnits.__new__(cls, input_array, dims)
-        return obj
-
-    @property
-    def frequency(self):
-        return self.dimensions[0].frequency
-
-    @property
-    def duration(self):
-        return self.dimensions[0].duration
-
-    def kwargs(self, **kwargs):
-        return dict(frequency=self.frequency, duration=self.duration, **kwargs)
-
-    @classmethod
-    def from_example(cls, arr, example):
-        return cls(arr, frequency=example.frequency, duration=example.duration)
-
-    def concatenate(self, other):
-        if self.frequency == other.frequency and self.duration == other.duration:
-            return self.from_example(np.concatenate([self, other]), self)
-        raise ValueError(
-                'self and other must have the same sample frequency and sample duration')
-
-    @classmethod
-    def concat(cls, arrs, axis=0):
-        freqs = set(x.frequency for x in arrs)
-        if len(freqs) > 1:
-            raise ValueError('all timeseries must have same frequency')
-
-        durations = set(x.duration for x in arrs)
-        if len(durations) > 1:
-            raise ValueError('all timeseries must have same duration')
-
-        return cls.from_example(np.concatenate(arrs, axis=axis), arrs[0])
-
-    @property
-    def samples_per_second(self):
-        return int(Picoseconds(int(1e12)) / self.frequency)
-
-    @property
-    def duration_in_seconds(self):
-        return self.duration / Picoseconds(int(1e12))
-
-    @property
-    def samplerate(self):
-        return SampleRate(self.frequency, self.duration)
-
-    @property
-    def overlap(self):
-        return self.samplerate.overlap
-
-    @property
-    def span(self):
-        return self.dimensions[0].span
-
-    @property
-    def end(self):
-        return self.dimensions[0].end
+# class ConstantRateTimeSeries(ArrayWithUnits):
+#     """
+#     A TimeSeries implementation with samples of a constant duration and
+#     frequency.
+#     """
+#
+#     def __new__(cls, input_array, frequency=None, duration=None):
+#
+#         if isinstance(frequency, tuple) or isinstance(frequency, list):
+#             # KLUDGE: This check is necessary for an initial, incremental
+#             # refactoring, and should be removed once there are some nice,
+#             # ArrayWithUnits-derived classes that just work
+#             dims = frequency
+#         else:
+#             dims = (TimeDimension(frequency, duration, len(input_array)),) + \
+#                    tuple(map(lambda x: IdentityDimension(),
+#                              input_array.shape[1:]))
+#
+#         if all(map(lambda x: isinstance(x, IdentityDimension), dims)):
+#             obj = ArrayWithUnits.__new__(ArrayWithUnits, input_array, dims)
+#         else:
+#             obj = ArrayWithUnits.__new__(cls, input_array, dims)
+#         return obj
+#
+#     @property
+#     def frequency(self):
+#         return self.dimensions[0].frequency
+#
+#     @property
+#     def duration(self):
+#         return self.dimensions[0].duration
+#
+#     def kwargs(self, **kwargs):
+#         return dict(frequency=self.frequency, duration=self.duration, **kwargs)
+#
+#     @classmethod
+#     def from_example(cls, arr, example):
+#         return cls(arr, frequency=example.frequency, duration=example.duration)
+#
+#     def concatenate(self, other):
+#         if self.frequency == other.frequency and self.duration == other.duration:
+#             return self.from_example(np.concatenate([self, other]), self)
+#         raise ValueError(
+#                 'self and other must have the same sample frequency and sample duration')
+#
+#     @classmethod
+#     def concat(cls, arrs, axis=0):
+#         freqs = set(x.frequency for x in arrs)
+#         if len(freqs) > 1:
+#             raise ValueError('all timeseries must have same frequency')
+#
+#         durations = set(x.duration for x in arrs)
+#         if len(durations) > 1:
+#             raise ValueError('all timeseries must have same duration')
+#
+#         return cls.from_example(np.concatenate(arrs, axis=axis), arrs[0])
+#
+#     @property
+#     def samples_per_second(self):
+#         return int(Picoseconds(int(1e12)) / self.frequency)
+#
+#     @property
+#     def duration_in_seconds(self):
+#         return self.duration / Picoseconds(int(1e12))
+#
+#     @property
+#     def samplerate(self):
+#         return SampleRate(self.frequency, self.duration)
+#
+#     @property
+#     def overlap(self):
+#         return self.samplerate.overlap
+#
+#     @property
+#     def span(self):
+#         return self.dimensions[0].span
+#
+#     @property
+#     def end(self):
+#         return self.dimensions[0].end

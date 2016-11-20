@@ -2,7 +2,7 @@ import numpy as np
 import unittest2
 from duration import \
     Picoseconds, Milliseconds, Seconds, Microseconds, Nanoseconds, Hours
-from timeseries import TimeSlice, ConstantRateTimeSeries, TimeDimension
+from timeseries import TimeSlice, TimeDimension
 from zounds.core import IdentityDimension
 
 
