@@ -42,6 +42,7 @@ class ContrivedDimension2(Dimension):
     def __init__(self, factor):
         super(ContrivedDimension2, self).__init__()
         self.factor = factor
+        self.size = None
 
     def modified_dimension(self, size, windowsize):
         yield ContrivedDimension(self.factor * windowsize)
@@ -84,6 +85,21 @@ class ContrivedArray(ArrayWithUnits):
 
 
 class CoreTests(unittest2.TestCase):
+
+    def test_assigns_size_where_appropriate(self):
+        arr = ArrayWithUnits(
+                np.zeros((100, 10)),
+                [ContrivedDimension(10), ContrivedDimension2(10)])
+        self.assertEqual(10, arr.dimensions[1].size)
+
+    def test_can_create_new_array_from_example(self):
+        arr = ArrayWithUnits(
+                np.zeros((100, 10)),
+                [ContrivedDimension(10), ContrivedDimension2(10)])
+        arr2 = ArrayWithUnits.from_example(np.zeros((90, 5)), arr)
+        self.assertSequenceEqual(arr.dimensions, arr2.dimensions)
+        self.assertEqual((90, 5), arr2.shape)
+
     def test_can_use_ellipsis_to_get_entire_array(self):
         raw = np.zeros((10, 10, 10))
         dims = (

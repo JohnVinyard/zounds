@@ -209,8 +209,25 @@ class TimeDimension(Dimension):
         self.frequency = frequency
 
     @property
+    def samplerate(self):
+        return SampleRate(self.frequency, self.duration)
+
+    @property
+    def overlap(self):
+        return self.samplerate.overlap
+
+    @property
+    def duration_in_seconds(self):
+        return self.duration / Picoseconds(int(1e12))
+
+    @property
+    def samples_per_second(self):
+        return int(Picoseconds(int(1e12)) / self.frequency)
+
+    @property
     def span(self):
         overlap = self.duration - self.frequency
+        print self.duration, self.frequency, overlap, self.size
         return TimeSlice((self.size * self.frequency) + overlap)
 
     @property

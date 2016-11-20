@@ -15,7 +15,29 @@ class ArrayWithUnits(np.ndarray):
         obj = np.asarray(arr).view(cls)
         obj.dimensions = tuple(map(
                 lambda x: IdentityDimension() if x is None else x, dimensions))
+        for dim, size in zip(obj.dimensions, obj.shape):
+            try:
+                dim.size = size
+            except AttributeError:
+                pass
         return obj
+
+    def concatenate(self, other):
+        if self.dimensions == other.dimensions:
+            return self.from_example(np.concatenate(self, other), self)
+        else:
+            raise ValueError('All dimensions must match to concatenate')
+
+    @classmethod
+    def concat(cls, arrs, axis=0):
+        for arr in arrs[1:]:
+            if arr.dimensions != arrs[0].dimensions:
+                raise ValueError('All dimensions must match')
+        return cls.from_example(np.concatenate(arrs, axis=axis), arrs[0])
+
+    @classmethod
+    def from_example(cls, data, example):
+        return ArrayWithUnits(data, example.dimensions)
 
     def sum(self, axis=None, dtype=None, **kwargs):
         result = super(ArrayWithUnits, self).sum(axis, dtype, **kwargs)
