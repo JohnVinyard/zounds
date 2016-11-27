@@ -403,60 +403,50 @@ class TimeSeriesTests(unittest2.TestCase):
     def test_concatenation_with_matching_freqs_and_duration_results_in_crts(
             self):
         ts = ArrayWithUnits(
-            np.ones((10, 3)),
-            [TimeDimension(Seconds(1), Seconds(2))])
+                np.ones((10, 3)),
+                [TimeDimension(Seconds(1), Seconds(2))])
         ts2 = ArrayWithUnits(
-            np.ones((13, 3)),
-            [TimeDimension(Seconds(1), Seconds(2))])
+                np.ones((13, 3)),
+                [TimeDimension(Seconds(1), Seconds(2))])
         result = ts.concatenate(ts2)
         self.assertIsInstance(result, ArrayWithUnits)
         self.assertEqual((23, 3), result.shape)
 
     def test_concat_with_differing_freqs(self):
         ts = ArrayWithUnits(
-            np.ones((10, 3))
-            [TimeDimension(Seconds(2), Seconds(2))])
+                np.ones((10, 3))
+                [TimeDimension(Seconds(2), Seconds(2))])
         ts2 = ArrayWithUnits(
-            np.ones((13, 3))
-            [TimeDimension(Seconds(1), Seconds(2))])
+                np.ones((13, 3))
+                [TimeDimension(Seconds(1), Seconds(2))])
         self.assertRaises(
                 ValueError, lambda: ArrayWithUnits.concat([ts, ts2]))
 
     def test_concat_with_differing_durations(self):
-        ts = ConstantRateTimeSeries(
-                np.ones((10, 3)),
-                Seconds(1),
-                Seconds(2))
-        ts2 = ConstantRateTimeSeries(
-                np.ones((13, 3)),
-                Seconds(1),
-                Seconds(3))
+        td1 = TimeDimension(Seconds(1), Seconds(2))
+        ts1 = ArrayWithUnits(np.ones((10, 3)), [td1, IdentityDimension()])
+        td2 = TimeDimension(Seconds(1), Seconds(3))
+        ts2 = ArrayWithUnits(np.ones((13, 3)), [td2, IdentityDimension()])
         self.assertRaises(
-                ValueError, lambda: ConstantRateTimeSeries.concat([ts, ts2]))
+                ValueError, lambda: ArrayWithUnits.concat([ts1, ts2]))
 
     def test_concat_along_first_axis(self):
-        ts = ConstantRateTimeSeries(
-                np.ones((10, 3)),
-                Seconds(1),
-                Seconds(2))
-        ts2 = ConstantRateTimeSeries(
-                np.ones((13, 3)),
-                Seconds(1),
-                Seconds(2))
-        result = ConstantRateTimeSeries.concat([ts, ts2])
+        td1 = TimeDimension(Seconds(1), Seconds(2))
+        ts1 = ArrayWithUnits(np.ones((10, 3)), [td1, IdentityDimension()])
+        td2 = TimeDimension(Seconds(1), Seconds(2))
+        ts2 = ArrayWithUnits(np.ones((13, 3)), [td2, IdentityDimension()])
+        result = ArrayWithUnits.concat([ts1, ts2])
         self.assertEqual((23, 3), result.shape)
 
     def test_concat_along_second_axis(self):
-        ts = ConstantRateTimeSeries(
-                np.ones((10, 3)),
-                Seconds(1),
-                Seconds(2))
-        ts2 = ConstantRateTimeSeries(
-                np.ones((10, 5)),
-                Seconds(1),
-                Seconds(2))
-        result = ConstantRateTimeSeries.concat([ts, ts2], axis=1)
+        td1 = TimeDimension(Seconds(1), Seconds(2))
+        ts1 = ArrayWithUnits(np.ones((10, 3)), [td1, IdentityDimension()])
+        td2 = TimeDimension(Seconds(1), Seconds(2))
+        ts2 = ArrayWithUnits(np.ones((10, 5)), [td2, IdentityDimension()])
+        result = ArrayWithUnits.concat([ts1, ts2], axis=1)
         self.assertEqual((10, 8), result.shape)
+        self.assertIsInstance(result.dimensions[0], TimeDimension)
+        self.assertIsInstance(result.dimensions[1], IdentityDimension)
 
     def test_sum_along_time_axis(self):
         ts = ConstantRateTimeSeries(
