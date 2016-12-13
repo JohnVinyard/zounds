@@ -1,7 +1,6 @@
 import unittest2
 import numpy as np
 from weighting import AWeighting
-from tfrepresentation import TimeFrequencyRepresentation
 from frequencyscale import LinearScale, FrequencyBand
 from zounds.timeseries import Seconds
 

@@ -117,31 +117,6 @@ class TimeSliceTests(unittest2.TestCase):
 
 
 class TimeSeriesTests(unittest2.TestCase):
-    # def test_from_example(self):
-    #     arr = np.arange(10)
-    #     freq = Seconds(1)
-    #     duration = Seconds(2)
-    #     ts = ConstantRateTimeSeries(arr, freq, duration)
-    #     from_example = ConstantRateTimeSeries.from_example(np.arange(10), ts)
-    #     self.assertEqual(ts.shape, from_example.shape)
-    #     self.assertEqual(ts.frequency, from_example.frequency)
-    #     self.assertEqual(ts.duration, from_example.duration)
-
-    # def test_raises_if_frequency_is_not_timedelta_instance(self):
-    #     arr = np.arange(10)
-    #     self.assertRaises(ValueError, lambda: ConstantRateTimeSeries(arr, 1))
-    #
-    # def test_raises_if_duration_is_not_timedelta_instance(self):
-    #     arr = np.arange(10)
-    #     freq = Seconds(1)
-    #     self.assertRaises(
-    #             ValueError, lambda: ConstantRateTimeSeries(arr, freq, 1))
-
-    # def test_duration_is_equal_to_frequency_if_not_provided(self):
-    #     arr = np.arange(10)
-    #     freq = Seconds(1)
-    #     ts = ConstantRateTimeSeries(arr, freq)
-    #     self.assertEqual(ts.frequency, ts.duration)
 
     def test_can_slice_time_series_with_time_slice(self):
         arr = np.arange(10)
@@ -449,22 +424,19 @@ class TimeSeriesTests(unittest2.TestCase):
         self.assertIsInstance(result.dimensions[1], IdentityDimension)
 
     def test_sum_along_time_axis(self):
-        ts = ConstantRateTimeSeries(
-                np.ones((10, 3)),
-                Seconds(1),
-                Seconds(2))
+        td = TimeDimension(Seconds(1), Seconds(2))
+        ts = ArrayWithUnits(np.ones((10, 3)), [td, IdentityDimension()])
         result = ts.sum(axis=0)
-        self.assertIsInstance(result, np.ndarray)
-        self.assertNotIsInstance(result, ConstantRateTimeSeries)
+        self.assertIsInstance(result, ArrayWithUnits)
+        self.assertEqual((3,), result.shape)
         self.assertEqual(1, len(result.dimensions))
         self.assertIsInstance(result.dimensions[0], IdentityDimension)
 
     def test_sum_along_second_axis(self):
-        ts = ConstantRateTimeSeries(
-                np.ones((10, 3)),
-                Seconds(1),
-                Seconds(2))
+        td = TimeDimension(Seconds(1), Seconds(2))
+        ts = ArrayWithUnits(np.ones((10, 3)), [td, IdentityDimension()])
         result = ts.sum(axis=1)
-        self.assertIsInstance(result, ConstantRateTimeSeries)
+        self.assertIsInstance(result, ArrayWithUnits)
+        self.assertEqual((10,), result.shape)
         self.assertEqual(1, len(result.dimensions))
         self.assertIsInstance(result.dimensions[0], TimeDimension)
