@@ -23,8 +23,9 @@ class FrequencyWeighting(object):
             return self._wdata(other.scale)
 
     def __mul__(self, other):
+        frequency_dim = other.dimensions[-1]
         try:
-            return self._wdata(other.scale) * other
+            return self._wdata(frequency_dim.scale) * other
         except AttributeError:
             return super(FrequencyWeighting, self).__mul__(other)
 

@@ -10,16 +10,22 @@ class CustomSlice(object):
 
 class ArrayWithUnits(np.ndarray):
     def __new__(cls, arr, dimensions):
+
         if arr.ndim != len(dimensions):
             raise ValueError('arr.ndim and len(dimensions) must match')
+
         obj = np.asarray(arr).view(cls)
         obj.dimensions = tuple(map(
                 lambda x: IdentityDimension() if x is None else x, dimensions))
+
         for dim, size in zip(obj.dimensions, obj.shape):
             try:
                 dim.size = size
             except AttributeError:
                 pass
+
+            dim.validate(size)
+
         return obj
 
     def concatenate(self, other):

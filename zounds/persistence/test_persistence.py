@@ -1,11 +1,9 @@
 import unittest2
-from axis import ArrayWithUnits
-from zounds.timeseries import \
-    TimeDimension, SR44100, Seconds, Milliseconds
+from zounds.core import ArrayWithUnits, IdentityDimension
+from zounds.timeseries import TimeDimension, Seconds, Milliseconds
 from zounds.spectral import FrequencyDimension, FrequencyScale, FrequencyBand
-from persistence import ArrayWithUnitsEncoder, ArrayWithUnitsDecoder
+from arraywithunits import ArrayWithUnitsEncoder, ArrayWithUnitsDecoder
 import numpy as np
-from dimensions import IdentityDimension
 from io import BytesIO
 
 

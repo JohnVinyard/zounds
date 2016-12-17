@@ -22,6 +22,10 @@ class FrequencyDimension(Dimension):
 
         return self.scale.get_slice(index)
 
+    def validate(self, size):
+        if size != len(self.scale):
+            raise ValueError('Scale length must match array length')
+
     def __eq__(self, other):
         return self.scale == other.scale
 

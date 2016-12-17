@@ -16,6 +16,9 @@ class Dimension(object):
     def integer_based_slice(self, index):
         raise NotImplementedError()
 
+    def validate(self, size):
+        pass
+
 
 class IdentityDimension(Dimension):
     def __init__(self):
