@@ -7,8 +7,6 @@ from zounds.timeseries import \
 from zounds.timeseries.samplerate import SampleRate, HalfLapped
 from zounds.synthesize import SineSynthesizer, DCTIVSynthesizer, MDCTSynthesizer
 from zounds.spectral import SlidingWindow, DCTIV, MDCT
-from tfrepresentation import \
-    TimeFrequencyRepresentation, TimeFrequencyRepresentationFeature
 
 
 class MDCTTests(unittest2.TestCase):

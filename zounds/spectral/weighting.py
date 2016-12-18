@@ -27,7 +27,7 @@ class FrequencyWeighting(object):
         try:
             return self._wdata(frequency_dim.scale) * other
         except AttributeError:
-            return super(FrequencyWeighting, self).__mul__(other)
+            raise ValueError('Last dimension must be FrequencyDimension')
 
     def __rmul__(self, other):
         return self.__mul__(other)

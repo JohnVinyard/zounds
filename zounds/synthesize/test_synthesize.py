@@ -1,8 +1,7 @@
 import unittest2
 import numpy as np
 from synthesize import ShortTimeTransformSynthesizer, SineSynthesizer
-from zounds.timeseries import \
-    ConstantRateTimeSeries, SR22050, SR44100, HalfLapped, AudioSamples, Seconds
+from zounds.timeseries import SR22050, SR44100, HalfLapped, Seconds
 
 
 class SynthesizeTests(unittest2.TestCase):

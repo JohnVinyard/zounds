@@ -4,12 +4,15 @@ from weighting import AWeighting
 from frequencyscale import LinearScale, FrequencyBand
 from tfrepresentation import FrequencyDimension
 from zounds.timeseries import Seconds, TimeDimension
-from zounds.core import ArrayWithUnits
+from zounds.core import ArrayWithUnits, IdentityDimension
 
 
 class WeightingTests(unittest2.TestCase):
     def test_cannot_multiply_when_array_does_not_have_expected_dimensions(self):
-        self.fail()
+        td = TimeDimension(Seconds(1), Seconds(1))
+        tf = ArrayWithUnits(np.ones((90, 100)), [td, IdentityDimension()])
+        weighting = AWeighting()
+        self.assertRaises(ValueError, lambda: tf * weighting)
 
     def test_can_get_weights_from_tf_representation(self):
         td = TimeDimension(Seconds(1), Seconds(1))
