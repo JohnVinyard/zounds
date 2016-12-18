@@ -24,8 +24,6 @@ class ArrayWithUnits(np.ndarray):
             except AttributeError:
                 pass
 
-            dim.validate(size)
-
         return obj
 
     def concatenate(self, other):
@@ -50,7 +48,7 @@ class ArrayWithUnits(np.ndarray):
         if axis is not None:
             new_dims = list(self.dimensions)
             new_dims.pop(axis)
-            return self.__class__(result, new_dims)
+            return ArrayWithUnits(result, new_dims)
         else:
             # we have a scalar
             return result

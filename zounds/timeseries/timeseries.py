@@ -4,7 +4,7 @@ import numpy as np
 from duration import Picoseconds
 from samplerate import SampleRate
 import re
-from zounds.core import Dimension, IdentityDimension, ArrayWithUnits
+from zounds.core import Dimension
 
 
 class TimeSlice(object):
@@ -86,114 +86,114 @@ class TimeSlice(object):
         return self.__repr__()
 
 
-class ConstantRateTimeSeriesMetadata(NumpyMetaData):
-    DTYPE_RE = re.compile(r'\[(?P<dtype>[^\]]+)\]')
-
-    def __init__(
-            self,
-            dtype=None,
-            shape=None,
-            frequency=None,
-            duration=None):
-        super(ConstantRateTimeSeriesMetadata, self).__init__(
-                dtype=dtype, shape=shape)
-        self.frequency = self._decode_timedelta(frequency)
-        self.duration = self._decode_timedelta(duration)
-
-    @staticmethod
-    def from_timeseries(timeseries):
-        return ConstantRateTimeSeriesMetadata(
-                dtype=timeseries.dtype,
-                shape=timeseries.shape[1:],
-                frequency=timeseries.frequency,
-                duration=timeseries.duration)
-
-    def _encode_timedelta(self, td):
-        dtype = self.DTYPE_RE.search(str(td.dtype)).groupdict()['dtype']
-        return td.astype(np.uint64).tostring(), dtype
-
-    def _decode_timedelta(self, t):
-        if isinstance(t, np.timedelta64):
-            return t
-
-        v = np.fromstring(t[0], dtype=np.uint64)[0]
-        s = t[1]
-        return np.timedelta64(long(v), s)
-
-    def __repr__(self):
-        return repr((
-            str(np.dtype(self.dtype)),
-            self.shape,
-            self._encode_timedelta(self.frequency),
-            self._encode_timedelta(self.duration)
-        ))
-
-
-class BaseConstantRateTimeSeriesEncoder(NumpyEncoder):
-    def __init__(self, needs=None):
-        super(BaseConstantRateTimeSeriesEncoder, self).__init__(needs=needs)
-
-    def _prepare_data(self, data):
-        raise NotImplementedError()
-
-    def _prepare_metadata(self, data):
-        return ConstantRateTimeSeriesMetadata.from_timeseries(data)
-
-
-class ConstantRateTimeSeriesEncoder(BaseConstantRateTimeSeriesEncoder):
-    def __init__(self, needs=None):
-        super(ConstantRateTimeSeriesEncoder, self).__init__(needs=needs)
-
-    def _prepare_data(self, data):
-        return data
-
-
-class PackedConstantRateTimeSeriesEncoder(BaseConstantRateTimeSeriesEncoder):
-    def __init__(self, needs=None, axis=1):
-        super(PackedConstantRateTimeSeriesEncoder, self).__init__(needs=needs)
-        self.axis = axis
-
-    def _prepare_data(self, data):
-        packedbits = np.packbits(data.astype(np.uint8), axis=self.axis)
-
-        return ConstantRateTimeSeries(
-                packedbits,
-                frequency=data.frequency,
-                duration=data.duration)
-
-
-class GreedyConstantRateTimeSeriesDecoder(BaseNumpyDecoder):
-    def __init__(self):
-        super(GreedyConstantRateTimeSeriesDecoder, self).__init__()
-
-    def _unpack_metadata(self, flo):
-        return ConstantRateTimeSeriesMetadata.unpack(flo)
-
-    def _wrap_array(self, raw, metadata):
-        return ConstantRateTimeSeries(
-                raw, metadata.frequency, metadata.duration)
-
-
-class ConstantRateTimeSeriesFeature(Feature):
-    def __init__(
-            self,
-            extractor,
-            needs=None,
-            store=False,
-            key=None,
-            encoder=ConstantRateTimeSeriesEncoder,
-            decoder=GreedyConstantRateTimeSeriesDecoder(),
-            **extractor_args):
-        super(ConstantRateTimeSeriesFeature, self).__init__(
-                extractor,
-                needs=needs,
-                store=store,
-                encoder=encoder,
-                decoder=decoder,
-                key=key,
-                **extractor_args)
-
-
+# class ConstantRateTimeSeriesMetadata(NumpyMetaData):
+#     DTYPE_RE = re.compile(r'\[(?P<dtype>[^\]]+)\]')
+#
+#     def __init__(
+#             self,
+#             dtype=None,
+#             shape=None,
+#             frequency=None,
+#             duration=None):
+#         super(ConstantRateTimeSeriesMetadata, self).__init__(
+#                 dtype=dtype, shape=shape)
+#         self.frequency = self._decode_timedelta(frequency)
+#         self.duration = self._decode_timedelta(duration)
+#
+#     @staticmethod
+#     def from_timeseries(timeseries):
+#         return ConstantRateTimeSeriesMetadata(
+#                 dtype=timeseries.dtype,
+#                 shape=timeseries.shape[1:],
+#                 frequency=timeseries.frequency,
+#                 duration=timeseries.duration)
+#
+#     def _encode_timedelta(self, td):
+#         dtype = self.DTYPE_RE.search(str(td.dtype)).groupdict()['dtype']
+#         return td.astype(np.uint64).tostring(), dtype
+#
+#     def _decode_timedelta(self, t):
+#         if isinstance(t, np.timedelta64):
+#             return t
+#
+#         v = np.fromstring(t[0], dtype=np.uint64)[0]
+#         s = t[1]
+#         return np.timedelta64(long(v), s)
+#
+#     def __repr__(self):
+#         return repr((
+#             str(np.dtype(self.dtype)),
+#             self.shape,
+#             self._encode_timedelta(self.frequency),
+#             self._encode_timedelta(self.duration)
+#         ))
+#
+#
+# class BaseConstantRateTimeSeriesEncoder(NumpyEncoder):
+#     def __init__(self, needs=None):
+#         super(BaseConstantRateTimeSeriesEncoder, self).__init__(needs=needs)
+#
+#     def _prepare_data(self, data):
+#         raise NotImplementedError()
+#
+#     def _prepare_metadata(self, data):
+#         return ConstantRateTimeSeriesMetadata.from_timeseries(data)
+#
+#
+# class ConstantRateTimeSeriesEncoder(BaseConstantRateTimeSeriesEncoder):
+#     def __init__(self, needs=None):
+#         super(ConstantRateTimeSeriesEncoder, self).__init__(needs=needs)
+#
+#     def _prepare_data(self, data):
+#         return data
+#
+#
+# class PackedConstantRateTimeSeriesEncoder(BaseConstantRateTimeSeriesEncoder):
+#     def __init__(self, needs=None, axis=1):
+#         super(PackedConstantRateTimeSeriesEncoder, self).__init__(needs=needs)
+#         self.axis = axis
+#
+#     def _prepare_data(self, data):
+#         packedbits = np.packbits(data.astype(np.uint8), axis=self.axis)
+#
+#         return ConstantRateTimeSeries(
+#                 packedbits,
+#                 frequency=data.frequency,
+#                 duration=data.duration)
+#
+#
+# class GreedyConstantRateTimeSeriesDecoder(BaseNumpyDecoder):
+#     def __init__(self):
+#         super(GreedyConstantRateTimeSeriesDecoder, self).__init__()
+#
+#     def _unpack_metadata(self, flo):
+#         return ConstantRateTimeSeriesMetadata.unpack(flo)
+#
+#     def _wrap_array(self, raw, metadata):
+#         return ConstantRateTimeSeries(
+#                 raw, metadata.frequency, metadata.duration)
+#
+#
+# class ConstantRateTimeSeriesFeature(Feature):
+#     def __init__(
+#             self,
+#             extractor,
+#             needs=None,
+#             store=False,
+#             key=None,
+#             encoder=ConstantRateTimeSeriesEncoder,
+#             decoder=GreedyConstantRateTimeSeriesDecoder(),
+#             **extractor_args):
+#         super(ConstantRateTimeSeriesFeature, self).__init__(
+#                 extractor,
+#                 needs=needs,
+#                 store=store,
+#                 encoder=encoder,
+#                 decoder=decoder,
+#                 key=key,
+#                 **extractor_args)
+#
+#
 class TimeDimension(Dimension):
     def __init__(self, frequency=None, duration=None, size=None):
         super(TimeDimension, self).__init__()
@@ -257,85 +257,3 @@ class TimeDimension(Dimension):
         return \
             self.frequency == other.frequency \
             and self.duration == other.duration
-
-
-# class ConstantRateTimeSeries(ArrayWithUnits):
-#     """
-#     A TimeSeries implementation with samples of a constant duration and
-#     frequency.
-#     """
-#
-#     def __new__(cls, input_array, frequency=None, duration=None):
-#
-#         if isinstance(frequency, tuple) or isinstance(frequency, list):
-#             # KLUDGE: This check is necessary for an initial, incremental
-#             # refactoring, and should be removed once there are some nice,
-#             # ArrayWithUnits-derived classes that just work
-#             dims = frequency
-#         else:
-#             dims = (TimeDimension(frequency, duration, len(input_array)),) + \
-#                    tuple(map(lambda x: IdentityDimension(),
-#                              input_array.shape[1:]))
-#
-#         if all(map(lambda x: isinstance(x, IdentityDimension), dims)):
-#             obj = ArrayWithUnits.__new__(ArrayWithUnits, input_array, dims)
-#         else:
-#             obj = ArrayWithUnits.__new__(cls, input_array, dims)
-#         return obj
-#
-#     @property
-#     def frequency(self):
-#         return self.dimensions[0].frequency
-#
-#     @property
-#     def duration(self):
-#         return self.dimensions[0].duration
-#
-#     def kwargs(self, **kwargs):
-#         return dict(frequency=self.frequency, duration=self.duration, **kwargs)
-#
-#     @classmethod
-#     def from_example(cls, arr, example):
-#         return cls(arr, frequency=example.frequency, duration=example.duration)
-#
-#     def concatenate(self, other):
-#         if self.frequency == other.frequency and self.duration == other.duration:
-#             return self.from_example(np.concatenate([self, other]), self)
-#         raise ValueError(
-#                 'self and other must have the same sample frequency and sample duration')
-#
-#     @classmethod
-#     def concat(cls, arrs, axis=0):
-#         freqs = set(x.frequency for x in arrs)
-#         if len(freqs) > 1:
-#             raise ValueError('all timeseries must have same frequency')
-#
-#         durations = set(x.duration for x in arrs)
-#         if len(durations) > 1:
-#             raise ValueError('all timeseries must have same duration')
-#
-#         return cls.from_example(np.concatenate(arrs, axis=axis), arrs[0])
-#
-#     @property
-#     def samples_per_second(self):
-#         return int(Picoseconds(int(1e12)) / self.frequency)
-#
-#     @property
-#     def duration_in_seconds(self):
-#         return self.duration / Picoseconds(int(1e12))
-#
-#     @property
-#     def samplerate(self):
-#         return SampleRate(self.frequency, self.duration)
-#
-#     @property
-#     def overlap(self):
-#         return self.samplerate.overlap
-#
-#     @property
-#     def span(self):
-#         return self.dimensions[0].span
-#
-#     @property
-#     def end(self):
-#         return self.dimensions[0].end

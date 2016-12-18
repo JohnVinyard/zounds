@@ -4,6 +4,7 @@ from duration import Seconds
 from samplerate import SR44100, SR11025, SampleRate
 from zounds.timeseries import TimeDimension
 from zounds.core import IdentityDimension
+from audiosamples import AudioSamples
 
 
 class AudioSamplesTest(unittest2.TestCase):

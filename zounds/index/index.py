@@ -4,9 +4,7 @@ from bisect import bisect_left
 from zounds.timeseries import TimeSlice
 from zounds.nputil import packed_hamming_distance
 import featureflow as ff
-from zounds.timeseries import \
-    ConstantRateTimeSeriesFeature, VariableRateTimeSeriesFeature, \
-    PackedConstantRateTimeSeriesEncoder, ConstantRateTimeSeriesEncoder
+from zounds.timeseries import  VariableRateTimeSeriesFeature
 
 
 class Contiguous(Node):
