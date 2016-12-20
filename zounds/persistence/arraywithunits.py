@@ -12,6 +12,9 @@ def _np_from_buffer(b, shape, dtype):
 
 
 class ArrayWithUnitsEncoder(Node):
+
+    content_type = 'application/octet-stream'
+
     def __init__(self, needs=None):
         super(ArrayWithUnitsEncoder, self).__init__(needs=needs)
         self.encoder = DimensionEncoder()

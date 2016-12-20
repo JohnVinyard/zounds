@@ -23,6 +23,10 @@ class ArrayWithUnits(np.ndarray):
                 dim.size = size
             except AttributeError:
                 pass
+            try:
+                dim.validate(size)
+            except AttributeError:
+                pass
 
         return obj
 

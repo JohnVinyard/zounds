@@ -2,11 +2,10 @@ from __future__ import division
 import numpy as np
 from scipy.fftpack import idct
 from zounds.timeseries import \
-    audio_sample_rate, Seconds, TimeDimension
+    audio_sample_rate, Seconds, AudioSamples
 from zounds.spectral import DCTIV
 from zounds.spectral.sliding_window import \
     IdentityWindowingFunc, OggVorbisWindowingFunc
-from zounds.core import ArrayWithUnits
 
 
 class ShortTimeTransformSynthesizer(object):
@@ -33,14 +32,11 @@ class ShortTimeTransformSynthesizer(object):
             stop = start + windowsize
             l = len(arr[start:stop])
             arr[start:stop] += (self._windowing_function() * f[:l])
-        # return AudioSamples(arr, samplerate)
-        return ArrayWithUnits(arr, [TimeDimension(*samplerate)])
+        return AudioSamples(arr, samplerate)
 
     def synthesize(self, frames):
         audio = self._transform(frames)
-        # ts = ConstantRateTimeSeries.from_example(audio, frames)
-        td = frames.dimensions[0]
-        ts = ArrayWithUnits(audio, [td])
+        ts = AudioSamples.from_example(audio, frames)
         return self._overlap_add(ts)
 
 
@@ -107,7 +103,7 @@ class SineSynthesizer(object):
         ts = (duration / Seconds(1)) * sr
         ranges = np.array([np.arange(0, ts * c, c) for c in cps])
         raw = (np.sin(ranges * (2 * np.pi)) * scaling).sum(axis=0)
-        return ArrayWithUnits(raw, [TimeDimension(*self.samplerate)])
+        return AudioSamples(raw, self.samplerate)
 
 
 class TickSynthesizer(object):
@@ -131,7 +127,7 @@ class TickSynthesizer(object):
         step = int(sr // ticks_per_second)
         for i in xrange(0, len(samples), step):
             samples[i:i + len(tick)] = tick
-        return ArrayWithUnits(samples, [TimeDimension(*self.samplerate)])
+        return AudioSamples(samples, self.samplerate)
 
 
 class NoiseSynthesizer(object):
@@ -146,6 +142,5 @@ class NoiseSynthesizer(object):
     def synthesize(self, duration):
         sr = self.samplerate.samples_per_second
         seconds = duration / Seconds(1)
-        return ArrayWithUnits(
-                np.random.random_sample(sr * seconds),
-                [TimeDimension(*self.samplerate)])
+        return AudioSamples(
+                np.random.random_sample(sr * seconds), self.samplerate)

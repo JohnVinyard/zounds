@@ -5,8 +5,7 @@ import numpy as np
 
 from zounds.util import simple_in_memory_settings
 from zounds.basic import stft
-from zounds.timeseries import \
-    ConstantRateTimeSeriesFeature, HalfLapped, Stride, SR44100, Seconds
+from zounds.timeseries import HalfLapped, Stride, SR44100, Seconds
 from zounds.spectral import SlidingWindow
 from zounds.synthesize import TickSynthesizer
 from onset import \

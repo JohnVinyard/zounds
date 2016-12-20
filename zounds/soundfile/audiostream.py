@@ -1,10 +1,7 @@
 from io import BytesIO
 from os import SEEK_END
-
 from soundfile import SoundFile
-
-# from zounds.timeseries import AudioSamples, audio_sample_rate
-from zounds.timeseries import TimeDimension, audio_sample_rate
+from zounds.timeseries import TimeDimension, audio_sample_rate, AudioSamples
 from zounds.core import ArrayWithUnits
 from byte_depth import chunk_size_samples
 from featureflow import Node
@@ -34,8 +31,9 @@ class AudioStream(Node):
     def _get_samples(self):
         raw_samples = self._sf.read(self._chunk_size_samples)
         sr = audio_sample_rate(self._sf.samplerate)
-        td = TimeDimension(sr.frequency, sr.duration)
-        samples = ArrayWithUnits(raw_samples, [td])
+        # td = TimeDimension(sr.frequency, sr.duration)
+        # samples = ArrayWithUnits(raw_samples, [td])
+        samples = AudioSamples(raw_samples, sr)
         if self._sum_to_mono:
             return samples.mono
         return samples

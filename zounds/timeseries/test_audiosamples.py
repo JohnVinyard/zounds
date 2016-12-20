@@ -14,6 +14,11 @@ class AudioSamplesTest(unittest2.TestCase):
         self.assertRaises(
                 TypeError, lambda: AudioSamples(arr, SampleRate(one, one)))
 
+    def test_raises_if_array_is_more_than_2d(self):
+        arr = np.zeros((44100 * 2.5, 2, 2))
+        self.assertRaises(
+            ValueError, lambda:  AudioSamples(arr, SR44100()))
+
     def test_can_create_instance(self):
         arr = np.zeros(44100 * 2.5)
         instance = AudioSamples(arr, SR44100())

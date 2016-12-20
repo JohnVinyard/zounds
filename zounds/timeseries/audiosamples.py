@@ -9,14 +9,25 @@ from samplerate import SampleRate
 
 class AudioSamples(ArrayWithUnits):
     def __new__(cls, array, samplerate):
-        dimensions = \
-            [TimeDimension(*samplerate)] \
-            + ([IdentityDimension()] * (array.ndim - 1))
+        if array.ndim == 1:
+            dimensions = [TimeDimension(*samplerate)]
+        elif array.ndim == 2:
+            dimensions = [TimeDimension(*samplerate), IdentityDimension()]
+        else:
+            raise ValueError(
+                    'array must be one (mono) or two (multi-channel) dimensions')
 
         if not isinstance(samplerate, AudioSampleRate):
             raise TypeError('samplerate should be an AudioSampleRate instance')
 
         return ArrayWithUnits.__new__(cls, array, dimensions)
+
+    def sum(self, axis=None, dtype=None, **kwargs):
+        result = super(AudioSamples, self).sum(axis, dtype, **kwargs)
+        if self.ndim == 2 and axis == 1:
+            return AudioSamples(result, self.samplerate)
+        else:
+            return result
 
     @property
     def samples_per_second(self):

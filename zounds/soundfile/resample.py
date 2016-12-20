@@ -4,7 +4,7 @@ from ctypes import *
 
 import numpy as np
 
-from zounds.timeseries import SR44100, TimeDimension
+from zounds.timeseries import SR44100, AudioSamples
 from zounds.core import ArrayWithUnits
 
 libsamplerate = CDLL('libsamplerate.so')
@@ -140,7 +140,5 @@ class Resampler(Node):
 
         resampled = self._rs(data, self._finalized)
         if not isinstance(resampled, ArrayWithUnits):
-            # resampled = AudioSamples( \
-            #         resampled, self._samplerate)
-            resampled = ArrayWithUnits(resampled, [TimeDimension()])
+            resampled = AudioSamples(resampled, self._samplerate)
         yield resampled
