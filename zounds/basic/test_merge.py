@@ -2,8 +2,9 @@ import unittest2
 import numpy as np
 from featureflow import BaseModel, Node, PersistenceSettings
 from basic import Merge
-from zounds.timeseries import \
-    ConstantRateTimeSeries, ConstantRateTimeSeriesFeature, Milliseconds
+from zounds.timeseries import  Milliseconds, TimeDimension
+from zounds.persistence import ArrayWithUnitsFeature
+from zounds.core import ArrayWithUnits, IdentityDimension
 
 
 class MergeTester(Node):
@@ -21,18 +22,21 @@ class MergeTester(Node):
     def _process(self, data):
         for i in xrange(0, self.total_frames, self.increments_of):
             size = min(self.increments_of, self.total_frames - i)
-            yield ConstantRateTimeSeries(
-                    np.zeros((size, self.features)),
-                    frequency=Milliseconds(500))
+            td = TimeDimension(frequency=Milliseconds(500))
+            yield ArrayWithUnits(
+                    np.zeros((size, self.features)), [td, IdentityDimension()])
+            # yield ConstantRateTimeSeries(
+            #         np.zeros((size, self.features)),
+            #         frequency=Milliseconds(500))
 
 
 class MergeTests(unittest2.TestCase):
     def test_raises_if_single_source(self):
         class Document(BaseModel, PersistenceSettings):
-            source = ConstantRateTimeSeriesFeature(
+            source = ArrayWithUnitsFeature(
                     MergeTester,
                     store=True)
-            merged = ConstantRateTimeSeriesFeature(
+            merged = ArrayWithUnitsFeature(
                     Merge,
                     needs=source,
                     store=True)
@@ -41,10 +45,10 @@ class MergeTests(unittest2.TestCase):
 
     def test_raises_if_single_element_iterable(self):
         class Document(BaseModel, PersistenceSettings):
-            source = ConstantRateTimeSeriesFeature(
+            source = ArrayWithUnitsFeature(
                     MergeTester,
                     store=True)
-            merged = ConstantRateTimeSeriesFeature(
+            merged = ArrayWithUnitsFeature(
                     Merge,
                     needs=[source],
                     store=True)
@@ -53,15 +57,15 @@ class MergeTests(unittest2.TestCase):
 
     def test_can_combine_two_sources_at_same_rate(self):
         class Document(BaseModel, PersistenceSettings):
-            source1 = ConstantRateTimeSeriesFeature(
+            source1 = ArrayWithUnitsFeature(
                     MergeTester,
                     total_frames=200,
                     store=True)
-            source2 = ConstantRateTimeSeriesFeature(
+            source2 = ArrayWithUnitsFeature(
                     MergeTester,
                     total_frames=200,
                     store=True)
-            merged = ConstantRateTimeSeriesFeature(
+            merged = ArrayWithUnitsFeature(
                     Merge,
                     needs=[source1, source2],
                     store=True)
@@ -72,19 +76,19 @@ class MergeTests(unittest2.TestCase):
 
     def test_can_combine_three_sources_at_same_rate(self):
         class Document(BaseModel, PersistenceSettings):
-            source1 = ConstantRateTimeSeriesFeature(
+            source1 = ArrayWithUnitsFeature(
                     MergeTester,
                     total_frames=200,
                     store=True)
-            source2 = ConstantRateTimeSeriesFeature(
+            source2 = ArrayWithUnitsFeature(
                     MergeTester,
                     total_frames=200,
                     store=True)
-            source3 = ConstantRateTimeSeriesFeature(
+            source3 = ArrayWithUnitsFeature(
                     MergeTester,
                     total_frames=200,
                     store=True)
-            merged = ConstantRateTimeSeriesFeature(
+            merged = ArrayWithUnitsFeature(
                     Merge,
                     needs=(source1, source2, source3),
                     store=True)
@@ -95,17 +99,17 @@ class MergeTests(unittest2.TestCase):
 
     def test_can_combine_two_sources_at_different_rates(self):
         class Document(BaseModel, PersistenceSettings):
-            source1 = ConstantRateTimeSeriesFeature(
+            source1 = ArrayWithUnitsFeature(
                     MergeTester,
                     total_frames=200,
                     increments_of=30,
                     store=True)
-            source2 = ConstantRateTimeSeriesFeature(
+            source2 = ArrayWithUnitsFeature(
                     MergeTester,
                     total_frames=200,
                     increments_of=40,
                     store=True)
-            merged = ConstantRateTimeSeriesFeature(
+            merged = ArrayWithUnitsFeature(
                     Merge,
                     needs=(source1, source2),
                     store=True)
@@ -116,22 +120,22 @@ class MergeTests(unittest2.TestCase):
 
     def test_can_combine_three_sources_at_different_rates(self):
         class Document(BaseModel, PersistenceSettings):
-            source1 = ConstantRateTimeSeriesFeature(
+            source1 = ArrayWithUnitsFeature(
                     MergeTester,
                     total_frames=200,
                     increments_of=12,
                     store=True)
-            source2 = ConstantRateTimeSeriesFeature(
+            source2 = ArrayWithUnitsFeature(
                     MergeTester,
                     total_frames=200,
                     increments_of=17,
                     store=True)
-            source3 = ConstantRateTimeSeriesFeature(
+            source3 = ArrayWithUnitsFeature(
                     MergeTester,
                     total_frames=200,
                     increments_of=32,
                     store=True)
-            merged = ConstantRateTimeSeriesFeature(
+            merged = ArrayWithUnitsFeature(
                     Merge,
                     needs=(source1, source2, source3),
                     store=True)
@@ -142,17 +146,17 @@ class MergeTests(unittest2.TestCase):
 
     def test_shortest_of_two_sources(self):
         class Document(BaseModel, PersistenceSettings):
-            source1 = ConstantRateTimeSeriesFeature(
+            source1 = ArrayWithUnitsFeature(
                     MergeTester,
                     total_frames=190,
                     increments_of=30,
                     store=True)
-            source2 = ConstantRateTimeSeriesFeature(
+            source2 = ArrayWithUnitsFeature(
                     MergeTester,
                     total_frames=200,
                     increments_of=40,
                     store=True)
-            merged = ConstantRateTimeSeriesFeature(
+            merged = ArrayWithUnitsFeature(
                     Merge,
                     needs=[source1, source2],
                     store=True)
@@ -163,22 +167,22 @@ class MergeTests(unittest2.TestCase):
 
     def test_shortest_of_three_sources(self):
         class Document(BaseModel, PersistenceSettings):
-            source1 = ConstantRateTimeSeriesFeature(
+            source1 = ArrayWithUnitsFeature(
                     MergeTester,
                     total_frames=200,
                     increments_of=12,
                     store=True)
-            source2 = ConstantRateTimeSeriesFeature(
+            source2 = ArrayWithUnitsFeature(
                     MergeTester,
                     total_frames=185,
                     increments_of=17,
                     store=True)
-            source3 = ConstantRateTimeSeriesFeature(
+            source3 = ArrayWithUnitsFeature(
                     MergeTester,
                     total_frames=50,
                     increments_of=32,
                     store=True)
-            merged = ConstantRateTimeSeriesFeature(
+            merged = ArrayWithUnitsFeature(
                     Merge,
                     needs=[source1, source2, source3],
                     store=True)

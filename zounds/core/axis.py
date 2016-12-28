@@ -1,5 +1,5 @@
 import numpy as np
-from zounds.nputil import sliding_window
+from zounds.nputil import sliding_window, windowed
 from dimensions import IdentityDimension
 
 
@@ -32,7 +32,7 @@ class ArrayWithUnits(np.ndarray):
 
     def concatenate(self, other):
         if self.dimensions == other.dimensions:
-            return self.from_example(np.concatenate(self, other), self)
+            return self.from_example(np.concatenate([self, other]), self)
         else:
             raise ValueError('All dimensions must match to concatenate')
 
@@ -83,7 +83,33 @@ class ArrayWithUnits(np.ndarray):
         except ValueError:
             new_dims = [IdentityDimension()] * result.ndim
 
-        return self.__class__(result, new_dims)
+        return ArrayWithUnits(result, new_dims)
+
+    def sliding_window_with_leftovers(
+            self, windowsize, stepsize=None, dopad=False):
+
+        windowsize = [windowsize] + [slice() for _ in self.dimensions[1:]]
+        ws = tuple(self._compute_span(windowsize))
+        if stepsize:
+            stepsize = [stepsize] + [slice() for _ in self.dimensions[1:]]
+            ss = tuple(self._compute_span(stepsize))
+        else:
+            ss = ws
+
+        leftovers, result = windowed(self, ws[0], ss[0], dopad)
+
+        if not result.size:
+            return self, ArrayWithUnits(result, self.dimensions)
+
+        print self.shape, leftovers.shape, result.shape
+
+        try:
+            new_dims = tuple(self._compute_new_dims(result, ws))
+        except ValueError:
+            new_dims = [IdentityDimension()] * result.ndim
+
+        print result.shape, new_dims
+        return leftovers, ArrayWithUnits(result, new_dims)
 
     def _compute_new_dims(self, windowed, ws):
         for dimension, size, w in zip(self.dimensions, self.shape, ws):
@@ -194,4 +220,4 @@ class ArrayWithUnits(np.ndarray):
         indices = tuple(self._compute_indices(index))
         arr = super(ArrayWithUnits, self).__getitem__(indices)
         new_dims = tuple(self._new_dims(index, arr))
-        return self.__class__(arr, new_dims)
+        return ArrayWithUnits(arr, new_dims)

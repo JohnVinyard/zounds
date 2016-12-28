@@ -27,7 +27,7 @@ class SampleRateTests(unittest2.TestCase):
         ts = ArrayWithUnits(
                 np.zeros(sr.samples_per_second), [TimeDimension(*sr)])
         hl = HalfLapped()
-        freq, duration = hl.discrete_samples(ts.dimensions[0])
+        freq, duration = hl.discrete_samples(ts)
         self.assertEqual(256, freq)
         self.assertEqual(512, duration)
 
@@ -36,7 +36,7 @@ class SampleRateTests(unittest2.TestCase):
         ts = ArrayWithUnits(
                 np.zeros(sr.samples_per_second), [TimeDimension(*sr)])
         hl = HalfLapped()
-        freq, duration = hl.discrete_samples(ts.dimensions[0])
+        freq, duration = hl.discrete_samples(ts)
         self.assertEqual(512, freq)
         self.assertEqual(1024, duration)
 
@@ -45,7 +45,7 @@ class SampleRateTests(unittest2.TestCase):
         ts = ArrayWithUnits(
                 np.zeros(sr.samples_per_second), [TimeDimension(*sr)])
         hl = HalfLapped()
-        freq, duration = hl.discrete_samples(ts.dimensions[0])
+        freq, duration = hl.discrete_samples(ts)
         self.assertEqual(1024, freq)
         self.assertEqual(2048, duration)
 

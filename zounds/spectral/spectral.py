@@ -6,8 +6,9 @@ from scipy.stats.mstats import gmean
 from psychacoustics import Chroma as ChromaScale, Bark as BarkScale
 from zounds.nputil import safe_log
 from zounds.timeseries import SR44100, audio_sample_rate, Picoseconds
-# from tfrepresentation import TimeFrequencyRepresentation
 from frequencyscale import LinearScale, FrequencyBand
+from tfrepresentation import FrequencyDimension
+from zounds.core import ArrayWithUnits
 
 
 class FFT(Node):
@@ -85,13 +86,20 @@ class MDCT(Node):
         c = b[:, :l]
         transformed = np.sqrt(2 / l) * np.real(
                 c * np.exp(cpi * (f + 0.5) * (l + 1) / 2 / l))
-        n_seconds = data.duration / Picoseconds(int(1e12))
-        sr = audio_sample_rate(int((l / n_seconds) * 2))
-        yield TimeFrequencyRepresentation(
-            transformed,
-            frequency=data.frequency,
-            duration=data.duration,
-            scale=LinearScale.from_sample_rate(sr, l))
+
+        # n_seconds = data.dimensions[0].end / Picoseconds(int(1e12))
+        # print n_seconds, data.dimensions[0].size
+        # sr = audio_sample_rate(int((l / n_seconds) * 2))
+        sr = audio_sample_rate(data.dimensions[1].samples_per_second)
+        scale = LinearScale.from_sample_rate(sr, l)
+
+        yield ArrayWithUnits(
+                transformed, [data.dimensions[0], FrequencyDimension(scale)])
+        # yield TimeFrequencyRepresentation(
+        #     transformed,
+        #     frequency=data.frequency,
+        #     duration=data.duration,
+        #     scale=LinearScale.from_sample_rate(sr, l))
 
 
 # TODO: This constructor should not take a samplerate; that information should

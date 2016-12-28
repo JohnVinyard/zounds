@@ -100,6 +100,9 @@ class CoreTests(unittest2.TestCase):
         self.assertSequenceEqual(arr.dimensions, arr2.dimensions)
         self.assertEqual((90, 5), arr2.shape)
 
+    def test_size_is_not_modified_on_example_dimensions(self):
+        self.fail('Ensure that dimensions are copied, and not passed to new instances by reference')
+
     def test_can_use_ellipsis_to_get_entire_array(self):
         raw = np.zeros((10, 10, 10))
         dims = (
@@ -416,7 +419,7 @@ class CoreTests(unittest2.TestCase):
         raw = np.zeros(10)
         arr = ContrivedArray(raw, (ContrivedDimension(10),))
         new_arr = arr.sliding_window((ContrivedSlice(0, 20),))
-        self.assertIsInstance(new_arr, ContrivedArray)
+        self.assertIsInstance(new_arr, ArrayWithUnits)
         self.assertEqual((5, 2), new_arr.shape)
         self.assertIsInstance(new_arr.dimensions[0], ContrivedDimension)
         self.assertIsInstance(new_arr.dimensions[1], ContrivedDimension)
@@ -435,7 +438,7 @@ class CoreTests(unittest2.TestCase):
         arr = ContrivedArray(raw, (ContrivedDimension(10),))
         new_arr = arr.sliding_window(
                 (ContrivedSlice(0, 20),), (ContrivedSlice(0, 10),))
-        self.assertIsInstance(new_arr, ContrivedArray)
+        self.assertIsInstance(new_arr, ArrayWithUnits)
         self.assertEqual((9, 2), new_arr.shape)
         self.assertIsInstance(new_arr.dimensions[0], ContrivedDimension)
         self.assertIsInstance(new_arr.dimensions[1], ContrivedDimension)
@@ -446,7 +449,7 @@ class CoreTests(unittest2.TestCase):
         raw = np.zeros((10, 10))
         arr = ContrivedArray(raw, (ContrivedDimension(10), None))
         new_arr = arr.sliding_window((ContrivedSlice(0, 20), 10))
-        self.assertIsInstance(new_arr, ContrivedArray)
+        self.assertIsInstance(new_arr, ArrayWithUnits)
         self.assertEqual((5, 2, 10), new_arr.shape)
         self.assertIsInstance(new_arr.dimensions[0], ContrivedDimension)
         self.assertIsInstance(new_arr.dimensions[1], ContrivedDimension)
@@ -459,7 +462,7 @@ class CoreTests(unittest2.TestCase):
         arr = ContrivedArray(raw, (ContrivedDimension(10), None))
         new_arr = arr.sliding_window(
                 (ContrivedSlice(0, 20), 10), (ContrivedSlice(0, 10), 10))
-        self.assertIsInstance(new_arr, ContrivedArray)
+        self.assertIsInstance(new_arr, ArrayWithUnits)
         self.assertEqual((9, 2, 10), new_arr.shape)
         self.assertIsInstance(new_arr.dimensions[0], ContrivedDimension)
         self.assertIsInstance(new_arr.dimensions[1], ContrivedDimension)
@@ -471,7 +474,7 @@ class CoreTests(unittest2.TestCase):
         raw = np.zeros((10, 10))
         arr = ContrivedArray(raw, (ContrivedDimension(10), None))
         new_arr = arr.sliding_window((ContrivedSlice(0, 20), 2))
-        self.assertIsInstance(new_arr, ContrivedArray)
+        self.assertIsInstance(new_arr, ArrayWithUnits)
         self.assertEqual((25, 2, 2), new_arr.shape)
         self.assertIsInstance(new_arr.dimensions[0], IdentityDimension)
         self.assertIsInstance(new_arr.dimensions[1], IdentityDimension)
@@ -482,7 +485,7 @@ class CoreTests(unittest2.TestCase):
         arr = ContrivedArray(raw, (ContrivedDimension(10), None))
         new_arr = arr.sliding_window(
                 (ContrivedSlice(0, 20), 2), (ContrivedSlice(0, 10), 1))
-        self.assertIsInstance(new_arr, ContrivedArray)
+        self.assertIsInstance(new_arr, ArrayWithUnits)
         self.assertEqual((81, 2, 2), new_arr.shape)
         self.assertIsInstance(new_arr.dimensions[0], IdentityDimension)
         self.assertIsInstance(new_arr.dimensions[1], IdentityDimension)

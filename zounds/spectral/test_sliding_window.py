@@ -3,11 +3,12 @@ from sliding_window import \
     SlidingWindow, IdentityWindowingFunc, OggVorbisWindowingFunc
 from zounds.timeseries import \
     AudioSamples, SR22050, SR44100, SR11025, SR48000, SR96000, SampleRate, \
-    Seconds, Milliseconds, ConstantRateTimeSeriesFeature, TimeDimension
+    Seconds, Milliseconds, TimeDimension
 from zounds.util import simple_in_memory_settings
 from zounds.basic import resampled
 from zounds.synthesize import NoiseSynthesizer
-from zounds.core import ArrayWithUnits, ArrayWithUnitsFeature
+from zounds.core import ArrayWithUnits
+from zounds.persistence import ArrayWithUnitsFeature
 import numpy as np
 import unittest2
 
@@ -77,7 +78,7 @@ class SlidingWindowTests(unittest2.TestCase):
 
         @simple_in_memory_settings
         class Document(rs):
-            windowed = ConstantRateTimeSeriesFeature(
+            windowed = ArrayWithUnitsFeature(
                     SlidingWindow,
                     wscheme=wscheme,
                     needs=rs.resampled,
@@ -93,7 +94,7 @@ class SlidingWindowTests(unittest2.TestCase):
 
     def test_can_apply_sliding_window_to_constant_rate_time_series(self):
         arr = ArrayWithUnits(np.zeros(100), [TimeDimension(Seconds(1))])
-        sw = SlidingWindow(SampleRate(Seconds(2), Seconds(2)))
+        sw = SampleRate(Seconds(2), Seconds(2))
 
         @simple_in_memory_settings
         class Document(BaseModel):

@@ -227,7 +227,6 @@ class TimeDimension(Dimension):
     @property
     def span(self):
         overlap = self.duration - self.frequency
-        print self.duration, self.frequency, overlap, self.size
         return TimeSlice((self.size * self.frequency) + overlap)
 
     @property

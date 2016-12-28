@@ -1,16 +1,23 @@
 import unittest2
 import numpy as np
-from synthesize import ShortTimeTransformSynthesizer, SineSynthesizer
-from zounds.timeseries import SR22050, SR44100, HalfLapped, Seconds
+from synthesize import \
+    ShortTimeTransformSynthesizer, SineSynthesizer, DCTSynthesizer
+from zounds.timeseries import \
+    SR22050, SR44100, HalfLapped, Seconds, TimeDimension, AudioSamples
+from zounds.core import ArrayWithUnits
+from zounds.spectral import FrequencyDimension, FrequencyBand, LinearScale
 
 
 class SynthesizeTests(unittest2.TestCase):
     def test_has_correct_sample_rate(self):
         half_lapped = HalfLapped()
-        synth = ShortTimeTransformSynthesizer()
+        # synth = ShortTimeTransformSynthesizer()
+        synth = DCTSynthesizer()
         raw = np.zeros((100, 2048))
-        timeseries = ConstantRateTimeSeries(
-                raw, half_lapped.frequency, half_lapped.duration)
+        band = FrequencyBand(0, SR44100().nyquist)
+        scale = LinearScale(band, raw.shape[1])
+        timeseries = ArrayWithUnits(
+                raw, [TimeDimension(*half_lapped), FrequencyDimension(scale)])
         output = synth.synthesize(timeseries)
         self.assertIsInstance(output.samplerate, SR44100)
         self.assertIsInstance(output, AudioSamples)

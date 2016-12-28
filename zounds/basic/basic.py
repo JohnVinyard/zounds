@@ -4,6 +4,7 @@ import numpy as np
 from featureflow import Node, NotEnoughData
 
 from zounds.timeseries import VariableRateTimeSeries
+from zounds.core import ArrayWithUnits
 
 
 class Merge(Node):
@@ -42,7 +43,7 @@ class Merge(Node):
         return output
 
     def _process(self, data):
-        yield ConstantRateTimeSeries.concat(data.values(), axis=1)
+        yield ArrayWithUnits.concat(data.values(), axis=1)
 
 
 # KLUDGE: This implementation may currently only be used when consuming
@@ -59,7 +60,7 @@ class Pooled(Node):
         self._axis = axis
 
     def _enqueue(self, data, pusher):
-        if isinstance(data, ConstantRateTimeSeries):
+        if isinstance(data, ArrayWithUnits):
             try:
                 self._timeseries.concatenate(data)
             except AttributeError:

@@ -6,6 +6,7 @@ from zounds.timeseries import \
 from zounds.spectral import DCTIV
 from zounds.spectral.sliding_window import \
     IdentityWindowingFunc, OggVorbisWindowingFunc
+from zounds.core import ArrayWithUnits
 
 
 class ShortTimeTransformSynthesizer(object):
@@ -21,12 +22,13 @@ class ShortTimeTransformSynthesizer(object):
     def _overlap_add(self, frames):
         # BUG: This code assumes there is a coefficient for every raw audio
         # sample, but this isn't the case for FFT, e.g.
-        sample_length_seconds = frames.duration_in_seconds / frames.shape[-1]
+        time_dim = frames.dimensions[0]
+        sample_length_seconds = time_dim.duration_in_seconds / frames.shape[-1]
         samples_per_second = int(1 / sample_length_seconds)
         samplerate = audio_sample_rate(samples_per_second)
-        windowsize = int(np.round(frames.duration / samplerate.frequency))
-        hopsize = int(np.round(frames.frequency / samplerate.frequency))
-        arr = np.zeros(frames.end / samplerate.frequency)
+        windowsize = int(np.round(time_dim.duration / samplerate.frequency))
+        hopsize = int(np.round(time_dim.frequency / samplerate.frequency))
+        arr = np.zeros(time_dim.end / samplerate.frequency)
         for i, f in enumerate(frames):
             start = i * hopsize
             stop = start + windowsize
@@ -36,7 +38,7 @@ class ShortTimeTransformSynthesizer(object):
 
     def synthesize(self, frames):
         audio = self._transform(frames)
-        ts = AudioSamples.from_example(audio, frames)
+        ts = ArrayWithUnits.from_example(audio, frames)
         return self._overlap_add(ts)
 
 

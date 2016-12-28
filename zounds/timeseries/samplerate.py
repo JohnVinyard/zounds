@@ -45,8 +45,9 @@ class SampleRate(object):
         :return: A tuple, representing the frequency and duration in discrete
         samples, respectively
         """
-        windowsize = np.round((self.duration - ts.overlap) / ts.frequency)
-        stepsize = np.round(self.frequency / ts.frequency)
+        td = ts.dimensions[0]
+        windowsize = np.round((self.duration - td.overlap) / td.frequency)
+        stepsize = np.round(self.frequency / td.frequency)
         return int(stepsize), int(windowsize)
 
 

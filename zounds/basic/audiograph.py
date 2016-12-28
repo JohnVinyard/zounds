@@ -5,7 +5,7 @@ from zounds.soundfile import \
     Resampler
 from zounds.segment import \
     ComplexDomain, MovingAveragePeakPicker, TimeSliceFeature
-from zounds.persistence import ArrayWithUnitsFeature
+from zounds.persistence import ArrayWithUnitsFeature, AudioSamplesFeature
 from zounds.timeseries import SR44100, HalfLapped, Stride
 from zounds.spectral import \
     SlidingWindow, OggVorbisWindowingFunc, FFT, BarkBands, SpectralCentroid, \
@@ -43,12 +43,12 @@ def resampled(
                 needs=raw,
                 store=True)
 
-        pcm = ArrayWithUnitsFeature(
+        pcm = AudioSamplesFeature(
                 AudioStream,
                 needs=raw,
                 store=False)
 
-        resampled = ArrayWithUnitsFeature(
+        resampled = AudioSamplesFeature(
                 Resampler,
                 needs=pcm,
                 samplerate=resample_to,
@@ -79,12 +79,12 @@ def stft(
                 needs=raw,
                 store=True)
 
-        pcm = ArrayWithUnitsFeature(
+        pcm = AudioSamplesFeature(
                 AudioStream,
                 needs=raw,
                 store=False)
 
-        resampled = ArrayWithUnitsFeature(
+        resampled = AudioSamplesFeature(
                 Resampler,
                 needs=pcm,
                 samplerate=resample_to,
@@ -135,12 +135,12 @@ def audio_graph(
                 needs=raw,
                 store=True)
 
-        pcm = ArrayWithUnitsFeature(
+        pcm = AudioSamplesFeature(
                 AudioStream,
                 needs=raw,
                 store=False)
 
-        resampled = ArrayWithUnitsFeature(
+        resampled = AudioSamplesFeature(
                 Resampler,
                 needs=pcm,
                 samplerate=resample_to,

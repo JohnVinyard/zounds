@@ -6,9 +6,9 @@ import numpy as np
 import unittest2
 from soundfile import SoundFile
 
-from zounds.timeseries import \
-    TimeSlice, ConstantRateTimeSeriesFeature, AudioSamples, AudioSamplesFeature, \
-    SR44100, HalfLapped, Seconds, Milliseconds
+from zounds.timeseries import TimeSlice, AudioSamples, SR44100, HalfLapped, \
+    Seconds, Milliseconds
+from zounds.persistence import ArrayWithUnitsFeature, AudioSamplesFeature
 from zounds.soundfile import \
     AudioStream, OggVorbis, OggVorbisFeature, Resampler
 from zounds.spectral import \
@@ -48,42 +48,42 @@ class Document(BaseModel, Settings):
             samplerate=samplerate,
             store=True)
 
-    windowed = ConstantRateTimeSeriesFeature(
+    windowed = ArrayWithUnitsFeature(
             SlidingWindow,
             needs=resampled,
             wscheme=windowing_scheme,
             wfunc=OggVorbisWindowingFunc(),
             store=False)
 
-    fft = ConstantRateTimeSeriesFeature(
+    fft = ArrayWithUnitsFeature(
             FFT,
             needs=windowed,
             store=True)
 
-    chroma = ConstantRateTimeSeriesFeature(
+    chroma = ArrayWithUnitsFeature(
             Chroma,
             needs=fft,
             samplerate=samplerate,
             store=True)
 
-    bark = ConstantRateTimeSeriesFeature(
+    bark = ArrayWithUnitsFeature(
             BarkBands,
             needs=fft,
             samplerate=samplerate,
             store=True)
 
-    bfcc = ConstantRateTimeSeriesFeature(
+    bfcc = ArrayWithUnitsFeature(
             BFCC,
             needs=bark,
             store=True)
 
-    bfcc_sliding_window = ConstantRateTimeSeriesFeature(
+    bfcc_sliding_window = ArrayWithUnitsFeature(
             SlidingWindow,
             needs=bfcc,
             wscheme=windowing_scheme * (2, 4),
             store=True)
 
-    bfcc_pooled = ConstantRateTimeSeriesFeature(
+    bfcc_pooled = ArrayWithUnitsFeature(
             Max,
             needs=bfcc_sliding_window,
             axis=1,
