@@ -102,7 +102,8 @@ class DCTIVTests(unittest2.TestCase):
         self.assertIsInstance(self.doc.dct, ArrayWithUnits)
 
     def test_has_correct_nyquist_frequency(self):
-        self.assertEqual(self.samplerate.nyquist, self.doc.dct.scale.stop_hz)
+        freq_dim = self.doc.dct.dimensions[-1]
+        self.assertEqual(self.samplerate.nyquist, freq_dim.scale.stop_hz)
 
     def test_reconstruction(self):
         ds = DCTIVSynthesizer()

@@ -3,7 +3,7 @@ from sliding_window import \
     SlidingWindow, IdentityWindowingFunc, OggVorbisWindowingFunc
 from zounds.timeseries import \
     AudioSamples, SR22050, SR44100, SR11025, SR48000, SR96000, SampleRate, \
-    Picoseconds, Seconds, Milliseconds, TimeDimension, HalfLapped
+    Picoseconds, Seconds, Milliseconds, TimeDimension, HalfLapped, TimeSlice
 from zounds.util import simple_in_memory_settings
 from zounds.basic import resampled
 from zounds.synthesize import NoiseSynthesizer
@@ -48,12 +48,15 @@ class OggVorbisWindowingFunctionTests(unittest2.TestCase):
 
 class SlidingWindowTests(unittest2.TestCase):
     def _check(self, samplerate, expected_window_size, expected_step_size):
-        sw = SlidingWindow(wscheme=samplerate.half_lapped())
+        # sw = SlidingWindow(wscheme=samplerate.half_lapped())
         samples = AudioSamples(
                 np.zeros(5 * samplerate.samples_per_second), samplerate)
-        sw._enqueue(samples, None)
-        self.assertEqual(expected_window_size, sw._windowsize)
-        self.assertEqual(expected_step_size, sw._stepsize)
+        # sw._enqueue(samples, None)
+        wscheme = samplerate.half_lapped()
+        ws, ss = samples._sliding_window_integer_slices(
+                TimeSlice(wscheme.duration), TimeSlice(wscheme.frequency))
+        self.assertEqual(expected_window_size, ws[0])
+        self.assertEqual(expected_step_size, ss[0])
 
     def test_correct_window_and_step_size_at_96000(self):
         self._check(SR96000(), 4096, 2048)

@@ -85,9 +85,7 @@ class ArrayWithUnits(np.ndarray):
 
         return ArrayWithUnits(result, new_dims)
 
-    def sliding_window_with_leftovers(
-            self, windowsize, stepsize=None, dopad=False):
-
+    def _sliding_window_integer_slices(self, windowsize, stepsize=None):
         windowsize = [windowsize] + [slice(None) for _ in self.dimensions[1:]]
         ws = tuple(self._compute_span(windowsize))
         if stepsize:
@@ -96,7 +94,14 @@ class ArrayWithUnits(np.ndarray):
         else:
             ss = ws
 
-        print ws, ss
+        return ws, ss
+
+    def sliding_window_with_leftovers(
+            self, windowsize, stepsize=None, dopad=False):
+
+        ws, ss = \
+            self._sliding_window_integer_slices(windowsize, stepsize)
+
         leftovers, result = windowed(self, ws[0], ss[0], dopad)
 
         if not result.size:
