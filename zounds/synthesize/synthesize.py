@@ -2,11 +2,11 @@ from __future__ import division
 import numpy as np
 from scipy.fftpack import idct
 from zounds.timeseries import \
-    audio_sample_rate, Seconds, AudioSamples
+    audio_sample_rate, Seconds, AudioSamples, TimeDimension, Picoseconds
 from zounds.spectral import DCTIV
 from zounds.spectral.sliding_window import \
     IdentityWindowingFunc, OggVorbisWindowingFunc
-from zounds.core import ArrayWithUnits
+from zounds.core import ArrayWithUnits, IdentityDimension
 
 
 class ShortTimeTransformSynthesizer(object):
@@ -38,7 +38,7 @@ class ShortTimeTransformSynthesizer(object):
 
     def synthesize(self, frames):
         audio = self._transform(frames)
-        ts = ArrayWithUnits.from_example(audio, frames)
+        ts = ArrayWithUnits(audio, [frames.dimensions[0], IdentityDimension()])
         return self._overlap_add(ts)
 
 

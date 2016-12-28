@@ -79,7 +79,7 @@ class ArrayWithUnits(np.ndarray):
         result = sliding_window(self, ws, ss)
 
         try:
-            new_dims = tuple(self._compute_new_dims(result, ws))
+            new_dims = tuple(self._compute_new_dims(result, ws, ss))
         except ValueError:
             new_dims = [IdentityDimension()] * result.ndim
 
@@ -88,10 +88,10 @@ class ArrayWithUnits(np.ndarray):
     def sliding_window_with_leftovers(
             self, windowsize, stepsize=None, dopad=False):
 
-        windowsize = [windowsize] + [slice() for _ in self.dimensions[1:]]
+        windowsize = [windowsize] + [slice(None) for _ in self.dimensions[1:]]
         ws = tuple(self._compute_span(windowsize))
         if stepsize:
-            stepsize = [stepsize] + [slice() for _ in self.dimensions[1:]]
+            stepsize = [stepsize] + [slice(None) for _ in self.dimensions[1:]]
             ss = tuple(self._compute_span(stepsize))
         else:
             ss = ws
@@ -101,27 +101,27 @@ class ArrayWithUnits(np.ndarray):
         if not result.size:
             return self, ArrayWithUnits(result, self.dimensions)
 
-        print self.shape, leftovers.shape, result.shape
-
         try:
-            new_dims = tuple(self._compute_new_dims(result, ws))
+            new_dims = tuple(self._compute_new_dims(result, ws, ss))
         except ValueError:
             new_dims = [IdentityDimension()] * result.ndim
 
-        print result.shape, new_dims
         return leftovers, ArrayWithUnits(result, new_dims)
 
-    def _compute_new_dims(self, windowed, ws):
-        for dimension, size, w in zip(self.dimensions, self.shape, ws):
-            modified = dimension.modified_dimension(size, w)
-            for m in modified:
-                yield m
+    def _compute_new_dims(self, windowed, ws, ss):
+        for dimension, size, w, s in zip(self.dimensions, self.shape, ws, ss):
+            try:
+                modified = dimension.modified_dimension(size, w, s)
+                for m in modified:
+                    yield m
+            except NotImplementedError:
+                yield dimension
 
     def _compute_span(self, index):
         for sl in self._compute_indices(index):
             try:
                 yield sl.stop - sl.start
-            except AttributeError:
+            except (AttributeError, TypeError):
                 yield sl
 
     def _compute_indices(self, index):

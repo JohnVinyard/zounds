@@ -10,7 +10,7 @@ class FrequencyDimension(Dimension):
         super(FrequencyDimension, self).__init__()
         self.scale = scale
 
-    def modified_dimension(self, size, windowsize):
+    def modified_dimension(self, size, windowsize, stepsize=None):
         raise NotImplementedError()
 
     def metaslice(self, index, size):
@@ -23,8 +23,11 @@ class FrequencyDimension(Dimension):
         return self.scale.get_slice(index)
 
     def validate(self, size):
+        msg = 'scale and array size must match, ' \
+            'but were scale: {self.scale.n_bands},  array size: {size}'
+
         if size != len(self.scale):
-            raise ValueError('Scale length must match array length')
+            raise ValueError(msg.format(**locals()))
 
     def __eq__(self, other):
         return self.scale == other.scale

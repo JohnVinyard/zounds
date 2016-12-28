@@ -208,6 +208,14 @@ class TimeDimension(Dimension):
         self.duration = duration or frequency
         self.frequency = frequency
 
+    def __str__(self):
+        fs = self.frequency / Picoseconds(int(1e12))
+        ds = self.duration / Picoseconds(int(1e12))
+        return 'TimeDimension(f={fs}, d={ds})'.format(**locals())
+
+    def __repr__(self):
+        return self.__str__()
+
     @property
     def samplerate(self):
         return SampleRate(self.frequency, self.duration)
@@ -233,9 +241,14 @@ class TimeDimension(Dimension):
     def end(self):
         return self.span.end
 
-    def modified_dimension(self, size, windowsize):
+    @property
+    def end_seconds(self):
+        return self.end / Picoseconds(int(1e12))
+
+    def modified_dimension(self, size, windowsize, stepsize=None):
+        stepsize = stepsize or windowsize
         yield TimeDimension(
-                self.frequency * windowsize, self.duration * windowsize)
+                self.frequency * stepsize, self.duration * windowsize)
         yield self
 
     def metaslice(self, index, size):

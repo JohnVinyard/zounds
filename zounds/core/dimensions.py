@@ -7,7 +7,7 @@ class Dimension(object):
     def __init__(self):
         super(Dimension, self).__init__()
 
-    def modified_dimension(self, size, windowsize):
+    def modified_dimension(self, size, windowsize, stepsize=None):
         raise NotImplementedError()
 
     def metaslice(self, index, size):
@@ -24,7 +24,7 @@ class IdentityDimension(Dimension):
     def __init__(self):
         super(IdentityDimension, self).__init__()
 
-    def modified_dimension(self, size, windowsize):
+    def modified_dimension(self, size, windowsize, stepsize=None):
         if size / windowsize == 1:
             yield IdentityDimension()
         else:

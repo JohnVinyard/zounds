@@ -36,23 +36,36 @@ class MDCTTests(unittest2.TestCase):
         _id = Document.process(meta=self.audio.encode())
         self.doc = Document(_id)
 
+    def test_has_correct_duration(self):
+        self.assertAlmostEqual(
+            self.audio.dimensions[0].end_seconds,
+            self.doc.mdct.dimensions[0].end_seconds,
+            delta=0.02)
+
     def test_is_correct_type(self):
         self.assertIsInstance(self.doc.mdct, ArrayWithUnits)
 
     def test_has_correct_nyquist_frequency(self):
-        self.assertEqual(self.samplerate.nyquist, self.doc.mdct.scale.stop_hz)
+        freq_dim = self.doc.mdct.dimensions[1]
+        self.assertEqual(self.samplerate.nyquist, freq_dim.scale.stop_hz)
 
     def test_reconstruction(self):
         ds = MDCTSynthesizer()
         recon = ds.synthesize(self.doc.mdct)
 
-        # self.assertEqual(len(self.audio), len(recon))
+        orig_seconds = self.audio.dimensions[0].end_seconds
+        recon_seconds = recon.dimensions[0].end_seconds
+        self.assertAlmostEqual(orig_seconds, recon_seconds, delta=0.02)
+
+        # ensure that both the original and reconstruction have the exact
+        # same length in samples, so that we can easily compare spectral peaks
+        l = min(len(self.audio), len(recon))
+
         self.assertEqual(self.audio.samplerate, recon.samplerate)
-        orig_fft = abs(np.fft.rfft(self.audio))
-        recon_fft = abs(np.fft.rfft(recon))
+        orig_fft = abs(np.fft.rfft(self.audio[:l]))
+        recon_fft = abs(np.fft.rfft(recon[:l]))
         orig_peaks = set(np.argsort(orig_fft)[-3:])
         recon_peaks = set(np.argsort(recon_fft)[-3:])
-        print len(orig_peaks), len(recon_peaks)
         # ensure that the original and reconstruction have the same three
         # spectral peaks
         self.assertEqual(orig_peaks, recon_peaks)
@@ -95,10 +108,17 @@ class DCTIVTests(unittest2.TestCase):
         ds = DCTIVSynthesizer()
         recon = ds.synthesize(self.doc.dct)
 
-        self.assertEqual(len(self.audio), len(recon))
+        orig_seconds = self.audio.dimensions[0].end_seconds
+        recon_seconds = recon.dimensions[0].end_seconds
+        self.assertAlmostEqual(orig_seconds, recon_seconds, delta=0.02)
+
+        # ensure that both the original and reconstruction have the exact
+        # same length in samples, so that we can easily compare spectral peaks
+        l = min(len(self.audio), len(recon))
+
         self.assertEqual(self.audio.samplerate, recon.samplerate)
-        orig_fft = abs(np.fft.rfft(self.audio))
-        recon_fft = abs(np.fft.rfft(recon))
+        orig_fft = abs(np.fft.rfft(self.audio[:l]))
+        recon_fft = abs(np.fft.rfft(recon[:l]))
         orig_peaks = set(np.argsort(orig_fft)[-3:])
         recon_peaks = set(np.argsort(recon_fft)[-3:])
         # ensure that the original and reconstruction have the same three
