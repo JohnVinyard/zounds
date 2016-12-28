@@ -4,7 +4,8 @@ import numpy as np
 from featureflow import Node, Feature, Decoder
 
 from zounds.nputil import safe_unit_norm
-from zounds.timeseries import TimeSlice, Picoseconds
+from zounds.timeseries import TimeSlice, Picoseconds, TimeDimension
+from zounds.core import ArrayWithUnits
 
 
 class MeasureOfTransience(Node):
@@ -24,10 +25,13 @@ class MeasureOfTransience(Node):
         self._bin_numbers = np.arange(1, data.shape[1] + 1)
         padding = np.zeros(data.shape[1])
         padding[:] = data[0]
-        return ConstantRateTimeSeries(
-                np.concatenate([padding[None, :], data]),
-                data.frequency,
-                data.duration)
+
+        # return ConstantRateTimeSeries(
+        #         np.concatenate([padding[None, :], data]),
+        #         data.frequency,
+        #         data.duration)
+        return ArrayWithUnits(
+            np.concatenate([padding[None, :], data]), data.dimensions)
 
     # TODO: this pattern of hanging on to the last sample of the previous chunk,
     # and appending to the next chunk probably happens somewhere else, and
@@ -40,10 +44,15 @@ class MeasureOfTransience(Node):
 
     def _dequeue(self):
         data = self._cache
-        self._cache = ConstantRateTimeSeries(
-                self._cache[None, -1],
-                self._cache.frequency,
-                self._cache.duration)
+
+        # self._cache = ConstantRateTimeSeries(
+        #         self._cache[None, -1],
+        #         self._cache.frequency,
+        #         self._cache.duration)
+
+        self._cache = ArrayWithUnits(
+            self._cache[None, -1], self._cache.dimensions)
+
         return data
 
     def _process(self, data):
@@ -54,7 +63,13 @@ class MeasureOfTransience(Node):
         energy[energy == 0] = 1e-12
         hfc[hfc == 0] = 1e-12
         mot = (hfc[1:] / hfc[:-1]) * (hfc[1:] / energy[1:])
-        yield ConstantRateTimeSeries(mot, data.frequency, data.duration)
+
+        # yield ConstantRateTimeSeries(mot, data.frequency, data.duration)
+        # print mot.shape, data.dimensions
+        # print mot.__class__
+        # print mot.dimensions
+        # yield ArrayWithUnits(mot, data.dimensions)
+        yield mot
 
 
 class ComplexDomain(Node):
@@ -95,10 +110,15 @@ class ComplexDomain(Node):
              (2 * expected * actual * np.cos(angle))) ** 0.5)[
             nonzero_phase_delta_indices]
 
-        output = ConstantRateTimeSeries(
-                detect.sum(axis=1),
-                data.frequency,
-                data.duration // 3)
+        # output = ConstantRateTimeSeries(
+        #         detect.sum(axis=1),
+        #         data.frequency,
+        #         data.duration // 3)
+
+        dims = \
+            [TimeDimension(data.frequency, data.duration // 3)] \
+            + data.dimensions[1:]
+        output = ArrayWithUnits(detect.sum(axis=1), dims)
         yield output
 
 
@@ -113,20 +133,28 @@ class Flux(Node):
             self._cache = np.vstack((data[0], data))
         else:
             self._cache = np.vstack((self._memory, data))
-        self._cache = ConstantRateTimeSeries(
-                self._cache,
-                data.frequency,
-                data.duration)
+
+        # self._cache = ConstantRateTimeSeries(
+        #         self._cache,
+        #         data.frequency,
+        #         data.duration)
+
+        self._cache = ArrayWithUnits(self._cache, data.dimensions)
+
         self._memory = data[-1]
 
     def _process(self, data):
         if self._unit_norm:
             data = safe_unit_norm(data)
         diff = np.diff(data, axis=0)
-        yield ConstantRateTimeSeries(
-                np.linalg.norm(diff, axis=-1),
-                data.frequency,
-                data.duration)
+
+        # yield ConstantRateTimeSeries(
+        #         np.linalg.norm(diff, axis=-1),
+        #         data.frequency,
+        #         data.duration)
+
+        yield ArrayWithUnits(
+                np.linalg.norm(diff, axis=-1), data.dimensions)
 
 
 class BasePeakPicker(Node):
@@ -141,12 +169,15 @@ class BasePeakPicker(Node):
         yield self._pos
 
     def _process(self, data):
+        td = data.dimensions[0]
+        frequency = td.frequency
+
         if self._pos == Picoseconds(0):
             yield self._pos
 
         indices = self._onset_indices(data)
-        timestamps = self._pos + (indices * data.frequency)
-        self._pos += len(data) * data.frequency
+        timestamps = self._pos + (indices * frequency)
+        self._pos += len(data) * frequency
         yield timestamps
 
 

@@ -12,7 +12,6 @@ def _np_from_buffer(b, shape, dtype):
 
 
 class ArrayWithUnitsEncoder(Node):
-
     content_type = 'application/octet-stream'
 
     def __init__(self, needs=None):
@@ -33,6 +32,32 @@ class ArrayWithUnitsEncoder(Node):
             yield self.nmpy.pack()
 
         yield data.tostring()
+
+
+class PackedArrayWithUnitsEncoder(Node):
+    content_type = 'application/octet-stream'
+
+    def __init__(self, needs=None):
+        super(PackedArrayWithUnitsEncoder, self).__init__(needs=needs)
+        self.encoder = DimensionEncoder()
+        self.dimensions = None
+        self.nmpy = None
+
+    def _process(self, data):
+        if self.dimensions is None:
+            self.dimensions = data.dimensions
+            d = list(self.encoder.encode(self.dimensions))
+            encoded = json.dumps(d)
+            yield struct.pack('I', len(encoded))
+            yield encoded
+
+        packed = np.packbits(data.astype(np.uint8), axis=-1)
+
+        if self.nmpy is None:
+            self.nmpy = NumpyMetaData(packed.dtype, packed.shape[1:])
+            yield self.nmpy.pack()
+
+        yield packed.tostring()
 
 
 class ArrayWithUnitsDecoder(Decoder):
@@ -67,6 +92,26 @@ class ArrayWithUnitsFeature(Feature):
             store=False,
             key=None,
             encoder=ArrayWithUnitsEncoder,
+            decoder=ArrayWithUnitsDecoder(),
+            **extractor_args):
+        super(ArrayWithUnitsFeature, self).__init__(
+                extractor,
+                needs=needs,
+                store=store,
+                encoder=encoder,
+                decoder=decoder,
+                key=key,
+                **extractor_args)
+
+
+class PackedArrayWithUnitsFeature(Feature):
+    def __init__(
+            self,
+            extractor,
+            needs=None,
+            store=False,
+            key=None,
+            encoder=PackedArrayWithUnitsEncoder,
             decoder=ArrayWithUnitsDecoder(),
             **extractor_args):
         super(ArrayWithUnitsFeature, self).__init__(

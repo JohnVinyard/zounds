@@ -2,6 +2,7 @@ from __future__ import division
 from duration import Picoseconds
 from collections import namedtuple
 import numpy as np
+from duration import Seconds
 
 Stride = namedtuple('Stride', ['frequency', 'duration'])
 
@@ -11,6 +12,14 @@ class SampleRate(object):
         self.frequency = frequency
         self.duration = duration
         super(SampleRate, self).__init__()
+
+    def __str__(self):
+        f = self.frequency / Seconds(1)
+        d = self.duration / Seconds(1)
+        return '{self.__class__.__name__}(f={f}, d={d})'.format(**locals())
+
+    def __repr__(self):
+        return self.__str__()
 
     def __iter__(self):
         return iter((self.frequency, self.duration))
@@ -36,7 +45,9 @@ class SampleRate(object):
 
         freq = self.frequency * other[0]
         duration = (self.frequency * other[1]) + self.overlap
-        return SampleRate(freq, duration)
+        new = SampleRate(freq, duration)
+        print self, new
+        return new
 
     def discrete_samples(self, ts):
         """

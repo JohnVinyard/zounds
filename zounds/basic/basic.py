@@ -74,10 +74,14 @@ class Pooled(Node):
         return self._timeslices, self._timeseries
 
     def _process(self, data):
-        slices, series = data
-        examples = [(ts, self._op(series[ts], axis=self._axis))
-                    for ts in slices]
-        yield VariableRateTimeSeries(examples)
+        try:
+            slices, series = data
+            examples = [(ts, self._op(series[ts], axis=self._axis))
+                        for ts in slices]
+            yield VariableRateTimeSeries(examples)
+        except Exception as e:
+            print e
+            raise
 
 
 class Slice(Node):

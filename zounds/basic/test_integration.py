@@ -7,26 +7,22 @@ import unittest2
 from soundfile import SoundFile
 
 from zounds.timeseries import TimeSlice, AudioSamples, SR44100, HalfLapped, \
-    Seconds, Milliseconds
+    Seconds, Milliseconds, Stride
 from zounds.persistence import ArrayWithUnitsFeature, AudioSamplesFeature
 from zounds.soundfile import \
     AudioStream, OggVorbis, OggVorbisFeature, Resampler
 from zounds.spectral import \
     SlidingWindow, OggVorbisWindowingFunc, FFT, Chroma, BarkBands, BFCC
 from zounds.basic import Max
+from zounds.util import simple_in_memory_settings
 from featureflow import *
 
 windowing_scheme = HalfLapped()
 samplerate = SR44100()
 
 
-class Settings(PersistenceSettings):
-    id_provider = UuidProvider()
-    key_builder = StringDelimitedKeyBuilder()
-    database = InMemoryDatabase(key_builder=key_builder)
-
-
-class Document(BaseModel, Settings):
+@simple_in_memory_settings
+class Document(BaseModel):
     raw = ByteStreamFeature(
             ByteStream,
             chunksize=2 * 44100 * 30 * 2,
@@ -80,7 +76,7 @@ class Document(BaseModel, Settings):
     bfcc_sliding_window = ArrayWithUnitsFeature(
             SlidingWindow,
             needs=bfcc,
-            wscheme=windowing_scheme * (2, 4),
+            wscheme=windowing_scheme * Stride(frequency=2, duration=4),
             store=True)
 
     bfcc_pooled = ArrayWithUnitsFeature(
@@ -154,29 +150,31 @@ class IntegrationTests(unittest2.TestCase):
         self.assertEqual(self.doc.windowed.shape[1] // 2, self.doc.fft.shape[1])
 
     def test_bfcc_sliding_window_has_correct_shape(self):
-        self.assertEqual((4, 13), self.doc.bfcc_sliding_window.shape[1:])
+        self.assertEqual((5, 13), self.doc.bfcc_sliding_window.shape[1:])
 
     def test_bfcc_sliding_window_has_correct_frequency(self):
-        self.assertEqual(
-                2,
-                self.doc.bfcc_sliding_window.frequency / self.doc.bfcc.frequency)
+        bfcc_td = self.doc.bfcc.dimensions[0]
+        bfcc_sw_td = self.doc.bfcc_sliding_window.dimensions[0]
+        self.assertEqual(2, bfcc_sw_td.frequency / bfcc_td.frequency)
 
     def test_bfcc_sliding_window_has_correct_duration(self):
-        self.assertEqual(
-                5,
-                self.doc.bfcc_sliding_window.duration / self.doc.bfcc.frequency)
+        bfcc_td = self.doc.bfcc.dimensions[0]
+        bfcc_sw_td = self.doc.bfcc_sliding_window.dimensions[0]
+        self.assertEqual(6, bfcc_sw_td.duration / bfcc_td.frequency)
 
     def test_bfcc_pooled_has_correct_shape(self):
         self.assertEqual(2, len(self.doc.bfcc_pooled.shape))
         self.assertEqual((13,), self.doc.bfcc_pooled.shape[1:])
 
     def test_bfcc_pooled_has_correct_frequency(self):
-        self.assertEqual(
-                2, self.doc.bfcc_pooled.frequency / self.doc.bfcc.frequency)
+        bfcc_td = self.doc.bfcc.dimensions[0]
+        bfcc_pooled_td = self.doc.bfcc_pooled.dimensions[0]
+        self.assertEqual(2, bfcc_pooled_td.frequency / bfcc_td.frequency)
 
     def test_bfcc_pooled_has_correct_duration(self):
-        self.assertEqual(
-                5, self.doc.bfcc_pooled.duration / self.doc.bfcc.frequency)
+        bfcc_td = self.doc.bfcc.dimensions[0]
+        bfcc_pooled_td = self.doc.bfcc_pooled.dimensions[0]
+        self.assertEqual(6, bfcc_pooled_td.duration / bfcc_td.frequency)
 
     def test_can_get_second_long_slice_from_ogg_vorbis_feature(self):
         ogg = self.doc.ogg

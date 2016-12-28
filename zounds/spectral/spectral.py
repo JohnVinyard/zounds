@@ -1,14 +1,16 @@
 from __future__ import division
-from featureflow import Node
+
 import numpy as np
+from featureflow import Node
 from scipy.fftpack import dct
 from scipy.stats.mstats import gmean
+
+from frequencyscale import LinearScale
 from psychacoustics import Chroma as ChromaScale, Bark as BarkScale
-from zounds.nputil import safe_log
-from zounds.timeseries import SR44100, audio_sample_rate, Picoseconds
-from frequencyscale import LinearScale, FrequencyBand
 from tfrepresentation import FrequencyDimension
-from zounds.core import ArrayWithUnits
+from zounds.core import ArrayWithUnits, IdentityDimension
+from zounds.nputil import safe_log
+from zounds.timeseries import SR44100, audio_sample_rate
 
 
 class FFT(Node):
@@ -21,10 +23,15 @@ class FFT(Node):
         sl = [slice(None) for _ in xrange(len(transformed.shape))]
         positive = data.shape[self._axis] // 2
         sl[self._axis] = slice(0, positive, None)
-        yield ConstantRateTimeSeries(
-                transformed[sl],
-                data.frequency,
-                data.duration)
+
+        transformed = transformed[sl]
+
+        sr = audio_sample_rate(
+                int(data.shape[1] / data.dimensions[0].duration_in_seconds))
+        scale = LinearScale.from_sample_rate(sr, transformed.shape[-1])
+
+        yield ArrayWithUnits(
+                transformed, [data.dimensions[0], FrequencyDimension(scale)])
 
 
 class DCT(Node):
@@ -117,16 +124,15 @@ class Chroma(Node):
                     data.shape[1] * 2,
                     nbands=self._nbins)
 
-        yield ConstantRateTimeSeries( \
+        yield ArrayWithUnits(
                 self._chroma_scale.transform(data),
-                data.frequency,
-                data.duration)
+                [data.dimensions[0], IdentityDimension()])
 
 
 # TODO: This constructor should not take a samplerate; that information should
 # be encapsulated in the data that's passed in
 class BarkBands(Node):
-    def __init__( \
+    def __init__(
             self,
             needs=None,
             samplerate=SR44100(),
@@ -144,16 +150,16 @@ class BarkBands(Node):
     def _process(self, data):
         data = np.abs(data)
         if self._bark_scale is None:
-            self._bark_scale = BarkScale( \
+            self._bark_scale = BarkScale(
                     self._samplerate.samples_per_second,
                     data.shape[1] * 2,
                     self._n_bands,
                     self._start_freq_hz,
                     self._stop_freq_hz)
-        yield ConstantRateTimeSeries( \
+
+        yield ArrayWithUnits(
                 self._bark_scale.transform(data),
-                data.frequency,
-                data.duration)
+                [data.dimensions[0], IdentityDimension()])
 
 
 class SpectralCentroid(Node):
@@ -223,5 +229,6 @@ class BFCC(Node):
         data = np.abs(data)
         bfcc = dct(safe_log(data), axis=1) \
             [:, self._exclude: self._exclude + self._n_coeffs]
-        yield ConstantRateTimeSeries( \
-                bfcc.copy(), data.frequency, data.duration)
+
+        yield ArrayWithUnits(
+                bfcc.copy(), [data.dimensions[0], IdentityDimension()])

@@ -45,6 +45,6 @@ from util import simple_lmdb_settings, simple_in_memory_settings
 
 from nputil import sliding_window
 
-from core import IdentityDimension
+from core import IdentityDimension, ArrayWithUnits
 
 from persistence import ArrayWithUnitsFeature, AudioSamplesFeature

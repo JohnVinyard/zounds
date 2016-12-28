@@ -1,7 +1,7 @@
 from featureflow import \
     NumpyEncoder, NumpyMetaData, Feature, BaseNumpyDecoder
 import numpy as np
-from duration import Picoseconds
+from duration import Picoseconds, Seconds
 from samplerate import SampleRate
 import re
 from zounds.core import Dimension
@@ -77,10 +77,10 @@ class TimeSlice(object):
         return not self.__eq__(other)
 
     def __repr__(self):
-        return '{cls}(duration = {duration}, start = {start})'.format(
+        return '{cls}(start = {start}, duration = {duration})'.format(
                 cls=self.__class__.__name__,
-                duration=str(self.duration),
-                start=str(self.start))
+                start=self.start / Seconds(1),
+                duration=self.duration / Seconds(1))
 
     def __str__(self):
         return self.__repr__()
@@ -248,7 +248,8 @@ class TimeDimension(Dimension):
     def modified_dimension(self, size, windowsize, stepsize=None):
         stepsize = stepsize or windowsize
         yield TimeDimension(
-                self.frequency * stepsize, self.duration * windowsize)
+                self.frequency * stepsize,
+                (self.frequency * windowsize) + self.overlap)
         yield self
 
     def metaslice(self, index, size):

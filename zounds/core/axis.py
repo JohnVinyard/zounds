@@ -1,7 +1,7 @@
 import numpy as np
 from zounds.nputil import sliding_window, windowed
 from dimensions import IdentityDimension
-
+import copy
 
 class CustomSlice(object):
     def __init__(self):
@@ -14,9 +14,11 @@ class ArrayWithUnits(np.ndarray):
         if arr.ndim != len(dimensions):
             raise ValueError('arr.ndim and len(dimensions) must match')
 
+        def dim_map(d):
+            return IdentityDimension() if d is None else copy.deepcopy(d)
+
         obj = np.asarray(arr).view(cls)
-        obj.dimensions = tuple(map(
-                lambda x: IdentityDimension() if x is None else x, dimensions))
+        obj.dimensions = tuple(map(dim_map, dimensions))
 
         for dim, size in zip(obj.dimensions, obj.shape):
             try:
@@ -29,6 +31,9 @@ class ArrayWithUnits(np.ndarray):
                 pass
 
         return obj
+
+    def kwargs(self):
+        return self.__dict__
 
     def concatenate(self, other):
         if self.dimensions == other.dimensions:
@@ -49,6 +54,16 @@ class ArrayWithUnits(np.ndarray):
 
     def sum(self, axis=None, dtype=None, **kwargs):
         result = super(ArrayWithUnits, self).sum(axis, dtype, **kwargs)
+        if axis is not None:
+            new_dims = list(self.dimensions)
+            new_dims.pop(axis)
+            return ArrayWithUnits(result, new_dims)
+        else:
+            # we have a scalar
+            return result
+
+    def max(self, axis=None, out=None):
+        result = super(ArrayWithUnits, self).max(axis=axis, out=out)
         if axis is not None:
             new_dims = list(self.dimensions)
             new_dims.pop(axis)
@@ -94,6 +109,7 @@ class ArrayWithUnits(np.ndarray):
         else:
             ss = ws
 
+        print ws, ss
         return ws, ss
 
     def sliding_window_with_leftovers(

@@ -25,7 +25,7 @@ class IdentityDimension(Dimension):
         super(IdentityDimension, self).__init__()
 
     def modified_dimension(self, size, windowsize, stepsize=None):
-        if size / windowsize == 1:
+        if windowsize == slice(None) or (size / windowsize) == 1:
             yield IdentityDimension()
         else:
             raise ValueError()

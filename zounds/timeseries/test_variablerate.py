@@ -11,6 +11,7 @@ from zounds.basic import Pooled, stft
 from zounds.segment import TimeSliceFeature
 from zounds.synthesize import NoiseSynthesizer
 from zounds.timeseries import Picoseconds, Seconds, SR44100
+from zounds.util import simple_in_memory_settings
 
 
 class VariableRateTimeSeriesFeatureTests(unittest2.TestCase):
@@ -22,19 +23,18 @@ class VariableRateTimeSeriesFeatureTests(unittest2.TestCase):
                 self.pos = Picoseconds(0)
 
             def _process(self, data):
+                td = data.dimensions[0]
+                frequency = td.frequency
+
                 for i, d in enumerate(data):
                     if random() > 0.9:
-                        yield self.pos + (i * data.frequency)
-                self.pos += data.frequency * len(data)
-
-        class Settings(ff.PersistenceSettings):
-            id_provider = ff.UuidProvider()
-            key_builder = ff.StringDelimitedKeyBuilder()
-            database = ff.InMemoryDatabase(key_builder=key_builder)
+                        yield self.pos + (i * frequency)
+                self.pos += frequency * len(data)
 
         graph = stft(store_fft=True)
 
-        class Document(graph, Settings):
+        @simple_in_memory_settings
+        class Document(graph):
             slices = TimeSliceFeature(
                     TimestampEmitter,
                     needs=graph.fft,
@@ -47,7 +47,9 @@ class VariableRateTimeSeriesFeatureTests(unittest2.TestCase):
                     needs=(slices, graph.fft),
                     store=False)
 
-        signal = NoiseSynthesizer(SR44100()).synthesize(Seconds(10)).encode()
+        signal = NoiseSynthesizer(SR44100())\
+            .synthesize(Seconds(10))\
+            .encode()
         _id = Document.process(meta=signal)
         doc = Document(_id)
         self.assertIsInstance(doc.pooled, VariableRateTimeSeries)

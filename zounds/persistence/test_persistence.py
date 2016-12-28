@@ -1,21 +1,39 @@
 import unittest2
 from zounds.core import ArrayWithUnits, IdentityDimension
-from zounds.timeseries import TimeDimension, Seconds, Milliseconds
+from zounds.timeseries import \
+    TimeDimension, Seconds, Milliseconds, AudioSamples, SR11025
 from zounds.spectral import FrequencyDimension, FrequencyScale, FrequencyBand
-from arraywithunits import ArrayWithUnitsEncoder, ArrayWithUnitsDecoder
+from arraywithunits import \
+    ArrayWithUnitsEncoder, ArrayWithUnitsDecoder, PackedArrayWithUnitsEncoder
 import numpy as np
 from io import BytesIO
 
 
 class ArrayWithUnitsFeatureTests(unittest2.TestCase):
-    def _roundtrip(self, arr):
-        encoder = ArrayWithUnitsEncoder()
+    def _roundtrip(self, arr, encoder=None):
+        encoder = encoder or ArrayWithUnitsEncoder()
         decoder = ArrayWithUnitsDecoder()
         encoded = BytesIO(''.join(encoder._process(arr)))
         return decoder(encoded)
 
+    def test_can_pack_bits(self):
+        raw = np.random.binomial(1, 0.5, (100, 64))
+        arr = ArrayWithUnits(
+                raw, [TimeDimension(Seconds(1)), IdentityDimension()])
+        decoded = self._roundtrip(arr, encoder=PackedArrayWithUnitsEncoder())
+        self.assertIsInstance(decoded, ArrayWithUnits)
+        self.assertEqual(2, len(decoded.dimensions))
+        self.assertEqual((100, 8), decoded.shape)
+
     def test_can_round_trip_audio_samples(self):
-        self.fail()
+        raw = np.random.random_sample(11025 * 10)
+        arr = AudioSamples(raw, SR11025())
+        decoded = self._roundtrip(arr)
+        self.assertIsInstance(decoded, ArrayWithUnits)
+        self.assertEqual(1, len(decoded.dimensions))
+        td = decoded.dimensions[0]
+        self.assertIsInstance(td, TimeDimension)
+        np.testing.assert_allclose(decoded, raw)
 
     def test_can_round_trip_1d_identity_dimension(self):
         raw = np.arange(10)
@@ -103,5 +121,4 @@ class ArrayWithUnitsFeatureTests(unittest2.TestCase):
         self.assertEqual(scale, fd.scale)
         np.testing.assert_allclose(decoded, raw)
 
-    def test_can_pack_bits(self):
-        self.fail()
+

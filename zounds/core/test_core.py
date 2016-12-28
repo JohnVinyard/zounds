@@ -17,8 +17,9 @@ class ContrivedDimension(Dimension):
     def __init__(self, factor):
         super(ContrivedDimension, self).__init__()
         self.factor = factor
+        self.size = None
 
-    def modified_dimension(self, size, windowsize):
+    def modified_dimension(self, size, windowsize, stepsize=None):
         yield ContrivedDimension(self.factor * windowsize)
         yield ContrivedDimension(self.factor)
 
@@ -44,7 +45,7 @@ class ContrivedDimension2(Dimension):
         self.factor = factor
         self.size = None
 
-    def modified_dimension(self, size, windowsize):
+    def modified_dimension(self, size, windowsize, stepsize=None):
         yield ContrivedDimension(self.factor * windowsize)
         yield ContrivedDimension(self.factor)
 
@@ -69,7 +70,7 @@ class AsciiCharacterDimension(Dimension):
         super(AsciiCharacterDimension, self).__init__()
         self.labels = labels
 
-    def modified_dimension(self, size, windowsize):
+    def modified_dimension(self, size, windowsize, stepsize=None):
         raise NotImplementedError()
 
     def metaslice(self, index, size):
@@ -101,7 +102,14 @@ class CoreTests(unittest2.TestCase):
         self.assertEqual((90, 5), arr2.shape)
 
     def test_size_is_not_modified_on_example_dimensions(self):
-        self.fail('Ensure that dimensions are copied, and not passed to new instances by reference')
+        arr = ArrayWithUnits(
+                np.zeros((100, 10)),
+                [ContrivedDimension(10), ContrivedDimension2(10)])
+        arr2 = ArrayWithUnits.from_example(np.zeros((90, 5)), arr)
+        self.assertEqual(100, arr.dimensions[0].size)
+        self.assertEqual(10, arr.dimensions[1].size)
+        self.assertEqual(90, arr2.dimensions[0].size)
+        self.assertEqual(5, arr2.dimensions[1].size)
 
     def test_can_use_ellipsis_to_get_entire_array(self):
         raw = np.zeros((10, 10, 10))
@@ -157,6 +165,34 @@ class CoreTests(unittest2.TestCase):
                 raw, (ContrivedDimension(10), ContrivedDimension2(10)))
         result = arr * 10
         np.testing.assert_allclose(result, 10)
+
+    def test_can_get_single_scalar_from_max_with_no_axis(self):
+        raw = np.zeros((8, 9))
+        arr = ContrivedArray(
+                raw, (ContrivedDimension(10), ContrivedDimension2(10)))
+        result = arr.max()
+        self.assertIsInstance(result, float)
+        self.assertEqual(0, result)
+
+    def test_max_array_maintains_correct_dimensions_axis_0(self):
+        raw = np.zeros((8, 9))
+        arr = ContrivedArray(
+                raw, (ContrivedDimension(10), ContrivedDimension2(10)))
+        result = arr.max(axis=0)
+        self.assertEqual((9,), result.shape)
+        self.assertIsInstance(result, ArrayWithUnits)
+        self.assertEqual(1, len(result.dimensions))
+        self.assertIsInstance(result.dimensions[0], ContrivedDimension2)
+
+    def test_max_array_maintains_correct_dimensions_axis_1(self):
+        raw = np.zeros((8, 9))
+        arr = ContrivedArray(
+                raw, (ContrivedDimension(10), ContrivedDimension2(10)))
+        result = arr.max(axis=1)
+        self.assertEqual((8,), result.shape)
+        self.assertIsInstance(result, ArrayWithUnits)
+        self.assertEqual(1, len(result.dimensions))
+        self.assertIsInstance(result.dimensions[0], ContrivedDimension)
 
     def test_get_single_scalar_from_sum_with_no_axis(self):
         raw = np.zeros((8, 9))

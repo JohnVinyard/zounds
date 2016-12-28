@@ -127,7 +127,9 @@ class TickSynthesizer(object):
         ticks_per_second = Seconds(1) / tick_frequency
         # introduce periodic ticking sound
         step = int(sr // ticks_per_second)
+        print 'STEP', step
         for i in xrange(0, len(samples), step):
+            print 'STEP 2', i
             samples[i:i + len(tick)] = tick
         return AudioSamples(samples, self.samplerate)
 

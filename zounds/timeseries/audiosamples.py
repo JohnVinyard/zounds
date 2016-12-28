@@ -22,6 +22,9 @@ class AudioSamples(ArrayWithUnits):
 
         return ArrayWithUnits.__new__(cls, array, dimensions)
 
+    def kwargs(self):
+        return {'samplerate': self.samplerate}
+
     def sum(self, axis=None, dtype=None, **kwargs):
         result = super(AudioSamples, self).sum(axis, dtype, **kwargs)
         if self.ndim == 2 and axis == 1:

@@ -379,21 +379,21 @@ class TimeSeriesTests(unittest2.TestCase):
             self):
         ts = ArrayWithUnits(
                 np.ones((10, 3)),
-                [TimeDimension(Seconds(1), Seconds(2))])
+                [TimeDimension(Seconds(1), Seconds(2)), IdentityDimension()])
         ts2 = ArrayWithUnits(
                 np.ones((13, 3)),
-                [TimeDimension(Seconds(1), Seconds(2))])
+                [TimeDimension(Seconds(1), Seconds(2)), IdentityDimension()])
         result = ts.concatenate(ts2)
         self.assertIsInstance(result, ArrayWithUnits)
         self.assertEqual((23, 3), result.shape)
 
     def test_concat_with_differing_freqs(self):
         ts = ArrayWithUnits(
-                np.ones((10, 3))
-                [TimeDimension(Seconds(2), Seconds(2))])
+                np.ones((10, 3)),
+                [TimeDimension(Seconds(2), Seconds(2)), IdentityDimension()])
         ts2 = ArrayWithUnits(
-                np.ones((13, 3))
-                [TimeDimension(Seconds(1), Seconds(2))])
+                np.ones((13, 3)),
+                [TimeDimension(Seconds(1), Seconds(2)), IdentityDimension()])
         self.assertRaises(
                 ValueError, lambda: ArrayWithUnits.concat([ts, ts2]))
 

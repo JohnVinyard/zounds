@@ -1,10 +1,10 @@
-from featureflow import Node, NotEnoughData
 import numpy as np
-from zounds.nputil import windowed, sliding_window
-from zounds.core import ArrayWithUnits
-from zounds.timeseries import TimeSlice, Picoseconds
 import scipy
+from featureflow import Node, NotEnoughData
 
+from zounds.core import ArrayWithUnits
+from zounds.nputil import sliding_window
+from zounds.timeseries import TimeSlice
 
 def oggvorbis(s):
     """
@@ -93,9 +93,9 @@ class SlidingWindow(Node):
         frequency = TimeSlice(self._scheme.frequency)
 
         leftover, arr = self._cache.sliding_window_with_leftovers(
-            duration,
-            frequency,
-            dopad=self._finalized)
+                duration,
+                frequency,
+                dopad=self._finalized)
 
         if not arr.size:
             raise NotEnoughData()
@@ -108,6 +108,7 @@ class SlidingWindow(Node):
         out = (self._func * arr) if self._func else arr
 
         return out
+
 
 
 # KLUDGE: This extractor works when trying to get random patches over the whole

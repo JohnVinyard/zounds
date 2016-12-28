@@ -7,7 +7,7 @@ from preprocess import UnitNorm, PreprocessingPipeline
 from learn import KMeans
 from zounds.timeseries import Seconds, TimeDimension
 from zounds.spectral import FrequencyBand, LinearScale, FrequencyDimension
-from zounds.core import ArrayWithUnits
+from zounds.core import ArrayWithUnits, IdentityDimension
 
 
 class UnitNormTests(unittest2.TestCase):
@@ -49,7 +49,8 @@ class UnitNormTests(unittest2.TestCase):
 
     def test_inversion_returns_time_series(self):
         data = np.random.random_sample((33, 30))
-        ts = ArrayWithUnits(data, [TimeDimension(Seconds(1))])
+        ts = ArrayWithUnits(
+                data, [TimeDimension(Seconds(1)), IdentityDimension()])
         inverted = self.invert_and_assert_class(ts)
         self.assertEqual(Seconds(1), inverted.dimensions[0].frequency)
 
