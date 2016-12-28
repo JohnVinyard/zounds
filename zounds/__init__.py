@@ -39,7 +39,7 @@ from index import \
     SearchResults, hamming_index
 
 from basic import \
-    Slice, Sum, Max, Pooled, process_dir, stft, audio_graph, with_onsets
+    Slice, Sum, Max, Pooled, process_dir, stft, audio_graph, with_onsets, resampled
 
 from util import simple_lmdb_settings, simple_in_memory_settings
 

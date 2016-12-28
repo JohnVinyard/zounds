@@ -1,6 +1,7 @@
 import unittest2
-from timeseries import TimeDimension
+from timeseries import TimeDimension, TimeSlice
 from duration import Seconds, Milliseconds
+from samplerate import SR44100
 
 
 class TimeDimensionTests(unittest2.TestCase):
@@ -24,3 +25,8 @@ class TimeDimensionTests(unittest2.TestCase):
         td = TimeDimension(Seconds(1))
         self.assertEqual(Seconds(1), td.frequency)
         self.assertEqual(Seconds(1), td.duration)
+
+    def test_integer_based_slice(self):
+        td = TimeDimension(*SR44100(), size=44100 * 5)
+        sl = td.integer_based_slice(TimeSlice(duration=Seconds(1)))
+        self.assertEqual(slice(0, 44100), sl)

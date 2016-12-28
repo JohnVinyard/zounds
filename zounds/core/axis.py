@@ -96,6 +96,7 @@ class ArrayWithUnits(np.ndarray):
         else:
             ss = ws
 
+        print ws, ss
         leftovers, result = windowed(self, ws[0], ss[0], dopad)
 
         if not result.size:

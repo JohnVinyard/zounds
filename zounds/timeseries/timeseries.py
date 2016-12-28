@@ -262,7 +262,15 @@ class TimeDimension(Dimension):
         start_index = \
             max(0, np.floor((ts.start - diff) / self.frequency))
         end = self.end if ts.duration is None else ts.end
-        stop_index = np.ceil(end / self.frequency)
+
+        # KLUDGE: This is basically arbitrary, but the motivation is that we'd
+        # like to differentiate between cases where the slice
+        # actually/intentionally overlaps a particular sample, and cases where
+        # the slice overlaps the sample by a tiny amount, due to rounding or
+        # lack of precision (e.g. Seconds(1) / SR44100().frequency).
+        ratio = np.round(end / self.frequency, 2)
+
+        stop_index = np.ceil(ratio)
         return slice(start_index, stop_index)
 
     def __eq__(self, other):
