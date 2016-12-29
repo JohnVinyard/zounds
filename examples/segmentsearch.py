@@ -20,17 +20,17 @@ STFT = zounds.stft(resample_to=zounds.SR44100(), wscheme=windowing)
 
 
 class WithOnsets(STFT, Settings):
-    bark = zounds.ConstantRateTimeSeriesFeature(
+    bark = zounds.ArrayWithUnitsFeature(
             zounds.BarkBands,
             needs=STFT.fft,
             store=True)
 
-    transience = zounds.ConstantRateTimeSeriesFeature(
+    transience = zounds.ArrayWithUnitsFeature(
             zounds.MeasureOfTransience,
             needs=STFT.fft,
             store=True)
 
-    sliding_detection = zounds.ConstantRateTimeSeriesFeature(
+    sliding_detection = zounds.ArrayWithUnitsFeature(
             zounds.SlidingWindow,
             needs=transience,
             wscheme=windowing * zounds.Stride(frequency=1, duration=11),
@@ -78,7 +78,7 @@ class BarkKmeans(ff.BaseModel):
 # Store the K-Means representation of Bark Bands ##############################
 
 class WithCodes(WithOnsets):
-    bark_kmeans = zounds.ConstantRateTimeSeriesFeature(
+    bark_kmeans = zounds.ArrayWithUnitsFeature(
             zounds.Learned,
             learned=BarkKmeans(),
             needs=WithOnsets.bark,

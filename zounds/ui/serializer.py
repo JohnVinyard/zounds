@@ -1,5 +1,5 @@
 import datetime
-from zounds.core import ArrayWithUnits
+from zounds.persistence import ArrayWithUnitsFeature
 from zounds.timeseries import Seconds, Picoseconds, TimeSlice, AudioSamples
 from zounds.segment import TimeSliceFeature
 from zounds.index import SearchResults
@@ -166,7 +166,7 @@ class ConstantRateTimeSeriesSerializer(object):
 
     def matches(self, context):
         return \
-            isinstance(context.feature, ArrayWithUnits) \
+            isinstance(context.feature, ArrayWithUnitsFeature) \
             and isinstance(context.slce, TimeSlice)
 
     @property
@@ -178,8 +178,9 @@ class ConstantRateTimeSeriesSerializer(object):
         document = context.document
         data = feature(_id=document._id, persistence=document)
         sliced_data = data[context.slce]
+        td = data.dimensions[0]
         content_range = ContentRange.from_timeslice(
-                context.slce, data.end)
+                context.slce, td.end)
         return generate_image(
                 sliced_data,
                 is_partial=True,
@@ -192,7 +193,7 @@ class NumpySerializer(object):
 
     def matches(self, context):
         if context.document is not None \
-                and isinstance(context.feature, ArrayWithUnits):
+                and isinstance(context.feature, ArrayWithUnitsFeature):
             return True
 
         return \
