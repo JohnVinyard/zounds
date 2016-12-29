@@ -4,7 +4,9 @@ from bisect import bisect_left
 from zounds.timeseries import TimeSlice
 from zounds.nputil import packed_hamming_distance
 import featureflow as ff
-from zounds.timeseries import  VariableRateTimeSeriesFeature
+from zounds.timeseries import VariableRateTimeSeriesFeature
+from zounds.persistence import \
+    ArrayWithUnitsFeature, PackedArrayWithUnitsEncoder, ArrayWithUnitsEncoder
 
 
 class Contiguous(Node):
@@ -68,7 +70,6 @@ class Scorer(object):
 
 
 class HammingDistanceScorer(Scorer):
-
     def __init__(self, index):
         super(HammingDistanceScorer, self).__init__(index)
 
@@ -77,7 +78,6 @@ class HammingDistanceScorer(Scorer):
 
 
 class PackedHammingDistanceScorer(Scorer):
-
     def __init__(self, index):
         super(PackedHammingDistanceScorer, self).__init__(index)
 
@@ -129,17 +129,18 @@ class Search(object):
     def search(self, query, n_results=5):
         scores = self.scorer.score(query)
         indices = np.argsort(scores)[:n_results]
-        return SearchResults(query, self.offsets, indices, self.time_slice_builder)
+        return SearchResults(query, self.offsets, indices,
+                             self.time_slice_builder)
 
 
 def hamming_index(document, feature, packed=True):
-    if isinstance(feature, ConstantRateTimeSeriesFeature):
+    if isinstance(feature, ArrayWithUnitsFeature):
         iterator = ((d._id, feature(_id=d._id, persistence=document)) \
                     for d in document)
         constant_rate = True
-        feat = ConstantRateTimeSeriesFeature
-        encoder = PackedConstantRateTimeSeriesEncoder \
-            if packed else ConstantRateTimeSeriesEncoder
+        feat = ArrayWithUnitsFeature
+        encoder = PackedArrayWithUnitsEncoder \
+            if packed else ArrayWithUnitsEncoder
     elif isinstance(feature, VariableRateTimeSeriesFeature):
         iterator = ((d._id, feature(_id=d._id, persistence=document).slicedata) \
                     for d in document)
