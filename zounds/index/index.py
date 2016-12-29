@@ -101,8 +101,9 @@ class ConstantRateTimeSliceBuilder(TimeSliceBuilder):
         super(ConstantRateTimeSliceBuilder, self).__init__(index)
 
     def build(self, _id, diff):
-        start_time = self.contiguous.frequency * diff
-        duration = self.contiguous.duration
+        time_dim = self.contiguous.dimensions[0]
+        start_time = time_dim.frequency * diff
+        duration = time_dim.duration
         return TimeSlice(duration, start_time)
 
 
