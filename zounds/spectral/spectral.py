@@ -44,10 +44,15 @@ class DCT(Node):
         self._axis = axis
 
     def _process(self, data):
-        yield ConstantRateTimeSeries(
-                dct(data, norm='ortho', axis=self._axis),
-                data.frequency,
-                data.duration)
+
+        transformed = dct(data, norm='ortho', axis=self._axis)
+
+        sr = audio_sample_rate(
+                int(data.shape[1] / data.dimensions[0].duration_in_seconds))
+        scale = LinearScale.from_sample_rate(sr, transformed.shape[-1])
+
+        yield ArrayWithUnits(
+                transformed, [data.dimensions[0], FrequencyDimension(scale)])
 
 
 class DCTIV(Node):
@@ -182,10 +187,8 @@ class SpectralCentroid(Node):
         return data
 
     def _process(self, data):
-        yield ConstantRateTimeSeries(
-                (data * self._bins).sum(axis=1) / self._bins_sum,
-                data.frequency,
-                data.duration)
+        data = np.abs(data)
+        yield (data * self._bins).sum(axis=1) / self._bins_sum
 
 
 class SpectralFlatness(Node):
@@ -211,12 +214,11 @@ class SpectralFlatness(Node):
         super(SpectralFlatness, self).__init__(needs=needs)
 
     def _process(self, data):
-        m = data.mean(axis=1)
-        m[m == 0] = -1e5
-        yield ConstantRateTimeSeries(
-                gmean(data, axis=1) / m,
-                data.frequency,
-                data.duration)
+        data = np.abs(data)
+        mean = data.mean(axis=1)
+        mean[mean == 0] = -1e5
+        flatness = gmean(data, axis=1) / mean
+        yield ArrayWithUnits(flatness, data.dimensions[:1])
 
 
 class BFCC(Node):

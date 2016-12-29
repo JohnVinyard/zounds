@@ -3,7 +3,8 @@ __version__ = '0.20.9'
 from timeseries import \
     Hours, Minutes, Seconds, Milliseconds, Microseconds, Picoseconds, \
     SR11025, SR22050, SR44100, SR48000, SR96000, HalfLapped, Stride, \
-    TimeSlice, VariableRateTimeSeries, VariableRateTimeSeriesFeature, SampleRate
+    TimeSlice, VariableRateTimeSeries, VariableRateTimeSeriesFeature, \
+    SampleRate, AudioSamples
 
 from soundfile import \
     MetaData, AudioMetaDataEncoder, FreesoundOrgConfig, \

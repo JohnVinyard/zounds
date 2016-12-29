@@ -22,6 +22,17 @@ class AudioSamples(ArrayWithUnits):
 
         return ArrayWithUnits.__new__(cls, array, dimensions)
 
+    def __add__(self, other):
+        try:
+            if self.samplerate != other.samplerate:
+                raise ValueError(
+                        'Samplerates must match, but they were '
+                        '{self.samplerate} and {other.samplerate}'
+                        .format(**locals()))
+        except AttributeError:
+            pass
+        return super(AudioSamples, self).__add__(other)
+
     def kwargs(self):
         return {'samplerate': self.samplerate}
 
