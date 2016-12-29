@@ -26,10 +26,6 @@ class MeasureOfTransience(Node):
         padding = np.zeros(data.shape[1])
         padding[:] = data[0]
 
-        # return ConstantRateTimeSeries(
-        #         np.concatenate([padding[None, :], data]),
-        #         data.frequency,
-        #         data.duration)
         return ArrayWithUnits(
             np.concatenate([padding[None, :], data]), data.dimensions)
 
@@ -45,11 +41,6 @@ class MeasureOfTransience(Node):
     def _dequeue(self):
         data = self._cache
 
-        # self._cache = ConstantRateTimeSeries(
-        #         self._cache[None, -1],
-        #         self._cache.frequency,
-        #         self._cache.duration)
-
         self._cache = ArrayWithUnits(
             self._cache[None, -1], self._cache.dimensions)
 
@@ -63,12 +54,6 @@ class MeasureOfTransience(Node):
         energy[energy == 0] = 1e-12
         hfc[hfc == 0] = 1e-12
         mot = (hfc[1:] / hfc[:-1]) * (hfc[1:] / energy[1:])
-
-        # yield ConstantRateTimeSeries(mot, data.frequency, data.duration)
-        # print mot.shape, data.dimensions
-        # print mot.__class__
-        # print mot.dimensions
-        # yield ArrayWithUnits(mot, data.dimensions)
         yield mot
 
 
@@ -110,11 +95,6 @@ class ComplexDomain(Node):
              (2 * expected * actual * np.cos(angle))) ** 0.5)[
             nonzero_phase_delta_indices]
 
-        # output = ConstantRateTimeSeries(
-        #         detect.sum(axis=1),
-        #         data.frequency,
-        #         data.duration // 3)
-
         dims = \
             [TimeDimension(data.frequency, data.duration // 3)] \
             + data.dimensions[1:]
@@ -134,11 +114,6 @@ class Flux(Node):
         else:
             self._cache = np.vstack((self._memory, data))
 
-        # self._cache = ConstantRateTimeSeries(
-        #         self._cache,
-        #         data.frequency,
-        #         data.duration)
-
         self._cache = ArrayWithUnits(self._cache, data.dimensions)
 
         self._memory = data[-1]
@@ -147,11 +122,6 @@ class Flux(Node):
         if self._unit_norm:
             data = safe_unit_norm(data)
         diff = np.diff(data, axis=0)
-
-        # yield ConstantRateTimeSeries(
-        #         np.linalg.norm(diff, axis=-1),
-        #         data.frequency,
-        #         data.duration)
 
         yield ArrayWithUnits(
                 np.linalg.norm(diff, axis=-1), data.dimensions)

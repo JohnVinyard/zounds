@@ -1,9 +1,6 @@
-from featureflow import \
-    NumpyEncoder, NumpyMetaData, Feature, BaseNumpyDecoder
 import numpy as np
 from duration import Picoseconds, Seconds
 from samplerate import SampleRate
-import re
 from zounds.core import Dimension
 
 
@@ -86,114 +83,6 @@ class TimeSlice(object):
         return self.__repr__()
 
 
-# class ConstantRateTimeSeriesMetadata(NumpyMetaData):
-#     DTYPE_RE = re.compile(r'\[(?P<dtype>[^\]]+)\]')
-#
-#     def __init__(
-#             self,
-#             dtype=None,
-#             shape=None,
-#             frequency=None,
-#             duration=None):
-#         super(ConstantRateTimeSeriesMetadata, self).__init__(
-#                 dtype=dtype, shape=shape)
-#         self.frequency = self._decode_timedelta(frequency)
-#         self.duration = self._decode_timedelta(duration)
-#
-#     @staticmethod
-#     def from_timeseries(timeseries):
-#         return ConstantRateTimeSeriesMetadata(
-#                 dtype=timeseries.dtype,
-#                 shape=timeseries.shape[1:],
-#                 frequency=timeseries.frequency,
-#                 duration=timeseries.duration)
-#
-#     def _encode_timedelta(self, td):
-#         dtype = self.DTYPE_RE.search(str(td.dtype)).groupdict()['dtype']
-#         return td.astype(np.uint64).tostring(), dtype
-#
-#     def _decode_timedelta(self, t):
-#         if isinstance(t, np.timedelta64):
-#             return t
-#
-#         v = np.fromstring(t[0], dtype=np.uint64)[0]
-#         s = t[1]
-#         return np.timedelta64(long(v), s)
-#
-#     def __repr__(self):
-#         return repr((
-#             str(np.dtype(self.dtype)),
-#             self.shape,
-#             self._encode_timedelta(self.frequency),
-#             self._encode_timedelta(self.duration)
-#         ))
-#
-#
-# class BaseConstantRateTimeSeriesEncoder(NumpyEncoder):
-#     def __init__(self, needs=None):
-#         super(BaseConstantRateTimeSeriesEncoder, self).__init__(needs=needs)
-#
-#     def _prepare_data(self, data):
-#         raise NotImplementedError()
-#
-#     def _prepare_metadata(self, data):
-#         return ConstantRateTimeSeriesMetadata.from_timeseries(data)
-#
-#
-# class ConstantRateTimeSeriesEncoder(BaseConstantRateTimeSeriesEncoder):
-#     def __init__(self, needs=None):
-#         super(ConstantRateTimeSeriesEncoder, self).__init__(needs=needs)
-#
-#     def _prepare_data(self, data):
-#         return data
-#
-#
-# class PackedConstantRateTimeSeriesEncoder(BaseConstantRateTimeSeriesEncoder):
-#     def __init__(self, needs=None, axis=1):
-#         super(PackedConstantRateTimeSeriesEncoder, self).__init__(needs=needs)
-#         self.axis = axis
-#
-#     def _prepare_data(self, data):
-#         packedbits = np.packbits(data.astype(np.uint8), axis=self.axis)
-#
-#         return ConstantRateTimeSeries(
-#                 packedbits,
-#                 frequency=data.frequency,
-#                 duration=data.duration)
-#
-#
-# class GreedyConstantRateTimeSeriesDecoder(BaseNumpyDecoder):
-#     def __init__(self):
-#         super(GreedyConstantRateTimeSeriesDecoder, self).__init__()
-#
-#     def _unpack_metadata(self, flo):
-#         return ConstantRateTimeSeriesMetadata.unpack(flo)
-#
-#     def _wrap_array(self, raw, metadata):
-#         return ConstantRateTimeSeries(
-#                 raw, metadata.frequency, metadata.duration)
-#
-#
-# class ConstantRateTimeSeriesFeature(Feature):
-#     def __init__(
-#             self,
-#             extractor,
-#             needs=None,
-#             store=False,
-#             key=None,
-#             encoder=ConstantRateTimeSeriesEncoder,
-#             decoder=GreedyConstantRateTimeSeriesDecoder(),
-#             **extractor_args):
-#         super(ConstantRateTimeSeriesFeature, self).__init__(
-#                 extractor,
-#                 needs=needs,
-#                 store=store,
-#                 encoder=encoder,
-#                 decoder=decoder,
-#                 key=key,
-#                 **extractor_args)
-#
-#
 class TimeDimension(Dimension):
     def __init__(self, frequency=None, duration=None, size=None):
         super(TimeDimension, self).__init__()

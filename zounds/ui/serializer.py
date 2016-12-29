@@ -1,5 +1,6 @@
 import datetime
-from zounds.timeseries import Seconds, Picoseconds, TimeSlice
+from zounds.core import ArrayWithUnits
+from zounds.timeseries import Seconds, Picoseconds, TimeSlice, AudioSamples
 from zounds.segment import TimeSliceFeature
 from zounds.index import SearchResults
 from zounds.soundfile import OggVorbisFeature
@@ -164,7 +165,7 @@ class ConstantRateTimeSeriesSerializer(object):
 
     def matches(self, context):
         return \
-            isinstance(context.feature, ConstantRateTimeSeriesFeature) \
+            isinstance(context.feature, ArrayWithUnits) \
             and isinstance(context.slce, TimeSlice)
 
     @property
@@ -190,7 +191,7 @@ class NumpySerializer(object):
 
     def matches(self, context):
         if context.document is not None \
-                and isinstance(context.feature, ConstantRateTimeSeriesFeature):
+                and isinstance(context.feature, ArrayWithUnits):
             return True
 
         return \

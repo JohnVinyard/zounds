@@ -3,6 +3,7 @@ from zounds.nputil import sliding_window, windowed
 from dimensions import IdentityDimension
 import copy
 
+
 class CustomSlice(object):
     def __init__(self):
         super(CustomSlice, self).__init__()

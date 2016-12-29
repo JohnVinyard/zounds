@@ -25,9 +25,6 @@ class MergeTester(Node):
             td = TimeDimension(frequency=Milliseconds(500))
             yield ArrayWithUnits(
                     np.zeros((size, self.features)), [td, IdentityDimension()])
-            # yield ConstantRateTimeSeries(
-            #         np.zeros((size, self.features)),
-            #         frequency=Milliseconds(500))
 
 
 class MergeTests(unittest2.TestCase):

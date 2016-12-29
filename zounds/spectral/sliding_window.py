@@ -6,6 +6,7 @@ from zounds.core import ArrayWithUnits
 from zounds.nputil import sliding_window
 from zounds.timeseries import TimeSlice
 
+
 def oggvorbis(s):
     """
     This is taken from the ogg vorbis spec
@@ -108,7 +109,6 @@ class SlidingWindow(Node):
         out = (self._func * arr) if self._func else arr
 
         return out
-
 
 
 # KLUDGE: This extractor works when trying to get random patches over the whole
