@@ -7,6 +7,10 @@ import numpy as np
 
 
 def _np_from_buffer(b, shape, dtype):
+    try:
+        shape = tuple(int(x) for x in shape)
+    except TypeError:
+        shape = int(shape)
     f = np.frombuffer if len(b) else np.fromstring
     return f(b, dtype=dtype).reshape(shape)
 

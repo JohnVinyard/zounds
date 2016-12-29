@@ -8,42 +8,43 @@ from audiosamples import AudioSamples
 
 
 class AudioSamplesTest(unittest2.TestCase):
+
     def test_raises_if_not_audio_samplerate(self):
-        arr = np.zeros(44100 * 2.5)
+        arr = np.zeros(int(int(44100 * 2.5)))
         one = Seconds(1)
         self.assertRaises(
                 TypeError, lambda: AudioSamples(arr, SampleRate(one, one)))
 
     def test_raises_if_array_is_more_than_2d(self):
-        arr = np.zeros((44100 * 2.5, 2, 2))
+        arr = np.zeros((int(int(44100 * 2.5)), 2, 2))
         self.assertRaises(
             ValueError, lambda:  AudioSamples(arr, SR44100()))
 
     def test_can_create_instance(self):
-        arr = np.zeros(44100 * 2.5)
+        arr = np.zeros(int(int(44100 * 2.5)))
         instance = AudioSamples(arr, SR44100())
         self.assertIsInstance(instance, AudioSamples)
         length_seconds = instance.end / Seconds(1)
         self.assertAlmostEqual(2.5, length_seconds, places=6)
 
     def test_channels_returns_one_for_one_dimensional_array(self):
-        arr = np.zeros(44100 * 2.5)
+        arr = np.zeros(int(int(44100 * 2.5)))
         instance = AudioSamples(arr, SR44100())
         self.assertEqual(1, instance.channels)
 
     def test_channels_returns_two_for_two_dimensional_array(self):
-        arr = np.zeros(44100 * 2.5)
+        arr = np.zeros(int(int(44100 * 2.5)))
         arr = np.column_stack((arr, arr))
         instance = AudioSamples(arr, SR44100())
         self.assertEqual(2, instance.channels)
 
     def test_samplerate_returns_correct_value(self):
-        arr = np.zeros(44100 * 2.5)
+        arr = np.zeros(int(44100 * 2.5))
         instance = AudioSamples(arr, SR44100())
         self.assertIsInstance(instance.samplerate, SR44100)
 
     def test_can_sum_to_mono(self):
-        arr = np.zeros(44100 * 2.5)
+        arr = np.zeros(int(44100 * 2.5))
         arr = np.column_stack((arr, arr))
         instance = AudioSamples(arr, SR44100())
         mono = instance.mono
@@ -70,7 +71,7 @@ class AudioSamplesTest(unittest2.TestCase):
         self.assertRaises(ValueError, lambda: AudioSamples.concat([s1, s2]))
 
     def test_sum_along_time_axis(self):
-        arr = np.zeros(44100 * 2.5)
+        arr = np.zeros(int(44100 * 2.5))
         arr = np.column_stack((arr, arr))
         ts = AudioSamples(arr, SR44100())
         result = ts.sum(axis=0)
@@ -80,7 +81,7 @@ class AudioSamplesTest(unittest2.TestCase):
         self.assertIsInstance(result.dimensions[0], IdentityDimension)
 
     def test_sum_along_second_axis(self):
-        arr = np.zeros(44100 * 2.5)
+        arr = np.zeros(int(44100 * 2.5))
         arr = np.column_stack((arr, arr))
         ts = AudioSamples(arr, SR44100())
         result = ts.sum(axis=1)

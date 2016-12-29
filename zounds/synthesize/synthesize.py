@@ -1,8 +1,7 @@
 from __future__ import division
 import numpy as np
 from scipy.fftpack import idct
-from zounds.timeseries import \
-    audio_sample_rate, Seconds, AudioSamples, TimeDimension, Picoseconds
+from zounds.timeseries import audio_sample_rate, Seconds, AudioSamples
 from zounds.spectral import DCTIV
 from zounds.spectral.sliding_window import \
     IdentityWindowingFunc, OggVorbisWindowingFunc
@@ -123,7 +122,7 @@ class TickSynthesizer(object):
         tick = np.random.random_sample(int(sr * .1))
         tick *= np.linspace(1, 0, len(tick))
         # create silence
-        samples = np.zeros(sr * (duration / Seconds(1)))
+        samples = np.zeros(int(sr * (duration / Seconds(1))))
         ticks_per_second = Seconds(1) / tick_frequency
         # introduce periodic ticking sound
         step = int(sr // ticks_per_second)
@@ -147,4 +146,4 @@ class NoiseSynthesizer(object):
         sr = self.samplerate.samples_per_second
         seconds = duration / Seconds(1)
         return AudioSamples(
-                np.random.random_sample(sr * seconds), self.samplerate)
+                np.random.random_sample(int(sr * seconds)), self.samplerate)
