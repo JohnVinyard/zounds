@@ -11,27 +11,46 @@ from zounds.core import ArrayWithUnits, IdentityDimension
 
 
 class UnitNormTests(unittest2.TestCase):
-
     def get_model(self):
         @simple_in_memory_settings
         class Model(ff.BaseModel):
-
             unitnorm = ff.PickleFeature(
-                UnitNorm,
-                store=False)
+                    UnitNorm,
+                    store=False)
 
             kmeans = ff.PickleFeature(
-                KMeans,
-                centroids=10,
-                needs=unitnorm,
-                store=False)
+                    KMeans,
+                    centroids=10,
+                    needs=unitnorm,
+                    store=False)
 
             pipeline = ff.PickleFeature(
-                PreprocessingPipeline,
-                needs=(unitnorm, kmeans),
-                store=True)
+                    PreprocessingPipeline,
+                    needs=(unitnorm, kmeans),
+                    store=True)
 
         return Model
+
+    def test_forward_transform_returns_array_with_units_where_possible(self):
+        # train the model on random data
+        training = np.random.random_sample((100, 30))
+        Model = self.get_model()
+        _id = Model.process(unitnorm=training)
+        model = Model(_id)
+
+        # create a time-frequency representation
+        scale = LinearScale(FrequencyBand(20, 20000), 30)
+        data = ArrayWithUnits(
+                np.random.random_sample((10, 30)),
+                [TimeDimension(Seconds(1)), FrequencyDimension(scale)])
+
+        # do a forward pass
+        transformed = model.pipeline.transform(data).data
+
+        self.assertIsInstance(transformed, ArrayWithUnits)
+        self.assertEqual(2, len(transformed.dimensions))
+        self.assertIsInstance(transformed.dimensions[0], TimeDimension)
+        self.assertIsInstance(transformed.dimensions[1], IdentityDimension)
 
     def invert_and_assert_class(self, data):
         training = np.random.random_sample((100, 30))

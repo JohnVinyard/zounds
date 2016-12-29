@@ -9,7 +9,8 @@ import zounds
 class Settings(ff.PersistenceSettings):
     id_provider = ff.UuidProvider()
     key_builder = ff.StringDelimitedKeyBuilder()
-    database = ff.LmdbDatabase(path='timbre', key_builder=key_builder)
+    database = ff.LmdbDatabase(
+            path='timbre', map_size=1e10, key_builder=key_builder)
 
 
 windowing = zounds.HalfLapped()
@@ -17,12 +18,12 @@ STFT = zounds.stft(resample_to=zounds.SR22050(), wscheme=windowing)
 
 
 class WithTimbre(STFT, Settings):
-    bark = zounds.ConstantRateTimeSeriesFeature(
+    bark = zounds.ArrayWithUnitsFeature(
             zounds.BarkBands,
             needs=STFT.fft,
             store=True)
 
-    bfcc = zounds.ConstantRateTimeSeriesFeature(
+    bfcc = zounds.ArrayWithUnitsFeature(
             zounds.BFCC,
             needs=bark,
             store=True)
@@ -58,19 +59,19 @@ class BfccKmeans(ff.BaseModel):
 
 
 class WithCodes(WithTimbre):
-    bfcc_kmeans = zounds.ConstantRateTimeSeriesFeature(
+    bfcc_kmeans = zounds.ArrayWithUnitsFeature(
             zounds.Learned,
             learned=BfccKmeans(),
             needs=WithTimbre.bfcc,
             store=True)
 
-    sliding_bfcc_kmeans = zounds.ConstantRateTimeSeriesFeature(
+    sliding_bfcc_kmeans = zounds.ArrayWithUnitsFeature(
             zounds.SlidingWindow,
             needs=bfcc_kmeans,
             wscheme=windowing * zounds.Stride(frequency=30, duration=30),
             store=False)
 
-    bfcc_kmeans_pooled = zounds.ConstantRateTimeSeriesFeature(
+    bfcc_kmeans_pooled = zounds.ArrayWithUnitsFeature(
             zounds.Max,
             needs=sliding_bfcc_kmeans,
             axis=1,
@@ -90,13 +91,14 @@ def build():
     url = 'https://archive.org/download/FlavioGaete/FlavioGaete22.zip'
     filename = os.path.split(urlparse(url).path)[-1]
 
-    resp = requests.get(url, stream=True)
+    if not os.path.exists(filename):
+        resp = requests.get(url, stream=True)
 
-    print 'Downloading {url} -> {filename}...'.format(**locals())
+        print 'Downloading {url} -> {filename}...'.format(**locals())
 
-    with open(filename, 'wb') as f:
-        for chunk in resp.iter_content(chunk_size=1000000):
-            f.write(chunk)
+        with open(filename, 'wb') as f:
+            for chunk in resp.iter_content(chunk_size=1000000):
+                f.write(chunk)
 
     # stream all the audio files from the zip archive
     print 'Processing Audio...'

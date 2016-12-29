@@ -129,7 +129,12 @@ class UnitNorm(Preprocessor):
     def _forward_func(self):
         def x(d):
             from zounds.nputil import safe_unit_norm
-            return safe_unit_norm(d.reshape(d.shape[0], -1))
+            from zounds.core import ArrayWithUnits
+            normed = safe_unit_norm(d.reshape(d.shape[0], -1))
+            try:
+                return ArrayWithUnits(normed, d.dimensions)
+            except AttributeError:
+                return normed
 
         return x
 
@@ -228,7 +233,7 @@ class Slicer(Preprocessor):
         inv = self.inverse_transform()
         data = op(data)
         yield PreprocessResult(
-            data, op, inversion_data=inv_data, inverse=inv, name='Slicer')
+                data, op, inversion_data=inv_data, inverse=inv, name='Slicer')
 
 
 class Flatten(Preprocessor):

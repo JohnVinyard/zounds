@@ -1,5 +1,4 @@
 from scipy.cluster.vq import kmeans
-
 from featureflow import Node
 from preprocess import PreprocessResult, Preprocessor
 from rbm import Rbm, RealValuedRbm
@@ -14,12 +13,17 @@ class KMeans(Preprocessor):
         def x(d, codebook=None):
             import numpy as np
             from scipy.spatial.distance import cdist
+            from zounds.core import ArrayWithUnits, IdentityDimension
             l = d.shape[0]
             dist = cdist(d, codebook)
             best = np.argmin(dist, axis=1)
             feature = np.zeros((l, len(codebook)), dtype=np.uint8)
             feature[np.arange(l), best] = 1
-            return feature
+            try:
+                return ArrayWithUnits(
+                        feature, [d.dimensions[0], IdentityDimension()])
+            except AttributeError:
+                return feature
 
         return x
 
