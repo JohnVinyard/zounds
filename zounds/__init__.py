@@ -4,7 +4,7 @@ from timeseries import \
     Hours, Minutes, Seconds, Milliseconds, Microseconds, Picoseconds, \
     SR11025, SR22050, SR44100, SR48000, SR96000, HalfLapped, Stride, \
     TimeSlice, VariableRateTimeSeries, VariableRateTimeSeriesFeature, \
-    SampleRate, AudioSamples
+    SampleRate, AudioSamples, TimeDimension
 
 from soundfile import \
     MetaData, AudioMetaDataEncoder, FreesoundOrgConfig, \
@@ -17,7 +17,7 @@ from spectral import \
     SlidingWindow, OggVorbisWindowingFunc, \
     FFT, MDCT, DCT, DCTIV, BarkBands, Chroma, BFCC, SpectralCentroid, \
     SpectralFlatness, AWeighting, LinearScale, LogScale, FrequencyBand, \
-    FrequencyScale
+    FrequencyScale, FrequencyDimension
 
 from segment import \
     MeasureOfTransience, MovingAveragePeakPicker, SparseTimestampDecoder, \

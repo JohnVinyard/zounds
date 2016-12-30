@@ -28,7 +28,7 @@ class Document(STFT, Settings):
     Inherit from a basic processing graph, and add a Modified Discrete Cosine
     Transform feature
     """
-    mdct = zounds.TimeFrequencyRepresentationFeature(
+    mdct = zounds.ArrayWithUnitsFeature(
             zounds.MDCT,
             needs=STFT.windowed,
             store=True)
