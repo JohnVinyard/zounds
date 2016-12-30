@@ -106,7 +106,7 @@ is updated to `libsndfile 1.0.26`.  Download and run
 The [Anaconda](https://www.continuum.io/downloads) python distribution is highly recommended.
 
 ## Zounds
-Finall, just:
+Finally, just:
 
 ```bash
 pip install zounds
