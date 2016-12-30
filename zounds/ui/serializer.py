@@ -1,6 +1,6 @@
 import datetime
-from zounds.timeseries import \
-    ConstantRateTimeSeriesFeature, AudioSamples, Seconds, Picoseconds, TimeSlice
+from zounds.persistence import ArrayWithUnitsFeature
+from zounds.timeseries import Seconds, Picoseconds, TimeSlice, AudioSamples
 from zounds.segment import TimeSliceFeature
 from zounds.index import SearchResults
 from zounds.soundfile import OggVorbisFeature
@@ -142,6 +142,7 @@ def generate_image(data, is_partial=False, content_range=None):
     if len(data.shape) == 1:
         plt.plot(data)
     elif len(data.shape) == 2:
+        data = np.abs(np.asarray(data))
         mat = plt.matshow(np.rot90(data), cmap=plt.cm.viridis)
         mat.axes.get_xaxis().set_visible(False)
         mat.axes.get_yaxis().set_visible(False)
@@ -165,7 +166,7 @@ class ConstantRateTimeSeriesSerializer(object):
 
     def matches(self, context):
         return \
-            isinstance(context.feature, ConstantRateTimeSeriesFeature) \
+            isinstance(context.feature, ArrayWithUnitsFeature) \
             and isinstance(context.slce, TimeSlice)
 
     @property
@@ -177,8 +178,9 @@ class ConstantRateTimeSeriesSerializer(object):
         document = context.document
         data = feature(_id=document._id, persistence=document)
         sliced_data = data[context.slce]
+        td = data.dimensions[0]
         content_range = ContentRange.from_timeslice(
-                context.slce, data.end)
+                context.slce, td.end)
         return generate_image(
                 sliced_data,
                 is_partial=True,
@@ -191,7 +193,7 @@ class NumpySerializer(object):
 
     def matches(self, context):
         if context.document is not None \
-                and isinstance(context.feature, ConstantRateTimeSeriesFeature):
+                and isinstance(context.feature, ArrayWithUnitsFeature):
             return True
 
         return \

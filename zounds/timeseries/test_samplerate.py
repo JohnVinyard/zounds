@@ -1,7 +1,8 @@
 import unittest2
 import numpy as np
 from duration import Seconds
-from timeseries import ConstantRateTimeSeries
+from zounds.core import ArrayWithUnits
+from timeseries import TimeDimension
 from samplerate import \
     SampleRate, SR96000, SR48000, SR44100, SR22050, SR11025, audio_sample_rate, \
     HalfLapped
@@ -9,10 +10,22 @@ from samplerate import \
 
 class SampleRateTests(unittest2.TestCase):
 
+    def test_can_unpack_samplerate(self):
+        sr = SampleRate(Seconds(1), Seconds(2))
+        frequency, duration = sr
+        self.assertEqual(Seconds(1), frequency)
+        self.assertEqual(Seconds(2), duration)
+
+    def test_can_unpack_audio_samplerate(self):
+        sr = SR44100()
+        frequency, duration = sr
+        self.assertEqual(sr.frequency, frequency)
+        self.assertEqual(sr.duration, duration)
+
     def test_discrete_samples_11025(self):
         sr = SR11025()
-        ts = ConstantRateTimeSeries(
-                np.zeros(sr.samples_per_second), sr.frequency, sr.duration)
+        ts = ArrayWithUnits(
+                np.zeros(sr.samples_per_second), [TimeDimension(*sr)])
         hl = HalfLapped()
         freq, duration = hl.discrete_samples(ts)
         self.assertEqual(256, freq)
@@ -20,8 +33,8 @@ class SampleRateTests(unittest2.TestCase):
 
     def test_discrete_samples_22050(self):
         sr = SR22050()
-        ts = ConstantRateTimeSeries(
-                np.zeros(sr.samples_per_second), sr.frequency, sr.duration)
+        ts = ArrayWithUnits(
+                np.zeros(sr.samples_per_second), [TimeDimension(*sr)])
         hl = HalfLapped()
         freq, duration = hl.discrete_samples(ts)
         self.assertEqual(512, freq)
@@ -29,8 +42,8 @@ class SampleRateTests(unittest2.TestCase):
 
     def test_discrete_samples_44100(self):
         sr = SR44100()
-        ts = ConstantRateTimeSeries(
-                np.zeros(sr.samples_per_second), sr.frequency, sr.duration)
+        ts = ArrayWithUnits(
+                np.zeros(sr.samples_per_second), [TimeDimension(*sr)])
         hl = HalfLapped()
         freq, duration = hl.discrete_samples(ts)
         self.assertEqual(1024, freq)

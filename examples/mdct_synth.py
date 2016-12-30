@@ -28,7 +28,7 @@ class Document(STFT, Settings):
     Inherit from a basic processing graph, and add a Modified Discrete Cosine
     Transform feature
     """
-    mdct = zounds.TimeFrequencyRepresentationFeature(
+    mdct = zounds.ArrayWithUnitsFeature(
             zounds.MDCT,
             needs=STFT.windowed,
             store=True)
@@ -122,6 +122,7 @@ if __name__ == '__main__':
     # stream all the audio files from the zip archive
     # you can download the original file here:
     # https://archive.org/details/FlavioGaete
+    # - https://archive.org/download/FlavioGaete/FlavioGaete22.zip
     filename = 'FlavioGaete22.zip'
     print 'Processing Audio...'
     for zf in ff.iter_zip(filename):

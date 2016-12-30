@@ -3,7 +3,8 @@ from collections import OrderedDict
 import numpy as np
 from featureflow import Node, NotEnoughData
 
-from zounds.timeseries import ConstantRateTimeSeries, VariableRateTimeSeries
+from zounds.timeseries import VariableRateTimeSeries
+from zounds.core import ArrayWithUnits
 
 
 class Merge(Node):
@@ -42,7 +43,7 @@ class Merge(Node):
         return output
 
     def _process(self, data):
-        yield ConstantRateTimeSeries.concat(data.values(), axis=1)
+        yield ArrayWithUnits.concat(data.values(), axis=1)
 
 
 # KLUDGE: This implementation may currently only be used when consuming
@@ -59,7 +60,7 @@ class Pooled(Node):
         self._axis = axis
 
     def _enqueue(self, data, pusher):
-        if isinstance(data, ConstantRateTimeSeries):
+        if isinstance(data, ArrayWithUnits):
             try:
                 self._timeseries.concatenate(data)
             except AttributeError:
@@ -73,10 +74,14 @@ class Pooled(Node):
         return self._timeslices, self._timeseries
 
     def _process(self, data):
-        slices, series = data
-        examples = [(ts, self._op(series[ts], axis=self._axis))
-                    for ts in slices]
-        yield VariableRateTimeSeries(examples)
+        try:
+            slices, series = data
+            examples = [(ts, self._op(series[ts], axis=self._axis))
+                        for ts in slices]
+            yield VariableRateTimeSeries(examples)
+        except Exception as e:
+            print e
+            raise
 
 
 class Slice(Node):
@@ -96,7 +101,8 @@ class Sum(Node):
     def _process(self, data):
         # TODO: This should be generalized.  Sum will have this same problem
         try:
-            data = np.sum(data, axis=self._axis)
+            # data = np.sum(data, axis=self._axis)
+            data = np.sum(axis=self._axis)
         except ValueError:
             print 'ERROR'
             data = data
@@ -112,7 +118,8 @@ class Max(Node):
     def _process(self, data):
         # TODO: This should be generalized.  Sum will have this same problem
         try:
-            data = np.max(data, axis=self._axis)
+            # data = np.max(data, axis=self._axis)
+            data = data.sum(axis=self._axis)
         except ValueError:
             print 'ERROR'
             data = data

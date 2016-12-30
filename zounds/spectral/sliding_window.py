@@ -1,8 +1,10 @@
-from featureflow import Node, NotEnoughData
 import numpy as np
-from zounds.nputil import windowed, sliding_window
-from zounds.timeseries import ConstantRateTimeSeries
 import scipy
+from featureflow import Node, NotEnoughData
+
+from zounds.core import ArrayWithUnits
+from zounds.nputil import sliding_window
+from zounds.timeseries import TimeSlice
 
 
 def oggvorbis(s):
@@ -72,39 +74,40 @@ class SlidingWindow(Node):
         self._cache = None
 
     def _first_chunk(self, data):
-        padding = np.zeros((self._padwith,) + data.shape[1:], dtype=data.dtype)
-        padding_ts = ConstantRateTimeSeries(
-                padding,
-                data.frequency,
-                data.duration)
-        return padding_ts.concatenate(data)
+        if self._padwith:
+            padding = np.zeros(
+                    (self._padwith,) + data.shape[1:], dtype=data.dtype)
+            padding_ts = ArrayWithUnits(padding, data.dimensions)
+            return padding_ts.concatenate(data)
+        else:
+            return data
 
     def _enqueue(self, data, pusher):
         if self._cache is None:
             self._cache = data
-            self._stepsize, self._windowsize = \
-                self._scheme.discrete_samples(data)
         else:
-            self._cache = np.concatenate([self._cache, data])
+            self._cache = self._cache.concatenate(data)
 
     def _dequeue(self):
-        leftover, arr = windowed(
-                self._cache,
-                self._windowsize,
-                self._stepsize,
-                dopad=self._finalized)
 
-        self._cache = leftover
+        duration = TimeSlice(self._scheme.duration)
+        frequency = TimeSlice(self._scheme.frequency)
+
+        leftover, arr = self._cache.sliding_window_with_leftovers(
+                duration,
+                frequency,
+                dopad=self._finalized)
 
         if not arr.size:
             raise NotEnoughData()
+
+        self._cache = leftover
 
         # BUG: Order matters here (try arr * self._func instead)
         # why does that statement result in __rmul__ being called for each
         # scalar value in arr?
         out = (self._func * arr) if self._func else arr
-        out = ConstantRateTimeSeries(
-                out, self._scheme.frequency, self._scheme.duration)
+
         return out
 
 

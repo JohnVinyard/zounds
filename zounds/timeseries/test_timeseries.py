@@ -2,7 +2,8 @@ import numpy as np
 import unittest2
 from duration import \
     Picoseconds, Milliseconds, Seconds, Microseconds, Nanoseconds, Hours
-from timeseries import TimeSlice, ConstantRateTimeSeries
+from timeseries import TimeSlice, TimeDimension
+from zounds.core import IdentityDimension, ArrayWithUnits
 
 
 class ConvenienceClassTests(unittest2.TestCase):
@@ -26,7 +27,6 @@ class ConvenienceClassTests(unittest2.TestCase):
 
 
 class TimeSliceTests(unittest2.TestCase):
-
     def test_raises_if_duration_is_not_timedelta_instance(self):
         self.assertRaises(ValueError, lambda: TimeSlice(1))
 
@@ -118,36 +118,10 @@ class TimeSliceTests(unittest2.TestCase):
 
 class TimeSeriesTests(unittest2.TestCase):
 
-    def test_from_example(self):
-        arr = np.arange(10)
-        freq = Seconds(1)
-        duration = Seconds(2)
-        ts = ConstantRateTimeSeries(arr, freq, duration)
-        from_example = ConstantRateTimeSeries.from_example(np.arange(10), ts)
-        self.assertEqual(ts.shape, from_example.shape)
-        self.assertEqual(ts.frequency, from_example.frequency)
-        self.assertEqual(ts.duration, from_example.duration)
-
-    def test_raises_if_frequency_is_not_timedelta_instance(self):
-        arr = np.arange(10)
-        self.assertRaises(ValueError, lambda: ConstantRateTimeSeries(arr, 1))
-
-    def test_raises_if_duration_is_not_timedelta_instance(self):
-        arr = np.arange(10)
-        freq = Seconds(1)
-        self.assertRaises(
-                ValueError, lambda: ConstantRateTimeSeries(arr, freq, 1))
-
-    def test_duration_is_equal_to_frequency_if_not_provided(self):
-        arr = np.arange(10)
-        freq = Seconds(1)
-        ts = ConstantRateTimeSeries(arr, freq)
-        self.assertEqual(ts.frequency, ts.duration)
-
     def test_can_slice_time_series_with_time_slice(self):
         arr = np.arange(10)
         freq = Seconds(1)
-        ts = ConstantRateTimeSeries(arr, freq)
+        ts = ArrayWithUnits(arr, [TimeDimension(freq)])
         sl = TimeSlice(Seconds(2), start=Seconds(2))
         ts2 = ts[sl]
         self.assertEqual(2, len(ts2))
@@ -155,7 +129,7 @@ class TimeSeriesTests(unittest2.TestCase):
     def test_can_slice_time_series_with_open_ended_time_slice(self):
         arr = np.arange(10)
         freq = Seconds(1)
-        ts = ConstantRateTimeSeries(arr, freq)
+        ts = ArrayWithUnits(arr, [TimeDimension(freq)])
         sl = TimeSlice(None, start=Seconds(2))
         ts2 = ts[sl]
         self.assertEqual(8, len(ts2))
@@ -163,21 +137,21 @@ class TimeSeriesTests(unittest2.TestCase):
     def test_can_index_constant_rate_time_series_with_integer_index(self):
         arr = np.arange(10)
         freq = Seconds(1)
-        ts = ConstantRateTimeSeries(arr, freq)
+        ts = ArrayWithUnits(arr, [TimeDimension(freq)])
         ts2 = ts[5]
         self.assertEqual(5, ts2)
 
     def test_can_index_2d_time_series_with_single_integer_index(self):
         arr = np.random.random_sample((10, 3))
         freq = Seconds(1)
-        ts = ConstantRateTimeSeries(arr, freq)
+        ts = ArrayWithUnits(arr, [TimeDimension(freq), IdentityDimension()])
         ts2 = ts[5]
         self.assertEqual((3,), ts2.shape)
 
     def test_can_mix_time_slice_and_integer_indices(self):
         arr = np.ones((10, 5))
         freq = Seconds(1)
-        ts = ConstantRateTimeSeries(arr, freq)
+        ts = ArrayWithUnits(arr, [TimeDimension(freq), IdentityDimension()])
         sl = TimeSlice(duration=Seconds(5), start=Seconds(5))
         ts2 = ts[sl, 2:]
         self.assertEqual((5, 3), ts2.shape)
@@ -185,51 +159,51 @@ class TimeSeriesTests(unittest2.TestCase):
     def test_can_slice_constant_rate_time_series_with_integer_indices(self):
         arr = np.arange(10)
         freq = Seconds(1)
-        ts = ConstantRateTimeSeries(arr, freq)
+        ts = ArrayWithUnits(arr, [TimeDimension(freq)])
         ts2 = ts[:5]
         self.assertEqual(5, len(ts2))
-        self.assertIsInstance(ts2, ConstantRateTimeSeries)
+        self.assertIsInstance(ts2, ArrayWithUnits)
 
     def test_can_add_constant_factor_to_time_series(self):
         arr = np.arange(10)
         freq = Seconds(1)
-        ts = ConstantRateTimeSeries(arr, freq)
+        ts = ArrayWithUnits(arr, [TimeDimension(freq)])
         ts2 = ts + 10
         self.assertTrue(np.all(np.arange(10, 20) == ts2))
-        self.assertIsInstance(ts2, ConstantRateTimeSeries)
+        self.assertIsInstance(ts2, ArrayWithUnits)
 
     def test_get_index_error_when_using_out_of_range_int_index(self):
         arr = np.arange(10)
         freq = Seconds(1)
-        ts = ConstantRateTimeSeries(arr, freq)
+        ts = ArrayWithUnits(arr, [TimeDimension(freq)])
         self.assertRaises(IndexError, lambda: ts[100])
 
     def test_get_empty_time_series_when_using_out_of_range_time_slice(self):
         arr = np.arange(10)
         freq = Seconds(1)
-        ts = ConstantRateTimeSeries(arr, freq)
+        ts = ArrayWithUnits(arr, [TimeDimension(freq)])
         sl = TimeSlice(Seconds(2), start=Seconds(11))
         ts2 = ts[sl]
         self.assertEqual(0, ts2.size)
-        self.assertIsInstance(ts2, ConstantRateTimeSeries)
+        self.assertIsInstance(ts2, ArrayWithUnits)
 
     def test_time_slice_spanning_less_than_one_sample_returns_one_sample(self):
         arr = np.arange(10)
         freq = Seconds(1)
-        ts = ConstantRateTimeSeries(arr, freq)
+        ts = ArrayWithUnits(arr, [TimeDimension(freq)])
         sl = TimeSlice(Milliseconds(100), start=Milliseconds(1500))
         ts2 = ts[sl]
-        self.assertIsInstance(ts2, ConstantRateTimeSeries)
+        self.assertIsInstance(ts2, ArrayWithUnits)
         self.assertEqual(1, ts2.size)
         self.assertEqual(1, ts2[0])
 
     def test_time_slice_spanning_multiple_samples_returns_all_samples(self):
         arr = np.arange(10)
         freq = Seconds(1)
-        ts = ConstantRateTimeSeries(arr, freq)
+        ts = ArrayWithUnits(arr, [TimeDimension(freq)])
         sl = TimeSlice(Milliseconds(2000), start=Milliseconds(1500))
         ts2 = ts[sl]
-        self.assertIsInstance(ts2, ConstantRateTimeSeries)
+        self.assertIsInstance(ts2, ArrayWithUnits)
         self.assertEqual(3, ts2.size)
         self.assertTrue(np.all(np.arange(1, 4) == ts2))
 
@@ -237,10 +211,10 @@ class TimeSeriesTests(unittest2.TestCase):
         arr = np.arange(10)
         freq = Seconds(1)
         duration = Seconds(2)
-        ts = ConstantRateTimeSeries(arr, freq, duration)
+        ts = ArrayWithUnits(arr, [TimeDimension(freq, duration)])
         sl = TimeSlice(Seconds(2), start=Seconds(1))
         ts2 = ts[sl]
-        self.assertIsInstance(ts2, ConstantRateTimeSeries)
+        self.assertIsInstance(ts2, ArrayWithUnits)
         self.assertEqual(3, ts2.size)
         self.assertTrue(np.all(np.arange(3) == ts2))
 
@@ -248,10 +222,10 @@ class TimeSeriesTests(unittest2.TestCase):
         arr = np.arange(10)
         freq = Seconds(1)
         duration = Seconds(3)
-        ts = ConstantRateTimeSeries(arr, freq, duration)
+        ts = ArrayWithUnits(arr, [TimeDimension(freq, duration)])
         sl = TimeSlice(Seconds(2), start=Seconds(5))
         ts2 = ts[sl]
-        self.assertIsInstance(ts2, ConstantRateTimeSeries)
+        self.assertIsInstance(ts2, ArrayWithUnits)
         self.assertEqual(4, ts2.size)
         self.assertTrue(np.all(np.arange(3, 7) == ts2))
 
@@ -259,20 +233,20 @@ class TimeSeriesTests(unittest2.TestCase):
         arr = np.arange(10)
         freq = Seconds(1)
         duration = Seconds(3)
-        ts = ConstantRateTimeSeries(arr, freq, duration)
+        ts = ArrayWithUnits(arr, [TimeDimension(freq, duration)])
         sl = TimeSlice(Seconds(2), start=Seconds(6))
         ts2 = ts[sl]
-        self.assertIsInstance(ts2, ConstantRateTimeSeries)
+        self.assertIsInstance(ts2, ArrayWithUnits)
         self.assertEqual(4, ts2.size)
         self.assertTrue(np.all(np.arange(4, 8) == ts2))
 
     def test_frequency_less_than_one(self):
         arr = np.arange(10)
         freq = Milliseconds(500)
-        ts = ConstantRateTimeSeries(arr, freq)
+        ts = ArrayWithUnits(arr, [TimeDimension(freq)])
         sl = TimeSlice(Seconds(2), start=Milliseconds(600))
         ts2 = ts[sl]
-        self.assertIsInstance(ts2, ConstantRateTimeSeries)
+        self.assertIsInstance(ts2, ArrayWithUnits)
         self.assertEqual(5, ts2.size)
         self.assertTrue(np.all(np.arange(1, 6) == ts2))
 
@@ -280,10 +254,10 @@ class TimeSeriesTests(unittest2.TestCase):
         arr = np.arange(10)
         freq = Milliseconds(500)
         duration = Seconds(1)
-        ts = ConstantRateTimeSeries(arr, freq, duration)
+        ts = ArrayWithUnits(arr, [TimeDimension(freq, duration)])
         sl = TimeSlice(Seconds(3), start=Milliseconds(250))
         ts2 = ts[sl]
-        self.assertIsInstance(ts2, ConstantRateTimeSeries)
+        self.assertIsInstance(ts2, ArrayWithUnits)
         self.assertEqual(7, ts2.size)
         self.assertTrue(np.all(np.arange(0, 7) == ts2))
 
@@ -291,10 +265,10 @@ class TimeSeriesTests(unittest2.TestCase):
         arr = np.arange(10)
         freq = Milliseconds(500)
         duration = Seconds(1)
-        ts = ConstantRateTimeSeries(arr, freq, duration)
+        ts = ArrayWithUnits(arr, [TimeDimension(freq, duration)])
         sl = TimeSlice(Seconds(3), start=Milliseconds(1250))
         ts2 = ts[sl]
-        self.assertIsInstance(ts2, ConstantRateTimeSeries)
+        self.assertIsInstance(ts2, ArrayWithUnits)
         self.assertEqual(8, ts2.size)
         self.assertTrue(np.all(np.arange(1, 9) == ts2))
 
@@ -302,10 +276,10 @@ class TimeSeriesTests(unittest2.TestCase):
         arr = np.arange(10)
         freq = Seconds(1)
         duration = Milliseconds(500)
-        ts = ConstantRateTimeSeries(arr, freq, duration)
+        ts = ArrayWithUnits(arr, [TimeDimension(freq, duration)])
         sl = TimeSlice(Seconds(3), start=Milliseconds(1250))
         ts2 = ts[sl]
-        self.assertIsInstance(ts2, ConstantRateTimeSeries)
+        self.assertIsInstance(ts2, ArrayWithUnits)
         self.assertEqual(4, ts2.size)
         self.assertTrue(np.all(np.arange(1, 5) == ts2))
 
@@ -313,144 +287,156 @@ class TimeSeriesTests(unittest2.TestCase):
         arr = np.arange(10)
         freq = Seconds(1)
         duration = Milliseconds(500)
-        ts = ConstantRateTimeSeries(arr, freq, duration)
+        ts = ArrayWithUnits(arr, [TimeDimension(freq, duration)])
         ts2 = ts[:]
-        self.assertIsInstance(ts2, ConstantRateTimeSeries)
+        self.assertIsInstance(ts2, ArrayWithUnits)
         self.assertTrue(np.all(np.arange(10) == ts2))
 
     def test_can_get_entire_time_series_with_empty_time_slice(self):
         arr = np.arange(10)
         freq = Seconds(1)
-        ts = ConstantRateTimeSeries(arr, freq)
+        ts = ArrayWithUnits(arr, [TimeDimension(freq)])
         sl = TimeSlice()
         ts2 = ts[sl]
         self.assertEqual(10, len(ts2))
 
+    def test_can_sum_2d_timeseries(self):
+        arr = np.zeros((10, 3))
+        freq = Seconds(1)
+        ts = ArrayWithUnits(arr, [TimeDimension(freq), IdentityDimension()])
+        ts2 = ts.sum(axis=1)
+        self.assertIsInstance(ts2, ArrayWithUnits)
+        self.assertEqual(1, len(ts2.dimensions))
+        self.assertEqual(freq, ts2.dimensions[0].frequency)
+        self.assertEqual(freq, ts2.dimensions[0].duration)
+
     def test_span_freq_and_duration_equal(self):
         arr = np.arange(10)
         freq = Seconds(1)
-        ts = ConstantRateTimeSeries(arr, freq)
-        self.assertEqual(TimeSlice(Seconds(10)), ts.span)
+        ts = ArrayWithUnits(arr, [TimeDimension(freq)])
+        self.assertEqual(TimeSlice(Seconds(10)), ts.dimensions[0].span)
 
     def test_span_duration_greater_than_frequency(self):
         arr = np.arange(10)
         freq = Seconds(1)
         duration = Milliseconds(2500)
-        ts = ConstantRateTimeSeries(arr, freq, duration)
-        self.assertEqual(TimeSlice(Milliseconds(11500)), ts.span)
+        ts = ArrayWithUnits(arr, [TimeDimension(freq, duration)])
+        self.assertEqual(TimeSlice(Milliseconds(11500)), ts.dimensions[0].span)
 
     def test_span_duration_less_than_frequency(self):
         arr = np.arange(10)
         freq = Seconds(1)
         duration = Milliseconds(500)
-        ts = ConstantRateTimeSeries(arr, freq, duration)
-        self.assertEqual(TimeSlice(Milliseconds(9500)), ts.span)
+        ts = ArrayWithUnits(arr, [TimeDimension(freq, duration)])
+        self.assertEqual(TimeSlice(Milliseconds(9500)), ts.dimensions[0].span)
 
     def test_duration_in_seconds_half_second(self):
         arr = np.arange(10)
         freq = Milliseconds(500)
-        ts = ConstantRateTimeSeries(arr, freq)
-        self.assertEqual(0.5, ts.duration_in_seconds)
+        ts = ArrayWithUnits(arr, [TimeDimension(freq)])
+        self.assertEqual(0.5, ts.dimensions[0].duration_in_seconds)
 
     def test_duration_in_seconds_two_seconds(self):
         arr = np.arange(10)
         freq = Seconds(2)
-        ts = ConstantRateTimeSeries(arr, freq)
-        self.assertEqual(2, ts.duration_in_seconds)
+        ts = ArrayWithUnits(arr, [TimeDimension(freq)])
+        self.assertEqual(2, ts.dimensions[0].duration_in_seconds)
 
     def test_samplerate_one_per_second(self):
         arr = np.arange(10)
         freq = Seconds(1)
-        ts = ConstantRateTimeSeries(arr, freq)
-        self.assertEqual(1, ts.samples_per_second)
+        ts = ArrayWithUnits(arr, [TimeDimension(freq)])
+        self.assertEqual(1, ts.dimensions[0].samples_per_second)
 
     def test_samplerate_two_per_second(self):
         arr = np.arange(10)
         freq = Milliseconds(500)
-        ts = ConstantRateTimeSeries(arr, freq)
-        self.assertEqual(2, ts.samples_per_second)
+        ts = ArrayWithUnits(arr, [TimeDimension(freq)])
+        self.assertEqual(2, ts.dimensions[0].samples_per_second)
 
     def test_samplerate_three_per_second(self):
         arr = np.arange(10)
         freq = Milliseconds(333)
-        ts = ConstantRateTimeSeries(arr, freq)
-        self.assertEqual(3, int(ts.samples_per_second))
+        ts = ArrayWithUnits(arr, [TimeDimension(freq)])
+        self.assertEqual(3, int(ts.dimensions[0].samples_per_second))
 
     def test_samplerate_audio(self):
         arr = np.arange(10)
         freq = Picoseconds(int(1e12)) / 44100.
-        ts = ConstantRateTimeSeries(arr, freq)
-        self.assertEqual(44100, int(ts.samples_per_second))
+        ts = ArrayWithUnits(arr, [TimeDimension(freq)])
+        self.assertEqual(44100, int(ts.dimensions[0].samples_per_second))
 
     def test_concatenation_with_differing_freqs_and_durations_raises(self):
-        ts = ConstantRateTimeSeries(
+        ts = ArrayWithUnits(
                 np.arange(10),
-                Seconds(1),
-                Seconds(2))
-        ts2 = ConstantRateTimeSeries(
+                [TimeDimension(Seconds(1), Seconds(2))])
+        ts2 = ArrayWithUnits(
                 np.arange(10, 20),
-                Seconds(1),
-                Seconds(1))
+                [TimeDimension(Seconds(1), Seconds(1))])
         self.assertRaises(ValueError, lambda: ts.concatenate(ts2))
 
     def test_concatenation_with_matching_freqs_and_duration_results_in_crts(
             self):
-        ts = ConstantRateTimeSeries(
+        ts = ArrayWithUnits(
                 np.ones((10, 3)),
-                Seconds(1),
-                Seconds(2))
-        ts2 = ConstantRateTimeSeries(
+                [TimeDimension(Seconds(1), Seconds(2)), IdentityDimension()])
+        ts2 = ArrayWithUnits(
                 np.ones((13, 3)),
-                Seconds(1),
-                Seconds(2))
+                [TimeDimension(Seconds(1), Seconds(2)), IdentityDimension()])
         result = ts.concatenate(ts2)
-        self.assertIsInstance(result, ConstantRateTimeSeries)
+        self.assertIsInstance(result, ArrayWithUnits)
         self.assertEqual((23, 3), result.shape)
 
     def test_concat_with_differing_freqs(self):
-        ts = ConstantRateTimeSeries(
+        ts = ArrayWithUnits(
                 np.ones((10, 3)),
-                Seconds(2),
-                Seconds(2))
-        ts2 = ConstantRateTimeSeries(
+                [TimeDimension(Seconds(2), Seconds(2)), IdentityDimension()])
+        ts2 = ArrayWithUnits(
                 np.ones((13, 3)),
-                Seconds(1),
-                Seconds(2))
-        self.assertRaises( \
-                ValueError, lambda: ConstantRateTimeSeries.concat([ts, ts2]))
+                [TimeDimension(Seconds(1), Seconds(2)), IdentityDimension()])
+        self.assertRaises(
+                ValueError, lambda: ArrayWithUnits.concat([ts, ts2]))
 
     def test_concat_with_differing_durations(self):
-        ts = ConstantRateTimeSeries(
-                np.ones((10, 3)),
-                Seconds(1),
-                Seconds(2))
-        ts2 = ConstantRateTimeSeries(
-                np.ones((13, 3)),
-                Seconds(1),
-                Seconds(3))
+        td1 = TimeDimension(Seconds(1), Seconds(2))
+        ts1 = ArrayWithUnits(np.ones((10, 3)), [td1, IdentityDimension()])
+        td2 = TimeDimension(Seconds(1), Seconds(3))
+        ts2 = ArrayWithUnits(np.ones((13, 3)), [td2, IdentityDimension()])
         self.assertRaises(
-                ValueError, lambda: ConstantRateTimeSeries.concat([ts, ts2]))
+                ValueError, lambda: ArrayWithUnits.concat([ts1, ts2]))
 
     def test_concat_along_first_axis(self):
-        ts = ConstantRateTimeSeries(
-                np.ones((10, 3)),
-                Seconds(1),
-                Seconds(2))
-        ts2 = ConstantRateTimeSeries(
-                np.ones((13, 3)),
-                Seconds(1),
-                Seconds(2))
-        result = ConstantRateTimeSeries.concat([ts, ts2])
+        td1 = TimeDimension(Seconds(1), Seconds(2))
+        ts1 = ArrayWithUnits(np.ones((10, 3)), [td1, IdentityDimension()])
+        td2 = TimeDimension(Seconds(1), Seconds(2))
+        ts2 = ArrayWithUnits(np.ones((13, 3)), [td2, IdentityDimension()])
+        result = ArrayWithUnits.concat([ts1, ts2])
         self.assertEqual((23, 3), result.shape)
 
     def test_concat_along_second_axis(self):
-        ts = ConstantRateTimeSeries(
-                np.ones((10, 3)),
-                Seconds(1),
-                Seconds(2))
-        ts2 = ConstantRateTimeSeries(
-                np.ones((10, 5)),
-                Seconds(1),
-                Seconds(2))
-        result = ConstantRateTimeSeries.concat([ts, ts2], axis=1)
+        td1 = TimeDimension(Seconds(1), Seconds(2))
+        ts1 = ArrayWithUnits(np.ones((10, 3)), [td1, IdentityDimension()])
+        td2 = TimeDimension(Seconds(1), Seconds(2))
+        ts2 = ArrayWithUnits(np.ones((10, 5)), [td2, IdentityDimension()])
+        result = ArrayWithUnits.concat([ts1, ts2], axis=1)
         self.assertEqual((10, 8), result.shape)
+        self.assertIsInstance(result.dimensions[0], TimeDimension)
+        self.assertIsInstance(result.dimensions[1], IdentityDimension)
+
+    def test_sum_along_time_axis(self):
+        td = TimeDimension(Seconds(1), Seconds(2))
+        ts = ArrayWithUnits(np.ones((10, 3)), [td, IdentityDimension()])
+        result = ts.sum(axis=0)
+        self.assertIsInstance(result, ArrayWithUnits)
+        self.assertEqual((3,), result.shape)
+        self.assertEqual(1, len(result.dimensions))
+        self.assertIsInstance(result.dimensions[0], IdentityDimension)
+
+    def test_sum_along_second_axis(self):
+        td = TimeDimension(Seconds(1), Seconds(2))
+        ts = ArrayWithUnits(np.ones((10, 3)), [td, IdentityDimension()])
+        result = ts.sum(axis=1)
+        self.assertIsInstance(result, ArrayWithUnits)
+        self.assertEqual((10,), result.shape)
+        self.assertEqual(1, len(result.dimensions))
+        self.assertIsInstance(result.dimensions[0], TimeDimension)

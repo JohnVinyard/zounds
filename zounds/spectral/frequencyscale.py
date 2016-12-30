@@ -17,6 +17,8 @@ class FrequencyBand(object):
         :return: a new FrequencyBand instance
         """
         super(FrequencyBand, self).__init__()
+        if stop_hz <= start_hz:
+            raise ValueError('stop_hz must be greater than start_hz')
         self.stop_hz = stop_hz
         self.start_hz = start_hz
 
@@ -117,6 +119,22 @@ class FrequencyScale(object):
     def __iter__(self):
         raise NotImplementedError()
 
+    def __getitem__(self, index):
+        all_bands = list(self)
+        try:
+            # index is an integer or slice
+            bands = all_bands[index]
+        except TypeError:
+            # index is a frequency band
+            bands = all_bands[self.get_slice(index)]
+
+        try:
+            freq_band = FrequencyBand(bands[0].start_hz, bands[-1].stop_hz)
+            return self.__class__(freq_band, len(bands))
+        except TypeError:
+            # we've already got an individual band
+            return bands
+
 
 class LinearScale(FrequencyScale):
     """
@@ -149,6 +167,7 @@ class LogScale(FrequencyScale):
                 np.log10(self.start_hz),
                 np.log10(self.stop_hz),
                 self.n_bands + 1)
+        # variable bandwidth
         bandwidths = np.diff(center_freqs)
         return (FrequencyBand.from_center(cf, bw)
                 for (cf, bw) in zip(center_freqs[:-1], bandwidths))

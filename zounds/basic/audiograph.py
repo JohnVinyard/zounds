@@ -5,8 +5,8 @@ from zounds.soundfile import \
     Resampler
 from zounds.segment import \
     ComplexDomain, MovingAveragePeakPicker, TimeSliceFeature
-from zounds.timeseries import \
-    ConstantRateTimeSeriesFeature, SR44100, HalfLapped, Stride
+from zounds.persistence import ArrayWithUnitsFeature, AudioSamplesFeature
+from zounds.timeseries import SR44100, HalfLapped, Stride
 from zounds.spectral import \
     SlidingWindow, OggVorbisWindowingFunc, FFT, BarkBands, SpectralCentroid, \
     Chroma, BFCC, DCT
@@ -43,12 +43,12 @@ def resampled(
                 needs=raw,
                 store=True)
 
-        pcm = ConstantRateTimeSeriesFeature(
+        pcm = AudioSamplesFeature(
                 AudioStream,
                 needs=raw,
                 store=False)
 
-        resampled = ConstantRateTimeSeriesFeature(
+        resampled = AudioSamplesFeature(
                 Resampler,
                 needs=pcm,
                 samplerate=resample_to,
@@ -79,25 +79,25 @@ def stft(
                 needs=raw,
                 store=True)
 
-        pcm = ConstantRateTimeSeriesFeature(
+        pcm = AudioSamplesFeature(
                 AudioStream,
                 needs=raw,
                 store=False)
 
-        resampled = ConstantRateTimeSeriesFeature(
+        resampled = AudioSamplesFeature(
                 Resampler,
                 needs=pcm,
                 samplerate=resample_to,
                 store=False)
 
-        windowed = ConstantRateTimeSeriesFeature(
+        windowed = ArrayWithUnitsFeature(
                 SlidingWindow,
                 needs=resampled,
                 wscheme=wscheme,
                 wfunc=OggVorbisWindowingFunc(),
                 store=False)
 
-        fft = ConstantRateTimeSeriesFeature(
+        fft = ArrayWithUnitsFeature(
                 FFT,
                 needs=windowed,
                 store=store_fft)
@@ -135,52 +135,52 @@ def audio_graph(
                 needs=raw,
                 store=True)
 
-        pcm = ConstantRateTimeSeriesFeature(
+        pcm = AudioSamplesFeature(
                 AudioStream,
                 needs=raw,
                 store=False)
 
-        resampled = ConstantRateTimeSeriesFeature(
+        resampled = AudioSamplesFeature(
                 Resampler,
                 needs=pcm,
                 samplerate=resample_to,
                 store=False)
 
-        windowed = ConstantRateTimeSeriesFeature(
+        windowed = ArrayWithUnitsFeature(
                 SlidingWindow,
                 needs=resampled,
                 wscheme=HalfLapped(),
                 wfunc=OggVorbisWindowingFunc(),
                 store=False)
 
-        dct = ConstantRateTimeSeriesFeature(
+        dct = ArrayWithUnitsFeature(
                 DCT,
                 needs=windowed,
                 store=True)
 
-        fft = ConstantRateTimeSeriesFeature(
+        fft = ArrayWithUnitsFeature(
                 FFT,
                 needs=windowed,
                 store=store_fft)
 
-        bark = ConstantRateTimeSeriesFeature(
+        bark = ArrayWithUnitsFeature(
                 BarkBands,
                 needs=fft,
                 samplerate=resample_to,
                 store=True)
 
-        centroid = ConstantRateTimeSeriesFeature(
+        centroid = ArrayWithUnitsFeature(
                 SpectralCentroid,
                 needs=bark,
                 store=True)
 
-        chroma = ConstantRateTimeSeriesFeature(
+        chroma = ArrayWithUnitsFeature(
                 Chroma,
                 needs=fft,
                 samplerate=resample_to,
                 store=True)
 
-        bfcc = ConstantRateTimeSeriesFeature(
+        bfcc = ArrayWithUnitsFeature(
                 BFCC,
                 needs=fft,
                 store=True)
@@ -196,18 +196,18 @@ def with_onsets(fft_feature):
     """
 
     class Onsets(BaseModel):
-        onset_prep = ConstantRateTimeSeriesFeature(
+        onset_prep = ArrayWithUnitsFeature(
                 SlidingWindow,
                 needs=fft_feature,
                 wscheme=HalfLapped() * Stride(frequency=1, duration=3),
                 store=False)
 
-        complex_domain = ConstantRateTimeSeriesFeature(
+        complex_domain = ArrayWithUnitsFeature(
                 ComplexDomain,
                 needs=onset_prep,
                 store=False)
 
-        sliding_detection = ConstantRateTimeSeriesFeature(
+        sliding_detection = ArrayWithUnitsFeature(
                 SlidingWindow,
                 needs=complex_domain,
                 wscheme=HalfLapped() * Stride(frequency=1, duration=11),

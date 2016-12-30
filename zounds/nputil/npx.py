@@ -125,7 +125,18 @@ def safe_unit_norm(a):
             return a / n
         return a
 
-    norm = np.sum(np.abs(a) ** 2, axis=-1) ** (1. / 2)
+    print 'FIRST CLASS', a.__class__
+    a = np.abs(a)
+    print a.__class__
+    b = a ** 2
+    print b.__class__
+    c = np.sum(b, axis=-1)
+    print c.__class__
+    d = c ** (1. / 2)
+    print d.__class__
+    norm = d
+    # norm = np.sum(np.abs(a) ** 2, axis=-1) ** (1. / 2)
+    print 'SECOND CLASS', norm.__class__
     # Dividing by a norm of zero will cause a warning to be issued. Set those
     # values to another number. It doesn't matter what, since we'll be dividing
     # a vector of zeros by the number, and 0 / N always equals 0.

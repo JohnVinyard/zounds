@@ -1,14 +1,16 @@
 from __future__ import division
-from featureflow import Node
+
 import numpy as np
+from featureflow import Node
 from scipy.fftpack import dct
 from scipy.stats.mstats import gmean
+
+from frequencyscale import LinearScale
 from psychacoustics import Chroma as ChromaScale, Bark as BarkScale
+from tfrepresentation import FrequencyDimension
+from zounds.core import ArrayWithUnits, IdentityDimension
 from zounds.nputil import safe_log
-from zounds.timeseries import \
-    ConstantRateTimeSeries, SR44100, audio_sample_rate, Picoseconds
-from tfrepresentation import TimeFrequencyRepresentation
-from frequencyscale import LinearScale, FrequencyBand
+from zounds.timeseries import SR44100, audio_sample_rate
 
 
 class FFT(Node):
@@ -21,10 +23,15 @@ class FFT(Node):
         sl = [slice(None) for _ in xrange(len(transformed.shape))]
         positive = data.shape[self._axis] // 2
         sl[self._axis] = slice(0, positive, None)
-        yield ConstantRateTimeSeries(
-                transformed[sl],
-                data.frequency,
-                data.duration)
+
+        transformed = transformed[sl]
+
+        sr = audio_sample_rate(
+                int(data.shape[1] / data.dimensions[0].duration_in_seconds))
+        scale = LinearScale.from_sample_rate(sr, transformed.shape[-1])
+
+        yield ArrayWithUnits(
+                transformed, [data.dimensions[0], FrequencyDimension(scale)])
 
 
 class DCT(Node):
@@ -37,10 +44,15 @@ class DCT(Node):
         self._axis = axis
 
     def _process(self, data):
-        yield ConstantRateTimeSeries(
-                dct(data, norm='ortho', axis=self._axis),
-                data.frequency,
-                data.duration)
+
+        transformed = dct(data, norm='ortho', axis=self._axis)
+
+        sr = audio_sample_rate(
+                int(data.shape[1] / data.dimensions[0].duration_in_seconds))
+        scale = LinearScale.from_sample_rate(sr, transformed.shape[-1])
+
+        yield ArrayWithUnits(
+                transformed, [data.dimensions[0], FrequencyDimension(scale)])
 
 
 class DCTIV(Node):
@@ -59,13 +71,13 @@ class DCTIV(Node):
         z = np.fft.fft(z)[:, :l]
         raw = np.sqrt(2 / l) * \
               np.real(z * np.exp(-1j * np.pi * (tf + 0.5) / 2 / l))
-        n_seconds = data.duration / Picoseconds(int(1e12))
-        sr = audio_sample_rate(l / n_seconds)
-        yield TimeFrequencyRepresentation(
-                raw,
-                frequency=data.frequency,
-                duration=data.duration,
-                scale=LinearScale.from_sample_rate(sr, l))
+
+        sr = audio_sample_rate(
+                int(data.shape[1] / data.dimensions[0].duration_in_seconds))
+        scale = LinearScale.from_sample_rate(sr, l)
+
+        yield ArrayWithUnits(
+                raw, [data.dimensions[0], FrequencyDimension(scale)])
 
 
 class MDCT(Node):
@@ -86,13 +98,12 @@ class MDCT(Node):
         c = b[:, :l]
         transformed = np.sqrt(2 / l) * np.real(
                 c * np.exp(cpi * (f + 0.5) * (l + 1) / 2 / l))
-        n_seconds = data.duration / Picoseconds(int(1e12))
-        sr = audio_sample_rate(int((l / n_seconds) * 2))
-        yield TimeFrequencyRepresentation(
-            transformed,
-            frequency=data.frequency,
-            duration=data.duration,
-            scale=LinearScale.from_sample_rate(sr, l))
+
+        sr = audio_sample_rate(data.dimensions[1].samples_per_second)
+        scale = LinearScale.from_sample_rate(sr, l)
+
+        yield ArrayWithUnits(
+                transformed, [data.dimensions[0], FrequencyDimension(scale)])
 
 
 # TODO: This constructor should not take a samplerate; that information should
@@ -118,16 +129,15 @@ class Chroma(Node):
                     data.shape[1] * 2,
                     nbands=self._nbins)
 
-        yield ConstantRateTimeSeries( \
+        yield ArrayWithUnits(
                 self._chroma_scale.transform(data),
-                data.frequency,
-                data.duration)
+                [data.dimensions[0], IdentityDimension()])
 
 
 # TODO: This constructor should not take a samplerate; that information should
 # be encapsulated in the data that's passed in
 class BarkBands(Node):
-    def __init__( \
+    def __init__(
             self,
             needs=None,
             samplerate=SR44100(),
@@ -145,16 +155,16 @@ class BarkBands(Node):
     def _process(self, data):
         data = np.abs(data)
         if self._bark_scale is None:
-            self._bark_scale = BarkScale( \
+            self._bark_scale = BarkScale(
                     self._samplerate.samples_per_second,
                     data.shape[1] * 2,
                     self._n_bands,
                     self._start_freq_hz,
                     self._stop_freq_hz)
-        yield ConstantRateTimeSeries( \
+
+        yield ArrayWithUnits(
                 self._bark_scale.transform(data),
-                data.frequency,
-                data.duration)
+                [data.dimensions[0], IdentityDimension()])
 
 
 class SpectralCentroid(Node):
@@ -177,10 +187,8 @@ class SpectralCentroid(Node):
         return data
 
     def _process(self, data):
-        yield ConstantRateTimeSeries(
-                (data * self._bins).sum(axis=1) / self._bins_sum,
-                data.frequency,
-                data.duration)
+        data = np.abs(data)
+        yield (data * self._bins).sum(axis=1) / self._bins_sum
 
 
 class SpectralFlatness(Node):
@@ -206,12 +214,11 @@ class SpectralFlatness(Node):
         super(SpectralFlatness, self).__init__(needs=needs)
 
     def _process(self, data):
-        m = data.mean(axis=1)
-        m[m == 0] = -1e5
-        yield ConstantRateTimeSeries(
-                gmean(data, axis=1) / m,
-                data.frequency,
-                data.duration)
+        data = np.abs(data)
+        mean = data.mean(axis=1)
+        mean[mean == 0] = -1e5
+        flatness = gmean(data, axis=1) / mean
+        yield ArrayWithUnits(flatness, data.dimensions[:1])
 
 
 class BFCC(Node):
@@ -224,5 +231,6 @@ class BFCC(Node):
         data = np.abs(data)
         bfcc = dct(safe_log(data), axis=1) \
             [:, self._exclude: self._exclude + self._n_coeffs]
-        yield ConstantRateTimeSeries( \
-                bfcc.copy(), data.frequency, data.duration)
+
+        yield ArrayWithUnits(
+                bfcc.copy(), [data.dimensions[0], IdentityDimension()])

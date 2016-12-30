@@ -2,12 +2,9 @@ __version__ = '0.20.9'
 
 from timeseries import \
     Hours, Minutes, Seconds, Milliseconds, Microseconds, Picoseconds, \
-    AudioSamples, AudioSamplesEncoder, GreedyAudioSamplesDecoder, \
-    AudioSamplesFeature, \
     SR11025, SR22050, SR44100, SR48000, SR96000, HalfLapped, Stride, \
-    TimeSlice, ConstantRateTimeSeriesEncoder, ConstantRateTimeSeriesFeature, \
-    GreedyConstantRateTimeSeriesDecoder, PackedConstantRateTimeSeriesEncoder, \
-    VariableRateTimeSeries, VariableRateTimeSeriesFeature, SampleRate
+    TimeSlice, VariableRateTimeSeries, VariableRateTimeSeriesFeature, \
+    SampleRate, AudioSamples, TimeDimension
 
 from soundfile import \
     MetaData, AudioMetaDataEncoder, FreesoundOrgConfig, \
@@ -19,10 +16,8 @@ from soundfile import \
 from spectral import \
     SlidingWindow, OggVorbisWindowingFunc, \
     FFT, MDCT, DCT, DCTIV, BarkBands, Chroma, BFCC, SpectralCentroid, \
-    SpectralFlatness, TimeFrequencyRepresentation, \
-    TimeFrequencyRepresentationFeature, TimeFrequencyRepresentationMetaData, \
-    TimeFrequencyRepresentationEncoder, TimeFrequencyRepresentationDecoder, \
-    AWeighting, LinearScale, LogScale, FrequencyBand, FrequencyScale
+    SpectralFlatness, AWeighting, LinearScale, LogScale, FrequencyBand, \
+    FrequencyScale, FrequencyDimension
 
 from segment import \
     MeasureOfTransience, MovingAveragePeakPicker, SparseTimestampDecoder, \
@@ -45,8 +40,12 @@ from index import \
     SearchResults, hamming_index
 
 from basic import \
-    Slice, Sum, Max, Pooled, process_dir, stft, audio_graph, with_onsets
+    Slice, Sum, Max, Pooled, process_dir, stft, audio_graph, with_onsets, resampled
 
 from util import simple_lmdb_settings, simple_in_memory_settings
 
 from nputil import sliding_window
+
+from core import IdentityDimension, ArrayWithUnits
+
+from persistence import ArrayWithUnitsFeature, AudioSamplesFeature

@@ -126,7 +126,11 @@ class Scale(object):
         slices, triwins = self.data
         cb = np.ndarray((fft.shape[0], self._nb), dtype=np.float32)
         for i in xrange(self._nb):
-            cb[:, i] = (fft[:, slices[i]] * triwins[i]).sum(1)
+            a = fft[:, slices[i]]
+            b = a * triwins[i]
+            c = b.sum(axis=1)
+            cb[:, i] = c
+            # cb[:, i] = (fft[:, slices[i]] * triwins[i]).sum(1)
         return cb
 
 
