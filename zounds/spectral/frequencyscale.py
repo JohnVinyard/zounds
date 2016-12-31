@@ -74,6 +74,16 @@ class FrequencyScale(object):
         super(FrequencyScale, self).__init__()
         self.n_bands = n_bands
         self.frequency_band = frequency_band
+        self._bands = None
+
+    @property
+    def bands(self):
+        if self._bands is None:
+            self._bands = self._compute_bands()
+        return self._bands
+
+    def _compute_bands(self):
+        raise NotImplementedError()
 
     def __len__(self):
         return self.n_bands
@@ -103,9 +113,8 @@ class FrequencyScale(object):
         be produced
         :return: a slice
         """
-        bands = list(self)
-        starts = [b.start_hz for b in bands]
-        stops = [b.stop_hz for b in bands]
+        starts = [b.start_hz for b in self.bands]
+        stops = [b.stop_hz for b in self.bands]
         start_index = bisect.bisect_left(stops, frequency_band.start_hz)
         stop_index = bisect.bisect_left(starts, frequency_band.stop_hz)
         return slice(start_index, stop_index)
@@ -117,16 +126,15 @@ class FrequencyScale(object):
             and self.n_bands == other.n_bands
 
     def __iter__(self):
-        raise NotImplementedError()
+        return iter(self.bands)
 
     def __getitem__(self, index):
-        all_bands = list(self)
         try:
             # index is an integer or slice
-            bands = all_bands[index]
+            bands = self.bands[index]
         except TypeError:
             # index is a frequency band
-            bands = all_bands[self.get_slice(index)]
+            bands = self.bands[self.get_slice(index)]
 
         try:
             freq_band = FrequencyBand(bands[0].start_hz, bands[-1].stop_hz)
@@ -134,6 +142,14 @@ class FrequencyScale(object):
         except TypeError:
             # we've already got an individual band
             return bands
+
+    def __str__(self):
+        cls = self.__class__.__name__
+        return '{cls}(band={self.frequency_band}, n_bands={self.n_bands})'\
+            .format(**locals())
+
+    def __repr__(self):
+        return self.__str__()
 
 
 class LinearScale(FrequencyScale):
@@ -151,25 +167,25 @@ class LinearScale(FrequencyScale):
         fb = FrequencyBand(0, sample_rate.nyquist)
         return LinearScale(fb, n_bands)
 
-    def __iter__(self):
+    def _compute_bands(self):
         freqs = np.linspace(self.start_hz, self.stop_hz, self.n_bands)
         # constant, non-overlapping bandwidth
         bandwidth = freqs[1] - freqs[0]
-        return (FrequencyBand(f, f + bandwidth) for f in freqs)
+        return tuple(FrequencyBand(f, f + bandwidth) for f in freqs)
 
 
 class LogScale(FrequencyScale):
     def __init__(self, frequency_band, n_bands):
         super(LogScale, self).__init__(frequency_band, n_bands)
 
-    def __iter__(self):
+    def _compute_bands(self):
         center_freqs = np.logspace(
                 np.log10(self.start_hz),
                 np.log10(self.stop_hz),
                 self.n_bands + 1)
         # variable bandwidth
         bandwidths = np.diff(center_freqs)
-        return (FrequencyBand.from_center(cf, bw)
+        return tuple(FrequencyBand.from_center(cf, bw)
                 for (cf, bw) in zip(center_freqs[:-1], bandwidths))
 
 

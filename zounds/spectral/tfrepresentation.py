@@ -28,3 +28,9 @@ class FrequencyDimension(Dimension):
 
     def __eq__(self, other):
         return self.scale == other.scale
+
+    def __str__(self):
+        return 'FrequencyDimension(scale={self.scale})'.format(**locals())
+
+    def __repr__(self):
+        return self.__str__()
