@@ -62,7 +62,7 @@ class FrequencyScale(object):
     frequencies
     """
 
-    def __init__(self, frequency_band, n_bands):
+    def __init__(self, frequency_band, n_bands, always_even=False):
         """
         :param frequency_band: A wide band that defines the boundaries for the
         entire scale.  E.g., one might want to generate a scale spanning the
@@ -72,6 +72,7 @@ class FrequencyScale(object):
         :return: a new FrequencyScale instance
         """
         super(FrequencyScale, self).__init__()
+        self.always_even = always_even
         self.n_bands = n_bands
         self.frequency_band = frequency_band
         self._bands = None
@@ -117,6 +118,13 @@ class FrequencyScale(object):
         stops = [b.stop_hz for b in self.bands]
         start_index = bisect.bisect_left(stops, frequency_band.start_hz)
         stop_index = bisect.bisect_left(starts, frequency_band.stop_hz)
+
+        if self.always_even and (stop_index - start_index) % 2:
+            # KLUDGE: This is simple, but it may make sense to choose move the
+            # upper *or* lower bound, based on which one introduces a lower
+            # error
+            stop_index += 1
+
         return slice(start_index, stop_index)
 
     def __eq__(self, other):
@@ -159,13 +167,13 @@ class LinearScale(FrequencyScale):
     e.g. the FFT or DCT transforms.
     """
 
-    def __init__(self, frequency_band, n_bands):
-        super(LinearScale, self).__init__(frequency_band, n_bands)
+    def __init__(self, frequency_band, n_bands, always_even=False):
+        super(LinearScale, self).__init__(frequency_band, n_bands, always_even)
 
     @staticmethod
-    def from_sample_rate(sample_rate, n_bands):
+    def from_sample_rate(sample_rate, n_bands, always_even=False):
         fb = FrequencyBand(0, sample_rate.nyquist)
-        return LinearScale(fb, n_bands)
+        return LinearScale(fb, n_bands, always_even=always_even)
 
     def _compute_bands(self):
         freqs = np.linspace(self.start_hz, self.stop_hz, self.n_bands)
@@ -175,8 +183,9 @@ class LinearScale(FrequencyScale):
 
 
 class LogScale(FrequencyScale):
-    def __init__(self, frequency_band, n_bands):
-        super(LogScale, self).__init__(frequency_band, n_bands)
+    def __init__(self, frequency_band, n_bands, always_even=False):
+        super(LogScale, self).__init__(
+                frequency_band, n_bands, always_even=always_even)
 
     def _compute_bands(self):
         center_freqs = np.logspace(

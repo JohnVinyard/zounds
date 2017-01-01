@@ -12,6 +12,7 @@ class FrequencyDimensionEncoder(BaseDimensionEncoder):
                 n_bands=o.scale.n_bands,
                 start_hz=o.scale.frequency_band.start_hz,
                 stop_hz=o.scale.frequency_band.stop_hz,
+                always_even=o.scale.always_even,
                 name=o.scale.__class__.__name__)
 
 
@@ -24,5 +25,5 @@ class FrequencyDimensionDecoder(BaseDimensionDecoder):
         # KLUDGE: This assumes that all FrequencyScale-derived classes live in
         # the zounds.spectral module
         scale_class = getattr(zounds.spectral, d['name'])
-        scale = scale_class(band, d['n_bands'])
+        scale = scale_class(band, d['n_bands'], always_even=d['always_even'])
         return scale,

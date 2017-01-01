@@ -19,6 +19,19 @@ class FrequencyBandTests(unittest2.TestCase):
 
 
 class FrequencyScaleTests(unittest2.TestCase):
+
+    def test_can_get_all_even_sized_bands(self):
+        samplerate = SR44100()
+        scale = LinearScale.from_sample_rate(
+                samplerate, 44100, always_even=True)
+        log_scale = LogScale(FrequencyBand(20, 20000), 64)
+        slices = [scale.get_slice(band) for band in log_scale]
+        sizes = [s.stop - s.start for s in slices]
+        self.assertTrue(
+                not any([s % 2 for s in sizes]),
+                'All slice sizes should be even but were {sizes}'
+                    .format(**locals()))
+
     def test_can_get_single_band(self):
         fb1 = FrequencyBand(20, 20000)
         scale1 = LinearScale(fb1, 100)

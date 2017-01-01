@@ -60,10 +60,12 @@ class DCTIV(Node):
     Type IV Discrete Cosine Transform.  This transform is its own inverse
     """
 
-    def __init__(self, needs=None):
+    def __init__(self, scale_always_even=False, needs=None):
         super(DCTIV, self).__init__(needs=needs)
+        self.scale_always_even = scale_always_even
 
     def _process(self, data):
+
         l = data.shape[1]
         tf = np.arange(0, l)
         z = np.zeros((len(data), l * 2))
@@ -74,7 +76,8 @@ class DCTIV(Node):
 
         sr = audio_sample_rate(
                 int(data.shape[1] / data.dimensions[0].duration_in_seconds))
-        scale = LinearScale.from_sample_rate(sr, l)
+        scale = LinearScale.from_sample_rate(
+                sr, l, always_even=self.scale_always_even)
 
         yield ArrayWithUnits(
                 raw, [data.dimensions[0], FrequencyDimension(scale)])
