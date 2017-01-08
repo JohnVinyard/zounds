@@ -25,8 +25,13 @@ def oggvorbis(s):
 
 
 class WindowingFunc(object):
+
+    def __init__(self, windowing_func=lambda size: np.ones(size)):
+        super(WindowingFunc, self).__init__()
+        self.windowing_func = windowing_func
+
     def _wdata(self, size):
-        return np.ones(size)
+        return self.windowing_func(size)
 
     def __numpy_ufunc__(self, *args, **kwargs):
         # KLUDGE: This seems really odd, but the mere presence of this
@@ -51,18 +56,7 @@ class IdentityWindowingFunc(WindowingFunc):
 
 class OggVorbisWindowingFunc(WindowingFunc):
     def __init__(self):
-        super(OggVorbisWindowingFunc, self).__init__()
-
-    def _wdata(self, size):
-        return oggvorbis(size)
-
-
-class HannWindowingFunc(WindowingFunc):
-    def __init__(self):
-        super(HannWindowingFunc, self).__init__()
-
-    def _wdata(self, size):
-        return scipy.signal.hann(size)
+        super(OggVorbisWindowingFunc, self).__init__(windowing_func=oggvorbis)
 
 
 class SlidingWindow(Node):

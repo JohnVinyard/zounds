@@ -124,7 +124,6 @@ class FrequencyScale(object):
             # upper *or* lower bound, based on which one introduces a lower
             # error
             stop_index += 1
-
         return slice(start_index, stop_index)
 
     def __eq__(self, other):
@@ -196,7 +195,6 @@ class LogScale(FrequencyScale):
         bandwidths = np.diff(center_freqs)
         return tuple(FrequencyBand.from_center(cf, bw)
                 for (cf, bw) in zip(center_freqs[:-1], bandwidths))
-
 
 class BarkScale(FrequencyScale):
     def __init__(self, frequency_band, n_bands):

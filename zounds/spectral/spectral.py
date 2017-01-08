@@ -65,7 +65,6 @@ class DCTIV(Node):
         self.scale_always_even = scale_always_even
 
     def _process(self, data):
-
         l = data.shape[1]
         tf = np.arange(0, l)
         z = np.zeros((len(data), l * 2))
@@ -78,7 +77,6 @@ class DCTIV(Node):
                 int(data.shape[1] / data.dimensions[0].duration_in_seconds))
         scale = LinearScale.from_sample_rate(
                 sr, l, always_even=self.scale_always_even)
-
         yield ArrayWithUnits(
                 raw, [data.dimensions[0], FrequencyDimension(scale)])
 

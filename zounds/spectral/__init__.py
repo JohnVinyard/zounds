@@ -5,11 +5,6 @@ from spectral import \
     FFT, DCT, DCTIV, MDCT, BarkBands, Chroma, BFCC, SpectralCentroid, \
     SpectralFlatness
 
-# from tfrepresentation import \
-#     TimeFrequencyRepresentation, TimeFrequencyRepresentationFeature, \
-#     TimeFrequencyRepresentationMetaData, TimeFrequencyRepresentationEncoder, \
-#     TimeFrequencyRepresentationDecoder, FrequencyDimension
-
 from tfrepresentation import FrequencyDimension
 
 from weighting import AWeighting

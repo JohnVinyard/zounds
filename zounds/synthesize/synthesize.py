@@ -63,8 +63,12 @@ class DCTIVSynthesizer(ShortTimeTransformSynthesizer):
     transformation
     """
 
-    def __init__(self):
+    def __init__(self, windowing_func=IdentityWindowingFunc()):
         super(DCTIVSynthesizer, self).__init__()
+        self.windowing_func = windowing_func
+
+    def _windowing_function(self):
+        return self.windowing_func
 
     def _transform(self, frames):
         return list(DCTIV()._process(frames))[0]
