@@ -13,6 +13,7 @@ from zounds.spectral import \
     SpectralFlatness
 from zounds.persistence import ArrayWithUnitsFeature
 from zounds.core import ArrayWithUnits
+import scipy
 
 
 class SpectralFlatnessTests(unittest2.TestCase):
@@ -167,6 +168,10 @@ class MDCTTests(unittest2.TestCase):
                 self.doc.mdct.dimensions[0].end_seconds,
                 delta=0.02)
 
+    @unittest2.skip
+    def test_perfect_reconstruction_using_overlap_add(self):
+        self.fail()
+
     def test_is_correct_type(self):
         self.assertIsInstance(self.doc.mdct, ArrayWithUnits)
 
@@ -222,6 +227,21 @@ class DCTIVTests(unittest2.TestCase):
 
         _id = Document.process(meta=self.audio.encode())
         self.doc = Document(_id)
+
+    @unittest2.skip
+    def test_perfect_reconstruction(self):
+        synth = SineSynthesizer(SR22050())
+        audio = synth.synthesize(Seconds(1), [440., 660., 880.])
+        node = DCTIV()
+        coeffs = node._process_raw(audio[None, :])
+        recon = node._process_raw(coeffs)[0]
+
+        # see? it's do-able w/ dct
+        dct_coeffs = scipy.fftpack.dct(audio[None, :], norm='ortho')
+        inverse_dct = scipy.fftpack.idct(dct_coeffs, norm='ortho')[0]
+
+        np.testing.assert_almost_equal(inverse_dct, audio, decimal=4)
+        np.testing.assert_almost_equal(recon, audio, decimal=4)
 
     def test_is_correct_type(self):
         self.assertIsInstance(self.doc.dct, ArrayWithUnits)

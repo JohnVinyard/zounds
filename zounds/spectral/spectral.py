@@ -39,8 +39,9 @@ class DCT(Node):
     Type II Discrete Cosine Transform
     """
 
-    def __init__(self, needs=None, axis=-1):
+    def __init__(self,  axis=-1, scale_always_even=False, needs=None):
         super(DCT, self).__init__(needs=needs)
+        self.scale_always_even = scale_always_even
         self._axis = axis
 
     def _process(self, data):
@@ -49,7 +50,8 @@ class DCT(Node):
 
         sr = audio_sample_rate(
                 int(data.shape[1] / data.dimensions[0].duration_in_seconds))
-        scale = LinearScale.from_sample_rate(sr, transformed.shape[-1])
+        scale = LinearScale.from_sample_rate(
+                sr, transformed.shape[-1], always_even=self.scale_always_even)
 
         yield ArrayWithUnits(
                 transformed, [data.dimensions[0], FrequencyDimension(scale)])
@@ -64,7 +66,7 @@ class DCTIV(Node):
         super(DCTIV, self).__init__(needs=needs)
         self.scale_always_even = scale_always_even
 
-    def _process(self, data):
+    def _process_raw(self, data):
         l = data.shape[1]
         tf = np.arange(0, l)
         z = np.zeros((len(data), l * 2))
@@ -72,11 +74,14 @@ class DCTIV(Node):
         z = np.fft.fft(z)[:, :l]
         raw = np.sqrt(2 / l) * \
               np.real(z * np.exp(-1j * np.pi * (tf + 0.5) / 2 / l))
+        return raw
 
+    def _process(self, data):
+        raw = self._process_raw(data)
         sr = audio_sample_rate(
                 int(data.shape[1] / data.dimensions[0].duration_in_seconds))
         scale = LinearScale.from_sample_rate(
-                sr, l, always_even=self.scale_always_even)
+                sr, data.shape[1], always_even=self.scale_always_even)
         yield ArrayWithUnits(
                 raw, [data.dimensions[0], FrequencyDimension(scale)])
 

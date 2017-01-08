@@ -1,5 +1,5 @@
 from sliding_window import \
-    SlidingWindow, OggVorbisWindowingFunc, NDSlidingWindow
+    SlidingWindow, OggVorbisWindowingFunc, NDSlidingWindow, WindowingFunc
 
 from spectral import \
     FFT, DCT, DCTIV, MDCT, BarkBands, Chroma, BFCC, SpectralCentroid, \

@@ -50,8 +50,12 @@ class FFTSynthesizer(ShortTimeTransformSynthesizer):
 
 
 class DCTSynthesizer(ShortTimeTransformSynthesizer):
-    def __init__(self):
+    def __init__(self, windowing_func=IdentityWindowingFunc()):
         super(DCTSynthesizer, self).__init__()
+        self.windowing_func = windowing_func
+
+    def _windowing_function(self):
+        return self.windowing_func
 
     def _transform(self, frames):
         return idct(frames, norm='ortho')

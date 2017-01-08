@@ -14,7 +14,7 @@ from soundfile import \
     Resampler
 
 from spectral import \
-    SlidingWindow, OggVorbisWindowingFunc, \
+    SlidingWindow, OggVorbisWindowingFunc, WindowingFunc, \
     FFT, MDCT, DCT, DCTIV, BarkBands, Chroma, BFCC, SpectralCentroid, \
     SpectralFlatness, AWeighting, LinearScale, LogScale, FrequencyBand, \
     FrequencyScale, FrequencyDimension
