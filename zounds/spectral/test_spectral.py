@@ -3,8 +3,8 @@ import unittest2
 from zounds.basic import resampled
 from zounds.util import simple_in_memory_settings
 from zounds.timeseries import \
-    SR11025, SR22050, SR44100, Seconds, Picoseconds, AudioSamples, TimeSlice, \
-    TimeDimension
+    SR11025, SR22050, SR44100, Seconds, Milliseconds, Picoseconds, \
+    AudioSamples, TimeSlice, TimeDimension
 from zounds.timeseries.samplerate import SampleRate, HalfLapped
 from zounds.synthesize import \
     SineSynthesizer, DCTIVSynthesizer, MDCTSynthesizer, NoiseSynthesizer
@@ -168,9 +168,24 @@ class MDCTTests(unittest2.TestCase):
                 self.doc.mdct.dimensions[0].end_seconds,
                 delta=0.02)
 
-    @unittest2.skip
     def test_perfect_reconstruction_using_overlap_add(self):
-        self.fail()
+        synth = SineSynthesizer(SR22050())
+        audio = synth.synthesize(Seconds(10), [440., 660., 880.])
+        windowed = audio.sliding_window(
+                (TimeSlice(Seconds(1)),),
+                (TimeSlice(Milliseconds(500)),))
+
+        mdct = MDCT()
+
+        coeffs = list(mdct._process(windowed * OggVorbisWindowingFunc()))[0]
+
+        mdct_synth = MDCTSynthesizer()
+        recon = mdct_synth.synthesize(coeffs)
+
+        # take a slice, so we can ignore boundary conditions
+        slce = TimeSlice(start=Seconds(1), duration=Seconds(8))
+
+        np.testing.assert_almost_equal(recon[slce], audio[slce], decimal=4)
 
     def test_is_correct_type(self):
         self.assertIsInstance(self.doc.mdct, ArrayWithUnits)

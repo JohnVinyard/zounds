@@ -94,7 +94,7 @@ class MDCT(Node):
     def __init__(self, needs=None):
         super(MDCT, self).__init__(needs=needs)
 
-    def _process(self, data):
+    def _process_raw(self, data):
         l = data.shape[1] // 2
         t = np.arange(0, 2 * l)
         f = np.arange(0, l)
@@ -104,9 +104,13 @@ class MDCT(Node):
         c = b[:, :l]
         transformed = np.sqrt(2 / l) * np.real(
                 c * np.exp(cpi * (f + 0.5) * (l + 1) / 2 / l))
+        return transformed
+
+    def _process(self, data):
+        transformed = self._process_raw(data)
 
         sr = audio_sample_rate(data.dimensions[1].samples_per_second)
-        scale = LinearScale.from_sample_rate(sr, l)
+        scale = LinearScale.from_sample_rate(sr, transformed.shape[1])
 
         yield ArrayWithUnits(
                 transformed, [data.dimensions[0], FrequencyDimension(scale)])

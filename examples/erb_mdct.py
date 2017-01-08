@@ -91,6 +91,8 @@ BaseModel = zounds.stft(resample_to=samplerate)
 
 windowing_func = zounds.OggVorbisWindowingFunc()
 
+# TODO: How does this work if I use linearly-spaced, half-lapped
+# frequency bands?
 log_scale = zounds.LogScale(
         zounds.FrequencyBand(1, samplerate.nyquist),
         n_bands=128,
