@@ -5,9 +5,9 @@ import tornado.web
 import httplib
 import traceback
 from cStringIO import StringIO
-import ast
 import uuid
 from baseapp import BaseZoundsApp, NoMatchingSerializerException, RequestContext
+from featureparser import FeatureParser
 
 
 class ZoundsApp(BaseZoundsApp):
@@ -69,35 +69,9 @@ class ZoundsApp(BaseZoundsApp):
 
         class ReplHandler(tornado.web.RequestHandler):
 
-            def _extract_feature(self, statement):
-                root = ast.parse(statement)
-                nodes = list(ast.walk(root))
-                doc = None
-                feature = None
-                feature_name = None
-
-                for node in nodes:
-                    if doc and feature_name:
-                        break
-
-                    if isinstance(node, ast.Name) \
-                            and node.id in locals \
-                            and isinstance(locals[node.id], document):
-                        doc = locals[node.id]
-                        continue
-
-                    if isinstance(node, ast.Attribute) \
-                            and node.attr in document.features:
-                        feature_name = node.attr
-                        continue
-
-                if feature_name:
-                    feature = document.features[feature_name]
-
-                return doc, feature
-
             def _add_url(self, statement, output, value):
-                doc, feature = self._extract_feature(statement)
+                parser = FeatureParser(document, locals)
+                doc, feature = parser.parse_feature(statement)
                 try:
                     context = RequestContext(
                             document=doc,
