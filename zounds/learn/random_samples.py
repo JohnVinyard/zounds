@@ -1,19 +1,21 @@
-from featureflow import Node, Feature, DatabaseIterator, BaseModel, NotEnoughData
+from featureflow import Node, Feature, DatabaseIterator, BaseModel, \
+    NotEnoughData
 from featureflow.nmpy import NumpyFeature
 from zounds.spectral import NDSlidingWindow
 import numpy as np
 
 
 class ReservoirSampler(Node):
-    '''
+    """
     Use reservoir sampling (http://en.wikipedia.org/wiki/Reservoir_sampling) to
     draw a fixed-size set of random samples from a stream of unknown size.
-    
-    This is useful when the samples can fit into memory, but the stream cannot.
-    '''
 
-    def __init__(self, needs=None, nsamples=None):
+    This is useful when the samples can fit into memory, but the stream cannot.
+    """
+
+    def __init__(self, nsamples=None, wrapper=None, needs=None):
         super(ReservoirSampler, self).__init__(needs=needs)
+        self._wrapper = wrapper or (lambda empty, orig: empty)
         self._nsamples = nsamples
         self._r = None
         self._index = 0
@@ -24,6 +26,7 @@ class ReservoirSampler(Node):
         if self._r is None:
             shape = (self._nsamples,) + data.shape[1:]
             self._r = np.zeros(shape, dtype=data.dtype)
+            self._r = self._wrapper(self._r, data)
 
         diff = 0
         if self._index < self._nsamples:
@@ -33,7 +36,8 @@ class ReservoirSampler(Node):
             self._index += available
 
         remaining = len(data[diff:])
-        if not remaining: return
+        if not remaining:
+            return
         indices = np.random.random_integers(0, self._index, size=remaining)
         indices = indices[indices < self._nsamples]
         self._r[indices] = data[diff:][range(len(indices))]
@@ -66,13 +70,13 @@ class RequireSignalToNoiseRatio(Node):
 
 
 def random_samples(feature_func, nsamples, store_shuffled=True):
-    '''
+    """
     Return a base class that samples randomly from examples of the data returned
     by feature_func
-    '''
+    """
 
     class RandomSamples(BaseModel):
-        docs = Feature( \
+        docs = Feature(
                 DatabaseIterator,
                 func=feature_func,
                 store=False)
@@ -86,16 +90,16 @@ def random_samples(feature_func, nsamples, store_shuffled=True):
     return RandomSamples
 
 
-def random_patches( \
+def random_patches(
         feature_func,
         windowsize,
         nsamples,
         stepsize=None,
         store_shuffled=True):
-    '''
-    Return a base class that samples random, n-dimensional patches from a 
+    """
+    Return a base class that samples random, n-dimensional patches from a
     feature, e.g., 10x10 patches from spectrograms
-    '''
+    """
 
     if stepsize is None:
         stepsize = (1,) * len(windowsize)
