@@ -157,6 +157,9 @@ class ArrayWithUnits(np.ndarray):
                 # burn one
                 dims_pos += 1
                 yield sl
+            elif sl is Ellipsis:
+                dims_pos += len(self.dimensions) - (len(index) - 1)
+                yield Ellipsis
             else:
                 dim = self.dimensions[dims_pos]
                 yield dim.integer_based_slice(sl)
@@ -177,6 +180,12 @@ class ArrayWithUnits(np.ndarray):
                 dims_pos += 1
                 shape_pos += 1
                 yield IdentityDimension()
+            elif sl is Ellipsis:
+                ellipsis_size = len(self.dimensions) - (len(index) - 1)
+                for i in xrange(ellipsis_size):
+                    yield self.dimensions[dims_pos]
+                    dims_pos += 1
+                    shape_pos += 1
             else:
                 try:
                     dim = self.dimensions[dims_pos]

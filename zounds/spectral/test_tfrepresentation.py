@@ -160,3 +160,18 @@ class TimeFrequencyRepresentationTests(unittest2.TestCase):
         self.assertIsInstance(sliced, ArrayWithUnits)
         self.assertLess(sliced.dimensions[1].scale.stop_hz, scale.stop_hz)
         self.assertEqual(10, sliced.dimensions[1].scale.n_bands)
+
+    def test_ellipsis(self):
+        scale = LinearScale(FrequencyBand(0, 10000), 100)
+        arr = ArrayWithUnits(
+                np.zeros((10, 3, 100)),
+                [IdentityDimension(),
+                 TimeDimension(Seconds(1)),
+                 FrequencyDimension(scale)])
+        sliced = arr[..., FrequencyBand(1000, 5000)]
+        self.assertEqual((10, 3, 41), sliced.shape)
+        self.assertIsInstance(sliced.dimensions[0], IdentityDimension)
+        self.assertIsInstance(sliced.dimensions[1], TimeDimension)
+        self.assertIsInstance(sliced.dimensions[2], FrequencyDimension)
+
+

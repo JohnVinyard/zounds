@@ -74,10 +74,11 @@ class TimeSlice(object):
         return not self.__eq__(other)
 
     def __repr__(self):
+        dur = self.duration / Seconds(1) if self.duration is not None else None
         return '{cls}(start = {start}, duration = {duration})'.format(
                 cls=self.__class__.__name__,
                 start=self.start / Seconds(1),
-                duration=self.duration / Seconds(1))
+                duration=dur)
 
     def __str__(self):
         return self.__repr__()

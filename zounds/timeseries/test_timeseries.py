@@ -27,6 +27,14 @@ class ConvenienceClassTests(unittest2.TestCase):
 
 
 class TimeSliceTests(unittest2.TestCase):
+    def test_can_repr_empty_slice(self):
+        r = repr(TimeSlice())
+        self.assertIsNotNone(r)
+
+    def test_can_repr_open_ended_slice(self):
+        r = repr(TimeSlice(start=Seconds(2)))
+        self.assertIsNotNone(r)
+
     def test_raises_if_duration_is_not_timedelta_instance(self):
         self.assertRaises(ValueError, lambda: TimeSlice(1))
 
