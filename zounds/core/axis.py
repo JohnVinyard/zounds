@@ -13,7 +13,9 @@ class ArrayWithUnits(np.ndarray):
     def __new__(cls, arr, dimensions):
 
         if arr.ndim != len(dimensions):
-            raise ValueError('arr.ndim and len(dimensions) must match')
+            raise ValueError(
+                'arr.ndim and len(dimensions) must match.  '
+                'They were {arr.shape} and {dimensions}'.format(**locals()))
 
         def dim_map(d):
             return IdentityDimension() if d is None else copy.deepcopy(d)
@@ -41,6 +43,10 @@ class ArrayWithUnits(np.ndarray):
             return self.from_example(np.concatenate([self, other]), self)
         else:
             raise ValueError('All dimensions must match to concatenate')
+
+    def reshape(self, shape, order='C'):
+        raw = np.asarray(self)
+        return np.reshape(raw, shape, order)
 
     @classmethod
     def concat(cls, arrs, axis=0):

@@ -87,6 +87,14 @@ class ContrivedArray(ArrayWithUnits):
 
 class CoreTests(unittest2.TestCase):
 
+    def test_can_reshape(self):
+        arr = ArrayWithUnits(
+            np.zeros((100, 10)),
+            [ContrivedDimension(10), ContrivedDimension2(10)])
+        flattened = arr.reshape((-1,))
+        self.assertEqual((1000,), flattened.shape)
+        self.assertNotIsInstance(flattened, ArrayWithUnits)
+
     def test_assigns_size_where_appropriate(self):
         arr = ArrayWithUnits(
                 np.zeros((100, 10)),

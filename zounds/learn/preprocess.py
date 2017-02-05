@@ -54,6 +54,12 @@ class PreprocessResult(object):
         self.data = data
         self.op = op
 
+    def __str__(self):
+        return 'PreprocessResult(name={name})'.format(**self.__dict__)
+
+    def __repr__(self):
+        return self.__str__()
+
     def __getattr__(self, key):
         if key == 'op':
             raise AttributeError()
@@ -130,7 +136,7 @@ class UnitNorm(Preprocessor):
         def x(d):
             from zounds.nputil import safe_unit_norm
             from zounds.core import ArrayWithUnits
-            normed = safe_unit_norm(d.reshape(d.shape[0], -1))
+            normed = safe_unit_norm(d.reshape((d.shape[0], -1)))
             try:
                 return ArrayWithUnits(normed, d.dimensions)
             except AttributeError:
