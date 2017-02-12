@@ -218,7 +218,18 @@ class Slicer(Preprocessor):
 
     def _inversion_data(self):
         def y(d, slicex=None, fill_func=None):
-            return dict(shape=d.shape, slicex=slicex, fill_func=fill_func)
+
+            try:
+                ka = d.kwargs()
+
+                def ff(shape):
+                    return d.__class__(fill_func(shape), **ka)
+            except AttributeError:
+
+                def ff(shape):
+                    return fill_func(shape)
+
+            return dict(shape=d.shape, slicex=slicex, fill_func=ff)
 
         return y
 

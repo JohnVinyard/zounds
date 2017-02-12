@@ -5,6 +5,10 @@ import numpy as np
 from zounds.util import simple_in_memory_settings
 from preprocess import Slicer, PreprocessingPipeline
 
+from zounds.core import IdentityDimension, ArrayWithUnits
+from zounds.spectral import FrequencyBand, LinearScale, FrequencyDimension
+from zounds.timeseries import TimeDimension, Seconds
+
 
 class SlicerTests(unittest2.TestCase):
     def get_model(self, slicex):
@@ -49,3 +53,21 @@ class SlicerTests(unittest2.TestCase):
         np.testing.assert_allclose(transformed.data, 1)
         np.testing.assert_allclose(inverted[..., :10], 0)
         np.testing.assert_allclose(inverted[..., 20:], 0)
+
+    def test_can_invert_array_with_units(self):
+        td = TimeDimension(Seconds(1))
+        fd = FrequencyDimension(LinearScale(FrequencyBand(0, 20000), 100))
+        dimensions = [IdentityDimension(), td, fd]
+        training = ArrayWithUnits(np.zeros((10, 5, 100)), dimensions)
+        Model = self.get_model(slicex=FrequencyBand(1000, 10000))
+        _id = Model.process(sliced=training)
+        model = Model(_id)
+        data = ArrayWithUnits(np.ones((2, 5, 100)), dimensions)
+        transformed = model.pipeline.transform(data)
+        print transformed.data.__class__
+        print transformed.data.dimensions
+        inverted = transformed.inverse_transform()
+        self.assertEqual((2, 5, 100), inverted.shape)
+        self.assertEqual(IdentityDimension(), inverted.dimensions[0])
+        self.assertEqual(td, inverted.dimensions[1])
+        self.assertEqual(fd, inverted.dimensions[2])
