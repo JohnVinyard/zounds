@@ -20,13 +20,13 @@ apt-get install -y \
 	libpng12-dev \
 	libffi-dev
 
-# get libflac 1.3.1, build and install
+# get libflac, build and install
 wget http://downloads.xiph.org/releases/flac/flac-1.3.1.tar.xz
 tar xf flac-1.3.1.tar.xz
 cd flac-1.3.1
 ./configure && make && make install
 cd ..
-# get libsndfile 1.0.26, build and install
+# get libsndfile, build and install
 wget http://www.mega-nerd.com/libsndfile/files/libsndfile-1.0.27.tar.gz
 tar -xzf libsndfile-1.0.27.tar.gz
 cd libsndfile-1.0.27
