@@ -29,5 +29,5 @@ cd ..
 # get libsndfile 1.0.26, build and install
 wget http://www.mega-nerd.com/libsndfile/files/libsndfile-1.0.27.tar.gz
 tar -xzf libsndfile-1.0.27.tar.gz
-cd libsndfile-1.0.27.tar.gz
+cd libsndfile-1.0.27
 ./configure --libdir=/usr/lib/x86_64-linux-gnu && make && make install
