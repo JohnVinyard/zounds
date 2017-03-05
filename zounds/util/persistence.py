@@ -26,6 +26,22 @@ def simple_lmdb_settings(path, map_size=1e9):
     return decorator
 
 
+def simple_object_storage_settings(container, region, username, api_key):
+    def decorator(cls):
+        class Settings(ff.PersistenceSettings):
+            id_provider = ff.UuidProvider()
+            key_builder = ff.StringDelimitedKeyBuilder()
+            database = ff.ObjectStoreDatabase(
+                container, username, api_key, region, key_builder=key_builder)
+
+        class Model(cls, Settings):
+            pass
+
+        return Model
+
+    return decorator
+
+
 def simple_in_memory_settings(cls):
     """
     Decorator that returns a class that "persists" data in-memory.  Mostly
@@ -33,6 +49,7 @@ def simple_in_memory_settings(cls):
     :param cls: the class whose features should be persisted in-memory
     :return: A new class that will persist features in memory
     """
+
     class Settings(ff.PersistenceSettings):
         id_provider = ff.UuidProvider()
         key_builder = ff.StringDelimitedKeyBuilder()

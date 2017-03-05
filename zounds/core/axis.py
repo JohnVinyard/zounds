@@ -256,6 +256,7 @@ class ArrayWithUnits(np.ndarray):
 
         index = self._tuplify(index)
         indices = tuple(self._compute_indices(index))
+        print indices
         arr = super(ArrayWithUnits, self).__getitem__(indices)
         new_dims = tuple(self._new_dims(index, arr))
         return ArrayWithUnits(arr, new_dims)

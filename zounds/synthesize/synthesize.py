@@ -27,7 +27,7 @@ class ShortTimeTransformSynthesizer(object):
         samplerate = audio_sample_rate(samples_per_second)
         windowsize = int(np.round(time_dim.duration / samplerate.frequency))
         hopsize = int(np.round(time_dim.frequency / samplerate.frequency))
-        arr = np.zeros(time_dim.end / samplerate.frequency)
+        arr = np.zeros(int(time_dim.end / samplerate.frequency))
         for i, f in enumerate(frames):
             start = i * hopsize
             stop = start + windowsize

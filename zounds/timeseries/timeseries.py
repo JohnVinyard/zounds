@@ -162,7 +162,7 @@ class TimeDimension(Dimension):
         ratio = np.round(end / self.frequency, 2)
 
         stop_index = np.ceil(ratio)
-        return slice(start_index, stop_index)
+        return slice(int(start_index), int(stop_index))
 
     def __eq__(self, other):
         return \
