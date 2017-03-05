@@ -47,14 +47,13 @@ class AudioMetaDataEncoder(Aggregator, Node):
 
     def _uri(self, uri):
         if isinstance(uri, requests.Request):
-            return uri.uri
+            return uri.url
         elif isinstance(uri, io.BytesIO):
             return None
         else:
             return uri
 
     def _process(self, data):
-        print data
         yield json.dumps({
             'uri': self._uri(data.uri),
             'samplerate': data.samplerate,

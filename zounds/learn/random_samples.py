@@ -16,7 +16,7 @@ class ReservoirSampler(Node):
     def __init__(self, nsamples=None, wrapper=None, needs=None):
         super(ReservoirSampler, self).__init__(needs=needs)
         self._wrapper = wrapper or (lambda empty, orig: empty)
-        self._nsamples = nsamples
+        self._nsamples = int(nsamples)
         self._r = None
         self._index = 0
 
