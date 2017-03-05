@@ -7,7 +7,6 @@ import numpy as np
 
 
 class TestReservoirSampler(unittest2.TestCase):
-
     def test_can_wrap_samples(self):
         def wrapper(empty, orig):
             return ArrayWithUnits(
@@ -37,7 +36,6 @@ class TestReservoirSampler(unittest2.TestCase):
         self.assertEqual(reservoir.dimensions[2], samples.dimensions[2])
 
     def test_default_wrapper_is_identity_function(self):
-
         sampler = ReservoirSampler(nsamples=10)
 
         frequency_dimension = FrequencyDimension(

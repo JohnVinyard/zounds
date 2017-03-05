@@ -43,6 +43,7 @@ class ReservoirSampler(Node):
         self._r[indices] = data[diff:][range(len(indices))]
         self._index += remaining
 
+
     def _dequeue(self):
         if not self._finalized:
             raise NotEnoughData()

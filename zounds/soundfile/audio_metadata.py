@@ -3,6 +3,7 @@ import os
 from soundfile import SoundFile
 import requests
 import json
+import io
 from urlparse import urlparse
 
 
@@ -31,6 +32,12 @@ class AudioMetaData(object):
                and self.description == other.description \
                and self.tags == other.tags
 
+    def __repr__(self):
+        return self.__dict__.__str__()
+
+    def __str__(self):
+        return self.__repr__()
+
 
 class AudioMetaDataEncoder(Aggregator, Node):
     content_type = 'application/json'
@@ -38,10 +45,18 @@ class AudioMetaDataEncoder(Aggregator, Node):
     def __init__(self, needs=None):
         super(AudioMetaDataEncoder, self).__init__(needs=needs)
 
+    def _uri(self, uri):
+        if isinstance(uri, requests.Request):
+            return uri.uri
+        elif isinstance(uri, io.BytesIO):
+            return None
+        else:
+            return uri
+
     def _process(self, data):
+        print data
         yield json.dumps({
-            'uri': data.uri.url
-            if isinstance(data.uri, requests.Request) else data.uri,
+            'uri': self._uri(data.uri),
             'samplerate': data.samplerate,
             'channels': data.channels,
             'licensing': data.licensing,

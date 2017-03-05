@@ -4,6 +4,7 @@ from random_samples import ReservoirSampler
 from preprocess import \
     UnitNorm, MeanStdNormalization, PreprocessingPipeline, Pipeline
 from learn import LinearRbm, Learned
+from zounds.util import simple_in_memory_settings
 import numpy as np
 
 
@@ -57,7 +58,7 @@ def build_classes():
                 needs=(unitnorm, meanstd, rbm),
                 store=True)
 
-    return Settings, Rbm
+    return Rbm
 
 
 def data():
@@ -67,21 +68,21 @@ def data():
 
 class RbmTests(unittest2.TestCase):
     def test_can_retrieve_rbm_pipeline(self):
-        Settings, Rbm = build_classes()
+        Rbm = build_classes()
         Rbm.process(iterator=data())
         self.assertIsInstance(Rbm().pipeline, Pipeline)
 
 
 class LearnedTests(unittest2.TestCase):
     def test_can_use_learned_feature(self):
-        Settings, Rbm = build_classes()
+        Rbm = build_classes()
         Rbm.process(iterator=data())
         l = Learned(learned=Rbm())
         results = list(l._process(np.random.random_sample((33, 3))))[0]
         self.assertEqual((33, 64), results.shape)
 
     def test_pipeline_changes_version_when_recomputed(self):
-        Settings, Rbm = build_classes()
+        Rbm = build_classes()
         Rbm.process(iterator=data())
         v1 = Learned(learned=Rbm()).version
         v2 = Learned(learned=Rbm()).version
@@ -91,7 +92,7 @@ class LearnedTests(unittest2.TestCase):
         self.assertNotEqual(v1, v3)
 
     def test_pipeline_does_not_store_computed_data_from_training(self):
-        Settings, Rbm = build_classes()
+        Rbm = build_classes()
         Rbm.process(iterator=data())
         rbm = Rbm()
         pipeline_data = rbm.pipeline.processors[-1].data
