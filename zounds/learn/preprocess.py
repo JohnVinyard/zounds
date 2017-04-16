@@ -168,29 +168,26 @@ class UnitNorm(Preprocessor):
 
 
 class Log(Preprocessor):
+    """
+    Perform the log-modulus transform on data
+    (http://blogs.sas.com/content/iml/2014/07/14/log-transformation-of-pos-neg.html)
+
+    This transform will tend to compress the overall range of values
+    """
     def __init__(self, needs=None):
         super(Log, self).__init__(needs=needs)
 
     def _forward_func(self):
         def x(d):
             import numpy as np
-            pos = np.abs(d)
-            pos[pos == 0] = 1e-12
-            return np.log(pos)
-
-        return x
-
-    def _inversion_data(self):
-        def x(d):
-            import numpy as np
-            return dict(sign=np.sign(d))
+            return np.sign(d) * np.log(np.abs(d) + 1)
 
         return x
 
     def _backward_func(self):
-        def x(d, sign=None):
+        def x(d):
             import numpy as np
-            return np.exp(d) * sign
+            return (np.exp(np.abs(d)) - 1) * np.sign(d)
 
         return x
 

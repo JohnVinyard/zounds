@@ -9,6 +9,7 @@ from zounds.core import ArrayWithUnits, IdentityDimension
 
 
 class TimeFrequencyRepresentationTests(unittest2.TestCase):
+
     def test_sum_along_frequency_axis(self):
         td = TimeDimension(Seconds(1), Seconds(1))
         fd = FrequencyDimension(LinearScale(FrequencyBand(20, 22050), 100))
