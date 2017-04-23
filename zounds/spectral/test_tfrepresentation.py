@@ -10,6 +10,18 @@ from zounds.core import ArrayWithUnits, IdentityDimension
 
 class TimeFrequencyRepresentationTests(unittest2.TestCase):
 
+    def test_can_add_axis_at_end(self):
+        _id = IdentityDimension()
+        td = TimeDimension(Seconds(1), Seconds(1))
+        fd = FrequencyDimension(LinearScale(FrequencyBand(20, 22050), 100))
+        tf = ArrayWithUnits(np.ones((3, 30, 100)), [_id, td, fd])
+        tf2 = tf[..., None]
+        self.assertEqual(4, tf2.ndim)
+        self.assertIsInstance(tf2.dimensions[0], IdentityDimension)
+        self.assertIsInstance(tf2.dimensions[1], TimeDimension)
+        self.assertIsInstance(tf2.dimensions[2], FrequencyDimension)
+        self.assertIsInstance(tf2.dimensions[3], IdentityDimension)
+
     def test_sum_along_frequency_axis(self):
         td = TimeDimension(Seconds(1), Seconds(1))
         fd = FrequencyDimension(LinearScale(FrequencyBand(20, 22050), 100))

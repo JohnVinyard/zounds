@@ -174,6 +174,8 @@ class ArrayWithUnits(np.ndarray):
     def _new_dims(self, index, new_arr):
         dims_pos = 0
         shape_pos = 0
+        not_ellipsis_or_none = len(filter(
+                lambda x: x is not Ellipsis and x is not None, index))
         for sl in index:
             if sl is None:
                 # additional dimension via np.newaxis
@@ -187,7 +189,7 @@ class ArrayWithUnits(np.ndarray):
                 shape_pos += 1
                 yield IdentityDimension()
             elif sl is Ellipsis:
-                ellipsis_size = len(self.dimensions) - (len(index) - 1)
+                ellipsis_size = len(self.dimensions) - not_ellipsis_or_none
                 for i in xrange(ellipsis_size):
                     yield self.dimensions[dims_pos]
                     dims_pos += 1
@@ -256,7 +258,6 @@ class ArrayWithUnits(np.ndarray):
 
         index = self._tuplify(index)
         indices = tuple(self._compute_indices(index))
-        print indices
         arr = super(ArrayWithUnits, self).__getitem__(indices)
         new_dims = tuple(self._new_dims(index, arr))
         return ArrayWithUnits(arr, new_dims)
