@@ -137,6 +137,7 @@ class UnitNorm(Preprocessor):
             from zounds.nputil import safe_unit_norm
             from zounds.core import ArrayWithUnits
             normed = safe_unit_norm(d.reshape((d.shape[0], -1)))
+            normed = normed.reshape(d.shape)
             try:
                 return ArrayWithUnits(normed, d.dimensions)
             except AttributeError:
@@ -147,13 +148,14 @@ class UnitNorm(Preprocessor):
     def _inversion_data(self):
         def x(d):
             import numpy as np
-            return dict(norm=np.linalg.norm(d, axis=1))
+            return dict(norm=np.linalg.norm(
+                    d.reshape((d.shape[0], -1)), axis=1))
 
         return x
 
     def _backward_func(self):
         def x(d, norm=None):
-            return d * norm[:, None]
+            return (d.T * norm).T
 
         return x
 
