@@ -27,6 +27,7 @@ setup(
         packages=[
             'zounds',
             'zounds.basic',
+            'zounds.datasets',
             'zounds.index',
             'zounds.learn',
             'zounds.nputil',

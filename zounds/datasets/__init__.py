@@ -1,0 +1,3 @@
+from phatdrumloops import PhatDrumLoops
+from internetarchive import InternetArchive
+from freesound import FreeSoundSearch

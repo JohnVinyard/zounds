@@ -51,3 +51,5 @@ from nputil import sliding_window
 from core import IdentityDimension, ArrayWithUnits
 
 from persistence import ArrayWithUnitsFeature, AudioSamplesFeature
+
+from datasets import PhatDrumLoops, InternetArchive, FreeSoundSearch
