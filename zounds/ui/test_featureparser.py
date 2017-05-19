@@ -19,6 +19,13 @@ class FeatureParserTests(unittest2.TestCase):
         _id = Document.process(meta=audio.encode())
         doc = Document(_id)
 
+        class SomethingElse(object):
+            def __init__(self, fft):
+                super(SomethingElse, self).__init__()
+                self.fft = fft
+
+        non_doc = SomethingElse(11)
+
         parser = FeatureParser(Document, locals())
 
         self.document = Document
@@ -42,5 +49,15 @@ class FeatureParserTests(unittest2.TestCase):
 
     def test_can_ignore_feature_in_multiply_expression(self):
         parsed_doc, feature = self.parser.parse_feature('doc.fft * 10')
+        self.assertIsNone(parsed_doc)
+        self.assertIsNone(feature)
+
+    def test_can_ignore_static_feature_access(self):
+        parsed_doc, feature = self.parser.parse_feature('Document.fft')
+        self.assertIsNone(parsed_doc)
+        self.assertIsNone(feature)
+
+    def test_can_ignore_non_document_with_matching_attribute_name(self):
+        parsed_doc, feature = self.parser.parse_feature('non_doc.fft')
         self.assertIsNone(parsed_doc)
         self.assertIsNone(feature)

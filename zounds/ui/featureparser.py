@@ -22,10 +22,12 @@ class ExpressionVisitor(ast.NodeVisitor):
         if len(children) != 1:
             raise ValueError()
 
+        feature_name = None
+
         child = children[0]
         if isinstance(child, ast.Attribute) \
                 and child.attr in self.document.features:
-            self.feature_name = child.attr
+            feature_name = child.attr
         else:
             raise ValueError()
 
@@ -38,6 +40,7 @@ class ExpressionVisitor(ast.NodeVisitor):
                 and grandchild.id in self.locals \
                 and isinstance(self.locals[grandchild.id], self.document):
             self.doc = self.locals[grandchild.id]
+            self.feature_name = feature_name
         else:
             raise ValueError()
 
