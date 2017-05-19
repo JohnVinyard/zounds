@@ -40,9 +40,8 @@ class ReservoirSampler(Node):
             return
         indices = np.random.random_integers(0, self._index, size=remaining)
         indices = indices[indices < self._nsamples]
-        self._r[indices] = data[diff:][range(len(indices))]
+        self._r[indices, ...] = data[diff:][range(len(indices))]
         self._index += remaining
-
 
     def _dequeue(self):
         if not self._finalized:
@@ -78,15 +77,15 @@ def random_samples(feature_func, nsamples, store_shuffled=True):
 
     class RandomSamples(BaseModel):
         docs = Feature(
-                DatabaseIterator,
-                func=feature_func,
-                store=False)
+            DatabaseIterator,
+            func=feature_func,
+            store=False)
 
         patches = NumpyFeature( \
-                ReservoirSampler,
-                nsamples=nsamples,
-                needs=docs,
-                store=store_shuffled)
+            ReservoirSampler,
+            nsamples=nsamples,
+            needs=docs,
+            store=store_shuffled)
 
     return RandomSamples
 
@@ -107,21 +106,21 @@ def random_patches(
 
     class RandomPatches(BaseModel):
         docs = Feature( \
-                DatabaseIterator,
-                func=feature_func,
-                store=False)
+            DatabaseIterator,
+            func=feature_func,
+            store=False)
 
         windowed = NumpyFeature( \
-                NDSlidingWindow,
-                windowsize=windowsize,
-                stepsize=stepsize,
-                needs=docs,
-                store=False)
+            NDSlidingWindow,
+            windowsize=windowsize,
+            stepsize=stepsize,
+            needs=docs,
+            store=False)
 
         patches = NumpyFeature( \
-                ReservoirSampler,
-                nsamples=nsamples,
-                needs=windowed,
-                store=store_shuffled)
+            ReservoirSampler,
+            nsamples=nsamples,
+            needs=windowed,
+            store=store_shuffled)
 
     return RandomPatches
