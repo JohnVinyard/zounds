@@ -32,7 +32,7 @@ class Synth(object):
            representation
     """
 
-    def __init__(self, linear_scale, log_scale, samplerate, windowing_func):
+    def __init__(self, linear_scale, log_scale, windowing_func):
         super(Synth, self).__init__()
         self.windowing_func = windowing_func
         self.log_scale = log_scale
@@ -60,7 +60,7 @@ class Synth(object):
 
         # initialize an empty array to fill with the dct coefficients
         dct_coeffs = zounds.ArrayWithUnits(
-                np.zeros((len(mdct_coeffs), self.samplerate)),
+                np.zeros((len(mdct_coeffs), int(self.samplerate))),
                 [mdct_coeffs.dimensions[0], frequency_dimension])
 
         # compute compensating weights
@@ -92,21 +92,19 @@ class VariableSizedFrequencyWindows(ff.Node):
         self.scale = scale
 
     def _process(self, data):
-        transformed = np.concatenate([
-            dct(data[:, fb], norm='ortho')
-            for fb in self.scale], axis=1)
-
+        bands = [dct(data[:, fb], norm='ortho') for fb in self.scale]
+        transformed = np.concatenate(bands, axis=1)
         yield zounds.ArrayWithUnits(
                 transformed, [data.dimensions[0], zounds.IdentityDimension()])
 
 
-samplerate = zounds.SR22050()
+samplerate = zounds.SR11025()
 BaseModel = zounds.stft(resample_to=samplerate)
 
 windowing_func = zounds.OggVorbisWindowingFunc()
 
 scale = zounds.LogScale(
-        zounds.FrequencyBand(1, 10000), n_bands=64)
+        zounds.FrequencyBand(300, 3000), n_bands=16)
 
 
 @zounds.simple_in_memory_settings
@@ -154,8 +152,7 @@ if __name__ == '__main__':
     synth = Synth(
             doc.dct.dimensions[1].scale,
             scale,
-            samplerate,
-            windowing_func)
+                windowing_func)
 
     recon_audio = synth.synthesize(doc.mdct)
 
