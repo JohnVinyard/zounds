@@ -1,5 +1,4 @@
 from preprocess import Preprocessor, PreprocessResult
-import sklearn.decomposition
 
 
 class SklearnModel(Preprocessor):
@@ -36,11 +35,9 @@ class SklearnModel(Preprocessor):
             name='SklearnModel.{model_cls}'.format(**locals()))
 
 
-class SparsePCA(SklearnModel):
-    def __init__(self, n_components=None, alpha=None, needs=None):
-        model = sklearn.decomposition.SparsePCA(
-            n_components=n_components, alpha=alpha)
-        super(SparsePCA, self).__init__(model=model, needs=needs)
+class WithComponents(SklearnModel):
+    def __init__(self, model=None, needs=None):
+        super(WithComponents, self).__init__(model=model, needs=needs)
 
     def _backward_func(self):
         def x(d, model=None, shape=None):

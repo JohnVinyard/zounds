@@ -4,7 +4,7 @@ from preprocess import \
     MeanStdNormalization, UnitNorm, Log, PreprocessingPipeline, Multiply, \
     Slicer, Flatten
 
-from sklearn_preprocessor import SklearnModel, SparsePCA
+from sklearn_preprocessor import SklearnModel, WithComponents
 
 from random_samples import ReservoirSampler
 
