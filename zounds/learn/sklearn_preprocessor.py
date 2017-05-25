@@ -8,7 +8,13 @@ class SklearnModel(Preprocessor):
 
     def _forward_func(self):
         def x(d, model=None):
-            return model.transform(d.reshape((d.shape[0], -1)))
+            from zounds.core import ArrayWithUnits, IdentityDimension
+            transformed = model.transform(d.reshape((d.shape[0], -1)))
+            try:
+                return ArrayWithUnits(
+                    transformed, (d.dimensions[0], IdentityDimension()))
+            except AttributeError:
+                return transformed
 
         return x
 

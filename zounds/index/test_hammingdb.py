@@ -101,9 +101,10 @@ class HammingDbTests(unittest2.TestCase):
         db.append(self.extract_code_from_text(t4), t4)
         results = list(db2.search(self.extract_code_from_text(t1), 3))
         self.assertEqual(3, len(results))
-        self.assertEqual(t1, results[0])
-        self.assertEqual(t2, results[1])
-        self.assertEqual(t4, results[2])
+        s = set(results)
+        self.assertTrue(t1 in s)
+        self.assertTrue(t2 in s)
+        self.assertTrue(t4 in s)
 
     def test_cannot_append_wrong_code_size(self):
         db = HammingDb(self._path, code_size=8)
