@@ -116,7 +116,6 @@ class ArrayWithUnits(np.ndarray):
         else:
             ss = ws
 
-        print ws, ss
         return ws, ss
 
     def sliding_window_with_leftovers(
