@@ -19,8 +19,6 @@ class ShortTimeTransformSynthesizer(object):
         return IdentityWindowingFunc()
 
     def _overlap_add(self, frames):
-        # BUG: This code assumes there is a coefficient for every raw audio
-        # sample, but this isn't the case for FFT, e.g.
         time_dim = frames.dimensions[0]
         sample_length_seconds = time_dim.duration_in_seconds / frames.shape[-1]
         samples_per_second = int(1 / sample_length_seconds)
@@ -45,8 +43,11 @@ class FFTSynthesizer(ShortTimeTransformSynthesizer):
     def __init__(self):
         super(FFTSynthesizer, self).__init__()
 
+    def _windowing_function(self):
+        return OggVorbisWindowingFunc()
+
     def _transform(self, frames):
-        return np.fft.fftpack.ifft(frames)
+        return np.fft.fftpack.irfft(frames, norm='ortho')
 
 
 class DCTSynthesizer(ShortTimeTransformSynthesizer):

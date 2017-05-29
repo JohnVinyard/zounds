@@ -61,7 +61,8 @@ def stft(
         chunksize_bytes=2 * 44100 * 30 * 2,
         resample_to=SR44100(),
         wscheme=HalfLapped(),
-        store_fft=False):
+        store_fft=False,
+        store_windowed=False):
     class ShortTimeFourierTransform(BaseModel):
         meta = JSONFeature(
                 MetaData,
@@ -95,7 +96,7 @@ def stft(
                 needs=resampled,
                 wscheme=wscheme,
                 wfunc=OggVorbisWindowingFunc(),
-                store=False)
+                store=store_windowed)
 
         fft = ArrayWithUnitsFeature(
                 FFT,

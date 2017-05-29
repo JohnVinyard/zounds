@@ -19,12 +19,7 @@ class FFT(Node):
         self._axis = axis
 
     def _process(self, data):
-        transformed = np.fft.fft(data, axis=self._axis)
-        sl = [slice(None) for _ in xrange(len(transformed.shape))]
-        positive = data.shape[self._axis] // 2
-        sl[self._axis] = slice(0, positive, None)
-
-        transformed = transformed[sl]
+        transformed = np.fft.rfft(data, axis=self._axis, norm='ortho')
 
         sr = audio_sample_rate(
                 int(data.shape[1] / data.dimensions[0].duration_in_seconds))
