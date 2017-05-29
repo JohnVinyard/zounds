@@ -21,6 +21,7 @@ import zounds
 import featureflow as ff
 import numpy as np
 from scipy.fftpack import dct, idct
+from scipy.signal import resample
 
 
 class Synth(object):
@@ -53,6 +54,26 @@ class Synth(object):
             weights[band] += 1
         weights[weights == 0] = 1
         return 1. / weights
+
+    def visualize(self, dct_coeffs, mdct_coeffs, samples):
+        """
+        Since each frequency band has a different number of samples, rasterize
+        the representation by resampling each band to have the same number of
+        samples
+        """
+        n_bands = len(self.log_scale)
+        img = np.zeros(shape=(len(mdct_coeffs), samples, n_bands))
+
+        pos = 0
+        for i, band in enumerate(self.log_scale):
+            slce = dct_coeffs[:, band]
+            size = slce.shape[1]
+            resampled = resample(
+                mdct_coeffs[:, pos: pos + size], samples, axis=1)
+            img[:, :, i] += resampled
+            pos += size
+
+        return img
 
     def synthesize(self, mdct_coeffs):
 
@@ -104,7 +125,7 @@ BaseModel = zounds.stft(resample_to=samplerate)
 windowing_func = zounds.OggVorbisWindowingFunc()
 
 scale = zounds.LogScale(
-        zounds.FrequencyBand(300, 3000), n_bands=16)
+        zounds.FrequencyBand(20, 5000), n_bands=300)
 
 
 @zounds.simple_in_memory_settings
@@ -142,7 +163,7 @@ class Document(BaseModel):
 if __name__ == '__main__':
     # generate some audio
     synth = zounds.SineSynthesizer(zounds.SR22050())
-    orig_audio = synth.synthesize(zounds.Seconds(5), [440., 660., 880.])
+    orig_audio = synth.synthesize(zounds.Seconds(5), [220, 440., 660., 880.])
 
     # analyze the audio
     _id = Document.process(meta=orig_audio.encode())
@@ -153,8 +174,10 @@ if __name__ == '__main__':
             doc.dct.dimensions[1].scale,
             scale,
                 windowing_func)
-
     recon_audio = synth.synthesize(doc.mdct)
+
+    # get a rasterized visualization of the representation
+    img = synth.visualize(doc.dct, doc.mdct, 100)
 
     app = zounds.ZoundsApp(
             model=Document,
