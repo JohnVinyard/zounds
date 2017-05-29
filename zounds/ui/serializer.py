@@ -192,10 +192,6 @@ class NumpySerializer(object):
         super(NumpySerializer, self).__init__()
 
     def matches(self, context):
-        if context.document is not None \
-                and isinstance(context.feature, ArrayWithUnitsFeature):
-            return True
-
         return \
             isinstance(context.value, np.ndarray) \
             and len(context.value.shape) in (1, 2)
