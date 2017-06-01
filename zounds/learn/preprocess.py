@@ -221,12 +221,12 @@ class Slicer(Preprocessor):
             try:
                 ka = d.kwargs()
 
-                def ff(shape):
-                    return d.__class__(fill_func(shape), **ka)
+                def ff(shape, dtype):
+                    return d.__class__(fill_func(shape, dtype), **ka)
             except AttributeError:
 
-                def ff(shape):
-                    return fill_func(shape)
+                def ff(shape, dtype):
+                    return fill_func(shape, dtype)
 
             return dict(shape=d.shape, slicex=slicex, fill_func=ff)
 
@@ -235,7 +235,8 @@ class Slicer(Preprocessor):
     def _backward_func(self):
         def z(d, shape=None, fill_func=None, slicex=None):
             new_shape = d.shape[:1] + shape[1:]
-            new_arr = fill_func(new_shape)
+            print fill_func
+            new_arr = fill_func(new_shape, d.dtype)
             new_arr[..., slicex] = d
             return new_arr
 
@@ -379,7 +380,11 @@ class Pipeline(object):
                 ''.join([p.op.version for p in self.processors])).hexdigest()
 
     def __getitem__(self, index):
-        return self.processors[index]
+        if isinstance(index, int):
+            return self.processors[index]
+        elif isinstance(index, list):
+            return Pipeline([self.processors[i] for i in index])
+        return Pipeline(self.processors[index])
 
     def wrap_data(self, data):
         cls = data.__class__
@@ -418,6 +423,8 @@ class PipelineResult(object):
         for inv_data, wrap_data, p in \
                 zip(self.inversion_data, self.wrap_data, self.processors):
             data = p.inverse(data, **inv_data)
+            print '============================================='
+            print p, data.min(), data.max(), data.mean(), data.std()
             data = self.unwrap(data, wrap_data)
         return data
 

@@ -26,6 +26,17 @@ class SlicerTests(unittest2.TestCase):
 
         return Model
 
+    def test_inversion_maintains_data_type(self):
+        training = np.ones((100, 30), dtype=np.complex128)
+        Model = self.get_model(slicex=slice(10, 20))
+        _id = Model.process(sliced=training)
+        model = Model(_id)
+        data = np.ones((100, 30), dtype=np.complex128)
+        transformed = model.pipeline.transform(data)
+        self.assertEqual((100, 10), transformed.data.shape)
+        inverted = transformed.inverse_transform()
+        self.assertEqual(np.complex128, inverted.dtype)
+
     def test_can_slice_array_with_slice_instance(self):
         training = np.ones((100, 30))
         Model = self.get_model(slicex=slice(10, 20))

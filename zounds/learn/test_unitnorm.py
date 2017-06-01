@@ -79,6 +79,30 @@ class UnitNormTests(unittest2.TestCase):
         self.assertEqual(data.shape, inverted.shape)
         np.testing.assert_allclose(inverted, data)
 
+    def test_can_process_samples_with_negative_values(self):
+        @simple_in_memory_settings
+        class Model(ff.BaseModel):
+            unitnorm = ff.PickleFeature(
+                UnitNorm,
+                store=False)
+
+            pipeline = ff.PickleFeature(
+                PreprocessingPipeline,
+                needs=(unitnorm,),
+                store=True)
+
+        data_shape = (10, 3, 4, 2)
+        training = np.random.random_sample(data_shape) - 0.5
+        _id = Model.process(unitnorm=training)
+        model = Model(_id)
+
+        data = np.random.random_sample(data_shape) - 0.5
+        result = model.pipeline.transform(data)
+        self.assertEqual(data_shape, result.data.shape)
+        inverted = result.inverse_transform()
+        self.assertEqual(data.shape, inverted.shape)
+        np.testing.assert_allclose(inverted, data)
+
     def test_forward_transform_returns_array_with_units_where_possible(self):
         # train the model on random data
         training = np.random.random_sample((100, 30))
