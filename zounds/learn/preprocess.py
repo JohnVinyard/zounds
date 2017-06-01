@@ -423,8 +423,6 @@ class PipelineResult(object):
         for inv_data, wrap_data, p in \
                 zip(self.inversion_data, self.wrap_data, self.processors):
             data = p.inverse(data, **inv_data)
-            print '============================================='
-            print p, data.min(), data.max(), data.mean(), data.std()
             data = self.unwrap(data, wrap_data)
         return data
 
