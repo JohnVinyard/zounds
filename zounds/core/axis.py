@@ -45,8 +45,17 @@ class ArrayWithUnits(np.ndarray):
             raise ValueError('All dimensions must match to concatenate')
 
     def reshape(self, shape, order='C'):
+        if shape == filter(lambda x: x > 1, self.shape):
+            return self.squeeze()
+
         raw = np.asarray(self)
         return np.reshape(raw, shape, order)
+
+    def squeeze(self):
+        zipped = filter(lambda x: x[0] > 1, zip(self.shape, self.dimensions))
+        return ArrayWithUnits(
+            np.reshape(self, [s for s, _ in zipped]),
+            [d for _, d in zipped])
 
     @classmethod
     def concat(cls, arrs, axis=0):

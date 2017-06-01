@@ -64,8 +64,6 @@ class SlicerTests(unittest2.TestCase):
         model = Model(_id)
         data = ArrayWithUnits(np.ones((2, 5, 100)), dimensions)
         transformed = model.pipeline.transform(data)
-        print transformed.data.__class__
-        print transformed.data.dimensions
         inverted = transformed.inverse_transform()
         self.assertEqual((2, 5, 100), inverted.shape)
         self.assertEqual(IdentityDimension(), inverted.dimensions[0])

@@ -87,7 +87,7 @@ class ContrivedArray(ArrayWithUnits):
 
 class CoreTests(unittest2.TestCase):
 
-    def test_can_reshape(self):
+    def test_can_reshape_and_downgrade_to_numpy_array(self):
         arr = ArrayWithUnits(
             np.zeros((100, 10)),
             [ContrivedDimension(10), ContrivedDimension2(10)])
@@ -95,24 +95,85 @@ class CoreTests(unittest2.TestCase):
         self.assertEqual((1000,), flattened.shape)
         self.assertNotIsInstance(flattened, ArrayWithUnits)
 
+    def test_can_maintain_array_with_units_when_reshaping_2d(self):
+        arr = ArrayWithUnits(
+            np.zeros((1, 10)),
+            [ContrivedDimension(10), ContrivedDimension2(10)])
+        squeezed = arr.reshape((10,))
+        self.assertEqual((10,), squeezed.shape)
+        self.assertIsInstance(squeezed, ArrayWithUnits)
+        self.assertIsInstance(squeezed.dimensions[0], ContrivedDimension2)
+
+    def test_can_maintain_array_with_units_when_squeezing_2d(self):
+        arr = ArrayWithUnits(
+            np.zeros((1, 10)),
+            [ContrivedDimension(10), ContrivedDimension2(10)])
+        squeezed = arr.squeeze()
+        self.assertEqual((10,), squeezed.shape)
+        self.assertIsInstance(squeezed, ArrayWithUnits)
+        self.assertIsInstance(squeezed.dimensions[0], ContrivedDimension2)
+
+    def test_can_maintain_array_with_units_when_reshaping_3d(self):
+        arr = ArrayWithUnits(
+            np.zeros((3, 1, 10)),
+            [
+                ContrivedDimension(10),
+                IdentityDimension(),
+                ContrivedDimension2(10)
+            ])
+        squeezed = arr.reshape((3, 10))
+        self.assertEqual((3, 10), squeezed.shape)
+        self.assertIsInstance(squeezed, ArrayWithUnits)
+        self.assertIsInstance(squeezed.dimensions[0], ContrivedDimension)
+        self.assertIsInstance(squeezed.dimensions[1], ContrivedDimension2)
+
+    def test_can_maintain_array_with_units_when_squeezing_3d(self):
+        arr = ArrayWithUnits(
+            np.zeros((3, 1, 10)),
+            [
+                ContrivedDimension(10),
+                IdentityDimension(),
+                ContrivedDimension2(10)
+            ])
+        squeezed = arr.squeeze()
+        self.assertEqual((3, 10), squeezed.shape)
+        self.assertIsInstance(squeezed, ArrayWithUnits)
+        self.assertIsInstance(squeezed.dimensions[0], ContrivedDimension)
+        self.assertIsInstance(squeezed.dimensions[1], ContrivedDimension2)
+
+    def test_squeeze_with_no_single_dimension_is_unchanged(self):
+        arr = ArrayWithUnits(
+            np.zeros((3, 2, 10)),
+            [
+                ContrivedDimension(10),
+                IdentityDimension(),
+                ContrivedDimension2(10)
+            ])
+        squeezed = arr.squeeze()
+        self.assertEqual((3, 2, 10), squeezed.shape)
+        self.assertIsInstance(squeezed, ArrayWithUnits)
+        self.assertIsInstance(squeezed.dimensions[0], ContrivedDimension)
+        self.assertIsInstance(squeezed.dimensions[1], IdentityDimension)
+        self.assertIsInstance(squeezed.dimensions[2], ContrivedDimension2)
+
     def test_assigns_size_where_appropriate(self):
         arr = ArrayWithUnits(
-                np.zeros((100, 10)),
-                [ContrivedDimension(10), ContrivedDimension2(10)])
+            np.zeros((100, 10)),
+            [ContrivedDimension(10), ContrivedDimension2(10)])
         self.assertEqual(10, arr.dimensions[1].size)
 
     def test_can_create_new_array_from_example(self):
         arr = ArrayWithUnits(
-                np.zeros((100, 10)),
-                [ContrivedDimension(10), ContrivedDimension2(10)])
+            np.zeros((100, 10)),
+            [ContrivedDimension(10), ContrivedDimension2(10)])
         arr2 = ArrayWithUnits.from_example(np.zeros((90, 5)), arr)
         self.assertSequenceEqual(arr.dimensions, arr2.dimensions)
         self.assertEqual((90, 5), arr2.shape)
 
     def test_size_is_not_modified_on_example_dimensions(self):
         arr = ArrayWithUnits(
-                np.zeros((100, 10)),
-                [ContrivedDimension(10), ContrivedDimension2(10)])
+            np.zeros((100, 10)),
+            [ContrivedDimension(10), ContrivedDimension2(10)])
         arr2 = ArrayWithUnits.from_example(np.zeros((90, 5)), arr)
         self.assertEqual(100, arr.dimensions[0].size)
         self.assertEqual(10, arr.dimensions[1].size)
@@ -170,14 +231,14 @@ class CoreTests(unittest2.TestCase):
     def test_can_multiply(self):
         raw = np.ones((8, 9))
         arr = ContrivedArray(
-                raw, (ContrivedDimension(10), ContrivedDimension2(10)))
+            raw, (ContrivedDimension(10), ContrivedDimension2(10)))
         result = arr * 10
         np.testing.assert_allclose(result, 10)
 
     def test_can_get_single_scalar_from_max_with_no_axis(self):
         raw = np.zeros((8, 9))
         arr = ContrivedArray(
-                raw, (ContrivedDimension(10), ContrivedDimension2(10)))
+            raw, (ContrivedDimension(10), ContrivedDimension2(10)))
         result = arr.max()
         self.assertIsInstance(result, float)
         self.assertEqual(0, result)
@@ -185,7 +246,7 @@ class CoreTests(unittest2.TestCase):
     def test_max_array_maintains_correct_dimensions_axis_0(self):
         raw = np.zeros((8, 9))
         arr = ContrivedArray(
-                raw, (ContrivedDimension(10), ContrivedDimension2(10)))
+            raw, (ContrivedDimension(10), ContrivedDimension2(10)))
         result = arr.max(axis=0)
         self.assertEqual((9,), result.shape)
         self.assertIsInstance(result, ArrayWithUnits)
@@ -195,7 +256,7 @@ class CoreTests(unittest2.TestCase):
     def test_max_array_maintains_correct_dimensions_axis_1(self):
         raw = np.zeros((8, 9))
         arr = ContrivedArray(
-                raw, (ContrivedDimension(10), ContrivedDimension2(10)))
+            raw, (ContrivedDimension(10), ContrivedDimension2(10)))
         result = arr.max(axis=1)
         self.assertEqual((8,), result.shape)
         self.assertIsInstance(result, ArrayWithUnits)
@@ -205,7 +266,7 @@ class CoreTests(unittest2.TestCase):
     def test_get_single_scalar_from_sum_with_no_axis(self):
         raw = np.zeros((8, 9))
         arr = ContrivedArray(
-                raw, (ContrivedDimension(10), ContrivedDimension2(10)))
+            raw, (ContrivedDimension(10), ContrivedDimension2(10)))
         result = arr.sum()
         self.assertIsInstance(result, float)
         self.assertEqual(0, result)
@@ -213,7 +274,7 @@ class CoreTests(unittest2.TestCase):
     def test_array_maintains_correct_dimension_after_reduction(self):
         raw = np.zeros((8, 9))
         arr = ContrivedArray(
-                raw, (ContrivedDimension(10), ContrivedDimension2(10)))
+            raw, (ContrivedDimension(10), ContrivedDimension2(10)))
         result = arr.sum(axis=1)
         self.assertEqual((8,), result.shape)
         self.assertIsInstance(result, ArrayWithUnits)
@@ -223,7 +284,7 @@ class CoreTests(unittest2.TestCase):
     def test_array_maintains_correct_dimension_after_reduction2(self):
         raw = np.zeros((8, 9))
         arr = ContrivedArray(
-                raw, (ContrivedDimension(10), ContrivedDimension2(10)))
+            raw, (ContrivedDimension(10), ContrivedDimension2(10)))
         result = arr.sum(axis=0)
         self.assertEqual((9,), result.shape)
         self.assertIsInstance(result, ArrayWithUnits)
@@ -233,7 +294,7 @@ class CoreTests(unittest2.TestCase):
     def test_array_maintains_correct_dimension_after_reduction3(self):
         raw = np.zeros((8, 9))
         arr = ContrivedArray(
-                raw, (ContrivedDimension(10), ContrivedDimension2(10)))
+            raw, (ContrivedDimension(10), ContrivedDimension2(10)))
         result = np.sum(arr, axis=0)
         self.assertEqual((9,), result.shape)
         self.assertIsInstance(result, ArrayWithUnits)
@@ -243,7 +304,7 @@ class CoreTests(unittest2.TestCase):
     def test_array_cannot_maintain_correct_dimension(self):
         raw = np.zeros((10, 10))
         arr = ContrivedArray(
-                raw, (ContrivedDimension(10), ContrivedDimension2(10)))
+            raw, (ContrivedDimension(10), ContrivedDimension2(10)))
         result = arr.sum(axis=1)
         self.assertEqual((10,), result.shape)
         self.assertIsInstance(result, ArrayWithUnits)
@@ -253,18 +314,19 @@ class CoreTests(unittest2.TestCase):
     def test_array_maintains_correct_dimensions_after_dot(self):
         raw = np.zeros((8, 9))
         arr = ContrivedArray(
-                raw, (ContrivedDimension(10), ContrivedDimension2(10)))
+            raw, (ContrivedDimension(10), ContrivedDimension2(10)))
         result = arr.dot(np.zeros(9))
         self.assertEqual((8,), result.shape)
         self.assertIsInstance(result, ArrayWithUnits)
         self.assertEqual(1, len(result.dimensions))
         self.assertIsInstance(result.dimensions[0], ContrivedDimension)
 
-    @unittest2.skip('this test fails because there is no hook to intercept this call')
+    @unittest2.skip(
+        'this test fails because there is no hook to intercept this call')
     def test_array_maintains_correct_dimensions_after_dot2(self):
         raw = np.zeros((8, 9))
         arr = ContrivedArray(
-                raw, (ContrivedDimension(10), ContrivedDimension2(10)))
+            raw, (ContrivedDimension(10), ContrivedDimension2(10)))
         result = np.dot(arr, np.zeros(9))
         self.assertEqual((8,), result.shape)
         self.assertIsInstance(result, ArrayWithUnits)
@@ -301,7 +363,7 @@ class CoreTests(unittest2.TestCase):
     def test_can_apply_new_axis(self):
         raw = np.zeros((3, 5))
         arr = ContrivedArray(
-                raw, (ContrivedDimension(10), ContrivedDimension2(10)))
+            raw, (ContrivedDimension(10), ContrivedDimension2(10)))
         result = arr[None, -1]
         self.assertIsInstance(result, ArrayWithUnits)
         self.assertEqual((1, 5), result.shape)
@@ -312,7 +374,7 @@ class CoreTests(unittest2.TestCase):
     def test_can_apply_new_axis_at_end(self):
         raw = np.zeros((3, 5))
         arr = ContrivedArray(
-                raw, (ContrivedDimension(10), ContrivedDimension2(10)))
+            raw, (ContrivedDimension(10), ContrivedDimension2(10)))
         result = arr[-1, None]
         self.assertIsInstance(result, ArrayWithUnits)
         self.assertEqual((1, 5), result.shape)
@@ -323,7 +385,7 @@ class CoreTests(unittest2.TestCase):
     def test_can_apply_new_axis_in_middle(self):
         raw = np.zeros((3, 5))
         arr = ContrivedArray(
-                raw, (ContrivedDimension(10), ContrivedDimension2(10)))
+            raw, (ContrivedDimension(10), ContrivedDimension2(10)))
         result = arr[:, None, :]
         self.assertIsInstance(result, ArrayWithUnits)
         self.assertEqual((3, 1, 5), result.shape)
@@ -335,7 +397,7 @@ class CoreTests(unittest2.TestCase):
     def test_can_apply_two_new_axes(self):
         raw = np.zeros((3, 5))
         arr = ContrivedArray(
-                raw, (ContrivedDimension(10), ContrivedDimension2(10)))
+            raw, (ContrivedDimension(10), ContrivedDimension2(10)))
         result = arr[None, None, -1]
         self.assertIsInstance(result, ArrayWithUnits)
         self.assertEqual((1, 1, 5), result.shape)
@@ -347,7 +409,7 @@ class CoreTests(unittest2.TestCase):
     def test_correct_axis_is_preserved(self):
         raw = np.zeros((10, 10))
         arr = ContrivedArray(
-                raw, (ContrivedDimension(10), ContrivedDimension2(10)))
+            raw, (ContrivedDimension(10), ContrivedDimension2(10)))
         result = arr[0]
         self.assertIsInstance(result, ArrayWithUnits)
         self.assertEqual(1, len(result.dimensions))
@@ -357,7 +419,7 @@ class CoreTests(unittest2.TestCase):
     def test_multiple_axis_types(self):
         raw = np.zeros((10, 10))
         arr = ContrivedArray(
-                raw, (ContrivedDimension(10), ContrivedDimension2(10)))
+            raw, (ContrivedDimension(10), ContrivedDimension2(10)))
         result = arr[ContrivedSlice(20, 40), ContrivedSlice(20, 50)]
         self.assertIsInstance(result, ArrayWithUnits)
         self.assertEqual(2, len(result.dimensions))
@@ -368,7 +430,7 @@ class CoreTests(unittest2.TestCase):
     def test_can_use_list_of_integers_as_index(self):
         raw = np.zeros((10, 10))
         arr = ContrivedArray(
-                raw, (ContrivedDimension(10), ContrivedDimension2(10)))
+            raw, (ContrivedDimension(10), ContrivedDimension2(10)))
         result = arr[[1, 3, 5]]
         self.assertIsInstance(result, ArrayWithUnits)
         self.assertEqual((3, 10), result.shape)
@@ -379,7 +441,7 @@ class CoreTests(unittest2.TestCase):
     def test_can_use_multiple_integers(self):
         raw = np.zeros((10, 10))
         arr = ContrivedArray(
-                raw, (ContrivedDimension(10), ContrivedDimension2(10)))
+            raw, (ContrivedDimension(10), ContrivedDimension2(10)))
         result = arr[0, 0]
         self.assertEqual(0, result)
 
@@ -394,7 +456,7 @@ class CoreTests(unittest2.TestCase):
     def test_can_get_modified_dimension(self):
         raw = np.zeros(10)
         arr = ContrivedArray(
-                raw, (AsciiCharacterDimension(ascii_lowercase[:10]),))
+            raw, (AsciiCharacterDimension(ascii_lowercase[:10]),))
         result = arr[1:4]
         self.assertIsInstance(result, ArrayWithUnits)
         self.assertEqual((3,), result.shape)
@@ -418,15 +480,15 @@ class CoreTests(unittest2.TestCase):
     def test_can_set_from_list_of_integers(self):
         raw = np.zeros((10, 10))
         arr = ContrivedArray(
-                raw, (ContrivedDimension(10), ContrivedDimension2(10)))
+            raw, (ContrivedDimension(10), ContrivedDimension2(10)))
         arr[[1, 3, 5]] = 5
         np.testing.assert_allclose(arr[[1, 3, 5]], 5)
 
     def test_dimensions_must_match(self):
         raw = np.zeros((3, 3, 3))
         self.assertRaises(
-                ValueError,
-                lambda: ContrivedArray(raw, (None, ContrivedDimension(5))))
+            ValueError,
+            lambda: ContrivedArray(raw, (None, ContrivedDimension(5))))
 
     def test_custom_dimensions_are_preserved_after_slice(self):
         raw = np.zeros((10, 10))
@@ -481,7 +543,7 @@ class CoreTests(unittest2.TestCase):
         raw = np.zeros(10)
         arr = ContrivedArray(raw, (ContrivedDimension(10),))
         new_arr = arr.sliding_window(
-                (ContrivedSlice(0, 20),), (ContrivedSlice(0, 10),))
+            (ContrivedSlice(0, 20),), (ContrivedSlice(0, 10),))
         self.assertIsInstance(new_arr, ArrayWithUnits)
         self.assertEqual((9, 2), new_arr.shape)
         self.assertIsInstance(new_arr.dimensions[0], ContrivedDimension)
@@ -505,7 +567,7 @@ class CoreTests(unittest2.TestCase):
         raw = np.zeros((10, 10))
         arr = ContrivedArray(raw, (ContrivedDimension(10), None))
         new_arr = arr.sliding_window(
-                (ContrivedSlice(0, 20), 10), (ContrivedSlice(0, 10), 10))
+            (ContrivedSlice(0, 20), 10), (ContrivedSlice(0, 10), 10))
         self.assertIsInstance(new_arr, ArrayWithUnits)
         self.assertEqual((9, 2, 10), new_arr.shape)
         self.assertIsInstance(new_arr.dimensions[0], ContrivedDimension)
@@ -528,7 +590,7 @@ class CoreTests(unittest2.TestCase):
         raw = np.zeros((10, 10))
         arr = ContrivedArray(raw, (ContrivedDimension(10), None))
         new_arr = arr.sliding_window(
-                (ContrivedSlice(0, 20), 2), (ContrivedSlice(0, 10), 1))
+            (ContrivedSlice(0, 20), 2), (ContrivedSlice(0, 10), 1))
         self.assertIsInstance(new_arr, ArrayWithUnits)
         self.assertEqual((81, 2, 2), new_arr.shape)
         self.assertIsInstance(new_arr.dimensions[0], IdentityDimension)
