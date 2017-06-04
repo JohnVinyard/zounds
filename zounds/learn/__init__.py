@@ -6,6 +6,8 @@ from preprocess import \
 
 from sklearn_preprocessor import SklearnModel, WithComponents
 
+from keras_preprocessor import KerasModel
+
 from random_samples import ReservoirSampler
 
 from template_match import TemplateMatch

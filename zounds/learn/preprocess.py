@@ -10,7 +10,11 @@ class Op(object):
     def __init__(self, func, **kwargs):
         super(Op, self).__init__()
         self._kwargs = kwargs
-        self._func = marshal.dumps(func.func_code)
+        try:
+            self._func = marshal.dumps(func.func_code)
+        except AttributeError:
+            # func is already a marshalled function
+            self._func = func
         self._version = self._compute_version()
 
     @property
