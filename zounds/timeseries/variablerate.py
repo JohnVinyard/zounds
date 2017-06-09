@@ -2,6 +2,7 @@ import numpy as np
 from timeseries import TimeSlice
 from duration import Seconds, Picoseconds
 from featureflow import Feature, BaseNumpyDecoder, NumpyEncoder
+from itertools import izip
 
 
 class VariableRateTimeSeries(object):
@@ -26,6 +27,9 @@ class VariableRateTimeSeries(object):
 
     def __len__(self):
         return self._data.__len__()
+
+    def iter_slices(self):
+        return izip(self.slices, self.slicedata)
 
     @property
     def slices(self):
