@@ -4,7 +4,8 @@ from timeseries import \
     Hours, Minutes, Seconds, Milliseconds, Microseconds, Picoseconds, \
     SR11025, SR22050, SR44100, SR48000, SR96000, HalfLapped, Stride, \
     TimeSlice, VariableRateTimeSeries, VariableRateTimeSeriesFeature, \
-    SampleRate, AudioSamples, TimeDimension, audio_sample_rate
+    SampleRate, AudioSamples, TimeDimension, audio_sample_rate, \
+    ConstantRateTimeSeries
 
 from soundfile import \
     MetaData, AudioMetaDataEncoder, FreesoundOrgConfig, \

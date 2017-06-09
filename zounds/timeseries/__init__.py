@@ -10,3 +10,5 @@ from samplerate import \
 from timeseries import TimeSlice, TimeDimension
 
 from variablerate import VariableRateTimeSeries, VariableRateTimeSeriesFeature
+
+from constantrate import ConstantRateTimeSeries
