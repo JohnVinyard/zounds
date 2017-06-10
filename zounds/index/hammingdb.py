@@ -1,7 +1,6 @@
 import lmdb
 from zounds.nputil import Growable, packed_hamming_distance
 import numpy as np
-import uuid
 from multiprocessing.dummy import Pool as ThreadPool
 from multiprocessing import cpu_count
 import os

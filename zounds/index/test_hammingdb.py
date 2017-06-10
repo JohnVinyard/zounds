@@ -27,6 +27,10 @@ class HammingDbTests(unittest2.TestCase):
         except OSError:
             pass
 
+    @unittest2.skip
+    def test_can_get_random_entry(self):
+        self.fail('should be able to fetch random entry from database')
+
     def test_can_create_database_with_128_bit_codes(self):
         db = HammingDb(self._path, code_size=16)
         self.assertEqual(0, len(db))

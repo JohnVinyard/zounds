@@ -7,6 +7,10 @@ import featureflow as ff
 from zounds.timeseries import VariableRateTimeSeriesFeature
 from zounds.persistence import \
     ArrayWithUnitsFeature, PackedArrayWithUnitsEncoder, ArrayWithUnitsEncoder
+import json
+from zounds.timeseries import ConstantRateTimeSeries
+from zounds.persistence import TimeSliceEncoder, TimeSliceDecoder
+import threading
 
 
 class Contiguous(Node):
@@ -83,7 +87,7 @@ class PackedHammingDistanceScorer(Scorer):
 
     def score(self, query):
         return packed_hamming_distance(
-                query.view(np.uint64), self.contiguous.view(np.uint64))
+            query.view(np.uint64), self.contiguous.view(np.uint64))
 
 
 class TimeSliceBuilder(object):
@@ -150,23 +154,23 @@ def hamming_index(document, feature, packed=True):
         encoder = ff.PackedNumpyEncoder if packed else ff.NumpyEncoder
     else:
         raise ValueError(
-                'feature must be either constant or variable rate timeseries')
+            'feature must be either constant or variable rate timeseries')
 
     class Index(ff.BaseModel):
         codes = ff.Feature(
-                ff.IteratorNode,
-                store=False)
+            ff.IteratorNode,
+            store=False)
 
         contiguous = feat(
-                Contiguous,
-                needs=codes,
-                encoder=encoder,
-                store=True)
+            Contiguous,
+            needs=codes,
+            encoder=encoder,
+            store=True)
 
         offsets = ff.PickleFeature(
-                Offsets,
-                needs=codes,
-                store=True)
+            Offsets,
+            needs=codes,
+            store=True)
 
         def __init__(self):
             super(Index, self).__init__()
@@ -177,12 +181,12 @@ def hamming_index(document, feature, packed=True):
                 self._slice_builder = ConstantRateTimeSliceBuilder(self)
             else:
                 self._slice_builder = VariableRateTimeSliceBuilder(
-                        self,
-                        lambda x: feature(_id=x, persistence=document).slices)
-            self._search = Search(
                     self,
-                    scorer=self._scorer,
-                    time_slice_builder=self._slice_builder)
+                    lambda x: feature(_id=x, persistence=document).slices)
+            self._search = Search(
+                self,
+                scorer=self._scorer,
+                time_slice_builder=self._slice_builder)
 
         def decode_query(self, binary_query):
             return self._search.decode_query(binary_query)
@@ -202,3 +206,62 @@ def hamming_index(document, feature, packed=True):
             cls.process(codes=iterator)
 
     return Index
+
+
+class HammingIndex(object):
+    # TODO: Must remember last position
+    def __init__(self, event_log, hamming_db, feature, document):
+        super(HammingIndex, self).__init__()
+        self.document = document
+        self.feature = feature
+        self.hamming_db = hamming_db
+        self.event_log = event_log
+        self.encoder = TimeSliceEncoder()
+        self.decoder = TimeSliceDecoder()
+        self.thread = None
+
+    def listen(self):
+        self.thread = threading.Thread(target=self._listen)
+        self.thread.daemon = True
+        self.thread.start()
+
+    def _listen(self):
+        # TODO: Must remember last position
+        for timestamp, data in self.event_log.subscribe():
+
+            # parse the data from the event stream
+            data = json.loads(data)
+            _id, name = data['_id'], data['name']
+
+            # ensure that it's about the feature we're subscribed to
+            if name != self.feature.key:
+                continue
+
+            # load the feature from the feature database
+            feature = self.feature(_id=_id, persistence=self.document)
+
+            try:
+                arr = ConstantRateTimeSeries(feature)
+            except ValueError:
+                arr = feature
+
+            # extract codes and timeslices from the feature
+            for ts, data in arr.iter_slices():
+                code = np.packbits(data).tostring()
+                encoded_ts = dict(
+                    _id=_id,
+                    **self.encoder.dict(ts))
+                self.hamming_db.append(code, json.dumps(encoded_ts))
+
+    def random_query(self):
+        raise NotImplementedError()
+
+    def random_search(self):
+        raise NotImplementedError()
+
+    def search(self, feature, n_results, multithreaded=False):
+        code = np.packbits(feature).tostring()
+        for result in self.hamming_db.search(code, n_results, multithreaded):
+            d = json.loads(result)
+            ts = TimeSlice(**self.decoder.kwargs(d))
+            yield d['_id'], ts
