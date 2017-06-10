@@ -253,15 +253,16 @@ class HammingIndex(object):
                     **self.encoder.dict(ts))
                 self.hamming_db.append(code, json.dumps(encoded_ts))
 
-    def random_query(self):
-        raise NotImplementedError()
+    def _parse_result(self, result):
+        d = json.loads(result)
+        ts = TimeSlice(**self.decoder.kwargs(d))
+        return d['_id'], ts
 
-    def random_search(self):
-        raise NotImplementedError()
+    def random_search(self, n_results, multithreaded=False):
+        for result in self.hamming_db.random_search(n_results, multithreaded):
+            yield self._parse_result(result)
 
     def search(self, feature, n_results, multithreaded=False):
         code = np.packbits(feature).tostring()
         for result in self.hamming_db.search(code, n_results, multithreaded):
-            d = json.loads(result)
-            ts = TimeSlice(**self.decoder.kwargs(d))
-            yield d['_id'], ts
+            yield self._parse_result(result)
