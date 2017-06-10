@@ -2,9 +2,6 @@ import numpy as np
 from duration import Picoseconds, Seconds
 from samplerate import SampleRate
 from zounds.core import Dimension
-import struct
-from io import BytesIO
-import re
 
 
 class TimeSlice(object):
@@ -85,44 +82,6 @@ class TimeSlice(object):
 
     def __str__(self):
         return self.__repr__()
-
-    DTYPE_RE = re.compile(r'\[(?P<dtype>[^\]]+)\]')
-
-    def encode(self):
-        start_dtype = self.DTYPE_RE.search(str(self.start.dtype))\
-            .groupdict()['dtype']
-        l_start_dtype = len(start_dtype)
-
-        duration_dtype = self.DTYPE_RE.search(str(self.duration.dtype))\
-            .groupdict()['dtype']
-        l_duration_dtype = len(duration_dtype)
-
-        start = self.start.astype(np.uint64).tostring()
-        duration = self.duration.astype(np.uint64).tostring()
-        fmt_str = 'B{start_len}sB{duration_len}s8s8s'.format(
-            start_len=l_start_dtype, duration_len=l_duration_dtype)
-        packed = struct.pack(
-            fmt_str,
-            l_start_dtype,
-            start_dtype,
-            l_duration_dtype,
-            duration_dtype,
-            start,
-            duration)
-        return packed
-
-    @classmethod
-    def decode(cls, encoded):
-        bio = BytesIO(encoded)
-        slen = struct.unpack('B', bio.read(1))[0]
-        start_dtype = bio.read(slen)
-        dlen = struct.unpack('B', bio.read(1))[0]
-        duration_dtype = bio.read(dlen)
-        leftovers = bio.read(16)
-        start_and_duration = np.fromstring(leftovers, dtype=np.uint64)
-        std = np.timedelta64(long(start_and_duration[0]), start_dtype)
-        dtd = np.timedelta64(long(start_and_duration[1]), duration_dtype)
-        return TimeSlice(start=std, duration=dtd)
 
 
 class TimeDimension(Dimension):
