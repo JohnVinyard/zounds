@@ -26,6 +26,20 @@ class ConvenienceClassTests(unittest2.TestCase):
         self.assertEqual(Seconds(1), Milliseconds(1000))
 
 
+class TimeSliceEncodeDecodeTests(unittest2.TestCase):
+
+    def _roundtrip(self, ts):
+        encoded = ts.encode()
+        decoded = TimeSlice.decode(encoded)
+        self.assertEqual(ts, decoded)
+
+    def test_can_roundtrip(self):
+        self._roundtrip(TimeSlice(start=Seconds(1), duration=Seconds(1)))
+
+    def test_can_roundtrip_milliseconds(self):
+        self._roundtrip(TimeSlice(start=Seconds(1), duration=Milliseconds(250)))
+
+
 class TimeSliceTests(unittest2.TestCase):
     def test_can_repr_empty_slice(self):
         r = repr(TimeSlice())

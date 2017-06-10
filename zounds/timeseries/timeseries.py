@@ -2,6 +2,9 @@ import numpy as np
 from duration import Picoseconds, Seconds
 from samplerate import SampleRate
 from zounds.core import Dimension
+import struct
+from io import BytesIO
+import re
 
 
 class TimeSlice(object):
@@ -10,11 +13,11 @@ class TimeSlice(object):
 
         if duration is not None and not isinstance(duration, np.timedelta64):
             raise ValueError('duration must be of type {t} but was {t2}'.format(
-                    t=np.timedelta64, t2=duration.__class__))
+                t=np.timedelta64, t2=duration.__class__))
 
         if start is not None and not isinstance(start, np.timedelta64):
             raise ValueError('start must be of type {t} but was {t2}'.format(
-                    t=np.timedelta64, t2=start.__class__))
+                t=np.timedelta64, t2=start.__class__))
 
         self.duration = duration
         self.start = start or Picoseconds(0)
@@ -55,8 +58,8 @@ class TimeSlice(object):
 
     def __and__(self, other):
         delta = max(
-                Picoseconds(0),
-                min(self.end, other.end) - max(self.start, other.start))
+            Picoseconds(0),
+            min(self.end, other.end) - max(self.start, other.start))
         return TimeSlice(delta)
 
     def __contains__(self, other):
@@ -76,12 +79,50 @@ class TimeSlice(object):
     def __repr__(self):
         dur = self.duration / Seconds(1) if self.duration is not None else None
         return '{cls}(start = {start}, duration = {duration})'.format(
-                cls=self.__class__.__name__,
-                start=self.start / Seconds(1),
-                duration=dur)
+            cls=self.__class__.__name__,
+            start=self.start / Seconds(1),
+            duration=dur)
 
     def __str__(self):
         return self.__repr__()
+
+    DTYPE_RE = re.compile(r'\[(?P<dtype>[^\]]+)\]')
+
+    def encode(self):
+        start_dtype = self.DTYPE_RE.search(str(self.start.dtype))\
+            .groupdict()['dtype']
+        l_start_dtype = len(start_dtype)
+
+        duration_dtype = self.DTYPE_RE.search(str(self.duration.dtype))\
+            .groupdict()['dtype']
+        l_duration_dtype = len(duration_dtype)
+
+        start = self.start.astype(np.uint64).tostring()
+        duration = self.duration.astype(np.uint64).tostring()
+        fmt_str = 'B{start_len}sB{duration_len}s8s8s'.format(
+            start_len=l_start_dtype, duration_len=l_duration_dtype)
+        packed = struct.pack(
+            fmt_str,
+            l_start_dtype,
+            start_dtype,
+            l_duration_dtype,
+            duration_dtype,
+            start,
+            duration)
+        return packed
+
+    @classmethod
+    def decode(cls, encoded):
+        bio = BytesIO(encoded)
+        slen = struct.unpack('B', bio.read(1))[0]
+        start_dtype = bio.read(slen)
+        dlen = struct.unpack('B', bio.read(1))[0]
+        duration_dtype = bio.read(dlen)
+        leftovers = bio.read(16)
+        start_and_duration = np.fromstring(leftovers, dtype=np.uint64)
+        std = np.timedelta64(long(start_and_duration[0]), start_dtype)
+        dtd = np.timedelta64(long(start_and_duration[1]), duration_dtype)
+        return TimeSlice(start=std, duration=dtd)
 
 
 class TimeDimension(Dimension):
@@ -90,11 +131,11 @@ class TimeDimension(Dimension):
         self.size = size
         if not isinstance(frequency, np.timedelta64):
             raise ValueError('duration must be of type {t} but was {t2}'.format(
-                    t=np.timedelta64, t2=frequency.__class__))
+                t=np.timedelta64, t2=frequency.__class__))
 
         if duration is not None and not isinstance(duration, np.timedelta64):
             raise ValueError('start must be of type {t} but was {t2}'.format(
-                    t=np.timedelta64, t2=duration.__class__))
+                t=np.timedelta64, t2=duration.__class__))
         self.duration = duration or frequency
         self.frequency = frequency
 
@@ -138,8 +179,8 @@ class TimeDimension(Dimension):
     def modified_dimension(self, size, windowsize, stepsize=None):
         stepsize = stepsize or windowsize
         yield TimeDimension(
-                self.frequency * stepsize,
-                (self.frequency * windowsize) + self.overlap)
+            self.frequency * stepsize,
+            (self.frequency * windowsize) + self.overlap)
         yield self
 
     def metaslice(self, index, size):
