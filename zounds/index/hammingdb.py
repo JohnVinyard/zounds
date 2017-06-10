@@ -67,7 +67,6 @@ class HammingDb(object):
         self._codes = Growable(self._recarray(int(1e6)))
 
     def _np_code(self, code):
-        # return np.fromstring(code, dtype=np.uint64)
         self._code_bytearray[:] = code
         return self._code_buffer
 
@@ -89,16 +88,29 @@ class HammingDb(object):
         if self.__len__() != self._codes.logical_size:
             self._catch_up_on_in_memory_store()
 
+    def _new_id(self):
+        return binascii.hexlify(os.urandom(16))
+
     def append(self, code, data):
         self._validate_code_size(code)
         self._initialize_in_memory_store()
-        # self._check_for_external_modifications()
 
         with self.env.begin(write=True) as txn:
-            # _id = uuid.uuid4().hex
-            _id = binascii.hexlify(os.urandom(16))
+            _id = self._new_id()
             txn.put(_id, code + data)
             self._add_code(_id, code)
+
+    def _random_code(self):
+        with self.env.begin() as txn:
+            with txn.cursor() as cursor:
+                code = None
+                while not code:
+                    if cursor.set_range(self._new_id()):
+                        return txn.get(cursor.key())[:self.code_size    ]
+                    continue
+
+    def random_search(self, n_results, multithreaded=False):
+        return self.search(self._random_code(), n_results, multithreaded)
 
     def search(self, code, n_results, multithreaded=False):
         self._validate_code_size(code)

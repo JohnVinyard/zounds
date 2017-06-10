@@ -3,6 +3,7 @@ from hammingdb import HammingDb
 from uuid import uuid4
 import shutil
 import numpy as np
+import os
 
 
 class HammingDbTests(unittest2.TestCase):
@@ -27,9 +28,12 @@ class HammingDbTests(unittest2.TestCase):
         except OSError:
             pass
 
-    @unittest2.skip
     def test_can_get_random_entry(self):
-        self.fail('should be able to fetch random entry from database')
+        db = HammingDb(self._path, code_size=16)
+        for i in xrange(100):
+            db.append(os.urandom(16), str(i))
+        results = list(db.random_search(10))
+        self.assertEqual(10, len(results))
 
     def test_can_create_database_with_128_bit_codes(self):
         db = HammingDb(self._path, code_size=16)
