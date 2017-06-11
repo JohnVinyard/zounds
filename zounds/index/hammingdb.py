@@ -24,6 +24,9 @@ class HammingDb(object):
         if code_size % 8:
             raise ValueError('code_size must be a multiple of 8')
 
+        self.metadata = self.env.open_db('metadata')
+        self.index = self.env.open_db('index')
+
         self._append_buffer = self._recarray(1)
         self._code_bytearray = bytearray('a' * self.code_size)
         self._code_buffer = np.frombuffer(self._code_bytearray, dtype=np.uint64)
@@ -34,10 +37,18 @@ class HammingDb(object):
         self._thread_count = cpu_count()
         self._pool = ThreadPool(processes=self._thread_count)
 
+    def set_metadata(self, key, value):
+        with self.env.begin(write=True) as txn:
+            txn.put(key, value, db=self.metadata)
+
+    def get_metadata(self, key):
+        with self.env.begin() as txn:
+            return txn.get(key, db=self.metadata)
+
     def _catch_up_on_in_memory_store(self):
         self._initialize_in_memory_store()
         with self.env.begin() as txn:
-            cursor = txn.cursor()
+            cursor = txn.cursor(db=self.index)
             for i, bundle in enumerate(cursor.iternext(keys=True, values=True)):
                 _id, value = bundle
                 if _id in self._ids:
@@ -48,7 +59,7 @@ class HammingDb(object):
 
     def __len__(self):
         with self.env.begin() as txn:
-            lmdb_size = txn.stat()['entries']
+            lmdb_size = txn.stat(self.index)['entries']
             if not lmdb_size:
                 return 0
             return lmdb_size
@@ -97,20 +108,22 @@ class HammingDb(object):
 
         with self.env.begin(write=True) as txn:
             _id = self._new_id()
-            txn.put(_id, code + data)
+            txn.put(_id, code + data, db=self.index)
             self._add_code(_id, code)
 
     def _random_code(self):
         with self.env.begin() as txn:
-            with txn.cursor() as cursor:
+            with txn.cursor(self.index) as cursor:
                 code = None
                 while not code:
                     if cursor.set_range(self._new_id()):
-                        return txn.get(cursor.key())[:self.code_size    ]
+                        return txn.get(
+                            cursor.key(), db=self.index)[:self.code_size]
                     continue
 
     def random_search(self, n_results, multithreaded=False):
-        return self.search(self._random_code(), n_results, multithreaded)
+        code = self._random_code()
+        return code, self.search(code, n_results, multithreaded)
 
     def search(self, code, n_results, multithreaded=False):
         self._validate_code_size(code)
@@ -137,4 +150,4 @@ class HammingDb(object):
         nearest = self._codes.logical_data[indices]['id']
         with self.env.begin() as txn:
             for _id in nearest:
-                yield txn.get(_id)[self.code_size:]
+                yield txn.get(_id, db=self.index)[self.code_size:]

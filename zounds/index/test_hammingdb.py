@@ -28,11 +28,22 @@ class HammingDbTests(unittest2.TestCase):
         except OSError:
             pass
 
+    def test_metadata_fetch_does_not_raise_when_unitialized(self):
+        db = HammingDb(self._path, code_size=16)
+        v = db.get_metadata('cat')
+        self.assertEqual(None, v)
+
+    def test_can_set_and_get_metadata(self):
+        db = HammingDb(self._path, code_size=16)
+        db.set_metadata('cat', 'dog')
+        self.assertEqual('dog', db.get_metadata('cat'))
+
     def test_can_get_random_entry(self):
         db = HammingDb(self._path, code_size=16)
         for i in xrange(100):
             db.append(os.urandom(16), str(i))
-        results = list(db.random_search(10))
+        code, results = db.random_search(10)
+        results = list(results)
         self.assertEqual(10, len(results))
 
     def test_can_create_database_with_128_bit_codes(self):

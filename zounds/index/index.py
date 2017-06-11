@@ -35,30 +35,41 @@ class Offsets(Aggregator, Node):
         self._offset += len(data)
 
 
+# class SearchResults(object):
+#     def __init__(self, query, offsets, indices, time_slice_builder):
+#         super(SearchResults, self).__init__()
+#         self.query = query
+#         self._indices = indices
+#         self._time_slice_builder = time_slice_builder
+#         self._offsets = offsets
+#
+#     @staticmethod
+#     def _bisect(l, x):
+#         i = bisect_left(l, x)
+#         if i == len(l):
+#             return len(l) - 1
+#         if x < l[i]:
+#             i -= 1
+#         return i
+#
+#     def __iter__(self):
+#         _ids, positions = self._offsets
+#         for i in self._indices:
+#             start_index = self._bisect(positions, i)
+#             diff = i - positions[start_index]
+#             _id = _ids[start_index]
+#             yield _id, self._time_slice_builder.build(_id, diff)
+
+
 class SearchResults(object):
-    def __init__(self, query, offsets, indices, time_slice_builder):
+    def __init__(self, query, results):
         super(SearchResults, self).__init__()
         self.query = query
-        self._indices = indices
-        self._time_slice_builder = time_slice_builder
-        self._offsets = offsets
-
-    @staticmethod
-    def _bisect(l, x):
-        i = bisect_left(l, x)
-        if i == len(l):
-            return len(l) - 1
-        if x < l[i]:
-            i -= 1
-        return i
+        self.results = results
 
     def __iter__(self):
-        _ids, positions = self._offsets
-        for i in self._indices:
-            start_index = self._bisect(positions, i)
-            diff = i - positions[start_index]
-            _id = _ids[start_index]
-            yield _id, self._time_slice_builder.build(_id, diff)
+        for result in self.results:
+            yield result
 
 
 class Scorer(object):
@@ -209,7 +220,7 @@ def hamming_index(document, feature, packed=True):
 
 
 class HammingIndex(object):
-    # TODO: Must remember last position
+
     def __init__(self, event_log, hamming_db, feature, document):
         super(HammingIndex, self).__init__()
         self.document = document
@@ -226,8 +237,10 @@ class HammingIndex(object):
         self.thread.start()
 
     def _listen(self):
-        # TODO: Must remember last position
-        for timestamp, data in self.event_log.subscribe():
+        last_timestamp = self.hamming_db.get_metadata('timestamp') or ''
+        subscription = self.event_log.subscribe(last_id=last_timestamp)
+
+        for timestamp, data in subscription:
 
             # parse the data from the event stream
             data = json.loads(data)
@@ -252,6 +265,7 @@ class HammingIndex(object):
                     _id=_id,
                     **self.encoder.dict(ts))
                 self.hamming_db.append(code, json.dumps(encoded_ts))
+                self.hamming_db.set_metadata('timestamp', bytes(timestamp))
 
     def _parse_result(self, result):
         d = json.loads(result)
@@ -259,10 +273,12 @@ class HammingIndex(object):
         return d['_id'], ts
 
     def random_search(self, n_results, multithreaded=False):
-        for result in self.hamming_db.random_search(n_results, multithreaded):
-            yield self._parse_result(result)
+        code, raw_results = self.hamming_db.random_search(n_results, multithreaded)
+        parsed_results = (self._parse_result(r) for r in raw_results)
+        return SearchResults(code, parsed_results)
 
     def search(self, feature, n_results, multithreaded=False):
         code = np.packbits(feature).tostring()
-        for result in self.hamming_db.search(code, n_results, multithreaded):
-            yield self._parse_result(result)
+        raw_results = self.hamming_db.search(code, n_results, multithreaded)
+        parsed_results = (self._parse_result(r) for r in raw_results)
+        return SearchResults(code, parsed_results)
