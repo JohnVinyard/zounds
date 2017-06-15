@@ -266,7 +266,7 @@ class OnsetsSerializer(AudioSliceSerializer):
         return isinstance(context.feature, TimeSliceFeature)
 
     def iter_results(self, context):
-        for ts in context.value:
+        for ts in context.value.slices:
             yield ts, context.document._id
 
 

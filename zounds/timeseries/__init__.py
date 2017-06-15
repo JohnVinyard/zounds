@@ -9,6 +9,8 @@ from samplerate import \
 
 from timeseries import TimeSlice, TimeDimension
 
-from variablerate import VariableRateTimeSeries, VariableRateTimeSeriesFeature
+from variablerate import \
+    VariableRateTimeSeries, VariableRateTimeSeriesFeature, \
+    VariableRateTimeSeriesEncoder, VariableRateTimeSeriesDecoder
 
 from constantrate import ConstantRateTimeSeries

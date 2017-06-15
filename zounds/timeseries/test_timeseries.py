@@ -27,6 +27,21 @@ class ConvenienceClassTests(unittest2.TestCase):
 
 
 class TimeSliceTests(unittest2.TestCase):
+
+    def test_can_produce_time_slice_iterable_from_timestamps(self):
+        slices = TimeSlice.slices([
+            Seconds(1),
+            Milliseconds(1),
+            Seconds(2)
+        ])
+        self.assertEqual(2, len(slices))
+        self.assertEqual(
+            TimeSlice(start=Milliseconds(1), duration=Milliseconds(999)),
+            slices[0])
+        self.assertEqual(
+            TimeSlice(start=Seconds(1), duration=Seconds(1)),
+            slices[1])
+
     def test_can_repr_empty_slice(self):
         r = repr(TimeSlice())
         self.assertIsNotNone(r)

@@ -19,6 +19,12 @@ class TimeSlice(object):
         self.duration = duration
         self.start = start or Picoseconds(0)
 
+    @classmethod
+    def slices(cls, timestamps):
+        srt = np.sort(timestamps)
+        diff = np.diff(srt)
+        return [TimeSlice(start=s, duration=d) for s, d in zip(srt, diff)]
+
     def __add__(self, other):
         return TimeSlice(self.duration, start=self.start + other)
 
@@ -60,7 +66,6 @@ class TimeSlice(object):
         return TimeSlice(delta)
 
     def __contains__(self, other):
-        print other
         if isinstance(other, np.timedelta64):
             return self.start < other < self.end
         if isinstance(other, TimeSlice):

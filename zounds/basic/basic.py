@@ -37,24 +37,19 @@ class Merge(Node):
             raise NotEnoughData()
         shortest = min(len(v) for v in self._cache.itervalues())
         output = OrderedDict(
-                (k, v[:shortest]) for k, v in self._cache.iteritems())
+            (k, v[:shortest]) for k, v in self._cache.iteritems())
         self._cache = OrderedDict(
-                (k, v[shortest:]) for k, v in self._cache.iteritems())
+            (k, v[shortest:]) for k, v in self._cache.iteritems())
         return output
 
     def _process(self, data):
         yield ArrayWithUnits.concat(data.values(), axis=1)
 
 
-# KLUDGE: This implementation may currently only be used when consuming
-# from a stored SparseTimeSliceFeature.  If it is run during initial computation,
-# it will receive only timestamps, and the logic will break.  This is a bug
-# in the BasePeakPicker class that needs to be fixed.  It should emit
-# timeslices, and not timestamps
 class Pooled(Node):
     def __init__(self, op=None, axis=None, needs=None):
         super(Pooled, self).__init__(needs=needs)
-        self._timeslices = []
+        self._timeslices = VariableRateTimeSeries(())
         self._timeseries = None
         self._op = op
         self._axis = axis
@@ -62,11 +57,11 @@ class Pooled(Node):
     def _enqueue(self, data, pusher):
         if isinstance(data, ArrayWithUnits):
             try:
-                self._timeseries.concatenate(data)
+                self._timeseries = self._timeseries.concatenate(data)
             except AttributeError:
                 self._timeseries = data
         else:
-            self._timeslices.extend(data)
+            self._timeslices = self._timeslices.concat(data)
 
     def _dequeue(self):
         if not self._finalized:
@@ -74,14 +69,11 @@ class Pooled(Node):
         return self._timeslices, self._timeseries
 
     def _process(self, data):
-        try:
-            slices, series = data
-            examples = [(ts, self._op(series[ts], axis=self._axis))
-                        for ts in slices]
-            yield VariableRateTimeSeries(examples)
-        except Exception as e:
-            print e
-            raise
+        slices, series = data
+        slices = slices.slices
+        examples = [(ts, self._op(series[ts], axis=self._axis))
+                    for ts in slices]
+        yield VariableRateTimeSeries(examples)
 
 
 class Slice(Node):

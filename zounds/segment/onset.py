@@ -1,10 +1,10 @@
-import struct
-
 import numpy as np
-from featureflow import Node, Feature, Decoder
+from featureflow import Node, Feature
 
 from zounds.nputil import safe_unit_norm
-from zounds.timeseries import TimeSlice, Picoseconds, TimeDimension
+from zounds.timeseries import \
+    TimeSlice, Picoseconds, TimeDimension, VariableRateTimeSeries, \
+    VariableRateTimeSeriesEncoder, VariableRateTimeSeriesDecoder
 from zounds.core import ArrayWithUnits
 
 
@@ -124,31 +124,39 @@ class Flux(Node):
         diff = np.diff(data, axis=0)
 
         yield ArrayWithUnits(
-                np.linalg.norm(diff, axis=-1), data.dimensions)
+            np.linalg.norm(diff, axis=-1), data.dimensions)
 
 
 class BasePeakPicker(Node):
     def __init__(self, needs=None):
         super(BasePeakPicker, self).__init__(needs=needs)
         self._pos = Picoseconds(0)
+        self._leftover_timestamp = self._pos
 
     def _onset_indices(self, data):
         raise NotImplementedError()
 
     def _last_chunk(self):
-        yield self._pos
+        yield VariableRateTimeSeries((
+            (TimeSlice(
+             start=self._leftover_timestamp,
+             duration=self._pos - self._leftover_timestamp), np.zeros(0)),
+        ))
 
     def _process(self, data):
         td = data.dimensions[0]
         frequency = td.frequency
 
-        if self._pos == Picoseconds(0):
-            yield self._pos
-
         indices = self._onset_indices(data)
         timestamps = self._pos + (indices * frequency)
         self._pos += len(data) * frequency
-        yield timestamps
+
+        timestamps = [self._leftover_timestamp] + list(timestamps)
+        self._leftover_timestamp = timestamps[-1]
+
+        time_slices = TimeSlice.slices(timestamps)
+        vrts = VariableRateTimeSeries([(ts, np.zeros(0)) for ts in time_slices])
+        yield vrts
 
 
 class MovingAveragePeakPicker(BasePeakPicker):
@@ -172,77 +180,6 @@ class MovingAveragePeakPicker(BasePeakPicker):
         return np.where(peaks & over_thresh)[0]
 
 
-class SparseTimestampEncoder(Node):
-    content_type = 'application/octet-stream'
-
-    def __init__(self, needs=None):
-        super(SparseTimestampEncoder, self).__init__(needs=needs)
-        # TODO: Add a class (mixin) in the flow library for this pattern where
-        # the _process implementarion changes depending on whether it's the first
-        # call or a subsequent one
-        self._initialized = False
-
-    def _process(self, data):
-        if not self._initialized:
-            sd = str(data.dtype)
-            yield struct.pack('B', len(sd))
-            yield sd
-            self._initialized = True
-
-        yield data.astype(np.uint64).tostring()
-
-
-# TODO: Encode/decode tests
-# TODO: Should PeakPicker always emit the *end* of the timeseries, so that the
-# final timeslice can be produced correctly?
-class SparseTimestampDecoder(Decoder):
-    def __init__(self):
-        super(SparseTimestampDecoder, self).__init__()
-
-    def __call__(self, flo):
-        dtype_len = struct.unpack('B', flo.read(1))[0]
-        dtype = np.dtype(flo.read(dtype_len))
-        data = np.fromstring(flo.read(), dtype=np.uint64)
-        return np.array(data, dtype=dtype)
-
-    def __iter__(self, flo):
-        yield self(flo)
-
-
-class TimeSliceDecoder(SparseTimestampDecoder):
-    def __init__(self):
-        super(TimeSliceDecoder, self).__init__()
-
-    def __call__(self, flo):
-        timestamps = super(TimeSliceDecoder, self).__call__(flo)
-        durations = np.diff(timestamps)
-        slices = [TimeSlice(d, s) for s, d in zip(timestamps, durations)]
-        return slices
-
-    def __iter__(self, flo):
-        yield self(flo)
-
-
-class SparseTimestampFeature(Feature):
-    def __init__(
-            self,
-            extractor,
-            needs=None,
-            store=False,
-            key=None,
-            encoder=SparseTimestampEncoder,
-            decoder=SparseTimestampDecoder(),
-            **extractor_args):
-        super(SparseTimestampFeature, self).__init__(
-                extractor,
-                needs=needs,
-                store=store,
-                encoder=encoder,
-                decoder=decoder,
-                key=key,
-                **extractor_args)
-
-
 class TimeSliceFeature(Feature):
     def __init__(
             self,
@@ -250,14 +187,14 @@ class TimeSliceFeature(Feature):
             needs=None,
             store=False,
             key=None,
-            encoder=SparseTimestampEncoder,
-            decoder=TimeSliceDecoder(),
+            encoder=VariableRateTimeSeriesEncoder,
+            decoder=VariableRateTimeSeriesDecoder(),
             **extractor_args):
         super(TimeSliceFeature, self).__init__(
-                extractor,
-                needs=needs,
-                store=store,
-                encoder=encoder,
-                decoder=decoder,
-                key=key,
-                **extractor_args)
+            extractor,
+            needs=needs,
+            store=store,
+            encoder=encoder,
+            decoder=decoder,
+            key=key,
+            **extractor_args)

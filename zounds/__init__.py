@@ -20,9 +20,8 @@ from spectral import \
     SpectralFlatness, AWeighting, LinearScale, LogScale, FrequencyBand, \
     FrequencyScale, FrequencyDimension
 
-from segment import \
-    MeasureOfTransience, MovingAveragePeakPicker, SparseTimestampDecoder, \
-    SparseTimestampEncoder, TimeSliceDecoder, TimeSliceFeature, ComplexDomain
+from segment import MeasureOfTransience, MovingAveragePeakPicker, \
+    ComplexDomain, TimeSliceFeature
 
 from synthesize import \
     FFTSynthesizer, DCTSynthesizer, TickSynthesizer, NoiseSynthesizer, \

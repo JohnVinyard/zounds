@@ -15,6 +15,7 @@ from zounds.util import simple_in_memory_settings
 
 
 class VariableRateTimeSeriesFeatureTests(unittest2.TestCase):
+
     def test_can_encode_and_decode_variable_rate_time_Series(self):
 
         class TimestampEmitter(ff.Node):
@@ -25,10 +26,12 @@ class VariableRateTimeSeriesFeatureTests(unittest2.TestCase):
             def _process(self, data):
                 td = data.dimensions[0]
                 frequency = td.frequency
-
-                for i, d in enumerate(data):
-                    if random() > 0.9:
-                        yield self.pos + (i * frequency)
+                timestamps = [self.pos + (i * frequency)
+                        for i, d in enumerate(data)
+                        if random() > 0.9]
+                slices = TimeSlice.slices(timestamps)
+                yield VariableRateTimeSeries(
+                    (ts, np.zeros(0)) for ts in slices)
                 self.pos += frequency * len(data)
 
         graph = stft(store_fft=True)
@@ -57,6 +60,39 @@ class VariableRateTimeSeriesFeatureTests(unittest2.TestCase):
 
 
 class VariableRateTimeSeriesTests(unittest2.TestCase):
+
+    def test_can_concatenate_variable_rate_time_series(self):
+        ts1 = VariableRateTimeSeries((
+            (TimeSlice(start=Seconds(1), duration=Seconds(1)), np.zeros(10)),
+            (TimeSlice(start=Seconds(2), duration=Seconds(1)), np.zeros(10)),
+        ))
+        ts2 = VariableRateTimeSeries((
+            (TimeSlice(start=Seconds(1), duration=Seconds(1)), np.zeros(10)),
+            (TimeSlice(start=Seconds(2), duration=Seconds(1)), np.zeros(10)),
+        ))
+        ts3 = ts1.concat(ts2)
+        self.assertEqual(4, len(ts3))
+        self.assertEqual((4, 10), ts3.slicedata.shape)
+
+    def test_concat_fails_when_data_shape_is_mismatched(self):
+        ts1 = VariableRateTimeSeries((
+            (TimeSlice(start=Seconds(1), duration=Seconds(1)), np.zeros(10)),
+            (TimeSlice(start=Seconds(2), duration=Seconds(1)), np.zeros(10)),
+        ))
+        ts2 = VariableRateTimeSeries((
+            (TimeSlice(start=Seconds(1), duration=Seconds(1)), np.zeros(11)),
+            (TimeSlice(start=Seconds(2), duration=Seconds(1)), np.zeros(11)),
+        ))
+        self.assertRaises(ValueError, lambda: ts1.concat(ts2))
+
+    def test_can_create_instance_with_no_slice_data(self):
+        ts = VariableRateTimeSeries((
+            (TimeSlice(start=Seconds(1), duration=Seconds(1)), np.zeros(0)),
+            (TimeSlice(start=Seconds(2), duration=Seconds(1)), np.zeros(0)),
+        ))
+        self.assertEqual(2, len(ts))
+        self.assertEqual((2, 0), ts.slicedata.shape)
+
     def test_can_slice_time_series_with_time_slice(self):
         ts = VariableRateTimeSeries((
             (TimeSlice(start=Seconds(0), duration=Seconds(1)), np.zeros(10)),

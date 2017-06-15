@@ -19,3 +19,4 @@ class TimeSliceDecoder(object):
         return dict(
             start=decode_timedelta(d['start']),
             duration=decode_timedelta(d['duration']))
+
