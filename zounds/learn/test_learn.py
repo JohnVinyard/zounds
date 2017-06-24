@@ -4,7 +4,6 @@ from random_samples import ReservoirSampler
 from preprocess import \
     UnitNorm, MeanStdNormalization, PreprocessingPipeline, Pipeline
 from learn import LinearRbm, Learned
-from zounds.util import simple_in_memory_settings
 import numpy as np
 
 

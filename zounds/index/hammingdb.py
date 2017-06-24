@@ -11,6 +11,9 @@ class HammingDb(object):
     def __init__(self, path, map_size=1000000000, code_size=8):
         super(HammingDb, self).__init__()
 
+        if not os.path.exists(path):
+            os.makedirs(path)
+
         self.code_size = code_size
         self.path = path
         self.env = lmdb.open(

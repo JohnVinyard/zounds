@@ -1,4 +1,4 @@
-from basic import Slice, Sum, Max, Pooled
+from basic import Slice, Sum, Max, Pooled, Binarize
 
 from util import process_dir
 

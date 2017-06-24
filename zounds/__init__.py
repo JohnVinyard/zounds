@@ -35,10 +35,7 @@ from learn import \
 
 from ui import ZoundsApp, ZoundsSearch, RangeUnitUnsupportedException
 
-from index import \
-    Contiguous, Offsets, HammingDistanceScorer, PackedHammingDistanceScorer, \
-    ConstantRateTimeSliceBuilder, VariableRateTimeSliceBuilder, Search, \
-    SearchResults, hamming_index, HammingDb, HammingIndex
+from index import SearchResults, HammingDb, HammingIndex
 
 from basic import \
     Slice, Sum, Max, Pooled, process_dir, stft, audio_graph, with_onsets, resampled

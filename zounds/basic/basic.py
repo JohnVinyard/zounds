@@ -117,3 +117,12 @@ class Max(Node):
             data = data
         if data.shape[0]:
             yield data
+
+
+class Binarize(Node):
+    def __init__(self, predicate=None, needs=None):
+        super(Binarize, self).__init__(needs=needs)
+        self.predicate = predicate
+
+    def _process(self, data):
+        yield self.predicate(data)

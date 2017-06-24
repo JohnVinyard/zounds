@@ -87,6 +87,15 @@ class ContrivedArray(ArrayWithUnits):
 
 class CoreTests(unittest2.TestCase):
 
+    def test_maintain_array_with_units_with_boolean_condition(self):
+        arr = ArrayWithUnits(
+            np.random.random_sample((10, 100)) - 0.5,
+            [ContrivedDimension(10), ContrivedDimension2(10)])
+        binary = arr >= 0
+        self.assertIsInstance(binary, ArrayWithUnits)
+        self.assertIsInstance(arr.dimensions[0], ContrivedDimension)
+        self.assertIsInstance(arr.dimensions[1], ContrivedDimension2)
+
     def test_can_reshape_and_downgrade_to_numpy_array(self):
         arr = ArrayWithUnits(
             np.zeros((100, 10)),
