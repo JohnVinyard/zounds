@@ -5,6 +5,8 @@ from io import BytesIO
 from soundfile import SoundFile
 import tempfile
 import requests
+import zipfile
+import featureflow
 
 
 def soundfile(hz=440, seconds=5., sr=44100., flo=None):

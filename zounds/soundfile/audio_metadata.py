@@ -5,7 +5,7 @@ import requests
 import json
 import io
 from urlparse import urlparse
-
+import featureflow as ff
 
 class AudioMetaData(object):
     def __init__(
@@ -48,7 +48,7 @@ class AudioMetaDataEncoder(Aggregator, Node):
     def _uri(self, uri):
         if isinstance(uri, requests.Request):
             return uri.url
-        elif isinstance(uri, io.BytesIO):
+        elif isinstance(uri, io.BytesIO) or isinstance(uri, ff.ZipWrapper):
             return None
         else:
             return uri
