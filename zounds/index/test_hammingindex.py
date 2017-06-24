@@ -38,6 +38,21 @@ class HammingIndexTests(unittest2.TestCase):
         index._synchronously_process_events()
         self.assertEqual(8, index.hamming_db.code_size)
 
+    def test_hamming_db_is_initialized_if_docs_exist(self):
+        Model = self._model(
+            slice_size=128,
+            settings=self._settings_with_event_log())
+
+        index = self._index(Model, Model.sliced)
+        signal = SineSynthesizer(SR11025()) \
+            .synthesize(Seconds(5), [220, 440, 880])
+        Model.process(meta=signal.encode())
+        index._synchronously_process_events()
+
+        index2 = self._index(Model, Model.sliced)
+        self.assertIsNotNone(index2.hamming_db)
+        self.assertEqual(16, index2.hamming_db.code_size)
+
     def test_correctly_infers_code_size_16(self):
         Model = self._model(
             slice_size=128,
@@ -49,6 +64,22 @@ class HammingIndexTests(unittest2.TestCase):
         Model.process(meta=signal.encode())
         index._synchronously_process_events()
         self.assertEqual(16, index.hamming_db.code_size)
+
+    def test_can_roundtrip_query(self):
+        Model = self._model(
+            slice_size=128,
+            settings=self._settings_with_event_log())
+
+        index = self._index(Model, Model.sliced)
+        signal = SineSynthesizer(SR11025()) \
+            .synthesize(Seconds(5), [220, 440, 880])
+        Model.process(meta=signal.encode())
+        index._synchronously_process_events()
+
+        results = index.random_search(n_results=5)
+        decoded = index.decode_query(results.query)
+        encoded = index.encode_query(decoded)
+        self.assertEqual(results.query, encoded)
 
     def correctly_infers_index_name(self):
         Model = self._model(

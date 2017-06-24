@@ -28,6 +28,20 @@ class HammingDbTests(unittest2.TestCase):
         except OSError:
             pass
 
+    def test_can_initialize_with_no_code_size_when_data_already_exists(self):
+        HammingDb(self._path, code_size=32)
+        db2 = HammingDb(self._path, code_size=None)
+        self.assertEqual(32, db2.code_size)
+
+    def test_raises_when_persisted_code_size_does_not_agree_with_init(self):
+        HammingDb(self._path, code_size=32)
+        self.assertRaises(
+            ValueError, lambda: HammingDb(self._path, code_size=16))
+
+    def test_raises_when_code_size_is_none_for_uninitialized_database(self):
+        self.assertRaises(
+            ValueError, lambda: HammingDb(self._path, code_size=None))
+
     def test_metadata_fetch_does_not_raise_when_unitialized(self):
         db = HammingDb(self._path, code_size=16)
         v = db.get_metadata('cat')

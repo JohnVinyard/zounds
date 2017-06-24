@@ -1,16 +1,15 @@
 import os
 from urlparse import urlparse
-import argparse
 import featureflow as ff
 import requests
 import zounds
 
 
 class Settings(ff.PersistenceSettings):
-    id_provider = ff.UuidProvider()
-    key_builder = ff.StringDelimitedKeyBuilder()
-    database = ff.LmdbDatabase(
-            path='timbre', map_size=1e10, key_builder=key_builder)
+    id_provider = ff.UserSpecifiedIdProvider('_id')
+    key_builder = ff.StringDelimitedKeyBuilder(seperator='|')
+    database = ff.LmdbDatabase(path='timbre', key_builder=key_builder)
+    event_log = ff.EventLog('timbre_events', channel=ff.InMemoryChannel())
 
 
 windowing = zounds.HalfLapped()
@@ -19,74 +18,66 @@ STFT = zounds.stft(resample_to=zounds.SR22050(), wscheme=windowing)
 
 class WithTimbre(STFT, Settings):
     bark = zounds.ArrayWithUnitsFeature(
-            zounds.BarkBands,
-            needs=STFT.fft,
-            store=True)
+        zounds.BarkBands,
+        needs=STFT.fft,
+        store=True)
 
     bfcc = zounds.ArrayWithUnitsFeature(
-            zounds.BFCC,
-            needs=bark,
-            store=True)
+        zounds.BFCC,
+        needs=bark,
+        store=True)
 
 
 @zounds.simple_settings
 class BfccKmeans(ff.BaseModel):
     docs = ff.Feature(
-            ff.IteratorNode,
-            store=False)
+        ff.IteratorNode,
+        store=False)
 
     shuffle = ff.NumpyFeature(
-            zounds.ReservoirSampler,
-            nsamples=1e6,
-            needs=docs,
-            store=True)
+        zounds.ReservoirSampler,
+        nsamples=1e6,
+        needs=docs,
+        store=True)
 
     unitnorm = ff.PickleFeature(
-            zounds.UnitNorm,
-            needs=shuffle,
-            store=False)
+        zounds.UnitNorm,
+        needs=shuffle,
+        store=False)
 
     kmeans = ff.PickleFeature(
-            zounds.KMeans,
-            centroids=128,
-            needs=unitnorm,
-            store=False)
+        zounds.KMeans,
+        centroids=128,
+        needs=unitnorm,
+        store=False)
 
     pipeline = ff.PickleFeature(
-            zounds.PreprocessingPipeline,
-            needs=(unitnorm, kmeans),
-            store=True)
+        zounds.PreprocessingPipeline,
+        needs=(unitnorm, kmeans),
+        store=True)
 
 
 class WithCodes(WithTimbre):
     bfcc_kmeans = zounds.ArrayWithUnitsFeature(
-            zounds.Learned,
-            learned=BfccKmeans(),
-            needs=WithTimbre.bfcc,
-            store=True)
+        zounds.Learned,
+        learned=BfccKmeans(),
+        needs=WithTimbre.bfcc,
+        store=True)
 
     sliding_bfcc_kmeans = zounds.ArrayWithUnitsFeature(
-            zounds.SlidingWindow,
-            needs=bfcc_kmeans,
-            wscheme=windowing * zounds.Stride(frequency=30, duration=30),
-            store=False)
+        zounds.SlidingWindow,
+        needs=bfcc_kmeans,
+        wscheme=windowing * zounds.Stride(frequency=30, duration=30),
+        store=False)
 
     bfcc_kmeans_pooled = zounds.ArrayWithUnitsFeature(
-            zounds.Max,
-            needs=sliding_bfcc_kmeans,
-            axis=1,
-            store=True)
+        zounds.Max,
+        needs=sliding_bfcc_kmeans,
+        axis=1,
+        store=True)
 
 
-BaseIndex = zounds.hamming_index(WithCodes, WithCodes.bfcc_kmeans_pooled)
-
-
-@zounds.simple_settings
-class BfccKmeansIndex(BaseIndex):
-    pass
-
-
-def build():
+def download_zip_archive():
     # Download the zip archive
     url = 'https://archive.org/download/FlavioGaete/FlavioGaete22.zip'
     filename = os.path.split(urlparse(url).path)[-1]
@@ -100,48 +91,43 @@ def build():
             for chunk in resp.iter_content(chunk_size=1000000):
                 f.write(chunk)
 
-    # stream all the audio files from the zip archive
-    print 'Processing Audio...'
-    for zf in ff.iter_zip(filename):
-        if '._' in zf.filename:
-            continue
-        print zf.filename
-        WithTimbre.process(meta=zf)
-
-    # learn k-means codes for the bfcc frames
-    print 'Learning K-Means clusters...'
-    BfccKmeans.process(docs=(wt.bfcc for wt in WithTimbre))
-
-    # build an index
-    print 'Building index...'
-    BfccKmeansIndex.build()
-
+    return filename
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-            '--build',
-            action='store_true',
-            help='Download audio and learn features')
-    parser.add_argument(
-            '--run',
-            action='store_true',
-            help='Run the service')
-    parser.add_argument(
-            '--port',
-            type=int,
-            help='The port to run the service on')
+    index = zounds.HammingIndex(
+        WithCodes, WithCodes.bfcc_kmeans_pooled, listen=True)
 
-    args = parser.parse_args()
-    if args.build:
-        build()
+    zip_filename = download_zip_archive()
 
-    if args.run:
-        index = BfccKmeansIndex()
-        app = zounds.ZoundsSearch(
-                model=WithTimbre,
-                audio_feature=WithTimbre.ogg,
-                visualization_feature=WithTimbre.bark,
-                search=index,
-                n_results=10)
-        app.start(args.port)
+    print 'Processing Audio...'
+    for zf in ff.iter_zip(zip_filename):
+
+        if '._' in zf.filename:
+            continue
+
+        try:
+            print 'processing {zf.filename}'.format(**locals())
+            WithTimbre.process(
+                _id=zf.filename, meta=zf, raise_if_exists=True)
+        except ValueError as e:
+            print e
+
+    # learn K-Means centroids
+    try:
+        print 'learning K-Means centroids'
+        BfccKmeans.process(
+            docs=(wt.bfcc for wt in WithTimbre), raise_if_exists=True)
+    except ValueError:
+        pass
+
+    # force the new features to be computed, so they're pushed into the index
+    for wc in WithCodes:
+        print wc.bfcc_kmeans_pooled
+
+    app = zounds.ZoundsSearch(
+        model=WithTimbre,
+        audio_feature=WithTimbre.ogg,
+        visualization_feature=WithTimbre.bark,
+        search=index,
+        n_results=10)
+    app.start(8888)

@@ -33,6 +33,8 @@ class HammingIndex(object):
         self.feature = feature
         self.db_size_bytes = db_size_bytes
         self.path = path
+        self.hamming_db_path = os.path.join(
+            self.path, 'index.{self.feature.key}'.format(**locals()))
 
         try:
             self.event_log = document.event_log
@@ -40,7 +42,11 @@ class HammingIndex(object):
             raise ValueError(
                 '{document} must have an event log configured'
                     .format(**locals()))
-        self.hamming_db = None
+
+        try:
+            self.hamming_db = HammingDb(self.hamming_db_path, code_size=None)
+        except ValueError:
+            self.hamming_db = None
 
         self.encoder = TimeSliceEncoder()
         self.decoder = TimeSliceDecoder()
@@ -57,11 +63,7 @@ class HammingIndex(object):
     def _init_hamming_db(self, code):
         if self.hamming_db is not None:
             return
-
-        path = os.path.join(
-            self.path, 'index.{self.feature.key}'.format(**locals()))
-
-        self.hamming_db = HammingDb(path, code_size=len(code))
+        self.hamming_db = HammingDb(self.hamming_db_path, code_size=len(code))
 
     def _synchronously_process_events(self):
         self._listen(raise_when_empty=True)
@@ -96,7 +98,7 @@ class HammingIndex(object):
 
             # extract codes and timeslices from the feature
             for ts, data in arr.iter_slices():
-                code = np.packbits(data).tostring()
+                code = self.encode_query(data)
                 encoded_ts = dict(
                     _id=_id,
                     **self.encoder.dict(ts))
@@ -109,6 +111,13 @@ class HammingIndex(object):
         ts = TimeSlice(**self.decoder.kwargs(d))
         return d['_id'], ts
 
+    def decode_query(self, binary_query):
+        packed = np.fromstring(binary_query, dtype=np.uint8)
+        return np.unpackbits(packed)
+
+    def encode_query(self, feature):
+        return np.packbits(feature).tostring()
+
     def random_search(self, n_results, multithreaded=False):
         code, raw_results = self.hamming_db.random_search(n_results,
                                                           multithreaded)
@@ -116,7 +125,7 @@ class HammingIndex(object):
         return SearchResults(code, parsed_results)
 
     def search(self, feature, n_results, multithreaded=False):
-        code = np.packbits(feature).tostring()
+        code = self.encode_query(feature)
         raw_results = self.hamming_db.search(code, n_results, multithreaded)
         parsed_results = (self._parse_result(r) for r in raw_results)
         return SearchResults(code, parsed_results)

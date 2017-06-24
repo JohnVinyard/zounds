@@ -63,7 +63,7 @@ class SlidingWindow(Node):
     def __init__(self, wscheme, wfunc=None, padwith=0, needs=None):
         super(SlidingWindow, self).__init__(needs=needs)
         self._scheme = wscheme
-        self._func = wfunc or IdentityWindowingFunc()
+        self._func = wfunc
         self._padwith = padwith
         self._cache = None
 

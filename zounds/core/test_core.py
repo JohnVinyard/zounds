@@ -530,6 +530,12 @@ class CoreTests(unittest2.TestCase):
         arr[0] = 1
         self.assertEqual(1, arr[0])
 
+    def test_sliding_window_maintains_dtype(self):
+        raw = np.zeros(10, dtype=np.uint8)
+        arr = ContrivedArray(raw, (ContrivedDimension(10),))
+        new_arr = arr.sliding_window((ContrivedSlice(0, 20),))
+        self.assertEqual(np.uint8, new_arr.dtype)
+
     def test_custom_dimension_is_maintained_for_sliding_window_1d(self):
         raw = np.zeros(10)
         arr = ContrivedArray(raw, (ContrivedDimension(10),))

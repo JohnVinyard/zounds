@@ -166,3 +166,22 @@ class SlidingWindowTests(unittest2.TestCase):
         self.assertIsInstance(result.dimensions[1], TimeDimension)
         self.assertEqual(Seconds(1), result.dimensions[1].frequency)
         self.assertIsInstance(result.dimensions[2], FrequencyDimension)
+
+    def test_sliding_window_maintains_dtype(self):
+        band = FrequencyBand(0, 22000)
+        scale = LinearScale(band, 100)
+        arr = ArrayWithUnits(
+            np.zeros((200, 100), dtype=np.uint8),
+            [TimeDimension(Seconds(1)), FrequencyDimension(scale)])
+        sw = SampleRate(Seconds(2), Seconds(2))
+
+        @simple_in_memory_settings
+        class Document(BaseModel):
+            windowed = ArrayWithUnitsFeature(
+                SlidingWindow,
+                wscheme=sw,
+                store=True)
+
+        _id = Document.process(windowed=arr)
+        result = Document(_id).windowed
+        self.assertEqual(np.uint8, result.dtype)

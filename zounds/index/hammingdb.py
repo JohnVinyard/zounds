@@ -14,7 +14,6 @@ class HammingDb(object):
         if not os.path.exists(path):
             os.makedirs(path)
 
-        self.code_size = code_size
         self.path = path
         self.env = lmdb.open(
             self.path,
@@ -24,12 +23,24 @@ class HammingDb(object):
             map_async=True,
             metasync=True)
 
-        if code_size % 8:
-            raise ValueError('code_size must be a multiple of 8')
-
         self.metadata = self.env.open_db('metadata')
-        self.index = self.env.open_db('index')
+        try:
+            self.code_size = int(self.get_metadata('codesize'))
+            if code_size and code_size != self.code_size:
+                raise ValueError(
+                    'Database is already initialized with code size {code_size}'
+                    ', but {self.code_size} was passed to __init__'
+                        .format(**locals()))
+        except TypeError:
+            if code_size is None:
+                raise ValueError(
+                    'You must supply a code size for an uninitialized database')
+            if code_size % 8:
+                raise ValueError('code_size must be a multiple of 8')
+            self.set_metadata('codesize', str(code_size))
+            self.code_size = code_size
 
+        self.index = self.env.open_db('index')
         self._append_buffer = self._recarray(1)
         self._code_bytearray = bytearray('a' * self.code_size)
         self._code_buffer = np.frombuffer(self._code_bytearray, dtype=np.uint64)

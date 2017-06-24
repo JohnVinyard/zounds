@@ -111,7 +111,7 @@ class Max(Node):
         # TODO: This should be generalized.  Sum will have this same problem
         try:
             # data = np.max(data, axis=self._axis)
-            data = data.sum(axis=self._axis)
+            data = data.max(axis=self._axis)
         except ValueError:
             print 'ERROR'
             data = data
