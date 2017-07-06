@@ -1,5 +1,6 @@
 import numpy as np
 from zounds.nputil import sliding_window, windowed
+from zounds.util import tuplify
 from dimensions import IdentityDimension
 import copy
 
@@ -82,23 +83,22 @@ class ArrayWithUnits(np.ndarray):
         result = super(ArrayWithUnits, self).max(
             axis=axis, out=out, keepdims=keepdims)
 
-        if keepdims:
-            return ArrayWithUnits(result, self.dimensions)
-
-        if isinstance(axis, int):
-            new_dims = list(self.dimensions)
-            new_dims.pop(axis)
-            return ArrayWithUnits(result, new_dims)
-        elif isinstance(axis, tuple):
-            axes = set(axis)
-            return ArrayWithUnits(
-                result,
-                [self.dimensions[i]
-                 for i in xrange(len(self.dimensions))
-                 if i not in axes])
-        else:
-            # we have a scalar
+        if axis is None:
+            # result is a scalar
             return result
+
+        axes = set(tuplify(axis))
+        new_dims = []
+        for i, d in enumerate(self.dimensions):
+
+            if i not in axes:
+                new_dims.append(d)
+                continue
+
+            if keepdims:
+                new_dims.append(IdentityDimension())
+
+        return ArrayWithUnits(result, new_dims)
 
     def dot(self, b):
         result = super(ArrayWithUnits, self).dot(b)
