@@ -78,12 +78,24 @@ class ArrayWithUnits(np.ndarray):
             # we have a scalar
             return result
 
-    def max(self, axis=None, out=None):
-        result = super(ArrayWithUnits, self).max(axis=axis, out=out)
-        if axis is not None:
+    def max(self, axis=None, out=None, keepdims=False):
+        result = super(ArrayWithUnits, self).max(
+            axis=axis, out=out, keepdims=keepdims)
+
+        if keepdims:
+            return ArrayWithUnits(result, self.dimensions)
+
+        if isinstance(axis, int):
             new_dims = list(self.dimensions)
             new_dims.pop(axis)
             return ArrayWithUnits(result, new_dims)
+        elif isinstance(axis, tuple):
+            axes = set(axis)
+            return ArrayWithUnits(
+                result,
+                [self.dimensions[i]
+                 for i in xrange(len(self.dimensions))
+                 if i not in axes])
         else:
             # we have a scalar
             return result

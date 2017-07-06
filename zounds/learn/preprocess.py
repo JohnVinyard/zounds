@@ -42,9 +42,9 @@ class Op(object):
     def __call__(self, arg, **kwargs):
         code = marshal.loads(self._func)
         f = types.FunctionType(
-                code,
-                globals(),
-                'preprocess')
+            code,
+            globals(),
+            'preprocess')
         kwargs.update(self._kwargs)
         return f(arg, **kwargs)
 
@@ -71,11 +71,11 @@ class PreprocessResult(object):
 
     def for_storage(self):
         return PreprocessResult(
-                None,
-                self.op,
-                self.inversion_data,
-                self.inverse,
-                self.name)
+            None,
+            self.op,
+            self.inversion_data,
+            self.inverse,
+            self.name)
 
 
 class Preprocessor(Node):
@@ -153,7 +153,7 @@ class UnitNorm(Preprocessor):
         def x(d):
             import numpy as np
             return dict(norm=np.linalg.norm(
-                    d.reshape((d.shape[0], -1)), axis=1))
+                d.reshape((d.shape[0], -1)), axis=1))
 
         return x
 
@@ -170,7 +170,7 @@ class UnitNorm(Preprocessor):
         inv = self.inverse_transform()
         data = op(data)
         yield PreprocessResult(
-                data, op, inversion_data=inv_data, inverse=inv, name='UnitNorm')
+            data, op, inversion_data=inv_data, inverse=inv, name='UnitNorm')
 
 
 class Log(Preprocessor):
@@ -180,6 +180,7 @@ class Log(Preprocessor):
 
     This transform will tend to compress the overall range of values
     """
+
     def __init__(self, needs=None):
         super(Log, self).__init__(needs=needs)
 
@@ -204,7 +205,7 @@ class Log(Preprocessor):
         inv = self.inverse_transform()
         data = op(data)
         yield PreprocessResult(
-                data, op, inversion_data=inv_data, inverse=inv, name='Log')
+            data, op, inversion_data=inv_data, inverse=inv, name='Log')
 
 
 class Slicer(Preprocessor):
@@ -250,11 +251,11 @@ class Slicer(Preprocessor):
         data = self._extract_data(data)
         op = self.transform(slicex=self.slicex)
         inv_data = self.inversion_data(
-                fill_func=self.fill_func, slicex=self.slicex)
+            fill_func=self.fill_func, slicex=self.slicex)
         inv = self.inverse_transform()
         data = op(data)
         yield PreprocessResult(
-                data, op, inversion_data=inv_data, inverse=inv, name='Slicer')
+            data, op, inversion_data=inv_data, inverse=inv, name='Slicer')
 
 
 class Flatten(Preprocessor):
@@ -286,7 +287,33 @@ class Flatten(Preprocessor):
         inv = self.inverse_transform()
         data = op(data)
         yield PreprocessResult(
-                data, op, inversion_data=inv_data, inverse=inv, name='Flatten')
+            data, op, inversion_data=inv_data, inverse=inv, name='Flatten')
+
+
+class ExpandDims(Preprocessor):
+    def __init__(self, needs=None):
+        super(ExpandDims, self).__init__(needs=needs)
+
+    def _forward_func(self):
+        def x(d):
+            return d[..., None]
+
+        return x
+
+    def _backward_func(self):
+        def x(d):
+            return d.reshape(d.shape[:-1])
+
+        return x
+
+    def _process(self, data):
+        data = self._extract_data(data)
+        op = self.transform()
+        inv_data = self.inversion_data()
+        inv = self.inverse_transform()
+        data = op(data)
+        yield PreprocessResult(
+            data, op, inversion_data=inv_data, inverse=inv, name='ExpandDims')
 
 
 class MeanStdNormalization(Preprocessor):
@@ -317,7 +344,49 @@ class MeanStdNormalization(Preprocessor):
         inv = self.inverse_transform()
         data = op(data)
         yield PreprocessResult(
-                data, op, inversion_data=inv_data, inverse=inv, name='MeanStd')
+            data, op, inversion_data=inv_data, inverse=inv, name='MeanStd')
+
+
+class InstanceScaling(Preprocessor):
+    def __init__(self, needs=None):
+        super(InstanceScaling, self).__init__(needs=needs)
+
+    def _forward_func(self):
+        def x(d):
+            import numpy as np
+            print d
+            print np.__version__
+            axes = tuple(range(1, len(d.shape)))
+            return d / np.max(np.abs(d), axis=axes, keepdims=True)
+
+        return x
+
+    def _inversion_data(self):
+        def x(d):
+            import numpy as np
+            axes = tuple(range(1, len(d.shape)))
+            return dict(max=np.max(np.abs(d), axis=axes, keepdims=True))
+
+        return x
+
+    def _backward_func(self):
+        def x(d, max=None):
+            return d * max
+
+        return x
+
+    def _process(self, data):
+        data = self._extract_data(data)
+        op = self.transform()
+        inv_data = self.inversion_data()
+        inv = self.inverse_transform()
+        data = op(data)
+        yield PreprocessResult(
+            data,
+            op,
+            inversion_data=inv_data,
+            inverse=inv,
+            name='InstanceScaling')
 
 
 class Multiply(Preprocessor):
@@ -344,7 +413,7 @@ class Multiply(Preprocessor):
         inv = self.inverse_transform()
         data = op(data)
         yield PreprocessResult(
-                data, op, inversion_data=inv_data, inverse=inv, name='Multiply')
+            data, op, inversion_data=inv_data, inverse=inv, name='Multiply')
 
 
 class Binarize(Preprocessor):
@@ -374,14 +443,14 @@ class Binarize(Preprocessor):
         inv = self.inverse_transform()
         data = op(data)
         yield PreprocessResult(
-                data, op, inversion_data=inv_data, inverse=inv, name='Binarize')
+            data, op, inversion_data=inv_data, inverse=inv, name='Binarize')
 
 
 class Pipeline(object):
     def __init__(self, preprocess_results):
         self.processors = list(preprocess_results)
         self.version = hashlib.md5(
-                ''.join([p.op.version for p in self.processors])).hexdigest()
+            ''.join([p.op.version for p in self.processors])).hexdigest()
 
     def __getitem__(self, index):
         if isinstance(index, int):
@@ -445,5 +514,5 @@ class PreprocessingPipeline(Node):
             raise NotEnoughData()
 
         return Pipeline(map(
-                lambda x: x.for_storage(),
-                self._pipeline.itervalues()))
+            lambda x: x.for_storage(),
+            self._pipeline.itervalues()))

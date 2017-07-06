@@ -2,7 +2,7 @@ from learn import KMeans, BinaryRbm, LinearRbm, Learned
 
 from preprocess import \
     MeanStdNormalization, UnitNorm, Log, PreprocessingPipeline, Multiply, \
-    Slicer, Flatten
+    Slicer, Flatten, ExpandDims, InstanceScaling
 
 from sklearn_preprocessor import SklearnModel, WithComponents
 

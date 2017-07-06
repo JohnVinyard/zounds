@@ -109,7 +109,7 @@ if __name__ == '__main__':
             print 'processing {zf.filename}'.format(**locals())
             WithTimbre.process(
                 _id=zf.filename, meta=zf, raise_if_exists=True)
-        except ValueError as e:
+        except ff.ModelExistsError as e:
             print e
 
     # learn K-Means centroids
@@ -117,7 +117,7 @@ if __name__ == '__main__':
         print 'learning K-Means centroids'
         BfccKmeans.process(
             docs=(wt.bfcc for wt in WithTimbre), raise_if_exists=True)
-    except ValueError:
+    except ff.ModelExistsError:
         pass
 
     # force the new features to be computed, so they're pushed into the index

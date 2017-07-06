@@ -86,7 +86,6 @@ class ContrivedArray(ArrayWithUnits):
 
 
 class CoreTests(unittest2.TestCase):
-
     def test_maintain_array_with_units_with_boolean_condition(self):
         arr = ArrayWithUnits(
             np.random.random_sample((10, 100)) - 0.5,
@@ -271,6 +270,42 @@ class CoreTests(unittest2.TestCase):
         self.assertIsInstance(result, ArrayWithUnits)
         self.assertEqual(1, len(result.dimensions))
         self.assertIsInstance(result.dimensions[0], ContrivedDimension)
+
+    def test_max_supports_keepdims(self):
+        raw = np.random.random_sample((10, 9, 8, 7))
+        arr = ArrayWithUnits(
+            raw,
+            dimensions=[
+                ContrivedDimension(10),
+                ContrivedDimension2(10),
+                IdentityDimension(),
+                IdentityDimension()
+            ])
+        result = arr.max(axis=(1, 2), keepdims=True)
+        self.assertEqual((10, 1, 1, 7), result.shape)
+        self.assertIsInstance(result, ArrayWithUnits)
+        self.assertEqual(4, len(result.dimensions))
+        self.assertIsInstance(result.dimensions[0], ContrivedDimension)
+        self.assertIsInstance(result.dimensions[1], ContrivedDimension2)
+        self.assertIsInstance(result.dimensions[2], IdentityDimension)
+        self.assertIsInstance(result.dimensions[3], IdentityDimension)
+
+    def test_max_supports_multiple_axes(self):
+        raw = np.random.random_sample((10, 9, 8, 7))
+        arr = ArrayWithUnits(
+            raw,
+            dimensions=[
+                ContrivedDimension(10),
+                ContrivedDimension2(10),
+                IdentityDimension(),
+                IdentityDimension()
+            ])
+        result = arr.max(axis=(1, 2))
+        self.assertEqual((10, 7), result.shape)
+        self.assertIsInstance(result, ArrayWithUnits)
+        self.assertEqual(2, len(result.dimensions))
+        self.assertIsInstance(result.dimensions[0], ContrivedDimension)
+        self.assertIsInstance(result.dimensions[1], IdentityDimension)
 
     def test_get_single_scalar_from_sum_with_no_axis(self):
         raw = np.zeros((8, 9))

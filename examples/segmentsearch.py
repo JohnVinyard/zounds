@@ -111,7 +111,7 @@ if __name__ == '__main__':
         BarkKmeans.process(
             docs=(wo.bark for wo in WithOnsets),
             raise_if_exists=True)
-    except ValueError:
+    except ff.ModelExistsError:
         pass
     bark_kmeans = BarkKmeans()
 

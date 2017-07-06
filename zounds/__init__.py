@@ -31,7 +31,7 @@ from learn import \
     KMeans, BinaryRbm, LinearRbm, Learned, \
     MeanStdNormalization, UnitNorm, Log, Multiply, PreprocessingPipeline, \
     Slicer, Flatten, ReservoirSampler, TemplateMatch, simple_settings, \
-    SklearnModel, WithComponents, KerasModel
+    SklearnModel, WithComponents, KerasModel, ExpandDims, InstanceScaling
 
 from ui import ZoundsApp, ZoundsSearch, RangeUnitUnsupportedException
 
