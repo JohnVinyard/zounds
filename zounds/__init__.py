@@ -20,6 +20,8 @@ from spectral import \
     SpectralFlatness, AWeighting, LinearScale, LogScale, FrequencyBand, \
     FrequencyScale, FrequencyDimension
 
+from loudness import log_modulus, inverse_log_modulus, decibel
+
 from segment import MeasureOfTransience, MovingAveragePeakPicker, \
     ComplexDomain, TimeSliceFeature
 

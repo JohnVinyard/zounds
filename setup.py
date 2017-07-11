@@ -34,6 +34,7 @@ setup(
             'zounds.segment',
             'zounds.soundfile',
             'zounds.spectral',
+            'zounds.loudness',
             'zounds.synthesize',
             'zounds.timeseries',
             'zounds.ui',

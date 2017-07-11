@@ -186,15 +186,15 @@ class Log(Preprocessor):
 
     def _forward_func(self):
         def x(d):
-            import numpy as np
-            return np.sign(d) * np.log(np.abs(d) + 1)
+            from zounds.loudness import log_modulus
+            return log_modulus(d)
 
         return x
 
     def _backward_func(self):
         def x(d):
-            import numpy as np
-            return (np.exp(np.abs(d)) - 1) * np.sign(d)
+            from zounds.loudness import inverse_log_modulus
+            return inverse_log_modulus(d)
 
         return x
 
