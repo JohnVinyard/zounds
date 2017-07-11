@@ -148,15 +148,11 @@ $(function() {
 
     function History() {
 
-        var
-            history = [],
-            hash = {};
+        var history = [];
 
         this.push = function(item) {
             if(!item || item === '') { return; }
-            if(item in hash) { return; }
             history.push(item);
-            hash[item] = true;
         }
 
         this.fetch = function(index) {
