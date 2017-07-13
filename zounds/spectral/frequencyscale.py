@@ -175,7 +175,8 @@ class LinearScale(FrequencyScale):
         return LinearScale(fb, n_bands, always_even=always_even)
 
     def _compute_bands(self):
-        freqs = np.linspace(self.start_hz, self.stop_hz, self.n_bands)
+        freqs = np.linspace(
+            self.start_hz, self.stop_hz, self.n_bands, endpoint=False)
         # constant, non-overlapping bandwidth
         bandwidth = freqs[1] - freqs[0]
         return tuple(FrequencyBand(f, f + bandwidth) for f in freqs)

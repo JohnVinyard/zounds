@@ -19,18 +19,17 @@ class FrequencyBandTests(unittest2.TestCase):
 
 
 class FrequencyScaleTests(unittest2.TestCase):
-
     def test_can_get_all_even_sized_bands(self):
         samplerate = SR44100()
         scale = LinearScale.from_sample_rate(
-                samplerate, 44100, always_even=True)
+            samplerate, 44100, always_even=True)
         log_scale = LogScale(FrequencyBand(20, 20000), 64)
         slices = [scale.get_slice(band) for band in log_scale]
         sizes = [s.stop - s.start for s in slices]
         self.assertTrue(
-                not any([s % 2 for s in sizes]),
-                'All slice sizes should be even but were {sizes}'
-                    .format(**locals()))
+            not any([s % 2 for s in sizes]),
+            'All slice sizes should be even but were {sizes}'
+                .format(**locals()))
 
     def test_can_get_single_band(self):
         fb1 = FrequencyBand(20, 20000)
@@ -89,14 +88,13 @@ class LinearScaleTests(unittest2.TestCase):
         fft_freqs = np.fft.rfftfreq(n_bands, 1 / int(samplerate))
         bands = LinearScale.from_sample_rate(samplerate, n_bands // 2)
         linear_freqs = np.array([b.start_hz for b in bands])
-        np.testing.assert_allclose(linear_freqs, fft_freqs[:-1], rtol=1e-3)
+        np.testing.assert_allclose(linear_freqs, fft_freqs[:-1])
 
     def test_constant_bandwidth(self):
         scale = LinearScale(FrequencyBand(0, 22050), 1024)
         # taking the second-order differential should result in all zeros
         # if the bandwidths are a constant size
         diff = np.diff(list(scale.center_frequencies), n=2)
-        print diff.min(), diff.max()
         np.testing.assert_allclose(diff, np.zeros(len(diff)), atol=1e-11)
 
     def test_get_slice_on_boundary(self):
@@ -107,7 +105,12 @@ class LinearScaleTests(unittest2.TestCase):
     def test_get_slice_between_boundary(self):
         scale = LinearScale(FrequencyBand(0, 1000), 10)
         sl = scale.get_slice(FrequencyBand(495, 705))
-        self.assertEqual(slice(4, 7), sl)
+        self.assertEqual(slice(4, 8), sl)
+
+    def test_start_hz(self):
+        scale = LinearScale(FrequencyBand(100, 500), 4)
+        start_hz = [b.start_hz for b in scale]
+        self.assertEqual([100, 200, 300, 400], start_hz)
 
 
 class LogScaleTests(unittest2.TestCase):

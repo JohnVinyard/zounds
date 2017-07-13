@@ -203,7 +203,6 @@ class ArrayWithUnits(np.ndarray):
             elif isinstance(sl, int):
                 # burn a dimension
                 dims_pos += 1
-                shape_pos += 1
             elif isinstance(sl, list):
                 dims_pos += 1
                 shape_pos += 1

@@ -11,6 +11,7 @@ class FrequencyDimension(Dimension):
         raise NotImplementedError()
 
     def metaslice(self, index, size):
+        print 'metaslice', index, size
         return FrequencyDimension(self.scale[index])
 
     def integer_based_slice(self, index):

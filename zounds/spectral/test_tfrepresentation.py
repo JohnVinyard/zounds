@@ -3,12 +3,34 @@ import numpy as np
 import unittest2
 from frequencyscale import LinearScale, LogScale, FrequencyBand
 from weighting import AWeighting
-from zounds.timeseries import Seconds, TimeDimension
+from zounds.timeseries import Seconds, TimeDimension, TimeSlice
 from zounds.spectral import FrequencyDimension
 from zounds.core import ArrayWithUnits, IdentityDimension
 
 
 class TimeFrequencyRepresentationTests(unittest2.TestCase):
+
+    def test_can_access_int_index_and_frequency_band(self):
+        tf = ArrayWithUnits(
+            np.ones((10, 10)),
+            dimensions=[
+                TimeDimension(Seconds(1), Seconds(1)),
+                FrequencyDimension(LinearScale(FrequencyBand(0, 1000), 10))
+            ])
+        sliced = tf[0, FrequencyBand(201, 400)]
+        self.assertEqual((2,), sliced.shape)
+        self.assertIsInstance(sliced.dimensions[0], FrequencyDimension)
+
+    def test_can_access_time_slice_and_int_index(self):
+        tf = ArrayWithUnits(
+            np.ones((10, 10)),
+            dimensions=[
+                TimeDimension(Seconds(1), Seconds(1)),
+                FrequencyDimension(LinearScale(FrequencyBand(0, 1000), 10))
+            ])
+        sliced = tf[TimeSlice(start=Seconds(1), duration=Seconds(2)), 0]
+        self.assertEqual((2,), sliced.shape)
+        self.assertIsInstance(sliced.dimensions[0], TimeDimension)
 
     def test_can_add_axis_at_end(self):
         _id = IdentityDimension()
