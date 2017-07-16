@@ -1,7 +1,8 @@
 import numpy as np
 import unittest2
 
-from synthesize import SineSynthesizer, DCTSynthesizer, FFTSynthesizer
+from synthesize import \
+    SineSynthesizer, DCTSynthesizer, FFTSynthesizer, NoiseSynthesizer
 from zounds.basic import stft
 from zounds.core import ArrayWithUnits
 from zounds.spectral import FrequencyDimension, FrequencyBand, LinearScale
@@ -96,3 +97,12 @@ class SineSynthesizerTests(unittest2.TestCase):
         audio = ss.synthesize(Seconds(4), freqs_in_hz=[440., 660.])
         fft = abs(np.fft.rfft(audio))
         self.assertEqual(2, (fft > 1).sum())
+
+
+class NoiseSynthesizerTests(unittest2.TestCase):
+
+    def test_noise_synth_outputs_values_in_correct_range(self):
+        ns = NoiseSynthesizer(SR11025())
+        audio = ns.synthesize(Seconds(1))
+        self.assertLess(audio.min(), 0)
+        self.assertGreater(audio.max(), 0)

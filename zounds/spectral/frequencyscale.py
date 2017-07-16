@@ -31,10 +31,14 @@ class FrequencyBand(object):
             return super(FrequencyBand, self).__eq__(other)
 
     @staticmethod
+    def from_start(start_hz, bandwidth_hz):
+        return FrequencyBand(start_hz, start_hz + bandwidth_hz)
+
+    @staticmethod
     def from_center(center_hz, bandwidth_hz):
         half_bandwidth = bandwidth_hz / 2
         return FrequencyBand(
-                center_hz - half_bandwidth, center_hz + half_bandwidth)
+            center_hz - half_bandwidth, center_hz + half_bandwidth)
 
     @property
     def bandwidth(self):
@@ -50,10 +54,10 @@ start_hz={start_hz},
 stop_hz={stop_hz},
 center={center},
 bandwidth={bandwidth})'''.format(
-                start_hz=self.start_hz,
-                stop_hz=self.stop_hz,
-                center=self.center_frequency,
-                bandwidth=self.bandwidth)
+            start_hz=self.start_hz,
+            stop_hz=self.stop_hz,
+            center=self.center_frequency,
+            bandwidth=self.bandwidth)
 
 
 class FrequencyScale(object):
@@ -96,6 +100,15 @@ class FrequencyScale(object):
     @property
     def bandwidths(self):
         return (band.bandwidth for band in self)
+
+    @property
+    def Q(self):
+        """
+        The quality factor of the scale, or, the ratio of center frequencies
+        to bandwidths
+        """
+        return np.array(list(self.center_frequencies)) \
+            / np.array(list(self.bandwidths))
 
     @property
     def start_hz(self):
@@ -152,7 +165,7 @@ class FrequencyScale(object):
 
     def __str__(self):
         cls = self.__class__.__name__
-        return '{cls}(band={self.frequency_band}, n_bands={self.n_bands})'\
+        return '{cls}(band={self.frequency_band}, n_bands={self.n_bands})' \
             .format(**locals())
 
     def __repr__(self):
@@ -185,17 +198,50 @@ class LinearScale(FrequencyScale):
 class LogScale(FrequencyScale):
     def __init__(self, frequency_band, n_bands, always_even=False):
         super(LogScale, self).__init__(
-                frequency_band, n_bands, always_even=always_even)
+            frequency_band, n_bands, always_even=always_even)
 
     def _compute_bands(self):
         center_freqs = np.logspace(
-                np.log10(self.start_hz),
-                np.log10(self.stop_hz),
-                self.n_bands + 1)
+            np.log10(self.start_hz),
+            np.log10(self.stop_hz),
+            self.n_bands + 1)
         # variable bandwidth
         bandwidths = np.diff(center_freqs)
         return tuple(FrequencyBand.from_center(cf, bw)
-                for (cf, bw) in zip(center_freqs[:-1], bandwidths))
+                     for (cf, bw) in zip(center_freqs[:-1], bandwidths))
+
+
+class ConstantQScale(FrequencyScale):
+    def __init__(self, lowest_center_freq_hz, n_octaves, n_bands_per_octave):
+        self.__bands = []
+        total_bands = n_octaves * n_bands_per_octave
+        pos = None
+        for i in xrange(total_bands):
+            bandwidth = \
+                ((2 ** (1 / n_bands_per_octave)) ** i) * lowest_center_freq_hz
+            half_bandwidth = bandwidth / 2
+            if pos is None:
+                pos = lowest_center_freq_hz - half_bandwidth
+            self.__bands.append(FrequencyBand(pos, pos + bandwidth))
+            pos += bandwidth
+        fb = FrequencyBand(self.__bands[0].start_hz, self.__bands[-1].stop_hz)
+        super(ConstantQScale, self).__init__(fb, len(self.__bands))
+
+    def _compute_bands(self):
+        return self.__bands
+
+
+class GeometricScale(FrequencyScale):
+    def __init__(self, frequency_band, n_bands):
+        super(GeometricScale, self).__init__(frequency_band, n_bands)
+
+    def _compute_bands(self):
+        start_freqs = np.geomspace(
+            self.start_hz, self.stop_hz, num=self.n_bands + 1, endpoint=False)
+        bandwidths = np.diff(start_freqs)
+        return tuple(FrequencyBand.from_start(sf, bw)
+                     for (sf, bw) in zip(start_freqs[:-1], bandwidths))
+
 
 class BarkScale(FrequencyScale):
     def __init__(self, frequency_band, n_bands):

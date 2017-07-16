@@ -154,5 +154,5 @@ class NoiseSynthesizer(object):
     def synthesize(self, duration):
         sr = self.samplerate.samples_per_second
         seconds = duration / Seconds(1)
-        return AudioSamples(
-                np.random.random_sample(int(sr * seconds)), self.samplerate)
+        samples = np.random.uniform(low=-1., high=1., size=int(sr * seconds))
+        return AudioSamples(samples, self.samplerate)

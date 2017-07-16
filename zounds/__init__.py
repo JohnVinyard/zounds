@@ -18,7 +18,7 @@ from spectral import \
     SlidingWindow, OggVorbisWindowingFunc, WindowingFunc, \
     FFT, MDCT, DCT, DCTIV, BarkBands, Chroma, BFCC, SpectralCentroid, \
     SpectralFlatness, AWeighting, LinearScale, LogScale, FrequencyBand, \
-    FrequencyScale, FrequencyDimension
+    FrequencyScale, FrequencyDimension, ConstantQScale, GeometricScale
 
 from loudness import log_modulus, inverse_log_modulus, decibel
 
