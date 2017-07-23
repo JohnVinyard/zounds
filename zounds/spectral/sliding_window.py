@@ -59,6 +59,11 @@ class OggVorbisWindowingFunc(WindowingFunc):
         super(OggVorbisWindowingFunc, self).__init__(windowing_func=oggvorbis)
 
 
+class HanningWindowingFunc(WindowingFunc):
+    def __init__(self):
+        super(HanningWindowingFunc, self).__init__(windowing_func=np.hanning)
+
+
 class SlidingWindow(Node):
     def __init__(self, wscheme, wfunc=None, padwith=0, needs=None):
         super(SlidingWindow, self).__init__(needs=needs)

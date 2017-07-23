@@ -128,16 +128,14 @@ class TickSynthesizer(object):
     def synthesize(self, duration, tick_frequency):
         sr = self.samplerate.samples_per_second
         # create a short, tick sound
-        tick = np.random.random_sample(int(sr * .1))
+        tick = np.random.uniform(low=-1., high=1., size=int(sr * .1))
         tick *= np.linspace(1, 0, len(tick))
         # create silence
         samples = np.zeros(int(sr * (duration / Seconds(1))))
         ticks_per_second = Seconds(1) / tick_frequency
         # introduce periodic ticking sound
         step = int(sr // ticks_per_second)
-        print 'STEP', step
         for i in xrange(0, len(samples), step):
-            print 'STEP 2', i
             samples[i:i + len(tick)] = tick
         return AudioSamples(samples, self.samplerate)
 
