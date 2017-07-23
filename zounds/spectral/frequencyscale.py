@@ -211,36 +211,23 @@ class LogScale(FrequencyScale):
                      for (cf, bw) in zip(center_freqs[:-1], bandwidths))
 
 
-class ConstantQScale(FrequencyScale):
-    def __init__(self, lowest_center_freq_hz, n_octaves, n_bands_per_octave):
-        self.__bands = []
-        total_bands = n_octaves * n_bands_per_octave
-        pos = None
-        for i in xrange(total_bands):
-            bandwidth = \
-                ((2 ** (1 / n_bands_per_octave)) ** i) * lowest_center_freq_hz
-            half_bandwidth = bandwidth / 2
-            if pos is None:
-                pos = lowest_center_freq_hz - half_bandwidth
-            self.__bands.append(FrequencyBand(pos, pos + bandwidth))
-            pos += bandwidth
-        fb = FrequencyBand(self.__bands[0].start_hz, self.__bands[-1].stop_hz)
-        super(ConstantQScale, self).__init__(fb, len(self.__bands))
+class GeometricScale(FrequencyScale):
+    def __init__(
+            self,
+            start_center_hz,
+            stop_center_hz,
+            bandwidth_ratio,
+            n_bands):
+
+        self.__bands = [
+            FrequencyBand.from_center(cf, cf * bandwidth_ratio)
+            for cf in np.geomspace(start_center_hz, stop_center_hz, num=n_bands)
+        ]
+        band = FrequencyBand(self.__bands[0].start_hz, self.__bands[-1].stop_hz)
+        super(GeometricScale, self).__init__(band, n_bands)
 
     def _compute_bands(self):
         return self.__bands
-
-
-class GeometricScale(FrequencyScale):
-    def __init__(self, frequency_band, n_bands):
-        super(GeometricScale, self).__init__(frequency_band, n_bands)
-
-    def _compute_bands(self):
-        start_freqs = np.geomspace(
-            self.start_hz, self.stop_hz, num=self.n_bands + 1, endpoint=False)
-        bandwidths = np.diff(start_freqs)
-        return tuple(FrequencyBand.from_start(sf, bw)
-                     for (sf, bw) in zip(start_freqs[:-1], bandwidths))
 
 
 class BarkScale(FrequencyScale):

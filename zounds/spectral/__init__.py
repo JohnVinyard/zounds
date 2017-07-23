@@ -11,5 +11,4 @@ from tfrepresentation import FrequencyDimension
 from weighting import AWeighting
 
 from frequencyscale import \
-    LinearScale, LogScale, FrequencyBand, FrequencyScale, ConstantQScale, \
-    GeometricScale
+    LinearScale, LogScale, FrequencyBand, FrequencyScale, GeometricScale
