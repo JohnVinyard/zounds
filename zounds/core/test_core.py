@@ -187,6 +187,13 @@ class CoreTests(unittest2.TestCase):
         self.assertSequenceEqual(arr.dimensions, arr2.dimensions)
         np.testing.assert_allclose(arr2, 0)
 
+    def test_zeros_dtype(self):
+        arr = ArrayWithUnits(
+            np.zeros((100, 10), dtype=np.complex128),
+            [ContrivedDimension(10), ContrivedDimension2(10)])
+        arr2 = ArrayWithUnits.zeros(arr)
+        self.assertEqual(arr.dtype, arr2.dtype)
+
     def test_size_is_not_modified_on_example_dimensions(self):
         arr = ArrayWithUnits(
             np.zeros((100, 10)),

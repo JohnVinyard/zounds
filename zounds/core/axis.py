@@ -71,7 +71,8 @@ class ArrayWithUnits(np.ndarray):
 
     @classmethod
     def zeros(cls, example):
-        return cls.from_example(np.zeros(example.shape), example)
+        return cls.from_example(
+            np.zeros(example.shape, dtype=example.dtype), example)
 
     def sum(self, axis=None, dtype=None, **kwargs):
         result = super(ArrayWithUnits, self).sum(axis, dtype, **kwargs)
