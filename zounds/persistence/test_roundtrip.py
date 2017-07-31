@@ -1,7 +1,7 @@
 import unittest2
 from dimension import DimensionEncoder, DimensionDecoder
 from zounds.timeseries import TimeDimension, Seconds, Milliseconds
-from zounds.spectral import FrequencyBand, FrequencyScale, FrequencyDimension
+from zounds.spectral import FrequencyBand, LinearScale, FrequencyDimension
 from zounds.core import IdentityDimension
 
 
@@ -22,7 +22,7 @@ class RoundTripTests(unittest2.TestCase):
         original = [
             IdentityDimension(),
             TimeDimension(Seconds(1), Milliseconds(500)),
-            FrequencyDimension(FrequencyScale(FrequencyBand(100, 1000), 10))
+            FrequencyDimension(LinearScale(FrequencyBand(100, 1000), 10))
         ]
         restored = self.roundtrip(original)
         self.assertSequenceEqual(original, restored)

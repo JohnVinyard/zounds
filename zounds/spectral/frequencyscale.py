@@ -30,6 +30,9 @@ class FrequencyBand(object):
         except AttributeError:
             return super(FrequencyBand, self).__eq__(other)
 
+    def __hash__(self):
+        return (self.__class__.__name__, self.start_hz, self.stop_hz).__hash__()
+
     @staticmethod
     def from_start(start_hz, bandwidth_hz):
         return FrequencyBand(start_hz, start_hz + bandwidth_hz)
@@ -108,7 +111,7 @@ class FrequencyScale(object):
         to bandwidths
         """
         return np.array(list(self.center_frequencies)) \
-            / np.array(list(self.bandwidths))
+               / np.array(list(self.bandwidths))
 
     @property
     def start_hz(self):
@@ -148,6 +151,10 @@ class FrequencyScale(object):
     def __iter__(self):
         return iter(self.bands)
 
+    def _construct_scale_from_slice(self, bands):
+        freq_band = FrequencyBand(bands[0].start_hz, bands[-1].stop_hz)
+        return self.__class__(freq_band, len(bands))
+
     def __getitem__(self, index):
         try:
             # index is an integer or slice
@@ -156,12 +163,18 @@ class FrequencyScale(object):
             # index is a frequency band
             bands = self.bands[self.get_slice(index)]
 
-        try:
-            freq_band = FrequencyBand(bands[0].start_hz, bands[-1].stop_hz)
-            return self.__class__(freq_band, len(bands))
-        except TypeError:
-            # we've already got an individual band
+        if isinstance(bands, FrequencyBand):
             return bands
+
+        return self._construct_scale_from_slice(bands)
+
+        # try:
+        #     # freq_band = FrequencyBand(bands[0].start_hz, bands[-1].stop_hz)
+        #     # return self.__class__(freq_band, len(bands))
+        #     self._construct_scale_from_slice(bands)
+        # except TypeError:
+        #     # we've already got an individual band
+        #     return bands
 
     def __str__(self):
         cls = self.__class__.__name__
@@ -211,23 +224,84 @@ class LogScale(FrequencyScale):
                      for (cf, bw) in zip(center_freqs[:-1], bandwidths))
 
 
+# class GeometricScale(FrequencyScale):
+#     def __init__(
+#             self,
+#             frequency_band,
+#             n_bands,
+#             bandwidth_ratio=0.05,
+#             always_even=False):
+#         super(GeometricScale, self).__init__(
+#             frequency_band, n_bands, always_even=always_even)
+#         self.bandwidth_ratio = bandwidth_ratio
+#
+#     def additional_args(self):
+#         d = super(GeometricScale, self).additional_args()
+#         d.update(bandwidth_ratio=self.bandwidth_ratio)
+#         return d
+#
+#     def _construct_scale_from_slice(self, bands):
+#         return ExplicitScale(bands)
+#
+#     def _compute_bands(self):
+#         band = self.frequency_band
+#         n_bands = self.n_bands
+#         return tuple(
+#             FrequencyBand.from_center(cf, cf * self.bandwidth_ratio)
+#             for cf in np.geomspace(band.start_hz, band.stop_hz, num=n_bands))
+#
+#     def __eq__(self, other):
+#         return \
+#             super(GeometricScale, self).__eq__(other) \
+#             and self.bandwidth_ratio == other.bandwidth_ratio
+
+
 class GeometricScale(FrequencyScale):
     def __init__(
             self,
             start_center_hz,
             stop_center_hz,
             bandwidth_ratio,
-            n_bands):
-
+            n_bands,
+            always_even=False):
         self.__bands = [
             FrequencyBand.from_center(cf, cf * bandwidth_ratio)
             for cf in np.geomspace(start_center_hz, stop_center_hz, num=n_bands)
-        ]
+            ]
         band = FrequencyBand(self.__bands[0].start_hz, self.__bands[-1].stop_hz)
-        super(GeometricScale, self).__init__(band, n_bands)
+        super(GeometricScale, self).__init__(
+            band, n_bands, always_even=always_even)
+        self.start_center_hz = start_center_hz
+        self.stop_center_hz = stop_center_hz
+        self.bandwidth_ratio = bandwidth_ratio
+
+    def _construct_scale_from_slice(self, bands):
+        return ExplicitScale(bands)
+
+    def __eq__(self, other):
+        return \
+            super(GeometricScale, self).__eq__(other) \
+            and self.start_center_hz == other.start_center_hz \
+            and self.stop_center_hz == other.stop_center_hz \
+            and self.bandwidth_ratio == other.bandwidth_ratio
 
     def _compute_bands(self):
         return self.__bands
+
+
+class ExplicitScale(FrequencyScale):
+    def __init__(self, bands):
+        bands = list(bands)
+        frequency_band = FrequencyBand(bands[0].start_hz, bands[-1].stop_hz)
+        super(ExplicitScale, self).__init__(
+            frequency_band, len(bands), always_even=False)
+        self._bands = bands
+
+    def _compute_bands(self):
+        return self._bands
+
+    def __eq__(self, other):
+        return all([a == b for (a, b) in zip(self, other)])
 
 
 class BarkScale(FrequencyScale):
@@ -238,3 +312,8 @@ class BarkScale(FrequencyScale):
 class MelScale(FrequencyScale):
     def __init__(self, frequency_band, n_bands):
         super(MelScale, self).__init__(frequency_band, n_bands)
+
+
+class ChromaScale(FrequencyScale):
+    def __init__(self, frequency_band, n_bands):
+        super(ChromaScale, self).__init__(frequency_band, n_bands)
