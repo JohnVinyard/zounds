@@ -1,3 +1,4 @@
 from synthesize import \
     FFTSynthesizer, DCTSynthesizer, TickSynthesizer, NoiseSynthesizer, \
-    SineSynthesizer, DCTIVSynthesizer, MDCTSynthesizer
+    SineSynthesizer, DCTIVSynthesizer, MDCTSynthesizer, \
+    FrequencyAdaptiveFFTSynthesizer, FrequencyAdaptiveDCTSynthesizer

@@ -1,67 +1,103 @@
 import numpy as np
+import scipy
 import unittest2
-from zounds.basic import resampled
-from zounds.util import simple_in_memory_settings
+
+from frequencyscale import GeometricScale
+from zounds.basic import resampled, stft
+from zounds.core import ArrayWithUnits
+from zounds.persistence import ArrayWithUnitsFeature, FrequencyAdaptiveFeature
+from zounds.spectral import \
+    SlidingWindow, DCTIV, MDCT, FFT, SpectralCentroid, OggVorbisWindowingFunc, \
+    SpectralFlatness, FrequencyAdaptiveTransform, DCT
+from zounds.synthesize import \
+    SineSynthesizer, DCTIVSynthesizer, MDCTSynthesizer, NoiseSynthesizer, \
+    TickSynthesizer
 from zounds.timeseries import \
     SR11025, SR22050, SR44100, Seconds, Milliseconds, Picoseconds, \
     AudioSamples, TimeSlice, TimeDimension
 from zounds.timeseries.samplerate import SampleRate, HalfLapped
-from zounds.synthesize import \
-    SineSynthesizer, DCTIVSynthesizer, MDCTSynthesizer, NoiseSynthesizer
-from zounds.spectral import \
-    SlidingWindow, DCTIV, MDCT, FFT, SpectralCentroid, OggVorbisWindowingFunc, \
-    SpectralFlatness, FrequencyAdaptiveTransform
-from zounds.persistence import ArrayWithUnitsFeature, FrequencyAdaptiveFeature
-from zounds.core import ArrayWithUnits
-from frequencyscale import GeometricScale
-from frequencyadaptive import FrequencyAdaptive
-import scipy
+from zounds.util import simple_in_memory_settings
 
 
 class FrequencyAdaptiveTransformTests(unittest2.TestCase):
-    def setUp(self):
+
+    def test_square_form_with_overlap_add(self):
         samplerate = SR11025()
-
-        rs = resampled(
-            resample_to=samplerate,
-            chunksize_bytes=16 * int(samplerate) * 2 * 1200)
-
-        scale = GeometricScale(
-            20, samplerate.nyquist, 0.05, 100, always_even=True)
+        BaseModel = stft(resample_to=samplerate)
+        windowing_func = OggVorbisWindowingFunc()
+        scale = GeometricScale(20, 5000, 0.1, 25)
 
         @simple_in_memory_settings
-        class Document(rs):
+        class Document(BaseModel):
             long_windowed = ArrayWithUnitsFeature(
                 SlidingWindow,
                 wscheme=SampleRate(
-                    frequency=Seconds(1),
+                    frequency=Milliseconds(500),
                     duration=Seconds(1)),
-                needs=rs.resampled,
-                store=False)
-
-            long_fft = ArrayWithUnitsFeature(
-                FFT,
-                needs=long_windowed,
-                store=False)
-
-            freq_adaptive = FrequencyAdaptiveFeature(
-                FrequencyAdaptiveTransform,
-                transform=np.fft.irfft,
-                scale=scale,
-                needs=long_fft,
+                wfunc=windowing_func,
+                needs=BaseModel.resampled,
                 store=True)
 
-        synth = SineSynthesizer(samplerate)
-        audio = synth.synthesize(Seconds(10), freqs_in_hz=[220, 440, 880])
+            dct = ArrayWithUnitsFeature(
+                DCT,
+                scale_always_even=True,
+                needs=long_windowed,
+                store=True)
 
-        _id = Document.process(meta=audio.encode())
-        self.doc = Document(_id)
+            mdct = FrequencyAdaptiveFeature(
+                FrequencyAdaptiveTransform,
+                transform=scipy.fftpack.idct,
+                scale=scale,
+                needs=dct,
+                store=True)
 
-    def test_is_correct_type(self):
-        self.fail()
+        synth = TickSynthesizer(SR22050())
+        samples = synth.synthesize(Seconds(5), Milliseconds(200))
+        _id = Document.process(meta=samples.encode())
+        doc = Document(_id)
+        square = doc.mdct.square(30, do_overlap_add=True)
+        self.assertEqual(2, square.ndim)
+        self.assertEqual(150, square.shape[0])
+        self.assertEqual(25, square.shape[1])
 
-    def test_has_correct_shape(self):
-        self.fail()
+    def test_square_form_no_overlap_add(self):
+        samplerate = SR11025()
+        BaseModel = stft(resample_to=samplerate)
+        windowing_func = OggVorbisWindowingFunc()
+        scale = GeometricScale(20, 5000, 0.1, 25)
+
+        @simple_in_memory_settings
+        class Document(BaseModel):
+            long_windowed = ArrayWithUnitsFeature(
+                SlidingWindow,
+                wscheme=SampleRate(
+                    frequency=Milliseconds(500),
+                    duration=Seconds(1)),
+                wfunc=windowing_func,
+                needs=BaseModel.resampled,
+                store=True)
+
+            dct = ArrayWithUnitsFeature(
+                DCT,
+                scale_always_even=True,
+                needs=long_windowed,
+                store=True)
+
+            mdct = FrequencyAdaptiveFeature(
+                FrequencyAdaptiveTransform,
+                transform=scipy.fftpack.idct,
+                scale=scale,
+                needs=dct,
+                store=True)
+
+        synth = TickSynthesizer(SR22050())
+        samples = synth.synthesize(Seconds(5), Milliseconds(200))
+        _id = Document.process(meta=samples.encode())
+        doc = Document(_id)
+        square = doc.mdct.square(30)
+        self.assertEqual(3, square.ndim)
+        self.assertEqual(30, square.shape[1])
+        self.assertEqual(25, square.shape[2])
 
 
 class SpectralFlatnessTests(unittest2.TestCase):

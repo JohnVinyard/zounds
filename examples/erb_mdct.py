@@ -18,119 +18,12 @@ makes inversion easier, at the cost of more redundancy.
 
 from __future__ import division
 import zounds
-import featureflow as ff
-import numpy as np
 import scipy
-
-
-class Synth(object):
-    """
-    Invert the two-stage transformation by:
-        1) applying an inverse DCT transform to the variable-sized frequency
-           windows
-        2) applying an inverse DCT transform to the fixed size time-frequency
-           representation
-    """
-
-    def __init__(self, linear_scale, log_scale, windowing_func):
-        super(Synth, self).__init__()
-        self.windowing_func = windowing_func
-        self.log_scale = log_scale
-        self.linear_scale = linear_scale
-        self.samplerate = zounds.audio_sample_rate(self.linear_scale.n_bands)
-
-    # def _weights(self, frequency_dimension):
-    #     """
-    #     Compute weights to compensate for the fact that overlapping windows
-    #     may over-emphasize or de-emphasize frequencies at certain points
-    #     :param frequency_dimension: The frequency scale onto which these weights
-    #     map
-    #     :return: computed weights
-    #     """
-    #     weights = zounds.ArrayWithUnits(
-    #             np.zeros(int(self.samplerate)), [frequency_dimension])
-    #     for band in self.log_scale:
-    #         weights[band] += 1
-    #     weights[weights == 0] = 1
-    #     return 1. / weights
-
-    def visualize(self, dct_coeffs, mdct_coeffs, samples):
-        """
-        Since each frequency band has a different number of samples, rasterize
-        the representation by resampling each band to have the same number of
-        samples
-        """
-        n_bands = len(self.log_scale)
-        img = np.zeros(shape=(len(mdct_coeffs), samples, n_bands))
-
-        pos = 0
-        for i, band in enumerate(self.log_scale):
-            slce = dct_coeffs[:, band]
-            size = slce.shape[1]
-            resampled = scipy.signal.resample(
-                mdct_coeffs[:, pos: pos + size], samples, axis=1)
-            img[:, :, i] += resampled
-            pos += size
-
-        return img
-
-    def synthesize(self, mdct_coeffs):
-
-        frequency_dimension = zounds.FrequencyDimension(self.linear_scale)
-
-        # initialize an empty array to fill with the dct coefficients
-        dct_coeffs = zounds.ArrayWithUnits(
-                np.zeros((len(mdct_coeffs), int(self.samplerate))),
-                [mdct_coeffs.dimensions[0], frequency_dimension])
-
-        # compute compensating weights
-        # weights = self._weights(frequency_dimension)
-        weights = 1
-
-        # invert the variable-size frequency windows
-        # pos = 0
-        # for band in self.log_scale:
-        #     slce = dct_coeffs[:, band]
-        #     size = slce.shape[1]
-        #     slce[:] += scipy.fftpack.idct(mdct_coeffs[:, pos: pos + size], norm='ortho')
-        #     pos += size
-
-        for band in self.log_scale:
-            print dct_coeffs[:, band].shape, mdct_coeffs[:, band].shape
-            dct_coeffs[:, band] += scipy.fftpack.dct(
-                mdct_coeffs[:, band], norm='ortho')
-
-        # invert the fixed-size time-frequency representation
-        dct_synth = zounds.DCTSynthesizer(
-                windowing_func=self.windowing_func)
-        return dct_synth.synthesize(dct_coeffs * weights)
-
-
-# class VariableSizedFrequencyWindows(ff.Node):
-#     """
-#     Given a fixed-size time-frequency representation, compute DCT coefficients
-#     over variable-sized frequency windows that follow a logarithmic scale, which
-#     maps more closely onto the critical bands of hearing
-#     """
-#     def __init__(self, scale=None, windowing_func=None, needs=None):
-#         super(VariableSizedFrequencyWindows, self).__init__(needs=needs)
-#         self.windowing_func = windowing_func
-#         self.scale = scale
-#
-#     def _process(self, data):
-#         bands = [dct(data[:, fb], norm='ortho') for fb in self.scale]
-#         transformed = np.concatenate(bands, axis=1)
-#         yield zounds.ArrayWithUnits(
-#                 transformed, [data.dimensions[0], zounds.IdentityDimension()])
-
 
 samplerate = zounds.SR11025()
 BaseModel = zounds.stft(resample_to=samplerate)
 
 windowing_func = zounds.OggVorbisWindowingFunc()
-
-# scale = zounds.LogScale(
-#         zounds.FrequencyBand(20, 5000), n_bands=300)
 
 scale = zounds.GeometricScale(20, 5000, 0.1, 100)
 
@@ -138,67 +31,54 @@ scale = zounds.GeometricScale(20, 5000, 0.1, 100)
 @zounds.simple_in_memory_settings
 class Document(BaseModel):
     bark = zounds.ArrayWithUnitsFeature(
-            zounds.BarkBands,
-            samplerate=samplerate,
-            stop_freq_hz=samplerate.nyquist,
-            needs=BaseModel.fft,
-            store=True)
+        zounds.BarkBands,
+        samplerate=samplerate,
+        stop_freq_hz=samplerate.nyquist,
+        needs=BaseModel.fft,
+        store=True)
 
     long_windowed = zounds.ArrayWithUnitsFeature(
-            zounds.SlidingWindow,
-            wscheme=zounds.SampleRate(
-                    frequency=zounds.Milliseconds(500),
-                    duration=zounds.Seconds(1)),
-            wfunc=windowing_func,
-            needs=BaseModel.resampled,
-            store=True)
+        zounds.SlidingWindow,
+        wscheme=zounds.SampleRate(
+            frequency=zounds.Milliseconds(500),
+            duration=zounds.Seconds(1)),
+        wfunc=windowing_func,
+        needs=BaseModel.resampled,
+        store=True)
 
     dct = zounds.ArrayWithUnitsFeature(
-            zounds.DCT,
-            scale_always_even=True,
-            needs=long_windowed,
-            store=True)
+        zounds.DCT,
+        scale_always_even=True,
+        needs=long_windowed,
+        store=True)
 
     mdct = zounds.FrequencyAdaptiveFeature(
-            zounds.FrequencyAdaptiveTransform,
-            transform=scipy.fftpack.idct,
-            scale=scale,
-            needs=dct,
-            store=True)
+        zounds.FrequencyAdaptiveTransform,
+        transform=scipy.fftpack.idct,
+        scale=scale,
+        needs=dct,
+        store=True)
 
 
 if __name__ == '__main__':
     # generate some audio
-    # synth = zounds.SineSynthesizer(zounds.SR22050())
-    # orig_audio = synth.synthesize(zounds.Seconds(5), [220, 440., 660., 880.])
-
     synth = zounds.TickSynthesizer(zounds.SR22050())
-    orig_audio = synth.synthesize(zounds.Seconds(5), zounds.Seconds(1))
+    orig_audio = synth.synthesize(zounds.Seconds(5), zounds.Milliseconds(200))
 
     # analyze the audio
     _id = Document.process(meta=orig_audio.encode())
     doc = Document(_id)
 
-    # for band in scale:
-    #     print doc.mdct[:, band].shape, doc.dct[:, band].shape
-
-    print scale
-
-
-    # invert the representation
-    synth = Synth(
-            doc.dct.dimensions[1].scale,
-            scale,
-            windowing_func)
+    synth = zounds.FrequencyAdaptiveDCTSynthesizer(scale, samplerate)
     recon_audio = synth.synthesize(doc.mdct)
 
     # get a rasterized visualization of the representation
-    img = synth.visualize(doc.dct, doc.mdct, 100)
+    img = doc.mdct.square(100, do_overlap_add=True)
 
     app = zounds.ZoundsApp(
-            model=Document,
-            audio_feature=Document.ogg,
-            visualization_feature=Document.bark,
-            globals=globals(),
-            locals=locals())
+        model=Document,
+        audio_feature=Document.ogg,
+        visualization_feature=Document.bark,
+        globals=globals(),
+        locals=locals())
     app.start(8888)

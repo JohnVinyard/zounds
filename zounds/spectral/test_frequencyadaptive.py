@@ -1,8 +1,9 @@
 import unittest2
 from zounds.core import ArrayWithUnits
-from zounds.timeseries import TimeDimension, Seconds, Milliseconds
+from zounds.timeseries import TimeDimension, Seconds, Milliseconds, SR11025
 from zounds.spectral import \
-    FrequencyBand, ExplicitFrequencyDimension, GeometricScale, ExplicitScale
+    FrequencyBand, ExplicitFrequencyDimension, GeometricScale, ExplicitScale, \
+    FrequencyDimension, LinearScale
 from frequencyadaptive import FrequencyAdaptive
 import numpy as np
 
@@ -74,21 +75,115 @@ class FrequencyAdaptiveTests(unittest2.TestCase):
             duration=Seconds(1),
             frequency=Milliseconds(500))
         scale = GeometricScale(20, 5000, 0.05, 120)
-        print 'SCALE SLICE BEFORE DECODE', scale.get_slice(scale[0])
         arrs = [np.zeros((10, x)) for x in xrange(1, 121)]
         fa = FrequencyAdaptive(arrs, td, scale)
         sliced = fa[:, scale[0]]
         self.assertEqual((10, 1), sliced.shape)
 
-    def test_square_form(self):
-        self.fail()
+    def test_square_form_with_overlap(self):
+        td = TimeDimension(
+            duration=Seconds(1),
+            frequency=Milliseconds(500))
+        scale = GeometricScale(20, 5000, 0.05, 120)
+        arrs = [np.zeros((10, x)) for x in xrange(1, 121)]
+        fa = FrequencyAdaptive(arrs, td, scale)
+        square = fa.square(50)
+
+        self.assertEqual(3, square.ndim)
+        self.assertEqual(10, square.shape[0])
+        self.assertEqual(50, square.shape[1])
+        self.assertEqual(120, square.shape[2])
+
+        self.assertIsInstance(square, ArrayWithUnits)
+
+        self.assertIsInstance(square.dimensions[0], TimeDimension)
+        self.assertEqual(Milliseconds(5500), square.dimensions[0].end)
+        self.assertEqual(Milliseconds(500), square.dimensions[0].frequency)
+        self.assertEqual(Milliseconds(1000), square.dimensions[0].duration)
+
+        self.assertIsInstance(square.dimensions[1], TimeDimension)
+
+        self.assertIsInstance(square.dimensions[2], FrequencyDimension)
+        self.assertEqual(scale, square.dimensions[2].scale)
+
+    def test_square_form_with_overlap_do_overlap_add(self):
+        td = TimeDimension(
+            duration=Seconds(1),
+            frequency=Milliseconds(500))
+        scale = GeometricScale(20, 5000, 0.05, 120)
+        arrs = [np.zeros((10, x)) for x in xrange(1, 121)]
+        fa = FrequencyAdaptive(arrs, td, scale)
+        square = fa.square(50, do_overlap_add=True)
+
+        self.assertEqual(2, square.ndim)
+        self.assertEqual(275, square.shape[0])
+        self.assertEqual(120, square.shape[1])
+
+        self.assertIsInstance(square, ArrayWithUnits)
+
+        self.assertIsInstance(square.dimensions[0], TimeDimension)
+        self.assertEqual(Milliseconds(5500), square.dimensions[0].end)
+        self.assertEqual(Milliseconds(20), square.dimensions[0].frequency)
+        self.assertEqual(Milliseconds(20), square.dimensions[0].duration)
+
+        self.assertIsInstance(square.dimensions[1], FrequencyDimension)
+        self.assertEqual(scale, square.dimensions[1].scale)
+
+    def test_square_form_no_overlap(self):
+        td = TimeDimension(
+            duration=Seconds(1),
+            frequency=Seconds(1))
+        scale = GeometricScale(20, 5000, 0.05, 120)
+        arrs = [np.zeros((10, x)) for x in xrange(1, 121)]
+        fa = FrequencyAdaptive(arrs, td, scale)
+        square = fa.square(50)
+
+        self.assertEqual(3, square.ndim)
+
+        self.assertEqual(10, square.shape[0])
+        self.assertEqual(50, square.shape[1])
+        self.assertEqual(120, square.shape[2])
+
+        self.assertIsInstance(square, ArrayWithUnits)
+
+        self.assertIsInstance(square.dimensions[0], TimeDimension)
+        self.assertEqual(Seconds(10), square.dimensions[0].end)
+        self.assertEqual(Milliseconds(1000), square.dimensions[0].frequency)
+        self.assertEqual(Milliseconds(1000), square.dimensions[0].duration)
+
+        self.assertIsInstance(square.dimensions[1], TimeDimension)
+
+        self.assertIsInstance(square.dimensions[2], FrequencyDimension)
+        self.assertEqual(scale, square.dimensions[2].scale)
+
+    def test_square_form_no_overlap_do_overlap_add(self):
+        td = TimeDimension(
+            duration=Seconds(1),
+            frequency=Seconds(1))
+        scale = GeometricScale(20, 5000, 0.05, 120)
+        arrs = [np.zeros((10, x)) for x in xrange(1, 121)]
+        fa = FrequencyAdaptive(arrs, td, scale)
+        square = fa.square(50, do_overlap_add=True)
+
+        self.assertEqual(2, square.ndim)
+        self.assertEqual(500, square.shape[0])
+        self.assertEqual(120, square.shape[1])
+
+        self.assertIsInstance(square, ArrayWithUnits)
+
+        self.assertIsInstance(square.dimensions[0], TimeDimension)
+        self.assertEqual(Seconds(10), square.dimensions[0].end)
+        self.assertEqual(Milliseconds(20), square.dimensions[0].frequency)
+        self.assertEqual(Milliseconds(20), square.dimensions[0].duration)
+
+        self.assertIsInstance(square.dimensions[1], FrequencyDimension)
+        self.assertEqual(scale, square.dimensions[1].scale)
 
     def test_from_arr_with_units(self):
         td = TimeDimension(frequency=Seconds(1))
         scale = GeometricScale(20, 5000, 0.05, 10)
         arrs = [np.zeros((10, x)) for x in xrange(1, 11)]
         fa = FrequencyAdaptive(arrs, td, scale)
-        print fa.dimensions[1].slices
 
         raw_arr = ArrayWithUnits(np.array(fa), fa.dimensions)
 
