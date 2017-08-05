@@ -6,6 +6,7 @@ import numpy as np
 
 
 class ConstantRateTimeSeriesTests(unittest2.TestCase):
+
     def test_raises_when_not_array_with_units_instance(self):
         arr = np.zeros(10)
         self.assertRaises(ValueError, lambda: ConstantRateTimeSeries(arr))

@@ -1,5 +1,6 @@
 from frequencydimension import \
-    FrequencyDimensionEncoder, FrequencyDimensionDecoder
+    FrequencyDimensionEncoder, FrequencyDimensionDecoder, \
+    ExplicitFrequencyDimensionEncoder, ExplicitFrequencyDimensionDecoder
 from identitydimension import IdentityDimensionEncoder, IdentityDimensionDecoder
 from timedimension import TimeDimensionEncoder, TimeDimensionDecoder
 
@@ -8,7 +9,8 @@ class DimensionEncoder(object):
     encoders = [
         IdentityDimensionEncoder(),
         TimeDimensionEncoder(),
-        FrequencyDimensionEncoder()
+        FrequencyDimensionEncoder(),
+        ExplicitFrequencyDimensionEncoder()
     ]
 
     def __init__(self):
@@ -29,7 +31,8 @@ class DimensionDecoder(object):
     decoders = [
         IdentityDimensionDecoder(),
         TimeDimensionDecoder(),
-        FrequencyDimensionDecoder()
+        FrequencyDimensionDecoder(),
+        ExplicitFrequencyDimensionDecoder()
     ]
 
     def __init__(self):

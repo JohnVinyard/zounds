@@ -111,6 +111,10 @@ class TimeDimension(Dimension):
     def __repr__(self):
         return self.__str__()
 
+    def resample(self, ratio):
+        rs = self.samplerate.resample(ratio)
+        return TimeDimension(frequency=rs.frequency, duration=rs.duration)
+
     @property
     def samplerate(self):
         return SampleRate(self.frequency, self.duration)
@@ -118,6 +122,10 @@ class TimeDimension(Dimension):
     @property
     def overlap(self):
         return self.samplerate.overlap
+
+    @property
+    def overlap_ratio(self):
+        return self.samplerate.overlap_ratio
 
     @property
     def duration_in_seconds(self):

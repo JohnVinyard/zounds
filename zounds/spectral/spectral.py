@@ -8,6 +8,7 @@ from scipy.stats.mstats import gmean
 from frequencyscale import LinearScale
 from psychacoustics import Chroma as ChromaScale, Bark as BarkScale
 from tfrepresentation import FrequencyDimension
+from frequencyadaptive import FrequencyAdaptive
 from zounds.core import ArrayWithUnits, IdentityDimension
 from zounds.nputil import safe_log
 from zounds.timeseries import SR44100, audio_sample_rate
@@ -22,11 +23,11 @@ class FFT(Node):
         transformed = np.fft.rfft(data, axis=self._axis, norm='ortho')
 
         sr = audio_sample_rate(
-                int(data.shape[1] / data.dimensions[0].duration_in_seconds))
+            int(data.shape[1] / data.dimensions[0].duration_in_seconds))
         scale = LinearScale.from_sample_rate(sr, transformed.shape[-1])
 
         yield ArrayWithUnits(
-                transformed, [data.dimensions[0], FrequencyDimension(scale)])
+            transformed, [data.dimensions[0], FrequencyDimension(scale)])
 
 
 class DCT(Node):
@@ -34,22 +35,21 @@ class DCT(Node):
     Type II Discrete Cosine Transform
     """
 
-    def __init__(self,  axis=-1, scale_always_even=False, needs=None):
+    def __init__(self, axis=-1, scale_always_even=False, needs=None):
         super(DCT, self).__init__(needs=needs)
         self.scale_always_even = scale_always_even
         self._axis = axis
 
     def _process(self, data):
-
         transformed = dct(data, norm='ortho', axis=self._axis)
 
         sr = audio_sample_rate(
-                int(data.shape[1] / data.dimensions[0].duration_in_seconds))
+            int(data.shape[1] / data.dimensions[0].duration_in_seconds))
         scale = LinearScale.from_sample_rate(
-                sr, transformed.shape[-1], always_even=self.scale_always_even)
+            sr, transformed.shape[-1], always_even=self.scale_always_even)
 
         yield ArrayWithUnits(
-                transformed, [data.dimensions[0], FrequencyDimension(scale)])
+            transformed, [data.dimensions[0], FrequencyDimension(scale)])
 
 
 class DCTIV(Node):
@@ -74,11 +74,11 @@ class DCTIV(Node):
     def _process(self, data):
         raw = self._process_raw(data)
         sr = audio_sample_rate(
-                int(data.shape[1] / data.dimensions[0].duration_in_seconds))
+            int(data.shape[1] / data.dimensions[0].duration_in_seconds))
         scale = LinearScale.from_sample_rate(
-                sr, data.shape[1], always_even=self.scale_always_even)
+            sr, data.shape[1], always_even=self.scale_always_even)
         yield ArrayWithUnits(
-                raw, [data.dimensions[0], FrequencyDimension(scale)])
+            raw, [data.dimensions[0], FrequencyDimension(scale)])
 
 
 class MDCT(Node):
@@ -98,7 +98,7 @@ class MDCT(Node):
         b = np.fft.fft(a)
         c = b[:, :l]
         transformed = np.sqrt(2 / l) * np.real(
-                c * np.exp(cpi * (f + 0.5) * (l + 1) / 2 / l))
+            c * np.exp(cpi * (f + 0.5) * (l + 1) / 2 / l))
         return transformed
 
     def _process(self, data):
@@ -108,7 +108,29 @@ class MDCT(Node):
         scale = LinearScale.from_sample_rate(sr, transformed.shape[1])
 
         yield ArrayWithUnits(
-                transformed, [data.dimensions[0], FrequencyDimension(scale)])
+            transformed, [data.dimensions[0], FrequencyDimension(scale)])
+
+
+class FrequencyAdaptiveTransform(Node):
+    def __init__(
+            self,
+            transform=None,
+            scale=None,
+            needs=None):
+        super(FrequencyAdaptiveTransform, self).__init__(needs=needs)
+        self._scale = scale
+        self._transform = transform
+
+    def _process_band(self, data, band):
+        raw_coeffs = data[:, band]
+        window = np.hanning(raw_coeffs.shape[1])
+        return self._transform(raw_coeffs * window[None, :], norm='ortho')
+
+    def _process(self, data):
+        yield FrequencyAdaptive(
+            [self._process_band(data, band) for band in self._scale],
+            data.dimensions[0],
+            self._scale)
 
 
 # TODO: This constructor should not take a samplerate; that information should
@@ -130,13 +152,13 @@ class Chroma(Node):
         data = np.abs(data)
         if self._chroma_scale is None:
             self._chroma_scale = ChromaScale( \
-                    self._samplerate.samples_per_second,
-                    data.shape[1] * 2,
-                    nbands=self._nbins)
+                self._samplerate.samples_per_second,
+                data.shape[1] * 2,
+                nbands=self._nbins)
 
         yield ArrayWithUnits(
-                self._chroma_scale.transform(data),
-                [data.dimensions[0], IdentityDimension()])
+            self._chroma_scale.transform(data),
+            [data.dimensions[0], IdentityDimension()])
 
 
 # TODO: This constructor should not take a samplerate; that information should
@@ -161,15 +183,15 @@ class BarkBands(Node):
         data = np.abs(data)
         if self._bark_scale is None:
             self._bark_scale = BarkScale(
-                    self._samplerate.samples_per_second,
-                    data.shape[1] * 2,
-                    self._n_bands,
-                    self._start_freq_hz,
-                    self._stop_freq_hz)
+                self._samplerate.samples_per_second,
+                data.shape[1] * 2,
+                self._n_bands,
+                self._start_freq_hz,
+                self._stop_freq_hz)
 
         yield ArrayWithUnits(
-                self._bark_scale.transform(data),
-                [data.dimensions[0], IdentityDimension()])
+            self._bark_scale.transform(data),
+            [data.dimensions[0], IdentityDimension()])
 
 
 class SpectralCentroid(Node):
@@ -238,4 +260,4 @@ class BFCC(Node):
             [:, self._exclude: self._exclude + self._n_coeffs]
 
         yield ArrayWithUnits(
-                bfcc.copy(), [data.dimensions[0], IdentityDimension()])
+            bfcc.copy(), [data.dimensions[0], IdentityDimension()])

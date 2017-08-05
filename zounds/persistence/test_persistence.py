@@ -2,17 +2,20 @@ import unittest2
 from zounds.core import ArrayWithUnits, IdentityDimension
 from zounds.timeseries import \
     TimeDimension, Seconds, Milliseconds, AudioSamples, SR11025
-from zounds.spectral import FrequencyDimension, FrequencyScale, FrequencyBand
+from zounds.spectral import \
+    FrequencyDimension, LinearScale, FrequencyBand, FrequencyAdaptive, \
+    GeometricScale
 from arraywithunits import \
     ArrayWithUnitsEncoder, ArrayWithUnitsDecoder, PackedArrayWithUnitsEncoder
+from frequencyadaptive import FrequencyAdaptiveDecoder
 import numpy as np
 from io import BytesIO
 
 
 class ArrayWithUnitsFeatureTests(unittest2.TestCase):
-    def _roundtrip(self, arr, encoder=None):
+    def _roundtrip(self, arr, encoder=None, decoder=None):
         encoder = encoder or ArrayWithUnitsEncoder()
-        decoder = ArrayWithUnitsDecoder()
+        decoder = decoder or ArrayWithUnitsDecoder()
         encoded = BytesIO(''.join(encoder._process(arr)))
         return decoder(encoded)
 
@@ -24,6 +27,18 @@ class ArrayWithUnitsFeatureTests(unittest2.TestCase):
         self.assertIsInstance(decoded, ArrayWithUnits)
         self.assertEqual(2, len(decoded.dimensions))
         self.assertEqual((100, 8), decoded.shape)
+
+    def test_can_roundtrip_frequency_adaptive_transform(self):
+        td = TimeDimension(
+            duration=Seconds(1),
+            frequency=Milliseconds(500))
+        scale = GeometricScale(20, 5000, 0.05, 120)
+        print 'SCALE SLICE BEFORE DECODE', scale.get_slice(scale[0])
+        arrs = [np.zeros((10, x)) for x in xrange(1, 121)]
+        fa = FrequencyAdaptive(arrs, td, scale)
+        decoded = self._roundtrip(fa, decoder=FrequencyAdaptiveDecoder())
+        self.assertIsInstance(decoded, FrequencyAdaptive)
+        self.assertEqual(fa.dimensions, decoded.dimensions)
 
     def test_can_round_trip_audio_samples(self):
         raw = np.random.random_sample(11025 * 10)
@@ -76,7 +91,7 @@ class ArrayWithUnitsFeatureTests(unittest2.TestCase):
 
     def test_can_round_trip_2d_constant_rate_time_series(self):
         dim1 = TimeDimension(Seconds(1), Milliseconds(500))
-        scale = FrequencyScale(FrequencyBand(20, 20000), 100)
+        scale = LinearScale(FrequencyBand(20, 20000), 100)
         dim2 = FrequencyDimension(scale)
         raw = np.random.random_sample((10, 100))
         ts = ArrayWithUnits(raw, (dim1, dim2))
@@ -97,7 +112,7 @@ class ArrayWithUnitsFeatureTests(unittest2.TestCase):
             self):
         dim1 = TimeDimension(Seconds(2), Milliseconds(1000))
         dim2 = TimeDimension(Seconds(1), Milliseconds(500))
-        scale = FrequencyScale(FrequencyBand(20, 20000), 100)
+        scale = LinearScale(FrequencyBand(20, 20000), 100)
         dim3 = FrequencyDimension(scale)
         raw = np.random.random_sample((5, 2, 100))
         ts = ArrayWithUnits(raw, (dim1, dim2, dim3))

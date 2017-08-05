@@ -12,7 +12,6 @@ class CustomSlice(object):
 
 class ArrayWithUnits(np.ndarray):
     def __new__(cls, arr, dimensions):
-
         if arr.ndim != len(dimensions):
             raise ValueError(
                 'arr.ndim and len(dimensions) must match.  '

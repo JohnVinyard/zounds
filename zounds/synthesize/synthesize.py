@@ -1,11 +1,14 @@
 from __future__ import division
+
 import numpy as np
-from scipy.fftpack import idct
-from zounds.timeseries import audio_sample_rate, Seconds, AudioSamples
-from zounds.spectral import DCTIV
+from scipy.fftpack import dct, idct, rfft
+
+from zounds.core import ArrayWithUnits, IdentityDimension
+from zounds.spectral import DCTIV, LinearScale
+from zounds.spectral import FrequencyDimension
 from zounds.spectral.sliding_window import \
     IdentityWindowingFunc, OggVorbisWindowingFunc
-from zounds.core import ArrayWithUnits, IdentityDimension
+from zounds.timeseries import audio_sample_rate, Seconds, AudioSamples
 
 
 class ShortTimeTransformSynthesizer(object):
@@ -96,6 +99,64 @@ class MDCTSynthesizer(ShortTimeTransformSynthesizer):
         return np.sqrt(2 / l) * np.real(b * np.exp(cpi * t / 2 / l))
 
 
+class BaseFrequencyAdaptiveSynthesizer(object):
+    def __init__(
+            self,
+            scale,
+            band_transform,
+            short_time_synth,
+            samplerate):
+        super(BaseFrequencyAdaptiveSynthesizer, self).__init__()
+        self.scale = scale
+        self.samplerate = samplerate
+        self.short_time_synth = short_time_synth
+        self.band_transform = band_transform
+
+    def _n_linear_scale_bands(self, frequency_adaptive_coeffs):
+        raise NotImplementedError()
+
+    def synthesize(self, freq_adaptive_coeffs):
+        fac = freq_adaptive_coeffs
+
+        linear_scale = LinearScale.from_sample_rate(
+            self.samplerate,
+            self._n_linear_scale_bands(fac),
+            always_even=True)
+
+        frequency_dimension = FrequencyDimension(linear_scale)
+
+        coeffs = ArrayWithUnits(
+            np.zeros((len(fac), linear_scale.n_bands)),
+            dimensions=[fac.dimensions[0], frequency_dimension])
+
+        for band in self.scale:
+            coeffs[:, band] += self.band_transform(fac[:, band], norm='ortho')
+
+        return self.short_time_synth.synthesize(coeffs)
+
+
+class FrequencyAdaptiveDCTSynthesizer(BaseFrequencyAdaptiveSynthesizer):
+    def __init__(self, scale, samplerate):
+        super(FrequencyAdaptiveDCTSynthesizer, self).__init__(
+            scale, dct, DCTSynthesizer(), samplerate)
+
+    def _n_linear_scale_bands(self, frequency_adaptive_coeffs):
+        fac = frequency_adaptive_coeffs.dimensions[0]
+        return int(fac.duration / self.samplerate.frequency)
+
+
+class FrequencyAdaptiveFFTSynthesizer(BaseFrequencyAdaptiveSynthesizer):
+    def __init__(self, scale, samplerate):
+        super(FrequencyAdaptiveFFTSynthesizer, self).__init__(
+            scale, rfft, FFTSynthesizer(), samplerate)
+
+    def _n_linear_scale_bands(self, frequency_adaptive_coeffs):
+        # https://docs.scipy.org/doc/numpy/reference/generated/numpy.fft.rfft.html#numpy.fft.rfft
+        fac = frequency_adaptive_coeffs.dimensions[0]
+        raw_samples = int(fac.duration) / self.samplerate.frequency
+        return int((len(raw_samples) // 2) + 1)
+
+
 class SineSynthesizer(object):
     """
     Synthesize sine waves
@@ -136,7 +197,7 @@ class TickSynthesizer(object):
         # introduce periodic ticking sound
         step = int(sr // ticks_per_second)
         for i in xrange(0, len(samples), step):
-            samples[i:i + len(tick)] = tick
+            samples[i:i + len(tick)] += tick
         return AudioSamples(samples, self.samplerate)
 
 

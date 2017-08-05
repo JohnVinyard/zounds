@@ -185,3 +185,5 @@ class SlidingWindowTests(unittest2.TestCase):
         _id = Document.process(windowed=arr)
         result = Document(_id).windowed
         self.assertEqual(np.uint8, result.dtype)
+
+

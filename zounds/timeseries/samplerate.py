@@ -36,6 +36,10 @@ class SampleRate(object):
     def overlap(self):
         return self.duration - self.frequency
 
+    @property
+    def overlap_ratio(self):
+        return self.overlap / self.duration
+
     def __mul__(self, other):
         try:
             if len(other) == 1:
@@ -61,6 +65,13 @@ class SampleRate(object):
         stepsize = np.round(self.frequency / td.frequency)
         return int(stepsize), int(windowsize)
 
+    def resample(self, ratio):
+        orig_freq = Picoseconds(int(self.frequency / Picoseconds(1)))
+        orig_duration = Picoseconds(int(self.duration / Picoseconds(1)))
+        f = orig_freq * ratio
+        d = orig_duration * ratio
+        return SampleRate(f, d)
+
 
 class AudioSampleRate(SampleRate):
     def __init__(self, samples_per_second, suggested_window, suggested_hop):
@@ -82,8 +93,8 @@ class AudioSampleRate(SampleRate):
 
     def half_lapped(self):
         return SampleRate(
-                self.one_sample * self.suggested_hop,
-                self.one_sample * self.suggested_window)
+            self.one_sample * self.suggested_hop,
+            self.one_sample * self.suggested_window)
 
 
 class SR96000(AudioSampleRate):
@@ -119,7 +130,7 @@ def audio_sample_rate(samples_per_second):
         if samples_per_second == sr.samples_per_second:
             return sr
     raise ValueError(
-            '{samples_per_second} is an invalid sample rate'.format(**locals()))
+        '{samples_per_second} is an invalid sample rate'.format(**locals()))
 
 
 class HalfLapped(SampleRate):

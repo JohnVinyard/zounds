@@ -1,6 +1,7 @@
 from __future__ import division
 import unittest2
-from frequencyscale import FrequencyBand, LinearScale, LogScale
+from frequencyscale import \
+    FrequencyBand, LinearScale, LogScale, ExplicitScale, GeometricScale
 from zounds.timeseries import SR44100
 import numpy as np
 
@@ -16,6 +17,11 @@ class FrequencyBandTests(unittest2.TestCase):
 
     def test_cannot_create_with_invalid_interval(self):
         self.assertRaises(ValueError, lambda: FrequencyBand(200, 100))
+
+    def test_identical_frequency_bands_have_same_hash_value(self):
+        fb1 = FrequencyBand.from_center(1000, 50)
+        fb2 = FrequencyBand.from_center(1000, 50)
+        self.assertEqual(hash(fb1), hash(fb2))
 
 
 class FrequencyScaleTests(unittest2.TestCase):
@@ -120,3 +126,33 @@ class LogScaleTests(unittest2.TestCase):
         # All differences should be positive, as bandwidth should be
         # monotonically increasing
         self.assertTrue(np.all(diff > 0))
+
+
+class GeometricScaleTests(unittest2.TestCase):
+    def test_slicing_geometric_scale_returns_explicit_scale(self):
+        scale = GeometricScale(
+            start_center_hz=20,
+            stop_center_hz=5000,
+            bandwidth_ratio=0.05,
+            n_bands=100)
+        sliced = scale[FrequencyBand(100, 1000)]
+        self.assertIsInstance(sliced, ExplicitScale)
+
+
+class ExplicitScaleTests(unittest2.TestCase):
+    def test_can_construct_explicit_scale_from_scale(self):
+        linear_scale = LinearScale(FrequencyBand(100, 1000), n_bands=50)
+        explicit_scale = ExplicitScale(linear_scale)
+        self.assertSequenceEqual(linear_scale.bands, explicit_scale.bands)
+
+    def test_can_construct_explicit_scale_from_iterable_of_bands(self):
+        linear_scale = LinearScale(FrequencyBand(100, 1000), n_bands=50)
+        explicit_scale = ExplicitScale(linear_scale.bands)
+        self.assertSequenceEqual(linear_scale.bands, explicit_scale.bands)
+
+    def test_equals(self):
+        scale1 = ExplicitScale(
+            LinearScale(FrequencyBand(100, 1000), n_bands=50))
+        scale2 = ExplicitScale(
+            LinearScale(FrequencyBand(100, 1000), n_bands=50))
+        self.assertEqual(scale1, scale2)

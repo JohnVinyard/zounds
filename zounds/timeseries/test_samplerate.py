@@ -1,6 +1,7 @@
+from __future__ import division
 import unittest2
 import numpy as np
-from duration import Seconds
+from duration import Seconds, Milliseconds
 from zounds.core import ArrayWithUnits
 from timeseries import TimeDimension
 from samplerate import \
@@ -126,3 +127,26 @@ class SampleRateTests(unittest2.TestCase):
         sr = SampleRate(Seconds(1), Seconds(2)) * (2, 4)
         self.assertEqual(Seconds(2), sr.frequency)
         self.assertEqual(Seconds(5), sr.duration)
+
+    def test_resampled(self):
+        original_frequency = Milliseconds(500)
+        original_duration = Seconds(1)
+        ratio = 0.02
+        orig_sr = SampleRate(original_frequency, original_duration)
+        new_sr = orig_sr.resample(ratio)
+        self.assertEqual(Milliseconds(10), new_sr.frequency)
+        self.assertEqual(Milliseconds(20), new_sr.duration)
+
+    def test_overlap_ratio_zero(self):
+        sr = SampleRate(frequency=Seconds(1), duration=Seconds(1))
+        self.assertEqual(0, sr.overlap_ratio)
+
+    def test_overlap_ratio_half(self):
+        sr = SampleRate(frequency=Milliseconds(500), duration=Seconds(1))
+        self.assertEqual(0.5, sr.overlap_ratio)
+
+    def test_overlap_ratio_type(self):
+        sr = SampleRate(frequency=Milliseconds(500), duration=Seconds(1))
+        self.assertIsInstance(sr.overlap_ratio, float)
+
+

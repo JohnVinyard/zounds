@@ -1,5 +1,5 @@
-from zounds.core import ArrayWithUnits
 from timeseries import TimeDimension, TimeSlice
+from zounds.core import ArrayWithUnits
 
 
 class ConstantRateTimeSeries(ArrayWithUnits):
@@ -13,6 +13,10 @@ class ConstantRateTimeSeries(ArrayWithUnits):
             raise ValueError('array first dimension must be a TimeDimension')
 
         return ArrayWithUnits.__new__(cls, array, array.dimensions)
+
+    @property
+    def time_dimension(self):
+        return self.dimensions[0]
 
     def iter_slices(self):
         td = self.dimensions[0]

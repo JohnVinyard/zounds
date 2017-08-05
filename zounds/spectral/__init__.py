@@ -4,11 +4,14 @@ from sliding_window import \
 
 from spectral import \
     FFT, DCT, DCTIV, MDCT, BarkBands, Chroma, BFCC, SpectralCentroid, \
-    SpectralFlatness
+    SpectralFlatness, FrequencyAdaptiveTransform
 
-from tfrepresentation import FrequencyDimension
+from tfrepresentation import FrequencyDimension, ExplicitFrequencyDimension
 
 from weighting import AWeighting
 
 from frequencyscale import \
-    LinearScale, LogScale, FrequencyBand, FrequencyScale, GeometricScale
+    LinearScale, LogScale, FrequencyBand, FrequencyScale, GeometricScale, \
+    ExplicitScale
+
+from frequencyadaptive import FrequencyAdaptive
