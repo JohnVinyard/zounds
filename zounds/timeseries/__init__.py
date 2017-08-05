@@ -5,7 +5,7 @@ from audiosamples import AudioSamples
 
 from samplerate import \
     SR11025, SR22050, SR44100, SR48000, SR96000, HalfLapped, audio_sample_rate,\
-    Stride, SampleRate
+    Stride, SampleRate, nearest_audio_sample_rate
 
 from timeseries import TimeSlice, TimeDimension
 

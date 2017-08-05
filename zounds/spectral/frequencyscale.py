@@ -168,14 +168,6 @@ class FrequencyScale(object):
 
         return self._construct_scale_from_slice(bands)
 
-        # try:
-        #     # freq_band = FrequencyBand(bands[0].start_hz, bands[-1].stop_hz)
-        #     # return self.__class__(freq_band, len(bands))
-        #     self._construct_scale_from_slice(bands)
-        # except TypeError:
-        #     # we've already got an individual band
-        #     return bands
-
     def __str__(self):
         cls = self.__class__.__name__
         return '{cls}(band={self.frequency_band}, n_bands={self.n_bands})' \
@@ -224,38 +216,6 @@ class LogScale(FrequencyScale):
                      for (cf, bw) in zip(center_freqs[:-1], bandwidths))
 
 
-# class GeometricScale(FrequencyScale):
-#     def __init__(
-#             self,
-#             frequency_band,
-#             n_bands,
-#             bandwidth_ratio=0.05,
-#             always_even=False):
-#         super(GeometricScale, self).__init__(
-#             frequency_band, n_bands, always_even=always_even)
-#         self.bandwidth_ratio = bandwidth_ratio
-#
-#     def additional_args(self):
-#         d = super(GeometricScale, self).additional_args()
-#         d.update(bandwidth_ratio=self.bandwidth_ratio)
-#         return d
-#
-#     def _construct_scale_from_slice(self, bands):
-#         return ExplicitScale(bands)
-#
-#     def _compute_bands(self):
-#         band = self.frequency_band
-#         n_bands = self.n_bands
-#         return tuple(
-#             FrequencyBand.from_center(cf, cf * self.bandwidth_ratio)
-#             for cf in np.geomspace(band.start_hz, band.stop_hz, num=n_bands))
-#
-#     def __eq__(self, other):
-#         return \
-#             super(GeometricScale, self).__eq__(other) \
-#             and self.bandwidth_ratio == other.bandwidth_ratio
-
-
 class GeometricScale(FrequencyScale):
     def __init__(
             self,
@@ -296,6 +256,9 @@ class ExplicitScale(FrequencyScale):
         super(ExplicitScale, self).__init__(
             frequency_band, len(bands), always_even=False)
         self._bands = bands
+
+    def _construct_scale_from_slice(self, bands):
+        return ExplicitScale(bands)
 
     def _compute_bands(self):
         return self._bands

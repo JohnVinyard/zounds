@@ -25,7 +25,7 @@ BaseModel = zounds.stft(resample_to=samplerate)
 
 windowing_func = zounds.OggVorbisWindowingFunc()
 
-scale = zounds.GeometricScale(20, 5000, 0.1, 100)
+scale = zounds.GeometricScale(300, 3030, 0.05, 100)
 
 
 @zounds.simple_in_memory_settings

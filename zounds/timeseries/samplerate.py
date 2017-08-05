@@ -133,6 +133,12 @@ def audio_sample_rate(samples_per_second):
         '{samples_per_second} is an invalid sample rate'.format(**locals()))
 
 
+def nearest_audio_sample_rate(samples_per_second):
+    samplerates = np.array([s.samples_per_second for s in _samplerates])
+    diffs = np.abs(samples_per_second - samplerates)
+    return _samplerates[np.argmin(diffs)]
+
+
 class HalfLapped(SampleRate):
     def __init__(self, window_at_44100=2048, hop_at_44100=1024):
         one_sample_at_44100 = Picoseconds(int(1e12)) / 44100.

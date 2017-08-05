@@ -8,7 +8,9 @@ from zounds.spectral import DCTIV, LinearScale
 from zounds.spectral import FrequencyDimension
 from zounds.spectral.sliding_window import \
     IdentityWindowingFunc, OggVorbisWindowingFunc
-from zounds.timeseries import audio_sample_rate, Seconds, AudioSamples
+from zounds.timeseries import \
+    nearest_audio_sample_rate, audio_sample_rate, Seconds, AudioSamples, \
+    Picoseconds, SampleRate
 
 
 class ShortTimeTransformSynthesizer(object):
@@ -23,18 +25,20 @@ class ShortTimeTransformSynthesizer(object):
 
     def _overlap_add(self, frames):
         time_dim = frames.dimensions[0]
-        sample_length_seconds = time_dim.duration_in_seconds / frames.shape[-1]
-        samples_per_second = int(1 / sample_length_seconds)
-        samplerate = audio_sample_rate(samples_per_second)
-        windowsize = int(np.round(time_dim.duration / samplerate.frequency))
-        hopsize = int(np.round(time_dim.frequency / samplerate.frequency))
-        arr = np.zeros(int(time_dim.end / samplerate.frequency))
+        sample_freq = time_dim.duration / frames.shape[-1]
+        windowsize = int(np.round(time_dim.duration / sample_freq))
+        hopsize = int(np.round(time_dim.frequency / sample_freq))
+
+        # create an empty array of audio samples
+        arr = np.zeros(int(time_dim.end / sample_freq))
         for i, f in enumerate(frames):
             start = i * hopsize
             stop = start + windowsize
             l = len(arr[start:stop])
             arr[start:stop] += (self._windowing_function() * f[:l])
-        return AudioSamples(arr, samplerate)
+
+        sr = nearest_audio_sample_rate(Seconds(1) / sample_freq)
+        return AudioSamples(arr, sr)
 
     def synthesize(self, frames):
         audio = self._transform(frames)
@@ -105,8 +109,12 @@ class BaseFrequencyAdaptiveSynthesizer(object):
             scale,
             band_transform,
             short_time_synth,
-            samplerate):
+            samplerate,
+            coeffs_dtype,
+            scale_slices_always_even):
         super(BaseFrequencyAdaptiveSynthesizer, self).__init__()
+        self.scale_slices_always_even = scale_slices_always_even
+        self.coeffs_dtype = coeffs_dtype
         self.scale = scale
         self.samplerate = samplerate
         self.short_time_synth = short_time_synth
@@ -121,13 +129,14 @@ class BaseFrequencyAdaptiveSynthesizer(object):
         linear_scale = LinearScale.from_sample_rate(
             self.samplerate,
             self._n_linear_scale_bands(fac),
-            always_even=True)
+            always_even=self.scale_slices_always_even)
 
         frequency_dimension = FrequencyDimension(linear_scale)
 
         coeffs = ArrayWithUnits(
-            np.zeros((len(fac), linear_scale.n_bands)),
+            np.zeros((len(fac), linear_scale.n_bands), dtype=self.coeffs_dtype),
             dimensions=[fac.dimensions[0], frequency_dimension])
+        print 'COEFFS SHAPE', coeffs.shape
 
         for band in self.scale:
             coeffs[:, band] += self.band_transform(fac[:, band], norm='ortho')
@@ -138,7 +147,12 @@ class BaseFrequencyAdaptiveSynthesizer(object):
 class FrequencyAdaptiveDCTSynthesizer(BaseFrequencyAdaptiveSynthesizer):
     def __init__(self, scale, samplerate):
         super(FrequencyAdaptiveDCTSynthesizer, self).__init__(
-            scale, dct, DCTSynthesizer(), samplerate)
+            scale,
+            dct,
+            DCTSynthesizer(),
+            samplerate,
+            np.float64,
+            scale_slices_always_even=True)
 
     def _n_linear_scale_bands(self, frequency_adaptive_coeffs):
         fac = frequency_adaptive_coeffs.dimensions[0]
@@ -148,13 +162,18 @@ class FrequencyAdaptiveDCTSynthesizer(BaseFrequencyAdaptiveSynthesizer):
 class FrequencyAdaptiveFFTSynthesizer(BaseFrequencyAdaptiveSynthesizer):
     def __init__(self, scale, samplerate):
         super(FrequencyAdaptiveFFTSynthesizer, self).__init__(
-            scale, rfft, FFTSynthesizer(), samplerate)
+            scale,
+            np.fft.rfft,
+            FFTSynthesizer(),
+            samplerate,
+            np.complex128,
+            scale_slices_always_even=False)
 
     def _n_linear_scale_bands(self, frequency_adaptive_coeffs):
         # https://docs.scipy.org/doc/numpy/reference/generated/numpy.fft.rfft.html#numpy.fft.rfft
         fac = frequency_adaptive_coeffs.dimensions[0]
-        raw_samples = int(fac.duration) / self.samplerate.frequency
-        return int((len(raw_samples) // 2) + 1)
+        raw_samples = int(fac.duration / self.samplerate.frequency)
+        return int(raw_samples // 2) + 1
 
 
 class SineSynthesizer(object):

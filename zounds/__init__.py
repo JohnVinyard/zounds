@@ -5,7 +5,7 @@ from timeseries import \
     SR11025, SR22050, SR44100, SR48000, SR96000, HalfLapped, Stride, \
     TimeSlice, VariableRateTimeSeries, VariableRateTimeSeriesFeature, \
     SampleRate, AudioSamples, TimeDimension, audio_sample_rate, \
-    ConstantRateTimeSeries
+    ConstantRateTimeSeries, nearest_audio_sample_rate
 
 from soundfile import \
     MetaData, AudioMetaDataEncoder, FreesoundOrgConfig, \

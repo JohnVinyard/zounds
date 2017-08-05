@@ -3,12 +3,15 @@ import unittest2
 
 from synthesize import \
     SineSynthesizer, DCTSynthesizer, FFTSynthesizer, NoiseSynthesizer
-from zounds.basic import stft
+from zounds.basic import stft, resampled
 from zounds.core import ArrayWithUnits
-from zounds.spectral import FrequencyDimension, FrequencyBand, LinearScale
+from zounds.persistence import ArrayWithUnitsFeature
+from zounds.spectral import \
+    FrequencyDimension, FrequencyBand, LinearScale, FFT, SlidingWindow, \
+    OggVorbisWindowingFunc
 from zounds.timeseries import \
     SR22050, SR44100, SR11025, SR48000, SR96000, HalfLapped, Seconds, \
-    TimeDimension, AudioSamples
+    TimeDimension, AudioSamples, SampleRate, Milliseconds
 from zounds.util import simple_in_memory_settings
 
 
@@ -27,6 +30,7 @@ class SynthesizeTests(unittest2.TestCase):
 
 
 class FFTSynthesizerTests(unittest2.TestCase):
+
     def can_invert_fft(self, samplerate):
         base_cls = stft(
             resample_to=samplerate,
@@ -47,6 +51,37 @@ class FFTSynthesizerTests(unittest2.TestCase):
         recon = fft_synth.synthesize(doc.fft)
 
         self.assertIsInstance(recon, ArrayWithUnits)
+        self.assertEqual(audio.dimensions, recon.dimensions)
+
+    def test_can_invert_long_fft(self):
+        samplerate = SR11025()
+        rs = resampled(resample_to=samplerate)
+
+        @simple_in_memory_settings
+        class Document(rs):
+            long_windowed = ArrayWithUnitsFeature(
+                SlidingWindow,
+                wscheme=SampleRate(
+                    Milliseconds(500),
+                    Seconds(1)),
+                wfunc=OggVorbisWindowingFunc(),
+                needs=rs.resampled,
+                store=True)
+
+            long_fft = ArrayWithUnitsFeature(
+                FFT,
+                needs=long_windowed,
+                store=True)
+
+        synth = SineSynthesizer(samplerate)
+        audio = synth.synthesize(Seconds(2), freqs_in_hz=[440., 880.])
+
+        _id = Document.process(meta=audio.encode())
+        doc = Document(_id)
+
+        fft_synth = FFTSynthesizer()
+        recon = fft_synth.synthesize(doc.long_fft)
+        self.assertIsInstance(recon, AudioSamples)
         self.assertEqual(audio.dimensions, recon.dimensions)
 
     def test_can_invert_fft_11025(self):
@@ -100,7 +135,6 @@ class SineSynthesizerTests(unittest2.TestCase):
 
 
 class NoiseSynthesizerTests(unittest2.TestCase):
-
     def test_noise_synth_outputs_values_in_correct_range(self):
         ns = NoiseSynthesizer(SR11025())
         audio = ns.synthesize(Seconds(1))
