@@ -136,7 +136,6 @@ class BaseFrequencyAdaptiveSynthesizer(object):
         coeffs = ArrayWithUnits(
             np.zeros((len(fac), linear_scale.n_bands), dtype=self.coeffs_dtype),
             dimensions=[fac.dimensions[0], frequency_dimension])
-        print 'COEFFS SHAPE', coeffs.shape
 
         for band in self.scale:
             coeffs[:, band] += self.band_transform(fac[:, band], norm='ortho')
@@ -216,7 +215,8 @@ class TickSynthesizer(object):
         # introduce periodic ticking sound
         step = int(sr // ticks_per_second)
         for i in xrange(0, len(samples), step):
-            samples[i:i + len(tick)] += tick
+            size = len(samples[i:i + len(tick)])
+            samples[i:i + len(tick)] += tick[:size]
         return AudioSamples(samples, self.samplerate)
 
 

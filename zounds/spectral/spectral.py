@@ -116,14 +116,16 @@ class FrequencyAdaptiveTransform(Node):
             self,
             transform=None,
             scale=None,
+            window_func=None,
             needs=None):
         super(FrequencyAdaptiveTransform, self).__init__(needs=needs)
+        self._window_func = window_func or np.ones
         self._scale = scale
         self._transform = transform
 
     def _process_band(self, data, band):
         raw_coeffs = data[:, band]
-        window = np.hanning(raw_coeffs.shape[1])
+        window = self._window_func(raw_coeffs.shape[1])
         return self._transform(raw_coeffs * window[None, :], norm='ortho')
 
     def _process(self, data):

@@ -1,9 +1,10 @@
 import unittest2
 import numpy as np
 from weighting import AWeighting
-from frequencyscale import LinearScale, FrequencyBand
+from frequencyscale import LinearScale, FrequencyBand, GeometricScale
 from tfrepresentation import FrequencyDimension
-from zounds.timeseries import Seconds, TimeDimension
+from frequencyadaptive import FrequencyAdaptive
+from zounds.timeseries import Seconds, TimeDimension, Milliseconds
 from zounds.core import ArrayWithUnits, IdentityDimension
 
 
@@ -27,3 +28,23 @@ class WeightingTests(unittest2.TestCase):
         weighting = AWeighting()
         weights = weighting.weights(scale)
         self.assertEqual((100,), weights.shape)
+
+    def test_can_apply_a_weighting_to_time_frequency_representation(self):
+        td = TimeDimension(Seconds(1), Seconds(1))
+        fd = FrequencyDimension(LinearScale(FrequencyBand(20, 22050), 100))
+        tf = ArrayWithUnits(np.ones((90, 100)), [td, fd])
+        weighting = AWeighting()
+        result = tf * weighting
+        self.assertGreater(result[0, -1], result[0, 0])
+
+    def test_can_apply_a_weighting_to_frequency_adaptive_representation(self):
+        td = TimeDimension(
+            duration=Seconds(1),
+            frequency=Milliseconds(500))
+        scale = GeometricScale(20, 5000, 0.05, 120)
+        arrs = [np.ones((10, x)) for x in xrange(1, 121)]
+        fa = FrequencyAdaptive(arrs, td, scale)
+        weighting = AWeighting()
+        result = fa * weighting
+        self.assertGreater(
+            result[:, scale[-1]].sum(), result[:, scale[0]].sum())

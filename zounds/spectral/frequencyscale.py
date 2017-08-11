@@ -33,6 +33,19 @@ class FrequencyBand(object):
     def __hash__(self):
         return (self.__class__.__name__, self.start_hz, self.stop_hz).__hash__()
 
+    def intersect(self, other):
+        lowest_stop = min(self.stop_hz, other.stop_hz)
+        highest_start = max(self.start_hz, other.start_hz)
+        return FrequencyBand(highest_start, lowest_stop)
+
+    def bandwidth_ratio(self, other):
+        return other.bandwidth / self.bandwidth
+
+    def intersection_ratio(self, other):
+        intersection = self.intersect(other)
+        print intersection
+        return self.bandwidth_ratio(intersection)
+
     @staticmethod
     def from_start(start_hz, bandwidth_hz):
         return FrequencyBand(start_hz, start_hz + bandwidth_hz)

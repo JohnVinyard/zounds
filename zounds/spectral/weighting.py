@@ -1,4 +1,5 @@
 import numpy as np
+from frequencyadaptive import FrequencyAdaptive
 
 
 class FrequencyWeighting(object):
@@ -25,6 +26,14 @@ class FrequencyWeighting(object):
 
     def __mul__(self, other):
         frequency_dim = other.dimensions[-1]
+
+        if isinstance(other, FrequencyAdaptive):
+            weights = self._wdata(frequency_dim.scale)
+            arrs = [
+                other[:, band] * w
+                for band, w in zip(frequency_dim.scale, weights)]
+            return FrequencyAdaptive(arrs, other.time_dimension, other.scale)
+
         try:
             return self._wdata(frequency_dim.scale) * other
         except AttributeError:
