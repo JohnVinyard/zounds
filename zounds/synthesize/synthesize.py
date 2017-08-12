@@ -243,5 +243,5 @@ class SilenceSynthesizer(object):
     def synthesize(self, duration):
         sr = self.samplerate.samples_per_second
         seconds = duration / Seconds(1)
-        samples = np.zeros(sr * seconds)
+        samples = np.zeros(int(sr * seconds))
         return AudioSamples(samples, self.samplerate)

@@ -2,7 +2,8 @@ import numpy as np
 import unittest2
 
 from synthesize import \
-    SineSynthesizer, DCTSynthesizer, FFTSynthesizer, NoiseSynthesizer
+    SineSynthesizer, DCTSynthesizer, FFTSynthesizer, NoiseSynthesizer, \
+    SilenceSynthesizer
 from zounds.basic import stft, resampled
 from zounds.core import ArrayWithUnits
 from zounds.persistence import ArrayWithUnitsFeature
@@ -30,7 +31,6 @@ class SynthesizeTests(unittest2.TestCase):
 
 
 class FFTSynthesizerTests(unittest2.TestCase):
-
     def can_invert_fft(self, samplerate):
         base_cls = stft(
             resample_to=samplerate,
@@ -140,3 +140,10 @@ class NoiseSynthesizerTests(unittest2.TestCase):
         audio = ns.synthesize(Seconds(1))
         self.assertLess(audio.min(), 0)
         self.assertGreater(audio.max(), 0)
+
+
+class SilenceSynthesizerTests(unittest2.TestCase):
+    def test_silence_synthesizer_outputs_zero(self):
+        synth = SilenceSynthesizer(SR11025())
+        audio = synth.synthesize(Seconds(1))
+        np.testing.assert_allclose(audio, 0)
