@@ -1,7 +1,7 @@
 from __future__ import division
 
 import numpy as np
-from scipy.fftpack import dct, idct, rfft
+from scipy.fftpack import dct, idct
 
 from zounds.core import ArrayWithUnits, IdentityDimension
 from zounds.spectral import DCTIV, LinearScale
@@ -9,8 +9,7 @@ from zounds.spectral import FrequencyDimension
 from zounds.spectral.sliding_window import \
     IdentityWindowingFunc, OggVorbisWindowingFunc
 from zounds.timeseries import \
-    nearest_audio_sample_rate, audio_sample_rate, Seconds, AudioSamples, \
-    Picoseconds, SampleRate
+    nearest_audio_sample_rate, Seconds, AudioSamples
 
 
 class ShortTimeTransformSynthesizer(object):
@@ -233,4 +232,16 @@ class NoiseSynthesizer(object):
         sr = self.samplerate.samples_per_second
         seconds = duration / Seconds(1)
         samples = np.random.uniform(low=-1., high=1., size=int(sr * seconds))
+        return AudioSamples(samples, self.samplerate)
+
+
+class SilenceSynthesizer(object):
+    def __init__(self, samplerate):
+        super(SilenceSynthesizer, self).__init__()
+        self.samplerate = samplerate
+
+    def synthesize(self, duration):
+        sr = self.samplerate.samples_per_second
+        seconds = duration / Seconds(1)
+        samples = np.zeros(sr * seconds)
         return AudioSamples(samples, self.samplerate)

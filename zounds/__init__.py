@@ -30,7 +30,8 @@ from segment import MeasureOfTransience, MovingAveragePeakPicker, \
 from synthesize import \
     FFTSynthesizer, DCTSynthesizer, TickSynthesizer, NoiseSynthesizer, \
     SineSynthesizer, DCTIVSynthesizer, MDCTSynthesizer, \
-    FrequencyAdaptiveFFTSynthesizer, FrequencyAdaptiveDCTSynthesizer
+    FrequencyAdaptiveFFTSynthesizer, FrequencyAdaptiveDCTSynthesizer, \
+    SilenceSynthesizer
 
 from learn import \
     KMeans, BinaryRbm, LinearRbm, Learned, \
