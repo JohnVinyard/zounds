@@ -45,6 +45,11 @@ class ShortTimeTransformSynthesizer(object):
         return self._overlap_add(ts)
 
 
+class WindowedAudioSynthesizer(ShortTimeTransformSynthesizer):
+    def __init__(self):
+        super(WindowedAudioSynthesizer, self).__init__()
+
+
 class FFTSynthesizer(ShortTimeTransformSynthesizer):
     def __init__(self):
         super(FFTSynthesizer, self).__init__()

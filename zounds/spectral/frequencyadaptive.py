@@ -10,13 +10,38 @@ from zounds.timeseries import Picoseconds, TimeDimension
 
 
 class FrequencyAdaptive(ArrayWithUnits):
-    def __new__(cls, arrs, time_dimension, scale):
+    def __new__(
+            cls,
+            arrs,
+            time_dimension=None,
+            scale=None,
+            explicit_freq_dimension=None):
+
+        if not time_dimension:
+            raise ValueError('time_dimension is required')
+
+        if explicit_freq_dimension:
+            if scale:
+                raise ValueError(
+                    'scale must be None when explicit_freq_dimension is supplied')
+            if not isinstance(arrs, np.ndarray):
+                raise ValueError(
+                    'arrs must be a contiguous array when explicit_freq_dimension_is_supplied')
+            return ArrayWithUnits.__new__(
+                cls, arrs, [time_dimension, explicit_freq_dimension])
+
         stops = list(np.cumsum([arr.shape[1] for arr in arrs]))
         slices = [slice(start, stop)
                   for (start, stop) in zip([0] + stops, stops)]
         dimensions = [time_dimension, ExplicitFrequencyDimension(scale, slices)]
+
         array = np.concatenate(arrs, axis=1)
         return ArrayWithUnits.__new__(cls, array, dimensions)
+
+    def kwargs(self):
+        return dict(
+            time_dimension=self.time_dimension,
+            explicit_freq_dimension=self.frequency_dimension)
 
     @property
     def scale(self):

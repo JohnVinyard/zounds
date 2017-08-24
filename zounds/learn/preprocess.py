@@ -258,62 +258,37 @@ class Slicer(Preprocessor):
             data, op, inversion_data=inv_data, inverse=inv, name='Slicer')
 
 
-class Flatten(Preprocessor):
-    def __init__(self, needs=None):
-        super(Flatten, self).__init__(needs=needs)
+class Reshape(Preprocessor):
+    def __init__(self, new_shape, needs=None):
+        super(Reshape, self).__init__(needs=needs)
+        self.new_shape = new_shape
 
     def _forward_func(self):
-        def x(d):
-            return d.reshape((d.shape[0], -1))
+        def x(d, new_shape=None):
+            return d.reshape(d.shape[:1] + new_shape)
 
         return x
 
     def _inversion_data(self):
         def x(d):
-            return dict(shape=d.shape)
+            return dict(original_shape=d.shape)
 
         return x
 
     def _backward_func(self):
-        def x(d, shape=None):
-            return d.reshape(shape)
+        def x(d, original_shape=None):
+            return d.reshape(original_shape)
 
         return x
 
     def _process(self, data):
         data = self._extract_data(data)
-        op = self.transform()
+        op = self.transform(new_shape=self.new_shape)
         inv_data = self.inversion_data()
         inv = self.inverse_transform()
         data = op(data)
         yield PreprocessResult(
-            data, op, inversion_data=inv_data, inverse=inv, name='Flatten')
-
-
-class ExpandDims(Preprocessor):
-    def __init__(self, needs=None):
-        super(ExpandDims, self).__init__(needs=needs)
-
-    def _forward_func(self):
-        def x(d):
-            return d[..., None]
-
-        return x
-
-    def _backward_func(self):
-        def x(d):
-            return d.reshape(d.shape[:-1])
-
-        return x
-
-    def _process(self, data):
-        data = self._extract_data(data)
-        op = self.transform()
-        inv_data = self.inversion_data()
-        inv = self.inverse_transform()
-        data = op(data)
-        yield PreprocessResult(
-            data, op, inversion_data=inv_data, inverse=inv, name='ExpandDims')
+            data, op, inversion_data=inv_data, inverse=inv, name='Reshape')
 
 
 class MeanStdNormalization(Preprocessor):

@@ -17,7 +17,6 @@ class Iterator(featureflow.Node):
 
 
 def build_classes():
-
     class Settings(featureflow.PersistenceSettings):
         _id = 'rbm'
         id_provider = featureflow.StaticIdProvider(_id)
@@ -26,36 +25,36 @@ def build_classes():
 
     class Rbm(featureflow.BaseModel, Settings):
         iterator = featureflow.Feature(
-                Iterator,
-                store=False)
+            Iterator,
+            store=False)
 
         shuffle = featureflow.NumpyFeature(
-                ReservoirSampler,
-                nsamples=1000,
-                needs=iterator,
-                store=True)
+            ReservoirSampler,
+            nsamples=1000,
+            needs=iterator,
+            store=True)
 
         unitnorm = featureflow.PickleFeature(
-                UnitNorm,
-                needs=shuffle,
-                store=False)
+            UnitNorm,
+            needs=shuffle,
+            store=False)
 
         meanstd = featureflow.PickleFeature(
-                MeanStdNormalization,
-                needs=unitnorm,
-                store=False)
+            MeanStdNormalization,
+            needs=unitnorm,
+            store=False)
 
         rbm = featureflow.PickleFeature(
-                LinearRbm,
-                hdim=64,
-                epochs=5,
-                needs=meanstd,
-                store=False)
+            LinearRbm,
+            hdim=64,
+            epochs=5,
+            needs=meanstd,
+            store=False)
 
         pipeline = featureflow.PickleFeature(
-                PreprocessingPipeline,
-                needs=(unitnorm, meanstd, rbm),
-                store=True)
+            PreprocessingPipeline,
+            needs=(unitnorm, meanstd, rbm),
+            store=True)
 
     return Rbm
 

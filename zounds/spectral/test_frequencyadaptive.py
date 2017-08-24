@@ -9,6 +9,38 @@ import numpy as np
 
 
 class FrequencyAdaptiveTests(unittest2.TestCase):
+
+    def test_raises_when_time_dimension_is_none(self):
+        scale = GeometricScale(20, 5000, 0.05, 10)
+        arrs = [np.zeros((10, x)) for x in xrange(1, 11)]
+        self.assertRaises(
+            ValueError, lambda: FrequencyAdaptive(arrs, None, scale))
+
+    def test_raises_when_explicit_freq_dimension_and_non_contiguous_array(self):
+        td = TimeDimension(frequency=Seconds(1))
+        scale = GeometricScale(20, 5000, 0.05, 10)
+        arrs = [np.zeros((10, x)) for x in xrange(1, 11)]
+        fa1 = FrequencyAdaptive(arrs, td, scale)
+        arr = np.asarray(fa1)
+        self.assertRaises(ValueError, lambda: FrequencyAdaptive(
+            arr,
+            td,
+            scale=scale,
+            explicit_freq_dimension=fa1.frequency_dimension))
+
+    def test_can_construct_from_contiguous_array(self):
+        td = TimeDimension(frequency=Seconds(1))
+        scale = GeometricScale(20, 5000, 0.05, 10)
+        arrs = [np.zeros((10, x)) for x in xrange(1, 11)]
+        fa1 = FrequencyAdaptive(arrs, td, scale)
+        arr = np.asarray(fa1)
+        fa2 = FrequencyAdaptive(
+            arr, td, explicit_freq_dimension=fa1.frequency_dimension)
+        self.assertEqual(fa1.shape, fa2.shape)
+        self.assertEqual(fa1.scale, fa2.scale)
+        self.assertEqual(fa1.time_dimension, fa2.time_dimension)
+        self.assertEqual(fa1.frequency_dimension, fa2.frequency_dimension)
+
     def test_can_construct_instance(self):
         td = TimeDimension(frequency=Seconds(1))
         scale = GeometricScale(20, 5000, 0.05, 10)

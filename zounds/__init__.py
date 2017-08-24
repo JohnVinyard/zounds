@@ -31,13 +31,14 @@ from synthesize import \
     FFTSynthesizer, DCTSynthesizer, TickSynthesizer, NoiseSynthesizer, \
     SineSynthesizer, DCTIVSynthesizer, MDCTSynthesizer, \
     FrequencyAdaptiveFFTSynthesizer, FrequencyAdaptiveDCTSynthesizer, \
-    SilenceSynthesizer
+    SilenceSynthesizer, WindowedAudioSynthesizer
 
 from learn import \
     KMeans, BinaryRbm, LinearRbm, Learned, \
     MeanStdNormalization, UnitNorm, Log, Multiply, PreprocessingPipeline, \
-    Slicer, Flatten, ReservoirSampler, TemplateMatch, simple_settings, \
-    SklearnModel, WithComponents, KerasModel, ExpandDims, InstanceScaling
+    Slicer, ReservoirSampler, TemplateMatch, simple_settings, \
+    SklearnModel, WithComponents, KerasModel, InstanceScaling, \
+    PyTorchAutoEncoder, Reshape
 
 from ui import ZoundsApp, ZoundsSearch, RangeUnitUnsupportedException
 
