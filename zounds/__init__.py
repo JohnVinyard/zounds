@@ -37,7 +37,8 @@ from learn import \
     KMeans, BinaryRbm, LinearRbm, Learned, \
     MeanStdNormalization, UnitNorm, Log, Multiply, PreprocessingPipeline, \
     Slicer, ReservoirSampler, TemplateMatch, simple_settings, \
-    SklearnModel, WithComponents, InstanceScaling, PyTorchAutoEncoder, Reshape
+    SklearnModel, WithComponents, InstanceScaling, PyTorchAutoEncoder, \
+    Reshape, GanTrainer
 
 from ui import ZoundsApp, ZoundsSearch, RangeUnitUnsupportedException
 

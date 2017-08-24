@@ -12,4 +12,6 @@ from random_samples import ReservoirSampler
 
 from template_match import TemplateMatch
 
+from gan_trainer import GanTrainer
+
 from util import simple_settings

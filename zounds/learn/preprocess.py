@@ -240,7 +240,6 @@ class Slicer(Preprocessor):
     def _backward_func(self):
         def z(d, shape=None, fill_func=None, slicex=None):
             new_shape = d.shape[:1] + shape[1:]
-            print fill_func
             new_arr = fill_func(new_shape, d.dtype)
             new_arr[..., slicex] = d
             return new_arr
@@ -329,8 +328,6 @@ class InstanceScaling(Preprocessor):
     def _forward_func(self):
         def x(d):
             import numpy as np
-            print d
-            print np.__version__
             axes = tuple(range(1, len(d.shape)))
             return d / np.max(np.abs(d), axis=axes, keepdims=True)
 
