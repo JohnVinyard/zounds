@@ -58,4 +58,5 @@ from core import IdentityDimension, ArrayWithUnits
 from persistence import \
     ArrayWithUnitsFeature, AudioSamplesFeature, FrequencyAdaptiveFeature
 
-from datasets import PhatDrumLoops, InternetArchive, FreeSoundSearch
+from datasets import \
+    PhatDrumLoops, InternetArchive, FreeSoundSearch, DataSetCache, Directory

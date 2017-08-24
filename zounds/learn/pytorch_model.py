@@ -2,7 +2,7 @@ from preprocess import Preprocessor, PreprocessResult, Op
 import numpy as np
 
 
-def train(model, data, loss, optimizer, epochs, batch_size):
+def train_autoencoder(model, data, loss, optimizer, epochs, batch_size):
     import torch
     from torch.autograd import Variable
 
@@ -122,7 +122,7 @@ class PyTorchAutoEncoder(Preprocessor):
     def _process(self, data):
         data = self._extract_data(data)
 
-        trained_autoencoder = train(
+        trained_autoencoder = train_autoencoder(
             self.model,
             data,
             self.loss,
