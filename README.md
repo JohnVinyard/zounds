@@ -1,7 +1,7 @@
 [![Build Status](https://travis-ci.org/JohnVinyard/zounds.svg?branch=master)](https://travis-ci.org/JohnVinyard/zounds)
 [![Coverage Status](https://coveralls.io/repos/github/JohnVinyard/zounds/badge.svg?branch=master)](https://coveralls.io/github/JohnVinyard/zounds?branch=master)
 [![PyPI](https://img.shields.io/pypi/v/zounds.svg)](https://pypi.python.org/pypi/zounds)
-[![Docs](http://zounds.readthedocs.io/en/latest/?badge=latest)](http://zounds.readthedocs.io/en/latest/?badge=latest)
+[![Docs](https://img.shields.io/badge/docs-latest-brightgreen.svg?style=flat&maxAge=86400)](http://zounds.readthedocs.io/en/latest/?badge=latest)
 
 # Usage
 Zounds is a dataflow library for building directed acyclic graphs that transform audio. It uses the 
