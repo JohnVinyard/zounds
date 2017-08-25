@@ -34,11 +34,15 @@ from synthesize import \
     SilenceSynthesizer, WindowedAudioSynthesizer
 
 from learn import \
-    KMeans, BinaryRbm, LinearRbm, Learned, \
-    MeanStdNormalization, UnitNorm, Log, Multiply, PreprocessingPipeline, \
-    Slicer, ReservoirSampler, TemplateMatch, simple_settings, \
-    SklearnModel, WithComponents, InstanceScaling, PyTorchAutoEncoder, \
-    Reshape, GanTrainer
+    KMeans, Learned, MeanStdNormalization, UnitNorm, Log, Multiply, \
+    PreprocessingPipeline, Slicer, ReservoirSampler, TemplateMatch, \
+    simple_settings, SklearnModel, WithComponents, InstanceScaling, \
+    PyTorchAutoEncoder, Reshape
+
+try:
+    from learn import GanTrainer
+except ImportError:
+    pass
 
 from ui import ZoundsApp, ZoundsSearch, RangeUnitUnsupportedException
 

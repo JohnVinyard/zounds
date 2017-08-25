@@ -1,7 +1,6 @@
 from scipy.cluster.vq import kmeans
 from featureflow import Node
 from preprocess import PreprocessResult, Preprocessor
-from rbm import Rbm, RealValuedRbm
 
 
 class KMeans(Preprocessor):
@@ -21,7 +20,7 @@ class KMeans(Preprocessor):
             feature[np.arange(l), best] = 1
             try:
                 return ArrayWithUnits(
-                        feature, [d.dimensions[0], IdentityDimension()])
+                    feature, [d.dimensions[0], IdentityDimension()])
             except AttributeError:
                 return feature
 
@@ -43,88 +42,7 @@ class KMeans(Preprocessor):
         inv = self.inverse_transform()
         data = op(data)
         yield PreprocessResult(
-                data, op, inversion_data=inv_data, inverse=inv, name='KMeans')
-
-
-class BaseRbm(Preprocessor):
-    def __init__(
-            self,
-            cls=None,
-            hdim=None,
-            sparsity_target=0.01,
-            epochs=100,
-            learning_rate=0.1,
-            needs=None):
-        super(BaseRbm, self).__init__(needs=needs)
-        self._hdim = hdim
-        self._sparsity = sparsity_target
-        self._learning_rate = learning_rate
-        self._epochs = epochs
-        self._cls = cls
-
-    def _forward_func(self):
-        def x(d, rbm=None):
-            return rbm(d)
-
-        return x
-
-    def _backward_func(self):
-        def x(d, rbm=None):
-            return rbm.fromfeatures(d, binarize=False)
-
-        return x
-
-    def _process(self, data):
-        data = self._extract_data(data)
-        rbm = self._cls(
-                indim=data.shape[1],
-                hdim=self._hdim,
-                sparsity_target=self._sparsity,
-                learning_rate=self._learning_rate)
-        rbm.train(data, lambda epoch, error: epoch > self._epochs)
-        op = self.transform(rbm=rbm)
-        inv_data = self.inversion_data(rbm=rbm)
-        inv = self.inverse_transform()
-        data = op(data)
-        yield PreprocessResult(
-                data,
-                op,
-                inversion_data=inv_data,
-                inverse=inv,
-                name=self.__class__.__name__)
-
-
-class BinaryRbm(BaseRbm):
-    def __init__(
-            self, sparsity_target=0.01,
-            hdim=None,
-            epochs=100,
-            learning_rate=0.1,
-            needs=None):
-        super(BinaryRbm, self).__init__(
-                cls=Rbm,
-                hdim=hdim,
-                sparsity_target=sparsity_target,
-                epochs=epochs,
-                learning_rate=learning_rate,
-                needs=needs)
-
-
-class LinearRbm(BaseRbm):
-    def __init__(
-            self,
-            hdim=None,
-            sparsity_target=0.01,
-            epochs=100,
-            learning_rate=0.001,
-            needs=None):
-        super(LinearRbm, self).__init__(
-                cls=RealValuedRbm,
-                hdim=hdim,
-                sparsity_target=sparsity_target,
-                epochs=epochs,
-                learning_rate=learning_rate,
-                needs=needs)
+            data, op, inversion_data=inv_data, inverse=inv, name='KMeans')
 
 
 class Learned(Node):

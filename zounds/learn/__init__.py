@@ -1,4 +1,4 @@
-from learn import KMeans, BinaryRbm, LinearRbm, Learned
+from learn import KMeans, Learned
 
 from preprocess import \
     MeanStdNormalization, UnitNorm, Log, PreprocessingPipeline, Multiply, \
@@ -12,6 +12,9 @@ from random_samples import ReservoirSampler
 
 from template_match import TemplateMatch
 
-from gan_trainer import GanTrainer
-
 from util import simple_settings
+
+try:
+    from gan_trainer import GanTrainer
+except ImportError:
+    pass
