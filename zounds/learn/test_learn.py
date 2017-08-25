@@ -46,7 +46,7 @@ def build_classes():
 
         rbm = featureflow.PickleFeature(
             KMeans,
-            centroids=64,
+            centroids=3,
             needs=meanstd,
             store=False)
 
@@ -76,7 +76,7 @@ class LearnedTests(unittest2.TestCase):
         KMeans.process(iterator=data())
         l = Learned(learned=KMeans())
         results = list(l._process(np.random.random_sample((33, 3))))[0]
-        self.assertEqual((33, 64), results.shape)
+        self.assertEqual((33, 3), results.shape)
 
     def test_pipeline_changes_version_when_recomputed(self):
         KMeans = build_classes()
