@@ -34,8 +34,7 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.intersphinx',
     'sphinx.ext.doctest',
-    'sphinx.ext.autosummary',
-    'numpydoc'
+    'sphinx.ext.autosummary'
 ]
 
 autosummary_generate = True
