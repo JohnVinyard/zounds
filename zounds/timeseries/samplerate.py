@@ -122,11 +122,9 @@ class SR11025(AudioSampleRate):
         super(SR11025, self).__init__(11025, 512, 256)
 
 
-_samplerates = (SR96000(), SR48000(), SR44100(), SR22050(), SR11025())
-
-
 def audio_sample_rate(samples_per_second):
-    for sr in _samplerates:
+    samplerates = (SR96000(), SR48000(), SR44100(), SR22050(), SR11025())
+    for sr in samplerates:
         if samples_per_second == sr.samples_per_second:
             return sr
     raise ValueError(
@@ -134,9 +132,10 @@ def audio_sample_rate(samples_per_second):
 
 
 def nearest_audio_sample_rate(samples_per_second):
-    samplerates = np.array([s.samples_per_second for s in _samplerates])
+    samplerates = (SR96000(), SR48000(), SR44100(), SR22050(), SR11025())
+    samplerates = np.array([s.samples_per_second for s in samplerates])
     diffs = np.abs(samples_per_second - samplerates)
-    return _samplerates[np.argmin(diffs)]
+    return samplerates[np.argmin(diffs)]
 
 
 class HalfLapped(SampleRate):
