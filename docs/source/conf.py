@@ -297,7 +297,7 @@ autodoc_member_order = 'bysource'
 import mock
 
 MOCK_MODULES = [
-    'cffi',
+    'soundfile',
     'numpy',
     'scipy',
     'scipy.fftpack'
