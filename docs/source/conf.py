@@ -294,5 +294,14 @@ autodoc_member_order = 'bysource'
 #texinfo_no_detailmenu = False
 
 # Fake imports
-import fake_cffi
-sys.modules['cffi'] = sys.modules['fake_cffi']
+import mock
+
+MOCK_MODULES = [
+    'cffi',
+    'numpy',
+    'scipy',
+    'scipy.fftpack'
+]
+
+for mod_name in MOCK_MODULES:
+    sys.modules[mod_name] = mock.Mock()
