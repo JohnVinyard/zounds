@@ -300,7 +300,8 @@ MOCK_MODULES = [
     'soundfile',
     'numpy',
     'scipy',
-    'scipy.fftpack'
+    'scipy.fftpack',
+    'numpy.lib.stride_tricks'
 ]
 
 for mod_name in MOCK_MODULES:
