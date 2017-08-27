@@ -301,6 +301,7 @@ MOCK_MODULES = [
     'numpy',
     'scipy',
     'scipy.fftpack',
+    'numpy.lib',
     'numpy.lib.stride_tricks'
 ]
 
