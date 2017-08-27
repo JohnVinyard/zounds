@@ -11,6 +11,10 @@ class CustomSlice(object):
 
 
 class ArrayWithUnits(np.ndarray):
+    """
+    Here is documentation for ArrayWithUnits
+    """
+
     def __new__(cls, arr, dimensions):
         if arr.ndim != len(dimensions):
             raise ValueError(

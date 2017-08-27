@@ -1,3 +1,17 @@
+"""
+Spectral
+========
+
+Welcome to the spectral stuff
+
+.. autoclass:: FrequencyBand
+.. autoclass:: FrequencyScale
+.. autoclass:: LinearScale
+.. autoclass:: GeometricScale
+.. autoclass:: FrequencyDimension
+.. autoclass:: ExplicitFrequencyDimension
+"""
+
 from sliding_window import \
     SlidingWindow, OggVorbisWindowingFunc, NDSlidingWindow, WindowingFunc, \
     HanningWindowingFunc

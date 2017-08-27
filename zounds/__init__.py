@@ -22,7 +22,7 @@ from spectral import \
     FrequencyAdaptiveTransform, ExplicitScale, ExplicitFrequencyDimension, \
     FrequencyAdaptive
 
-from loudness import log_modulus, inverse_log_modulus, decibel
+from loudness import log_modulus, inverse_log_modulus, decibel, mu_law, MuLaw
 
 from segment import MeasureOfTransience, MovingAveragePeakPicker, \
     ComplexDomain, TimeSliceFeature
