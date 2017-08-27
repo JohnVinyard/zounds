@@ -7,7 +7,11 @@ import numpy as np
 from zounds.timeseries import SR44100, AudioSamples
 from zounds.core import ArrayWithUnits
 
-libsamplerate = CDLL('libsamplerate.so')
+try:
+    libsamplerate = CDLL('libsamplerate.so')
+except OSError:
+    # KLUDGE: This is here to support building documentation on readthedocs
+    pass
 
 from featureflow import Node
 
