@@ -313,7 +313,9 @@ MOCK_MODULES = [
     'scipy.spatial',
     'scipy.spatial.distance',
 
-    'matplotlib'
+    'matplotlib',
+
+    'zounds.nputil.countbits',
 ]
 
 
