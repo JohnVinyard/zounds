@@ -329,7 +329,10 @@ class InstanceScaling(Preprocessor):
         def x(d):
             import numpy as np
             axes = tuple(range(1, len(d.shape)))
-            return d / np.max(np.abs(d), axis=axes, keepdims=True)
+            m = np.max(np.abs(d), axis=axes, keepdims=True)
+            output = d / m
+            output[np.isnan(output)] = 0
+            return output
 
         return x
 

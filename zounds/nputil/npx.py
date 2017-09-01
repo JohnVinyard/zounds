@@ -2,9 +2,6 @@ from __future__ import division
 
 import numpy as np
 from numpy.lib.stride_tricks import as_strided as ast
-
-import pyximport
-pyximport.install()
 from countbits import *
 
 

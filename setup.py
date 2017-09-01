@@ -1,5 +1,8 @@
 from setuptools import setup
 import re
+import numpy as np
+from distutils.extension import Extension
+
 
 try:
     import pypandoc
@@ -16,6 +19,21 @@ with open('zounds/__init__.py', 'r') as fd:
 download_url = 'https://github.com/jvinyard/zounds/tarball/{version}'\
     .format(**locals())
 
+
+countbits = Extension(
+    name='countbits',
+    sources=['zounds/nputil/countbits.pyx'],
+    include_dirs=[np.get_include()],
+    extra_compile_args=[
+        '-shared',
+        '-pthread',
+        '-fPIC',
+        '-fwrapv',
+        '-O2',
+        '-Wall',
+        '-fno-strict-aliasing'
+    ])
+
 setup(
         name='zounds',
         version=version,
@@ -24,6 +42,7 @@ setup(
         author_email='john.vinyard@gmail.com',
         long_description=long_description,
         download_url=download_url,
+        ext_modules=[countbits],
         packages=[
             'zounds',
             'zounds.basic',
@@ -49,7 +68,6 @@ setup(
             'requests',
             'tornado',
             'pysoundfile',
-            'cython',
             'matplotlib',
             'argparse'
         ],

@@ -47,3 +47,11 @@ class InstanceScalingTests(unittest2.TestCase):
         transformed = model.pipeline.transform(inp)
         inverted = transformed.inverse_transform()
         np.testing.assert_allclose(inverted, inp)
+
+    def test_correctly_handles_max_of_zero(self):
+        model = self.get_model()
+        inp = np.random.random_sample((100, 30, 3)) - 0.5
+        inp[0, ...] = 0
+        transformed = model.pipeline.transform(inp)
+        inverted = transformed.inverse_transform()
+        np.testing.assert_allclose(inverted, inp)
