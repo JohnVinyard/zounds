@@ -14,6 +14,15 @@ from zounds.nputil import safe_log
 from zounds.timeseries import SR44100, audio_sample_rate
 
 
+class FrequencyWeighting(Node):
+    def __init__(self, weighting=None, needs=None):
+        super(FrequencyWeighting, self).__init__(needs=needs)
+        self.weighting = weighting
+
+    def _process(self, data):
+        yield data * self.weighting
+
+
 class FFT(Node):
     def __init__(self, needs=None, axis=-1):
         super(FFT, self).__init__(needs=needs)

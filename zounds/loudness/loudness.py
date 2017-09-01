@@ -26,3 +26,12 @@ class MuLaw(Node):
 
     def _process(self, data):
         yield mu_law(data, mu=self.mu)
+
+
+class LogModulus(Node):
+    def __init__(self, factor=1, needs=None):
+        super(LogModulus, self).__init__(needs=needs)
+        self.factor = factor
+
+    def _process(self, data):
+        yield log_modulus(data * self.factor)

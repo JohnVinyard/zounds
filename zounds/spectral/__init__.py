@@ -18,7 +18,7 @@ from sliding_window import \
 
 from spectral import \
     FFT, DCT, DCTIV, MDCT, BarkBands, Chroma, BFCC, SpectralCentroid, \
-    SpectralFlatness, FrequencyAdaptiveTransform
+    SpectralFlatness, FrequencyAdaptiveTransform, FrequencyWeighting
 
 from tfrepresentation import FrequencyDimension, ExplicitFrequencyDimension
 

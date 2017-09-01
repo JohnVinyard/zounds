@@ -20,9 +20,10 @@ from spectral import \
     SpectralFlatness, AWeighting, LinearScale, LogScale, FrequencyBand, \
     FrequencyScale, FrequencyDimension, GeometricScale, HanningWindowingFunc, \
     FrequencyAdaptiveTransform, ExplicitScale, ExplicitFrequencyDimension, \
-    FrequencyAdaptive
+    FrequencyAdaptive, FrequencyWeighting
 
-from loudness import log_modulus, inverse_log_modulus, decibel, mu_law, MuLaw
+from loudness import \
+    log_modulus, inverse_log_modulus, decibel, mu_law, MuLaw, LogModulus
 
 from segment import MeasureOfTransience, MovingAveragePeakPicker, \
     ComplexDomain, TimeSliceFeature
