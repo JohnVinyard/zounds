@@ -1,15 +1,6 @@
 """
-Spectral
-========
-
-Welcome to the spectral stuff
-
-.. autoclass:: FrequencyBand
-.. autoclass:: FrequencyScale
-.. autoclass:: LinearScale
-.. autoclass:: GeometricScale
-.. autoclass:: FrequencyDimension
-.. autoclass:: ExplicitFrequencyDimension
+The spectral module contains classes that aid in dealing with frequency-domain
+representations of sound
 """
 
 from sliding_window import \

@@ -8,14 +8,21 @@ import bisect
 class FrequencyBand(object):
     """
     Represents an interval, or band of frequencies in hertz (cycles per second)
+
+    Args:
+        start_hz (float): The lower bound of the frequency band in hertz
+        stop_hz (float): The upper bound of the frequency band in hertz
+
+    Examples::
+        >>> import zounds
+        >>> band = zounds.FrequencyBand(500, 1000)
+        >>> band.center_frequency
+        750.0
+        >>> band.bandwidth
+        500
     """
 
     def __init__(self, start_hz, stop_hz):
-        """
-        :param start_hz: The lower bound for the frequency band, in hertz
-        :param stop_hz: The upper bound for the frequency band, in hertz
-        :return: a new FrequencyBand instance
-        """
         super(FrequencyBand, self).__init__()
         if stop_hz <= start_hz:
             raise ValueError('stop_hz must be greater than start_hz')
@@ -34,6 +41,20 @@ class FrequencyBand(object):
         return (self.__class__.__name__, self.start_hz, self.stop_hz).__hash__()
 
     def intersect(self, other):
+        """
+        Return the intersection between this frequency band and another.
+
+        Args:
+            other (FrequencyBand): the instance to intersect with
+
+        Examples::
+            >>> import zounds
+            >>> b1 = zounds.FrequencyBand(500, 1000)
+            >>> b2 = zounds.FrequencyBand(900, 2000)
+            >>> intersection = b1.intersect(b2)
+            >>> intersection.start_hz, intersection.stop_hz
+            (900, 1000)
+        """
         lowest_stop = min(self.stop_hz, other.stop_hz)
         highest_start = max(self.start_hz, other.start_hz)
         return FrequencyBand(highest_start, lowest_stop)
@@ -47,6 +68,15 @@ class FrequencyBand(object):
 
     @staticmethod
     def from_start(start_hz, bandwidth_hz):
+        """
+        Produce a :class:`FrequencyBand` instance from a lower bound and
+        bandwidth
+
+        Args:
+            start_hz (float): the lower bound of the desired FrequencyBand
+            bandwidth_hz (float): the bandwidth of the desired FrequencyBand
+
+        """
         return FrequencyBand(start_hz, start_hz + bandwidth_hz)
 
     @staticmethod
@@ -57,6 +87,9 @@ class FrequencyBand(object):
 
     @property
     def bandwidth(self):
+        """
+        The span of this frequency band, in hertz
+        """
         return self.stop_hz - self.start_hz
 
     @property
