@@ -1,7 +1,16 @@
 class Dimension(object):
     """
-    Class representing one dimension of a numpy array, making custom slices
-    (e.g., time spans or frequency bands) possible
+    Common base class representing one dimension of a numpy array.  Sub-classes
+    can define behavior making custom slices (e.g., time spans or
+    frequency bands) possible.
+
+    Implementors are primarily responsible for determining how custom slices
+    are transformed into integer indexes and slices that numpy can use directly.
+
+    See Also:
+        :class:`IdentityDimension`
+        :class:`~zounds.timeseries.TimeDimension`
+        :class:`~zounds.spectral.FrequencyDimension`
     """
 
     def __init__(self):
@@ -11,12 +20,15 @@ class Dimension(object):
         raise NotImplementedError()
 
     def metaslice(self, index, size):
+        """
+        Produce a new instance of this dimension, given a custom slice
+        """
         return self
 
     def integer_based_slice(self, index):
         """
-        Transforms a custom, user-defined slice into integer indices that numpy
-        can understand
+        Subclasses define behavior that transforms a custom, user-defined slice
+        into integer indices that numpy can understand
 
         Args:
             index (custom slice): A user-defined slice instance
@@ -24,10 +36,28 @@ class Dimension(object):
         raise NotImplementedError()
 
     def validate(self, size):
+        """
+        Subclasses check to ensure that the dimensions size does not validate
+        any assumptions made by this instance
+        """
         pass
 
 
 class IdentityDimension(Dimension):
+    """
+    A custom dimension that does not transform indices in any way, simply acting
+    as a pass-through.
+
+    Examples:
+        >>> from zounds import ArrayWithUnits, IdentityDimension
+        >>> import numpy as np
+        >>> data = np.zeros(100)
+        >>> arr = ArrayWithUnits(data, [IdentityDimension()])
+        >>> sliced = arr[4:6]
+        >>> sliced.shape
+        (2,)
+    """
+
     def __init__(self):
         super(IdentityDimension, self).__init__()
 

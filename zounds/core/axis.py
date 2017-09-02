@@ -12,20 +12,34 @@ class CustomSlice(object):
 
 class ArrayWithUnits(np.ndarray):
     """
-    Blah Blah Blah
+    `ArrayWithUnits` is an :class:`numpy.ndarray` subclass that allows for
+    indexing by more semantically meaningful slices.
+
+    It supports most methods on :class:`numpy.ndarray`, and makes a best-effort
+    to maintain meaningful dimensions throughout those operations.
 
     Args:
         arr (ndarray): The :class:`numpy.ndarray` instance containing the raw
-                       data for this instance
-        dimensions (iterable): iterable of :class:`Dimension`-derived classes
+            data for this instance
+        dimensions (list or tuple): list or tuple of :class:`Dimension`-derived
+            classes
+
+    Raises:
+        ValueError: when `arr.ndim` and `len(dimensions)` do not match
 
     Examples:
-        >>> print 'hai'
+        >>> from zounds import ArrayWithUnits, TimeDimension, Seconds, TimeSlice
+        >>> import numpy as np
+        >>> data = np.zeros(100)
+        >>> awu = ArrayWithUnits(data, [TimeDimension(Seconds(1))])
+        >>> sliced = awu[TimeSlice(Seconds(10))]
+        >>> sliced.shape
+        (10,)
 
     See Also:
         :class:`IdentityDimension`
-        :class:`zounds.timeseries.TimeDimension`
-        :class:`zounds.spectral.FrequencyDimension`
+        :class:`~zounds.timeseries.TimeDimension`
+        :class:`~zounds.spectral.FrequencyDimension`
     """
 
     def __new__(cls, arr, dimensions):
