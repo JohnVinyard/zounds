@@ -23,6 +23,23 @@ class FrequencyBandTests(unittest2.TestCase):
         fb2 = FrequencyBand.from_center(1000, 50)
         self.assertEqual(hash(fb1), hash(fb2))
 
+    def test_can_intersect(self):
+        fb1 = FrequencyBand(0, 100)
+        fb2 = FrequencyBand(50, 150)
+        intersection = fb1.intersect(fb2)
+        self.assertEqual(FrequencyBand(50, 100), intersection)
+
+    def test_error_raised_when_no_intersection(self):
+        fb1 = FrequencyBand(0, 100)
+        fb2 = FrequencyBand(200, 500)
+        self.assertRaises(ValueError, lambda:   fb1.intersect(fb2))
+
+    def test_intersection_ratio(self):
+        fb1 = FrequencyBand(0, 100)
+        fb2 = FrequencyBand(50, 150)
+        ratio = fb1.intersection_ratio(fb2)
+        self.assertEqual(0.5, ratio)
+
 
 class FrequencyScaleTests(unittest2.TestCase):
     def test_can_get_all_even_sized_bands(self):
@@ -137,6 +154,40 @@ class GeometricScaleTests(unittest2.TestCase):
             n_bands=100)
         sliced = scale[FrequencyBand(100, 1000)]
         self.assertIsInstance(sliced, ExplicitScale)
+
+    def test_ensure_minimal_inersection_ratio_no_overlap(self):
+        scale = GeometricScale(
+            start_center_hz=300,
+            stop_center_hz=3030,
+            bandwidth_ratio=0.001,
+            n_bands=300)
+
+        self.assertRaises(
+            AssertionError,
+            lambda: scale.ensure_overlap_ratio(0.5))
+
+    def test_ensure_minimal_inersection_ratio_insufficient_overlap(self):
+        scale = GeometricScale(
+            start_center_hz=300,
+            stop_center_hz=3030,
+            bandwidth_ratio=0.01,
+            n_bands=300)
+
+        self.assertRaises(
+            AssertionError,
+            lambda: scale.ensure_overlap_ratio(0.5))
+
+    def test_ensure_minimal_intersection_ratio(self):
+        scale = GeometricScale(
+            start_center_hz=300,
+            stop_center_hz=3030,
+            bandwidth_ratio=0.017,
+            n_bands=300)
+
+        try:
+            scale.ensure_overlap_ratio(0.5)
+        except AssertionError:
+            self.fail('AssertionError was raised')
 
 
 class ExplicitScaleTests(unittest2.TestCase):

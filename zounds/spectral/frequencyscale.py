@@ -43,7 +43,6 @@ class FrequencyBand(object):
 
     def intersection_ratio(self, other):
         intersection = self.intersect(other)
-        print intersection
         return self.bandwidth_ratio(intersection)
 
     @staticmethod
@@ -116,6 +115,22 @@ class FrequencyScale(object):
     @property
     def bandwidths(self):
         return (band.bandwidth for band in self)
+
+    def ensure_overlap_ratio(self, required_ratio=0.5):
+        msg = \
+            'band {i}: ratio must be at least {required_ratio} but was {ratio}'
+
+        for i in xrange(0, len(self) - 1):
+            b1 = self[i]
+            b2 = self[i + 1]
+
+            try:
+                ratio = b1.intersection_ratio(b2)
+            except ValueError:
+                ratio = 0
+
+            if ratio < required_ratio:
+                raise AssertionError(msg.format(**locals()))
 
     @property
     def Q(self):
