@@ -7,6 +7,54 @@ from featureflow import Node
 
 
 class AudioStream(Node):
+    """
+    `AudioStream` expects to process a raw stream of bytes (e.g. one
+    produced by :class:`featureflow.ByteStream`) and produces chunks of
+    :class:`~zounds.timeseries.AudioSamples`
+
+    Args:
+        sum_to_mono (bool): True if this node should return a
+            :class:`~zounds.timeseries.AudioSamples` instance with a single
+            channel
+        needs (Feature): a processing node that produces a byte stream (e.g.
+            :class:`~featureflow.ByteStream`
+
+    Here's how'd you typically see :class:`AudioStream` used in a processing
+    graph.
+
+    .. code:: python
+
+        import featureflow as ff
+        import zounds
+
+
+        @zounds.simple_in_memory_settings
+        class Document(ff.BaseModel):
+            meta = ff.JSONFeature(
+                zounds.MetaData,
+                store=True,
+                encoder=zounds.AudioMetaDataEncoder)
+
+            raw = ff.ByteStreamFeature(
+                ff.ByteStream,
+                chunksize=2 * 44100 * 30 * 2,
+                needs=meta,
+                store=False)
+
+            pcm = zounds.AudioSamplesFeature(
+                zounds.AudioStream,
+                needs=raw,
+                store=True)
+
+
+        synth = zounds.NoiseSynthesizer(zounds.SR11025())
+        samples = synth.synthesize(zounds.Seconds(10))
+        raw_bytes = samples.encode()
+        _id = Document.process(meta=raw_bytes)
+        doc = Document(_id)
+        print doc.pcm.__class__  # returns an AudioSamples instance
+    """
+
     def __init__(
             self,
             sum_to_mono=True,

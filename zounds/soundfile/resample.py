@@ -114,6 +114,60 @@ class Resample(object):
 
 
 class Resampler(Node):
+    """
+    `Resampler` expects to process :class:`~zounds.timeseries.AudioSamples`
+    instances (e.g., those produced by a :class:`AudioStream` node), and will
+    produce a new stream of :class:`AudioSamples` at a new sampling rate.
+
+    Args:
+        samplerate (AudioSampleRate): the desired sampling rate.  If none is
+            provided, the default is :class:`~zounds.timeseries.SR44100`
+        needs (Feature): a processing node that produces
+            :class:`~zounds.timeseries.AudioSamples`
+
+
+    Here's how you'd typically see :class:`Resampler` used in a processing
+    graph.
+
+    .. code:: python
+
+        import featureflow as ff
+        import zounds
+
+
+        @zounds.simple_in_memory_settings
+        class Document(ff.BaseModel):
+            meta = ff.JSONFeature(
+                zounds.MetaData,
+                store=True,
+                encoder=zounds.AudioMetaDataEncoder)
+
+            raw = ff.ByteStreamFeature(
+                ff.ByteStream,
+                chunksize=2 * 44100 * 30 * 2,
+                needs=meta,
+                store=False)
+
+            pcm = zounds.AudioSamplesFeature(
+                zounds.AudioStream,
+                needs=raw,
+                store=True)
+
+            resampled = zounds.AudioSamplesFeature(
+                zounds.Resampler,
+                samplerate=zounds.SR22050(),
+                needs=pcm,
+                store=True)
+
+
+        synth = zounds.NoiseSynthesizer(zounds.SR11025())
+        samples = synth.synthesize(zounds.Seconds(10))
+        raw_bytes = samples.encode()
+        _id = Document.process(meta=raw_bytes)
+        doc = Document(_id)
+        print doc.pcm.samplerate.__class__.__name__  # SR11025
+        print doc.resampled.samplerate.__class__.__name__  # SR22050
+    """
     def __init__(self, samplerate=None, needs=None):
         super(Resampler, self).__init__(needs=needs)
         self._samplerate = samplerate or SR44100()

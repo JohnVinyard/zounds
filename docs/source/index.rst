@@ -17,6 +17,7 @@ API documentation
     :maxdepth: 2
 
     timeseries
+    soundfile
     spectral
     core
 
