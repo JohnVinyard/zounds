@@ -6,15 +6,19 @@
 Welcome to zounds' documentation!
 ==================================
 
+Zounds is a python library to make working with sound easy.
+
+
 
 API documentation
 -----------------
 
 .. toctree::
-    :maxdepth: 1
+    :maxdepth: 2
 
-    core
+    timeseries
     spectral
+    core
 
 Indices and tables
 ------------------

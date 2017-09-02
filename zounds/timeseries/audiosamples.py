@@ -8,6 +8,24 @@ from samplerate import SampleRate
 
 
 class AudioSamples(ArrayWithUnits):
+    """
+    Represents audio samples
+
+    Args:
+        array (np.ndarray): The raw sample data
+        samplerate (SampleRate): The rate at which data was sampled
+
+    Examples::
+        >>> import zounds
+        >>> import numpy as np
+        >>> raw = np.random.normal(0, 1, 44100)
+        >>> samples = zounds.AudioSamples(raw, zounds.SR44100())
+        >>> samples.samples_per_second
+        44100
+        >>> samples.channels
+        1
+    """
+
     def __new__(cls, array, samplerate):
         if array.ndim == 1:
             dimensions = [TimeDimension(*samplerate)]

@@ -1,5 +1,4 @@
 import numpy as np
-import scipy
 from featureflow import Node, NotEnoughData
 
 from zounds.core import ArrayWithUnits

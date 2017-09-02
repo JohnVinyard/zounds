@@ -293,6 +293,12 @@ autodoc_member_order = 'bysource'
 # If true, do not generate a @detailmenu in the "Top" node's menu.
 # texinfo_no_detailmenu = False
 
+# Example configuration for intersphinx: refer to the Python standard library.
+intersphinx_mapping = {
+    'python': ('https://docs.python.org/', None),
+    'numpy': ('http://docs.scipy.org/doc/numpy/', None),
+}
+
 # Fake imports
 import mock
 
@@ -303,6 +309,9 @@ MOCK_MODULES = [
     'numpy.lib',
     'numpy.lib.stride_tricks',
     'numpy.ma',
+    'numpy.core',
+    'numpy.core.multiarray',
+    'numpy.random',
 
     'scipy',
     'scipy.signal',
@@ -321,6 +330,10 @@ MOCK_MODULES = [
 
 
 class ZoundsDocsMock(mock.Mock):
+    __version__ = 1.0
+
+    ndarray = object
+
     def __init__(self, *args, **kwargs):
         super(ZoundsDocsMock, self).__init__(side_effect=None)
 

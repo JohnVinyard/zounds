@@ -5,10 +5,11 @@ Spectral
 
 Representations
 ---------------
-Something here
+.. autoclass:: FrequencyDimension
+    :members:
 
 Nodes
-----------------
+-----
 Something there
 
 Scales

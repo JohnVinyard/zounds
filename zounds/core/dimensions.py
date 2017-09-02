@@ -14,6 +14,13 @@ class Dimension(object):
         return self
 
     def integer_based_slice(self, index):
+        """
+        Transforms a custom, user-defined slice into integer indices that numpy
+        can understand
+
+        Args:
+            index (custom slice): A user-defined slice instance
+        """
         raise NotImplementedError()
 
     def validate(self, size):

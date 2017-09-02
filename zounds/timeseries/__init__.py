@@ -1,3 +1,8 @@
+"""
+The timeseries module introduces classes for dealing with time as it relates
+to audio signals
+"""
+
 from duration import \
     Hours, Minutes, Seconds, Milliseconds, Microseconds, Picoseconds
 

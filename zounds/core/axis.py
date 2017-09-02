@@ -12,7 +12,20 @@ class CustomSlice(object):
 
 class ArrayWithUnits(np.ndarray):
     """
-    Here is documentation for ArrayWithUnits
+    Blah Blah Blah
+
+    Args:
+        arr (ndarray): The :class:`numpy.ndarray` instance containing the raw
+                       data for this instance
+        dimensions (iterable): iterable of :class:`Dimension`-derived classes
+
+    Examples:
+        >>> print 'hai'
+
+    See Also:
+        :class:`IdentityDimension`
+        :class:`zounds.timeseries.TimeDimension`
+        :class:`zounds.spectral.FrequencyDimension`
     """
 
     def __new__(cls, arr, dimensions):
@@ -70,6 +83,10 @@ class ArrayWithUnits(np.ndarray):
 
     @classmethod
     def from_example(cls, data, example):
+        """
+        Produce a new :class:`ArrayWithUnits` instance given some raw data and
+        an example instance that has the desired dimensions
+        """
         return ArrayWithUnits(data, example.dimensions)
 
     @classmethod
