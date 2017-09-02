@@ -9,21 +9,35 @@ from samplerate import SampleRate
 
 class AudioSamples(ArrayWithUnits):
     """
-    Represents audio samples
+    `AudioSamples` represents constant-rate samples of a continuous audio signal
+    at common sampling rates.
+
+    It is a special case of an :class:`~zounds.core.ArrayWithUnits` whose first
+    dimension is a :class:`~zounds.timeseries.TimeDimension` that has a common
+    audio sampling rate (e.g. :class:`~zounds.timeseries.SR44100`).
 
     Args:
         array (np.ndarray): The raw sample data
         samplerate (SampleRate): The rate at which data was sampled
 
+    Raises:
+        ValueError: When array has a second dimension with size greater than 2
+        TypeError: When samplerate is not a
+            :class:`~zounds.timeseries.AudioSampleRate`
+            (e.g. :class:`~zounds.timeseries.SR22050`)
+
     Examples::
-        >>> import zounds
+        >>> from zounds import AudioSamples, SR44100, TimeSlice, Seconds
         >>> import numpy as np
-        >>> raw = np.random.normal(0, 1, 44100)
-        >>> samples = zounds.AudioSamples(raw, zounds.SR44100())
+        >>> raw = np.random.normal(0, 1, 44100*10)
+        >>> samples = AudioSamples(raw, SR44100())
         >>> samples.samples_per_second
         44100
         >>> samples.channels
         1
+        >>> sliced = samples[TimeSlice(Seconds(2))]
+        >>> sliced.shape
+        (88200,)
     """
 
     def __new__(cls, array, samplerate):
@@ -109,6 +123,10 @@ class AudioSamples(ArrayWithUnits):
 
     @property
     def mono(self):
+        """
+        Return this instance summed to mono.  If the instance is already mono,
+        this is a no-op.
+        """
         if self.channels == 1:
             return self
         x = self.sum(axis=1) * 0.5
@@ -116,6 +134,28 @@ class AudioSamples(ArrayWithUnits):
         return AudioSamples(y, self.samplerate)
 
     def encode(self, flo=None, fmt='WAV', subtype='PCM_16'):
+        """
+        Return audio samples encoded as bytes given a particular audio format
+
+        Args:
+            flo (file-like): A file-like object to write the bytes to.  If flo
+                is not supplied, a new :class:`io.BytesIO` instance will be
+                 created and returned
+            fmt (str): A libsndfile-friendly identifier for an audio encoding
+                (detailed here: http://www.mega-nerd.com/libsndfile/api.html)
+            subtype (str): A libsndfile-friendly identifier for an audio
+                encoding subtype (detailed here:
+                http://www.mega-nerd.com/libsndfile/api.html)
+
+        Examples:
+            >>> from zounds import SR11025, AudioSamples
+            >>> import numpy as np
+            >>> silence = np.zeros(11025*10)
+            >>> samples = AudioSamples(silence, SR11025())
+            >>> bio = samples.encode()
+            >>> bio.read(10)
+            'RIFFx]\\x03\\x00WA'
+        """
         flo = flo or BytesIO()
         with SoundFile(
                 flo,

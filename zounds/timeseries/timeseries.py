@@ -5,6 +5,33 @@ from zounds.core import Dimension
 
 
 class TimeSlice(object):
+    """
+    A slice that can be applied to a :class:`TimeDimension` to return a subset
+    of samples.
+
+    Args:
+        duration (np.timedelta64): The duration of the slice
+        start (np.timedelta64): A duration representing the start position of
+            this slice, relative to zero or the beginning.  If not provided,
+            defaults to zero
+
+    Raises:
+        ValueError: when duration and/or start are not
+            :class:`numpy.timedelta64` instances
+
+    Examples:
+        >>> from zounds import ArrayWithUnits, TimeDimension, TimeSlice, Seconds
+        >>> import numpy as np
+        >>> raw = np.zeros(100)
+        >>> ts = ArrayWithUnits(raw, [TimeDimension(Seconds(1))])
+        >>> sliced = ts[TimeSlice(duration=Seconds(5), start=Seconds(50))]
+        >>> sliced.shape
+        (5,)
+
+    See Also:
+        :class:`TimeDimension`
+    """
+
     def __init__(self, duration=None, start=None):
         super(TimeSlice, self).__init__()
 
@@ -90,6 +117,35 @@ class TimeSlice(object):
 
 
 class TimeDimension(Dimension):
+    """
+    When applied to an axis of :class:`~zounds.core.ArrayWithUnits`, that axis
+    can be viewed as representing a constant-rate time series sampled at a
+    given :class:`~zounds.timeseries.SampleRate`.
+
+    Args:
+        frequency (np.timedelta64): The sampling frequency for this dimension
+        duration (np.timedelta64): The sampling duration for this dimension.
+            When not provided it defaults to the sampling frequency
+        size (int): The size/length of the dimension
+
+    Raises:
+        ValueError: when frequency and/or duration are not
+            :class:`np.timedelta64` instances
+
+    Examples:
+        >>> from zounds import ArrayWithUnits, TimeDimension, Seconds, TimeSlice
+        >>> import numpy as np
+        >>> raw = np.zeros(100)
+        >>> timeseries = ArrayWithUnits(raw, [TimeDimension(Seconds(1))])
+        >>> timeseries.dimensions[0]
+        TimeDimension(f=1.0, d=1.0)
+        >>> timeseries.dimensions[0].end_seconds
+        100.0
+        >>> sliced = timeseries[TimeSlice(Seconds(50))]
+        >>> sliced.shape
+        (50,)
+    """
+
     def __init__(self, frequency=None, duration=None, size=None):
         super(TimeDimension, self).__init__()
         self.size = size
@@ -102,6 +158,13 @@ class TimeDimension(Dimension):
                 t=np.timedelta64, t2=duration.__class__))
         self.duration = duration or frequency
         self.frequency = frequency
+
+    def modified_dimension(self, size, windowsize, stepsize=None):
+        stepsize = stepsize or windowsize
+        yield TimeDimension(
+            self.frequency * stepsize,
+            (self.frequency * windowsize) + self.overlap)
+        yield self
 
     def __str__(self):
         fs = self.frequency / Picoseconds(int(1e12))
@@ -148,17 +211,17 @@ class TimeDimension(Dimension):
     def end_seconds(self):
         return self.end / Picoseconds(int(1e12))
 
-    def modified_dimension(self, size, windowsize, stepsize=None):
-        stepsize = stepsize or windowsize
-        yield TimeDimension(
-            self.frequency * stepsize,
-            (self.frequency * windowsize) + self.overlap)
-        yield self
-
     def metaslice(self, index, size):
         return TimeDimension(self.frequency, self.duration, size)
 
     def integer_based_slice(self, ts):
+        """
+        Transform a :class:`TimeSlice` into integer indices that numpy can work
+        with
+
+        Args:
+            ts (TimeSlice): the time slice to translate into integer indices
+        """
         if not isinstance(ts, TimeSlice):
             return ts
 

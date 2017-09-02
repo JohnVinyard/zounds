@@ -5,11 +5,27 @@ from duration import Seconds, Milliseconds
 from zounds.core import ArrayWithUnits
 from timeseries import TimeDimension
 from samplerate import \
-    SampleRate, SR96000, SR48000, SR44100, SR22050, SR11025, audio_sample_rate, \
-    HalfLapped
+    SampleRate, SR96000, SR48000, SR44100, SR22050, SR11025, \
+    audio_sample_rate, HalfLapped
 
 
 class SampleRateTests(unittest2.TestCase):
+
+    def test_raises_value_error_for_zero_frequency(self):
+        self.assertRaises(
+            ValueError, lambda: SampleRate(Seconds(0), Seconds(1)))
+
+    def test_raises_value_error_for_negative_frequency(self):
+        self.assertRaises(
+            ValueError, lambda: SampleRate(Seconds(-1), Seconds(1)))
+
+    def test_raises_value_error_for_zero_duration(self):
+        self.assertRaises(
+            ValueError, lambda: SampleRate(Seconds(1), Seconds(0)))
+
+    def test_raises_value_error_for_negative_duration(self):
+        self.assertRaises(
+            ValueError, lambda: SampleRate(Seconds(1), Seconds(-1)))
 
     def test_can_unpack_samplerate(self):
         sr = SampleRate(Seconds(1), Seconds(2))

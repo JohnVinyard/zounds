@@ -362,5 +362,7 @@ class ZoundsDocsMock(mock.Mock):
         return ZoundsDocsMock()
 
 
+ZoundsDocsMock.timedelta64 = ZoundsDocsMock
+
 for mod_name in MOCK_MODULES:
     sys.modules[mod_name] = ZoundsDocsMock()

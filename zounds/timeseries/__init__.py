@@ -4,7 +4,8 @@ to audio signals
 """
 
 from duration import \
-    Hours, Minutes, Seconds, Milliseconds, Microseconds, Picoseconds
+    Hours, Minutes, Seconds, Milliseconds, Microseconds, Picoseconds, \
+    Nanoseconds
 
 from audiosamples import AudioSamples
 
