@@ -6,8 +6,8 @@
 Welcome to zounds' documentation!
 ==================================
 
-Zounds is a python library to make working with sound easy.
-
+Zounds is a python library for organizing machine learning experiments dealing
+with sound.
 
 
 API documentation
