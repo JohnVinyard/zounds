@@ -1,21 +1,3 @@
-[![Build Status](https://travis-ci.org/JohnVinyard/zounds.svg?branch=master)](https://travis-ci.org/JohnVinyard/zounds)
-[![Coverage Status](https://coveralls.io/repos/github/JohnVinyard/zounds/badge.svg?branch=master)](https://coveralls.io/github/JohnVinyard/zounds?branch=master)
-[![PyPI](https://img.shields.io/pypi/v/zounds.svg)](https://pypi.python.org/pypi/zounds)
-[![Docs](https://img.shields.io/badge/docs-latest-brightgreen.svg?style=flat&maxAge=86400)](http://zounds.readthedocs.io/en/latest/?badge=latest)
-
-# Motivation
-
-Zounds is a python library for working with sound.  Its primary goals are to:
-    - layer semantically meaningful audio manipulations on top of numpy arrays
-    - help to organize the definition and persistence of audio processing
-      pipelines and machine learning experiments with sound
-
-Audio processing graphs and machine learning pipelines are built using
-[featureflow](https://github.com/JohnVinyard/featureflow).
-
-# A Quick Example
-
-```python
 import zounds
 
 Resampled = zounds.resampled(resample_to=zounds.SR11025())
@@ -95,25 +77,3 @@ if __name__ == '__main__':
         globals=globals(),
         locals=locals())
     app.start(8888)
-```
-
-Find more inspiration in the [examples folder](https://github.com/JohnVinyard/zounds/tree/master/examples),
-or on the [blog](http://johnvinyard.github.io/).
-
-# Installation
- 
-## Libsndfile Issues
-Installation currently requires you to build lbiflac and libsndfile from source, because of 
-[an outstanding issue](https://github.com/bastibe/PySoundFile/issues/130) that will be corrected when the apt package 
-is updated to `libsndfile 1.0.26`.  Download and run 
-[this script](https://raw.githubusercontent.com/JohnVinyard/zounds/master/setup.sh) to handle this step.
-
-## Numpy and Scipy
-The [Anaconda](https://www.continuum.io/downloads) python distribution is highly recommended.
-
-## Zounds
-Finally, just:
-
-```bash
-pip install zounds
-```
