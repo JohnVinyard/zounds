@@ -55,8 +55,10 @@ class ReservoirSampler(Node):
             raise NotEnoughData()
 
         if self._index <= self._nsamples:
-            arr = self._r[:self._index]
+            arr = np.asarray(self._r[:self._index])
             np.random.shuffle(arr)
+            if isinstance(self._r, ArrayWithUnits):
+                arr = ArrayWithUnits(arr, self._r.dimensions)
             return arr
 
         return self._r
