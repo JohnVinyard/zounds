@@ -107,26 +107,3 @@ class SlidingWindow(Node):
         out = (self._func * arr) if self._func else arr
 
         return out
-
-
-# KLUDGE: This extractor works when trying to get random patches over the whole
-# database, but doesn't work if we were trying to get a sliding window over, say,
-# the bark bands of a single sound.  For that to work, we'd have to implement
-# enqueue and dequeue methods that keep leftovers around between calls.
-#
-# If we're processing bark bands of a single sound all at once, we expect the
-# sliding window to move over the time dimension first, and then over the frequency
-# dimension.  Since each incoming chunk is of inderteminate size, we're left with
-# nonsense ouput. This problem could be addressed by transposing the incoming data,
-# so that the frequency dimension is traversed first, and then the time dimension.
-class NDSlidingWindow(Node):
-    def __init__(self, windowsize=None, stepsize=None, needs=None):
-        super(NDSlidingWindow, self).__init__(needs=needs)
-        self._ws = windowsize
-        self._ss = stepsize
-
-    def _process(self, data):
-        try:
-            yield sliding_window(data, self._ws, self._ss)
-        except ValueError:
-            pass

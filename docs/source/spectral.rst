@@ -8,15 +8,49 @@ Representations
 .. autoclass:: FrequencyDimension
     :members:
 
-Nodes
------
-Something there
+.. autoclass:: ExplicitFrequencyDimension
+    :members:
+
+.. autoclass:: FrequencyAdaptive
+    :members:
+
+Processing Nodes
+----------------
+.. autoclass:: FrequencyWeighting
+    :members:
+
+.. autoclass:: FFT
+    :members:
+
+.. autoclass:: DCT
+    :members:
+
+.. autoclass:: DCTIV
+    :members:
+
+.. autoclass:: MDCT
+    :members:
+
+.. autoclass:: FrequencyAdaptiveTransform
+    :members:
+
+.. autoclass:: Chroma
+    :members:
+
+.. autoclass:: BarkBands
+    :members:
+
+.. autoclass:: SpectralCentroid
+    :members:
+
+.. autoclass:: SpectralFlatness
+    :members:
+
+.. autoclass:: BFCC
+    :members:
 
 Scales
 ------
-.. autoclass:: FrequencyScale
-    :members:
-
 .. autoclass:: LinearScale
     :members:
 
@@ -26,7 +60,14 @@ Scales
 .. autoclass:: ExplicitScale
     :members:
 
+.. autoclass:: FrequencyScale
+    :members:
+
 .. autoclass:: FrequencyBand
     :members:
 
 
+Frequency Weightings
+--------------------
+.. autoclass:: AWeighting
+    :members:

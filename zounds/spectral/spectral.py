@@ -260,6 +260,10 @@ class SpectralFlatness(Node):
 
 
 class BFCC(Node):
+    """
+    Bark frequency cepstral coefficients
+    """
+
     def __init__(self, needs=None, n_coeffs=13, exclude=1):
         super(BFCC, self).__init__(needs=needs)
         self._n_coeffs = n_coeffs

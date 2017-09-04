@@ -1,7 +1,6 @@
 from featureflow import Node, Feature, DatabaseIterator, BaseModel, \
     NotEnoughData
 from featureflow.nmpy import NumpyFeature
-from zounds.spectral import NDSlidingWindow
 import numpy as np
 
 
@@ -88,39 +87,3 @@ def random_samples(feature_func, nsamples, store_shuffled=True):
             store=store_shuffled)
 
     return RandomSamples
-
-
-def random_patches(
-        feature_func,
-        windowsize,
-        nsamples,
-        stepsize=None,
-        store_shuffled=True):
-    """
-    Return a base class that samples random, n-dimensional patches from a
-    feature, e.g., 10x10 patches from spectrograms
-    """
-
-    if stepsize is None:
-        stepsize = (1,) * len(windowsize)
-
-    class RandomPatches(BaseModel):
-        docs = Feature( \
-            DatabaseIterator,
-            func=feature_func,
-            store=False)
-
-        windowed = NumpyFeature( \
-            NDSlidingWindow,
-            windowsize=windowsize,
-            stepsize=stepsize,
-            needs=docs,
-            store=False)
-
-        patches = NumpyFeature( \
-            ReservoirSampler,
-            nsamples=nsamples,
-            needs=windowed,
-            store=store_shuffled)
-
-    return RandomPatches

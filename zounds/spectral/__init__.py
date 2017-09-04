@@ -4,8 +4,7 @@ representations of sound
 """
 
 from sliding_window import \
-    SlidingWindow, OggVorbisWindowingFunc, NDSlidingWindow, WindowingFunc, \
-    HanningWindowingFunc
+    SlidingWindow, OggVorbisWindowingFunc, WindowingFunc, HanningWindowingFunc
 
 from spectral import \
     FFT, DCT, DCTIV, MDCT, BarkBands, Chroma, BFCC, SpectralCentroid, \
