@@ -1,19 +1,23 @@
 import featureflow as ff
 
 
-def simple_lmdb_settings(path, map_size=1e9):
+def simple_lmdb_settings(path, map_size=1e9, user_supplied_id=False):
     """
     Creates a decorator that can be used to configure sane default LMDB
     persistence settings for a model
 
-    :param path: The path where the LMDB database files will be created
-    :param map_size: The amount of space to allot for the LMDB database
-    :return: a decorator that configures persistence settings
+    Args:
+        path (str): The path where the LMDB database files will be created
+        map_size (int): The amount of space to allot for the database
     """
 
     def decorator(cls):
+        provider = \
+            ff.UserSpecifiedIdProvider(key='_id') \
+            if user_supplied_id else ff.UuidProvider()
+
         class Settings(ff.PersistenceSettings):
-            id_provider = ff.UuidProvider()
+            id_provider = provider
             key_builder = ff.StringDelimitedKeyBuilder()
             database = ff.LmdbDatabase(
                     path, key_builder=key_builder, map_size=map_size)
