@@ -22,7 +22,11 @@ from random import choice
 samplerate = zounds.SR11025()
 BaseModel = zounds.stft(resample_to=samplerate, store_fft=True)
 
-scale = zounds.GeometricScale(300, 3040, 0.016985, 300)
+scale = zounds.GeometricScale(
+    start_center_hz=300,
+    stop_center_hz=3040,
+    bandwidth_ratio=0.016985,
+    n_bands=300)
 scale.ensure_overlap_ratio(0.5)
 
 
@@ -203,4 +207,5 @@ if __name__ == '__main__':
         globals=globals(),
         locals=locals())
     app.start(8888)
+
 ```
