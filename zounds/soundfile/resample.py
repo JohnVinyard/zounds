@@ -37,8 +37,13 @@ class Resample(object):
     file processed.
     """
 
-    def __init__(self, orig_sample_rate, new_sample_rate, \
-                 nchannels=1, converter_type=1):
+    def __init__(
+            self,
+            orig_sample_rate,
+            new_sample_rate,
+            nchannels=1,
+            converter_type=1):
+
         """
         orig_sample_rate - The sample rate of the incoming samples, in hz
         new_sample_rate - The sample_rate of the outgoiing samples, in hz
@@ -59,7 +64,7 @@ class Resample(object):
         self.nchannels = nchannels
         self.converter_type = converter_type
         self._state = libsamplerate.src_new( \
-                c_int(converter_type), c_int(nchannels), error)
+            c_int(converter_type), c_int(nchannels), error)
 
     def _prepare_input(self, insamples):
         # ensure that the input is float data
@@ -75,24 +80,24 @@ class Resample(object):
     def _src_data_struct(self, insamples, outsamples, end_of_input=False):
         # Build the SRC_DATA struct
         return SRC_DATA( \
-                # a pointer to the input samples
-                data_in=insamples.ctypes.data_as(POINTER(c_float)),
-                # a pointer to the output buffer
-                data_out=outsamples.ctypes.data_as(POINTER(c_float)),
-                # number of input samples
-                input_frames=insamples.size,
-                # number of output samples
-                output_frames=outsamples.size,
-                # NOT the end of input, i.e., there is more data to process
-                end_of_input=int(end_of_input),
-                # the conversion ratio
-                src_ratio=self._ratio)
+            # a pointer to the input samples
+            data_in=insamples.ctypes.data_as(POINTER(c_float)),
+            # a pointer to the output buffer
+            data_out=outsamples.ctypes.data_as(POINTER(c_float)),
+            # number of input samples
+            input_frames=insamples.size,
+            # number of output samples
+            output_frames=outsamples.size,
+            # NOT the end of input, i.e., there is more data to process
+            end_of_input=int(end_of_input),
+            # the conversion ratio
+            src_ratio=self._ratio)
 
     def _check_for_error(self, return_code):
         if return_code:
             raise Exception( \
-                    c_char_p(
-                        libsamplerate.src_strerror(c_int(return_code))).value)
+                c_char_p(
+                    libsamplerate.src_strerror(c_int(return_code))).value)
 
     def all_at_once(self, insamples):
         insamples = self._prepare_input(insamples)
@@ -134,6 +139,11 @@ class Resampler(Node):
         import featureflow as ff
         import zounds
 
+        chunksize = zounds.ChunkSizeBytes(
+            samplerate=zounds.SR44100(),
+            duration=zounds.Seconds(30),
+            bit_depth=16,
+            channels=2)
 
         @zounds.simple_in_memory_settings
         class Document(ff.BaseModel):
@@ -144,7 +154,7 @@ class Resampler(Node):
 
             raw = ff.ByteStreamFeature(
                 ff.ByteStream,
-                chunksize=2 * 44100 * 30 * 2,
+                chunksize=chunksize,
                 needs=meta,
                 store=False)
 
@@ -168,6 +178,7 @@ class Resampler(Node):
         print doc.pcm.samplerate.__class__.__name__  # SR11025
         print doc.resampled.samplerate.__class__.__name__  # SR22050
     """
+
     def __init__(self, samplerate=None, needs=None):
         super(Resampler, self).__init__(needs=needs)
         self._samplerate = samplerate or SR44100()
@@ -181,10 +192,10 @@ class Resampler(Node):
 
         if self._resample is None:
             target_sr = self._samplerate.samples_per_second
-            self._resample = Resample( \
-                    sr,
-                    target_sr,
-                    1 if len(data.shape) == 1 else data.shape[1])
+            self._resample = Resample(
+                sr,
+                target_sr,
+                1 if len(data.shape) == 1 else data.shape[1])
 
             if target_sr != sr:
                 self._rs = self._resample

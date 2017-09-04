@@ -10,9 +10,7 @@ from timeseries import \
 from soundfile import \
     MetaData, AudioMetaDataEncoder, FreesoundOrgConfig, \
     OggVorbis, OggVorbisDecoder, OggVorbisEncoder, OggVorbisFeature, \
-    OggVorbisWrapper, \
-    AudioStream, \
-    Resampler
+    OggVorbisWrapper, AudioStream, Resampler, ChunkSizeBytes
 
 from spectral import \
     SlidingWindow, OggVorbisWindowingFunc, WindowingFunc, \

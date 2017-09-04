@@ -27,6 +27,11 @@ class AudioStream(Node):
         import featureflow as ff
         import zounds
 
+        chunksize = zounds.ChunkSizeBytes(
+            samplerate=zounds.SR44100(),
+            duration=zounds.Seconds(30),
+            bit_depth=16,
+            channels=2)
 
         @zounds.simple_in_memory_settings
         class Document(ff.BaseModel):
@@ -37,7 +42,7 @@ class AudioStream(Node):
 
             raw = ff.ByteStreamFeature(
                 ff.ByteStream,
-                chunksize=2 * 44100 * 30 * 2,
+                chunksize=chunksize,
                 needs=meta,
                 store=False)
 

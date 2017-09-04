@@ -12,3 +12,5 @@ from ogg_vorbis import \
 from audiostream import AudioStream
 
 from resample import Resampler
+
+from chunksize import ChunkSizeBytes

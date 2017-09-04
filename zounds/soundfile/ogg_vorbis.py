@@ -88,6 +88,58 @@ class OggVorbisFeature(Feature):
 
 
 class OggVorbis(Node):
+    """
+    `OggVorbis` expects to process a stream of raw bytes (e.g. one produced by
+    :class:`featureflow.ByteStream`) and produces a new byte stream where the
+    original audio samples are `ogg-vorbis <https://xiph.org/vorbis/>`_ encoded
+
+    Args:
+        needs (Feature): a feature that produces a byte stream
+            (e.g. :class:`featureflow.Bytestream`)
+
+    Here's how you'd typically see :class:`OggVorbis` used in a processing
+    graph.
+
+    .. code:: python
+
+        import featureflow as ff
+        import zounds
+
+
+        chunksize = zounds.ChunkSizeBytes(
+            samplerate=zounds.SR44100(),
+            duration=zounds.Seconds(30),
+            bit_depth=16,
+            channels=2)
+
+        @zounds.simple_in_memory_settings
+        class Document(ff.BaseModel):
+            meta = ff.JSONFeature(
+                zounds.MetaData,
+                store=True,
+                encoder=zounds.AudioMetaDataEncoder)
+
+            raw = ff.ByteStreamFeature(
+                ff.ByteStream,
+                chunksize=chunksize,
+                needs=meta,
+                store=False)
+
+            ogg = zounds.OggVorbisFeature(
+                zounds.OggVorbis,
+                needs=raw,
+                store=True)
+
+
+        synth = zounds.NoiseSynthesizer(zounds.SR11025())
+        samples = synth.synthesize(zounds.Seconds(10))
+        raw_bytes = samples.encode()
+        _id = Document.process(meta=raw_bytes)
+        doc = Document(_id)
+        # fetch and decode a section of audio
+        ts = zounds.TimeSlice(zounds.Seconds(2))
+        print doc.ogg[ts].shape  # 22050
+    """
     def __init__(self, needs=None):
         super(OggVorbis, self).__init__(needs=needs)
         self._in_buf = None
