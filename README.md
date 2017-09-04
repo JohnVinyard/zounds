@@ -6,11 +6,12 @@
 # Motivation
 
 Zounds is a python library for working with sound.  Its primary goals are to:
-    - layer semantically meaningful audio manipulations on top of numpy arrays
-    - help to organize the definition and persistence of audio processing
-      pipelines and machine learning experiments with sound
 
-Audio processing graphs and machine learning pipelines are built using
+- layer semantically meaningful audio manipulations on top of numpy arrays
+- help to organize the definition and persistence of audio processing
+  pipelines and machine learning experiments with sound
+
+Audio processing graphs and machine learning pipelines are defined using
 [featureflow](https://github.com/JohnVinyard/featureflow).
 
 # A Quick Example
