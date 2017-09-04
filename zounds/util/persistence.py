@@ -18,7 +18,7 @@ def simple_lmdb_settings(path, map_size=1e9, user_supplied_id=False):
 
         class Settings(ff.PersistenceSettings):
             id_provider = provider
-            key_builder = ff.StringDelimitedKeyBuilder()
+            key_builder = ff.StringDelimitedKeyBuilder('|')
             database = ff.LmdbDatabase(
                     path, key_builder=key_builder, map_size=map_size)
 

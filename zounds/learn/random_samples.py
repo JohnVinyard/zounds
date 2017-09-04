@@ -1,6 +1,7 @@
 from featureflow import Node, Feature, DatabaseIterator, BaseModel, \
     NotEnoughData
 from featureflow.nmpy import NumpyFeature
+from zounds.core import ArrayWithUnits, IdentityDimension
 import numpy as np
 
 
@@ -14,7 +15,8 @@ class ReservoirSampler(Node):
 
     def __init__(self, nsamples=None, wrapper=None, needs=None):
         super(ReservoirSampler, self).__init__(needs=needs)
-        self._wrapper = wrapper or (lambda empty, orig: empty)
+        if wrapper:
+            raise DeprecationWarning('wrapper is no longer used or needed')
         self._nsamples = int(nsamples)
         self._r = None
         self._index = 0
@@ -25,7 +27,13 @@ class ReservoirSampler(Node):
         if self._r is None:
             shape = (self._nsamples,) + data.shape[1:]
             self._r = np.zeros(shape, dtype=data.dtype)
-            self._r = self._wrapper(self._r, data)
+            try:
+                self._r = ArrayWithUnits(
+                    self._r, (IdentityDimension(),) + data.dimensions[1:])
+            except AttributeError:
+                # samples were likely a plain numpy array, and not an
+                # ArrayWithUnits instance
+                pass
 
         diff = 0
         if self._index < self._nsamples:

@@ -8,13 +8,7 @@ import numpy as np
 
 class TestReservoirSampler(unittest2.TestCase):
     def test_can_sample_from_one_dimensional_feature(self):
-        def wrapper(empty, orig):
-            return ArrayWithUnits(
-                    empty, [IdentityDimension()] + list(orig.dimensions[1:]))
-
-        sampler = ReservoirSampler(
-                nsamples=10,
-                wrapper=wrapper)
+        sampler = ReservoirSampler(nsamples=10)
 
         frequency_dimension = FrequencyDimension(
                 LinearScale(FrequencyBand(100, 1000), 100))
@@ -34,13 +28,7 @@ class TestReservoirSampler(unittest2.TestCase):
         self.assertEqual(reservoir.dimensions[1], frequency_dimension)
 
     def test_can_wrap_samples(self):
-        def wrapper(empty, orig):
-            return ArrayWithUnits(
-                    empty, [IdentityDimension()] + list(orig.dimensions[1:]))
-
-        sampler = ReservoirSampler(
-                nsamples=10,
-                wrapper=wrapper)
+        sampler = ReservoirSampler(nsamples=10)
 
         frequency_dimension = FrequencyDimension(
                 LinearScale(FrequencyBand(100, 1000), 100))
@@ -61,34 +49,8 @@ class TestReservoirSampler(unittest2.TestCase):
         self.assertEqual(reservoir.dimensions[1], samples.dimensions[1])
         self.assertEqual(reservoir.dimensions[2], samples.dimensions[2])
 
-    def test_default_wrapper_is_identity_function(self):
-        sampler = ReservoirSampler(nsamples=10)
-
-        frequency_dimension = FrequencyDimension(
-                LinearScale(FrequencyBand(100, 1000), 100))
-
-        samples = ArrayWithUnits(
-                np.ones((2, 10, 100)),
-                [
-                    TimeDimension(frequency=Seconds(10)),
-                    TimeDimension(frequency=Seconds(1)),
-                    frequency_dimension
-                ])
-
-        sampler._enqueue(samples, pusher=None)
-        reservoir = sampler._r
-        self.assertEqual((10, 10, 100), reservoir.shape)
-        self.assertNotIsInstance(reservoir, ArrayWithUnits)
-        self.assertIsInstance(reservoir, np.ndarray)
-
     def test_can_dequeue_when_reservoir_is_full(self):
-        def wrapper(empty, orig):
-            return ArrayWithUnits(
-                    empty, [IdentityDimension()] + list(orig.dimensions[1:]))
-
-        sampler = ReservoirSampler(
-                nsamples=10,
-                wrapper=wrapper)
+        sampler = ReservoirSampler(nsamples=10)
 
         frequency_dimension = FrequencyDimension(
                 LinearScale(FrequencyBand(100, 1000), 100))
@@ -111,13 +73,7 @@ class TestReservoirSampler(unittest2.TestCase):
         self.assertEqual(reservoir.dimensions[2], samples.dimensions[2])
 
     def test_can_dequeue_when_reservoir_is_partially_full(self):
-        def wrapper(empty, orig):
-            return ArrayWithUnits(
-                    empty, [IdentityDimension()] + list(orig.dimensions[1:]))
-
-        sampler = ReservoirSampler(
-                nsamples=10,
-                wrapper=wrapper)
+        sampler = ReservoirSampler(nsamples=10)
 
         frequency_dimension = FrequencyDimension(
                 LinearScale(FrequencyBand(100, 1000), 100))
