@@ -71,7 +71,7 @@ setup(
             'featureflow',
             'nose',
             'unittest2',
-            'certifi=2017.7.27.1',
+            'certifi==2017.7.27.1',
             'requests',
             'tornado',
             'pysoundfile',
