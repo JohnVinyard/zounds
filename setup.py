@@ -36,7 +36,7 @@ try:
             '-fno-strict-aliasing'
         ])
     extension_modules = [countbits]
-except ImportError:
+except:
     extension_modules = []
 
 
