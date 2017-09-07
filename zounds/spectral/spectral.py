@@ -15,6 +15,16 @@ from zounds.timeseries import SR44100, audio_sample_rate
 
 
 class FrequencyWeighting(Node):
+    """
+    `FrequencyWeighting` is a processing node that expects to be passed an
+    :class:`~zounds.core.ArrayWithUnits` instance whose last dimension is a
+    :class:`~zounds.spectral.FrequencyDimension`
+
+    Args:
+        weighting (FrequencyWeighting): the frequency weighting to apply
+        needs (Node): a processing node on which this node depends whose last
+            dimension is a :class:`~zounds.spectral.FrequencyDimension`
+    """
     def __init__(self, weighting=None, needs=None):
         super(FrequencyWeighting, self).__init__(needs=needs)
         self.weighting = weighting
@@ -24,6 +34,17 @@ class FrequencyWeighting(Node):
 
 
 class FFT(Node):
+    """
+    A processing node that performs an FFT of a real-valued signal
+
+    Args:
+        axis (int): The axis over which the FFT should be computed
+        needs (Node): a processing node on which this one depends
+
+    See Also:
+        :class:`~zounds.synthesize.FFTSynthesizer`
+    """
+
     def __init__(self, needs=None, axis=-1):
         super(FFT, self).__init__(needs=needs)
         self._axis = axis
@@ -41,7 +62,16 @@ class FFT(Node):
 
 class DCT(Node):
     """
-    Type II Discrete Cosine Transform
+    A processing node that performs a Type II Discrete Cosine Transform
+    (https://en.wikipedia.org/wiki/Discrete_cosine_transform#DCT-II) of the
+    input
+
+    Args:
+        axis (int): The axis over which to perform the DCT transform
+        needs (Node): a processing node on which this one depends
+
+    See Also:
+        :class:`~zounds.synthesize.DctSynthesizer`
     """
 
     def __init__(self, axis=-1, scale_always_even=False, needs=None):
@@ -63,7 +93,15 @@ class DCT(Node):
 
 class DCTIV(Node):
     """
-    Type IV Discrete Cosine Transform.  This transform is its own inverse
+    A processing node that performs a Type IV Discrete Cosine Transform
+    (https://en.wikipedia.org/wiki/Discrete_cosine_transform#DCT-IV) of the
+    input
+
+    Args:
+        needs (Node): a processing node on which this one depends
+
+    See Also:
+        :class:`~zounds.synthesize.DCTIVSynthesizer`
     """
 
     def __init__(self, scale_always_even=False, needs=None):
@@ -92,7 +130,17 @@ class DCTIV(Node):
 
 class MDCT(Node):
     """
-    Modified Discrete Cosine Transform
+    A processing node that performs a modified discrete cosine transform
+    (https://en.wikipedia.org/wiki/Modified_discrete_cosine_transform) of the
+    input.
+
+    This is really just a lapped version of the DCT-IV transform
+
+    Args:
+        needs (Node): a processing node on which this one depends
+
+    See Also:
+        :class:`~zounds.synthesize.MDCTSynthesizer`
     """
 
     def __init__(self, needs=None):
@@ -121,6 +169,25 @@ class MDCT(Node):
 
 
 class FrequencyAdaptiveTransform(Node):
+    """
+    A processing node that expects to receive the input from a frequency domain
+    transformation (e.g. :class:`~zounds.spectral.FFT`), and produces a
+    :class:`~zounds.spectral.FrequencyAdaptive` instance where time resolution
+    can vary by frequency.  This is similar to, but not precisely the same as
+    ideas introduced in:
+
+    * `A quasi-orthogonal, invertible, and perceptually relevant time-frequency transform for audio coding <https://hal-amu.archives-ouvertes.fr/hal-01194806/document>`_
+    * `A FRAMEWORK FOR INVERTIBLE, REAL-TIME CONSTANT-Q TRANSFORMS <http://www.univie.ac.at/nonstatgab/pdf_files/dogrhove12_amsart.pdf>`_
+
+    Args:
+        transform (function): the transform to be applied to each frequency band
+        scale (FrequencyScale): the scale used to take frequency band slices
+        window_func (numpy.ndarray): the windowing function to apply each band
+            before the transform is applied
+
+    See Also:
+        :class:`~zounds.spectral.FrequencyAdaptive`
+    """
     def __init__(
             self,
             transform=None,
