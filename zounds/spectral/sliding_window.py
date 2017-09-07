@@ -30,11 +30,21 @@ class WindowingFunc(object):
     <https://docs.scipy.org/doc/numpy/reference/routines.window.html>`_, or any
     function that takes a size parameter and returns a numpy array-like object.
 
-    A `WindowingFunc` instance can be multiplied another array of any size.
+    A `WindowingFunc` instance can be multiplied with a nother array of any size.
 
     Args:
         windowing_func (function): A function that takes a size parameter, and
             returns a numpy array-like object
+
+    Examples:
+        >>> from zounds import WindowingFunc
+        >>> import numpy as np
+        >>> wf = WindowingFunc(lambda size: np.hanning(size))
+        >>> np.ones(5) *  wf
+        array([ 0. ,  0.5,  1. ,  0.5,  0. ])
+        >>> np.ones(10) * wf
+        array([ 0.        ,  0.11697778,  0.41317591,  0.75      ,  0.96984631,
+                0.96984631,  0.75      ,  0.41317591,  0.11697778,  0.        ])
 
     See Also:
         :class:`~IdentityWindowingFunc`
