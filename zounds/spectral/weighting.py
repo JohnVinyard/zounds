@@ -45,7 +45,20 @@ class FrequencyWeighting(object):
 
 class AWeighting(FrequencyWeighting):
     """
-    https://en.wikipedia.org/wiki/A-weighting
+    An A-weighting (https://en.wikipedia.org/wiki/A-weighting) that can be
+    applied to a frequency axis via multiplication.
+
+    Examples:
+        >>> from zounds import ArrayWithUnits, GeometricScale
+        >>> from zounds import FrequencyDimension, AWeighting
+        >>> import numpy as np
+        >>> scale = GeometricScale(20, 20000, 0.05, 10)
+        >>> raw = np.ones(len(scale))
+        >>> arr = ArrayWithUnits(raw, [FrequencyDimension(scale)])
+        >>> arr * AWeighting()
+        ArrayWithUnits([  1.        ,  18.3172567 ,  31.19918106,  40.54760374,
+                47.15389876,  51.1554151 ,  52.59655479,  52.24516649,
+                49.39906912,  42.05409205])
     """
 
     def __init__(self):
