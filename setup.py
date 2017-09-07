@@ -22,10 +22,14 @@ try:
     import numpy as np
     from distutils.extension import Extension
 
+    include = np.get_include()
+    if not isinstance(include, str):
+        raise ImportError('numpy is mocked')
+
     countbits = Extension(
         name='countbits',
         sources=['zounds/nputil/countbits.pyx'],
-        include_dirs=[np.get_include()],
+        include_dirs=[include],
         extra_compile_args=[
             '-shared',
             '-pthread',
@@ -36,7 +40,7 @@ try:
             '-fno-strict-aliasing'
         ])
     extension_modules = [countbits]
-except:
+except ImportError:
     extension_modules = []
 
 
