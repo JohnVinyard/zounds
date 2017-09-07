@@ -80,21 +80,80 @@ class WindowingFunc(object):
 
 
 class IdentityWindowingFunc(WindowingFunc):
+    """
+    An identity windowing function
+    """
     def __init__(self):
         super(IdentityWindowingFunc, self).__init__()
 
 
 class OggVorbisWindowingFunc(WindowingFunc):
+    """
+    The windowing function described in the `ogg vorbis specification
+    <https://xiph.org/vorbis/doc/Vorbis_I_spec.html#x1-230001.3.2>`_
+    """
     def __init__(self):
         super(OggVorbisWindowingFunc, self).__init__(windowing_func=oggvorbis)
 
 
 class HanningWindowingFunc(WindowingFunc):
+    """
+    A hanning window function
+    """
     def __init__(self):
         super(HanningWindowingFunc, self).__init__(windowing_func=np.hanning)
 
 
 class SlidingWindow(Node):
+    """
+    `SlidingWindow` is a processing node that provides a very common precursor
+    to many frequency domain transforms: a lapped and windowed view of the time-
+    domain signal.
+
+    Args:
+        wscheme (SampleRate): a sample rate that describes the frequency and
+            duration af the sliding window
+        wfunc (WindowingFunc): a windowing function to apply to each frame
+        needs (Node): A processing node on which this node relies for its data.
+            This will generally be a time-domain signal
+
+    Here's how you'd typically see :class:`SlidingWindow` used in a processing
+    graph
+
+    .. code:: python
+
+        import zounds
+
+        Resampled = zounds.resampled(resample_to=zounds.SR11025())
+
+        @zounds.simple_in_memory_settings
+        class Sound(Resampled):
+            windowed = zounds.ArrayWithUnitsFeature(
+                zounds.SlidingWindow,
+                needs=Resampled.resampled,
+                wscheme=zounds.SampleRate(
+                    frequency=zounds.Milliseconds(250),
+                    duration=zounds.Milliseconds(500)),
+                wfunc=zounds.OggVorbisWindowingFunc(),
+                store=True)
+
+
+        synth = zounds.SineSynthesizer(zounds.SR44100())
+        samples = synth.synthesize(zounds.Seconds(5), [220., 440., 880.])
+
+        # process the audio, and fetch features from our in-memory store
+        _id = Sound.process(meta=samples.encode())
+        sound = Sound(_id)
+
+        print sound.windowed.dimensions[0]
+        # TimeDimension(f=0.250068024879, d=0.500045346811)
+        print sound.windowed.dimensions[1]
+        # TimeDimension(f=9.0702947e-05, d=9.0702947e-05)
+
+    See Also:
+        :class:`~zounds.spectral.WindowingFunc`
+        :class:`~zounds.timeseries.SampleRate`
+    """
     def __init__(self, wscheme, wfunc=None, padwith=0, needs=None):
         super(SlidingWindow, self).__init__(needs=needs)
         self._scheme = wscheme
