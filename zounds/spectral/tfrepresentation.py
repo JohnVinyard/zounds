@@ -4,6 +4,33 @@ from zounds.spectral.frequencyscale import ExplicitScale
 
 
 class FrequencyDimension(Dimension):
+    """
+    When applied to an axis of :class:`~zounds.core.ArrayWithUnits`, that axis
+    can be viewed as representing the energy present in a series of frequency
+    bands
+
+    Args:
+        scale (FrequencyScale): A scale whose frequency bands correspond to the
+            items along the frequency axis
+
+    Examples:
+        >>> from zounds import LinearScale, FrequencyBand, ArrayWithUnits
+        >>> from zounds import FrequencyDimension
+        >>> import numpy as np
+        >>> band = FrequencyBand(20, 20000)
+        >>> scale = LinearScale(frequency_band=band, n_bands=100)
+        >>> raw = np.hanning(100)
+        >>> arr = ArrayWithUnits(raw, [FrequencyDimension(scale)])
+        >>> sliced = arr[FrequencyBand(100, 1000)]
+        >>> sliced.shape
+        (5,)
+        >>> sliced.dimensions
+        (FrequencyDimension(scale=LinearScale(band=FrequencyBand(
+        start_hz=20.0,
+        stop_hz=1019.0,
+        center=519.5,
+        bandwidth=999.0), n_bands=5)),)
+    """
     def __init__(self, scale):
         super(FrequencyDimension, self).__init__()
         self.scale = scale
@@ -21,6 +48,13 @@ class FrequencyDimension(Dimension):
         return self.scale.get_slice(index)
 
     def validate(self, size):
+        """
+        Ensure that the size of the dimension matches the number of bands in the
+        scale
+
+        Raises:
+             ValueError: when the dimension size and number of bands don't match
+        """
         msg = 'scale and array size must match, ' \
               'but were scale: {self.scale.n_bands},  array size: {size}'
 
@@ -41,6 +75,15 @@ class ExplicitFrequencyDimension(Dimension):
     """
     A frequency dimension where the mapping from frequency bands to integer
     indices is provided explicitly, rather than computed
+
+    Args:
+        scale (FrequencyScale):
+        slices (iterable of slices):
+
+
+    Raises:
+        ValueError: when the number of slices and number of bands in scale don't
+            match
     """
 
     def __init__(self, scale, slices):
