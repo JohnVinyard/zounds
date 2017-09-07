@@ -16,6 +16,9 @@ Representations
 
 Processing Nodes
 ----------------
+.. autoclass:: SlidingWindow
+    :members:
+
 .. autoclass:: FrequencyWeighting
     :members:
 
@@ -47,6 +50,20 @@ Processing Nodes
     :members:
 
 .. autoclass:: BFCC
+    :members:
+
+Windowing Functions
+-------------------
+.. autoclass:: WindowingFunc
+    :members:
+
+.. autoclass:: IdentityWindowingFunc
+    :members:
+
+.. autoclass:: OggVorbisWindowingFunc
+    :members:
+
+.. autoclass:: HanningWindowingFunc
     :members:
 
 Scales

@@ -24,12 +24,30 @@ def oggvorbis(s):
 
 
 class WindowingFunc(object):
+    """
+    `WindowingFunc` is mostly a convenient wrapper around `numpy's handy
+    windowing functions
+    <https://docs.scipy.org/doc/numpy/reference/routines.window.html>`_, or any
+    function that takes a size parameter and returns a numpy array-like object.
 
-    def __init__(self, windowing_func=lambda size: np.ones(size)):
+    A `WindowingFunc` instance can be multiplied another array of any size.
+
+    Args:
+        windowing_func (function): A function that takes a size parameter, and
+            returns a numpy array-like object
+
+    See Also:
+        :class:`~IdentityWindowingFunc`
+        :class:`~zounds.spectral.OggVorbisWindowingFunc`
+        :class:`~zounds.spectral.HanningWindowingFunc`
+    """
+    def __init__(self, windowing_func=None):
         super(WindowingFunc, self).__init__()
         self.windowing_func = windowing_func
 
     def _wdata(self, size):
+        if self.windowing_func is None:
+            return None
         return self.windowing_func(size)
 
     def __numpy_ufunc__(self, *args, **kwargs):
@@ -42,7 +60,10 @@ class WindowingFunc(object):
 
     def __mul__(self, other):
         size = other.shape[-1]
-        return self._wdata(size) * other
+        wdata = self._wdata(size)
+        if wdata is None:
+            return other
+        return wdata * other
 
     def __rmul__(self, other):
         return self.__mul__(other)
