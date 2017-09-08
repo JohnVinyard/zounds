@@ -20,6 +20,8 @@ download_url = 'https://github.com/jvinyard/zounds/tarball/{version}' \
 
 on_rtd = os.environ.get('READTHEDOCS') == 'True'
 
+extension_modules = []
+
 if not on_rtd:
     try:
         import numpy as np
