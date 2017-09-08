@@ -112,17 +112,22 @@ class FrequencyScale(object):
     """
     Represents a set of frequency bands with monotonically increasing start
     frequencies
+
+    Args:
+        frequency_band (FrequencyBand): A band representing the entire span of
+            this scale.  E.g., one might want to generate a scale spanning the
+            entire range of human hearing by starting with
+            :code:`FrequencyBand(20, 20000)`
+        n_bands (int): The number of bands in this scale
+        always_even (bool): when converting frequency slices to integer indices
+            that numpy can understand, should the slice size always be even?
+
+    See Also:
+        :class:`~zounds.spectral.LinearScale`
+        :class:`~zounds.spectral.GeometricScale`
     """
 
     def __init__(self, frequency_band, n_bands, always_even=False):
-        """
-        :param frequency_band: A wide band that defines the boundaries for the
-        entire scale.  E.g., one might want to generate a scale spanning the
-        full range of (normal) human hearing by starting with
-        FrequencyBand(20, 20000)
-        :param n_bands: The total number of individual bands in the scale
-        :return: a new FrequencyScale instance
-        """
         super(FrequencyScale, self).__init__()
         self.always_even = always_even
         self.n_bands = n_bands
@@ -131,6 +136,9 @@ class FrequencyScale(object):
 
     @property
     def bands(self):
+        """
+        An iterable of all bands in this scale
+        """
         if self._bands is None:
             self._bands = self._compute_bands()
         return self._bands
@@ -143,13 +151,36 @@ class FrequencyScale(object):
 
     @property
     def center_frequencies(self):
+        """
+        An iterable of the center frequencies of each band in this scale
+        """
         return (band.center_frequency for band in self)
 
     @property
     def bandwidths(self):
+        """
+        An iterable of the bandwidths of each band in this scale
+        """
         return (band.bandwidth for band in self)
 
     def ensure_overlap_ratio(self, required_ratio=0.5):
+        """
+        Ensure that every adjacent pair of frequency bands meets the overlap
+        ratio criteria.  This can be helpful in scenarios where a scale is
+        being used in an invertible transform, and something like the `constant
+        overlap add constraint
+        <https://ccrma.stanford.edu/~jos/sasp/Constant_Overlap_Add_COLA_Cases.html>`_
+        must be met in order to not introduce artifacts in the reconstruction.
+
+        Args:
+            required_ratio (float): The required overlap ratio between all
+                adjacent frequency band pairs
+
+        Raises:
+            AssertionError: when the overlap ratio for one or more adjacent
+                frequency band pairs is not met
+        """
+
         msg = \
             'band {i}: ratio must be at least {required_ratio} but was {ratio}'
 
@@ -176,20 +207,24 @@ class FrequencyScale(object):
 
     @property
     def start_hz(self):
+        """
+        The lower bound of this frequency scale
+        """
         return self.frequency_band.start_hz
 
     @property
     def stop_hz(self):
+        """
+        The upper bound of this frequency scale
+        """
         return self.frequency_band.stop_hz
 
     def get_slice(self, frequency_band):
         """
-        Given a frequency band, and a frequency dimension comprised of n_samples,
-        return a slice using integer indices that may be used to extract only
-        the frequency samples that intersect with the frequency band
-        :param frequency_band: The range of frequencies for which a slice should
-        be produced
-        :return: a slice
+        Given a frequency band, and a frequency dimension comprised of
+        n_samples, return a slice using integer indices that may be used to
+        extract only the frequency samples that intersect with the frequency
+        band
         """
         starts = [b.start_hz for b in self.bands]
         stops = [b.stop_hz for b in self.bands]
@@ -243,6 +278,28 @@ class LinearScale(FrequencyScale):
     A linear frequency scale with constant bandwidth.  Appropriate for use
     with transforms whose coefficients also lie on a linear frequency scale,
     e.g. the FFT or DCT transforms.
+
+    Args:
+        frequency_band (FrequencyBand): A band representing the entire span of
+            this scale.  E.g., one might want to generate a scale spanning the
+            entire range of human hearing by starting with
+            :code:`FrequencyBand(20, 20000)`
+        n_bands (int): The number of bands in this scale
+        always_even (bool): when converting frequency slices to integer indices
+            that numpy can understand, should the slice size always be even?
+
+    Examples:
+        >>> from zounds import FrequencyBand, LinearScale
+        >>> scale = LinearScale(FrequencyBand(20, 20000), 10)
+        >>> scale
+        LinearScale(band=FrequencyBand(
+        start_hz=20,
+        stop_hz=20000,
+        center=10010.0,
+        bandwidth=19980), n_bands=10)
+        >>> scale.Q
+        array([ 0.51001001,  1.51001001,  2.51001001,  3.51001001,  4.51001001,
+                5.51001001,  6.51001001,  7.51001001,  8.51001001,  9.51001001])
     """
 
     def __init__(self, frequency_band, n_bands, always_even=False):
@@ -250,6 +307,15 @@ class LinearScale(FrequencyScale):
 
     @staticmethod
     def from_sample_rate(sample_rate, n_bands, always_even=False):
+        """
+        Return a :class:`~zounds.spectral.LinearScale` instance whose upper
+        frequency bound is informed by the nyquist frequency of the sample rate.
+
+        Args:
+            sample_rate (SamplingRate): the sample rate whose nyquist frequency
+                will serve as the upper frequency bound of this scale
+            n_bands (int): the number of evenly-spaced frequency bands
+        """
         fb = FrequencyBand(0, sample_rate.nyquist)
         return LinearScale(fb, n_bands, always_even=always_even)
 
@@ -278,6 +344,35 @@ class LogScale(FrequencyScale):
 
 
 class GeometricScale(FrequencyScale):
+    """
+    A constant-Q scale whose center frequencies progress geometrically rather
+    than linearly
+
+    Args:
+        start_center_hz (int): the center frequency of the first band in the
+            scale
+        stop_center_hz (int): the center frequency of the last band in the scale
+        bandwidth_ratio (float): the center frequency to bandwidth ratio
+        n_bands (int): the total number of bands
+
+    Examples:
+        >>> from zounds import GeometricScale
+        >>> scale = GeometricScale(20, 20000, 0.05, 10)
+        >>> scale
+        GeometricScale(band=FrequencyBand(
+        start_hz=19.5,
+        stop_hz=20500.0,
+        center=10259.75,
+        bandwidth=20480.5), n_bands=10)
+        >>> scale.Q
+        array([ 20.,  20.,  20.,  20.,  20.,  20.,  20.,  20.,  20.,  20.])
+        >>> list(scale.center_frequencies)
+        [20.000000000000004, 43.088693800637671, 92.831776672255558,
+            200.00000000000003, 430.88693800637651, 928.31776672255558,
+            2000.0000000000005, 4308.8693800637648, 9283.1776672255564,
+            20000.000000000004]
+    """
+
     def __init__(
             self,
             start_center_hz,
@@ -311,6 +406,16 @@ class GeometricScale(FrequencyScale):
 
 
 class ExplicitScale(FrequencyScale):
+    """
+    A scale where the frequency bands are provided explicitly, rather than
+    computed
+
+    Args:
+        bands (list of FrequencyBand): The explicit bands used by this scale
+
+    See Also:
+        :class:`~zounds.spectral.FrequencyAdaptive`
+    """
     def __init__(self, bands):
         bands = list(bands)
         frequency_band = FrequencyBand(bands[0].start_hz, bands[-1].stop_hz)

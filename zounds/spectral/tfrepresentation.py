@@ -77,9 +77,10 @@ class ExplicitFrequencyDimension(Dimension):
     indices is provided explicitly, rather than computed
 
     Args:
-        scale (FrequencyScale):
-        slices (iterable of slices):
-
+        scale (ExplicitScale): the explicit frequency scale that defines how
+            slices are extracted from this dimension
+        slices (iterable of slices): An iterable of :class:`python.slice`
+            instances which correspond to each frequency band from scale
 
     Raises:
         ValueError: when the number of slices and number of bands in scale don't

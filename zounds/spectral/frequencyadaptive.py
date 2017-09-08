@@ -10,6 +10,22 @@ from zounds.timeseries import Picoseconds, TimeDimension
 
 
 class FrequencyAdaptive(ArrayWithUnits):
+    """
+    TODO: This needs some love. Mutually exclusive constructor arguments are no
+    bueno
+
+    Args:
+        arrs: TODO
+        time_dimension (TimeDimension): the time dimension of the first axis of
+            this array
+        scale (FrequencyScale): The frequency scale corresponding to the first
+            axis of this array, mutually exclusive with the
+            :code:`explicit_freq_dimension` argument
+        explicit_freq_dimension (ExplicitFrequencyDimension): TODO
+
+    See Also:
+        :class:`~zounds.spectral.FrequencyAdaptiveTransform`
+    """
     def __new__(
             cls,
             arrs,
