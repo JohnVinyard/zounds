@@ -75,6 +75,9 @@ class FrequencyAdaptive(ArrayWithUnits):
     def n_bands(self):
         return len(self.scale)
 
+    def rasterize(self, n_coeffs):
+        return self.square(n_coeffs)
+
     def square(self, n_coeffs, do_overlap_add=False):
         """
         Compute a "square" view of the frequency adaptive transform, by

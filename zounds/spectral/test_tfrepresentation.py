@@ -10,6 +10,34 @@ from zounds.core import ArrayWithUnits, IdentityDimension
 
 class TimeFrequencyRepresentationTests(unittest2.TestCase):
 
+    def test_can_use_tuple_indices_for_first_dimension(self):
+        tf = ArrayWithUnits(
+            np.ones((10, 10)),
+            dimensions=[
+                TimeDimension(Seconds(1), Seconds(1)),
+                FrequencyDimension(LinearScale(FrequencyBand(0, 1000), 10))
+            ])
+        subset = tf[tuple([2, 4, 6]), ...]
+        self.assertEqual((3, 10), subset.shape)
+        self.assertIsInstance(subset, ArrayWithUnits)
+        self.assertIsInstance(subset.dimensions[0], TimeDimension)
+        self.assertIsInstance(subset.dimensions[1], FrequencyDimension)
+
+    def test_can_use_tuple_indices_for_first_dimension_id_dim_first(self):
+        tf = ArrayWithUnits(
+            np.ones((10, 9, 8)),
+            dimensions=[
+                IdentityDimension(),
+                TimeDimension(Seconds(1), Seconds(1)),
+                FrequencyDimension(LinearScale(FrequencyBand(0, 1000), 8))
+            ])
+        subset = tf[tuple([2, 4, 6]), ...]
+        self.assertEqual((3, 9, 8), subset.shape)
+        self.assertIsInstance(subset, ArrayWithUnits)
+        self.assertIsInstance(subset.dimensions[0], IdentityDimension)
+        self.assertIsInstance(subset.dimensions[1], TimeDimension)
+        self.assertIsInstance(subset.dimensions[2], FrequencyDimension)
+
     def test_can_access_int_index_and_frequency_band(self):
         tf = ArrayWithUnits(
             np.ones((10, 10)),

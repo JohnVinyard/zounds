@@ -129,7 +129,10 @@ class Preprocessor(Node):
     def _extract_data(self, data):
         if isinstance(data, PreprocessResult):
             return data.data
-        return data
+        elif isinstance(data, dict):
+            return dict((k, self._extract_data(v)) for k, v in data.iteritems())
+        else:
+            return data
 
 
 class UnitNorm(Preprocessor):
@@ -478,7 +481,8 @@ class PipelineResult(object):
 class PreprocessingPipeline(Node):
     def __init__(self, needs=None):
         super(PreprocessingPipeline, self).__init__(needs=needs)
-        self._pipeline = OrderedDict((id(n), None) for n in needs)
+        print 'PPP', needs
+        self._pipeline = OrderedDict((id(n), None) for n in needs.values())
 
     def _enqueue(self, data, pusher):
         self._pipeline[id(pusher)] = data

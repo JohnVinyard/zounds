@@ -1,37 +1,183 @@
+import featureflow as ff
 from preprocess import Preprocessor, PreprocessResult, Op
 import numpy as np
 
 
-def train_autoencoder(model, data, loss, optimizer, epochs, batch_size):
-    import torch
-    from torch.autograd import Variable
+class Trainer(object):
+    def __init__(self, epochs, batch_size):
+        super(Trainer, self).__init__()
+        self.batch_size = batch_size
+        self.epochs = epochs
 
-    ae = model
-    ae.cuda()
-    loss.cuda()
+    def train(self):
+        raise NotImplemented()
 
-    data = data.astype(np.float32)
 
-    for epoch in xrange(epochs):
-        for i in xrange(0, len(data), batch_size):
+class GanTrainer(Trainer):
+    def __init__(
+            self,
+            generator,
+            discriminator,
+            loss,
+            generator_optim_func,
+            discriminator_optim_func,
+            latent_dimension,
+            epochs,
+            batch_size):
 
-            ae.zero_grad()
+        super(GanTrainer, self).__init__(epochs, batch_size)
+        self.discriminator_optim_func = discriminator_optim_func
+        self.generator_optim_func = generator_optim_func
+        self.latent_dimension = latent_dimension
+        self.loss = loss
+        self.discriminator = discriminator
+        self.generator = generator
 
-            minibatch = data[i: i + batch_size]
-            inp = torch.from_numpy(minibatch)
-            inp = inp.cuda()
-            inp_v = Variable(inp)
-            output = ae(inp_v)
+    def train(self, data):
 
-            error = loss(output, inp_v)
-            error.backward()
-            optimizer.step()
-            e = error.data[0]
+        import torch
+        from torch.autograd import Variable
 
-            if i % 10 == 0:
-                print 'Epoch {epoch}, batch {i}, error {e}'.format(**locals())
+        data = data.astype(np.float32)
 
-    return ae
+        zdim = self.latent_dimension
+
+        # TODO: These dimensions work for vanilla GANs, but need to be
+        # reversed (batch_size, zdim, 1) for convolutional GANs
+
+        noise_shape = (self.batch_size,) + self.latent_dimension
+        noise = torch.FloatTensor(*noise_shape)
+        fixed_noise = torch.FloatTensor(*noise_shape).normal_(0, 1)
+        label = torch.FloatTensor(self.batch_size)
+        real_label = 1
+        fake_label = 0
+
+        self.generator.cuda()
+        self.discriminator.cuda()
+        self.loss.cuda()
+        label = label.cuda()
+        noise, fixed_noise = noise.cuda(), fixed_noise.cuda()
+
+        generator_optim = self.generator_optim_func(self.generator)
+        discriminator_optim = self.discriminator_optim_func(self.discriminator)
+
+        for epoch in xrange(self.epochs):
+            for i in xrange(0, len(data), self.batch_size):
+                minibatch = data[i: i + self.batch_size]
+
+                if len(minibatch) != self.batch_size:
+                    continue
+
+                inp = torch.from_numpy(minibatch)
+                inp = inp.cuda()
+
+                # train discriminator on real data with one-sided label
+                # smoothing
+                self.discriminator.zero_grad()
+                soft_labels = \
+                    0.7 + (np.random.random_sample(self.batch_size) * 0.4) \
+                        .astype(np.float32)
+                soft_labels = torch.from_numpy(soft_labels)
+                label.copy_(soft_labels)
+
+                input_v = Variable(inp)
+                label_v = Variable(label)
+
+                output = self.discriminator.forward(input_v)
+                real_error = self.loss(output, label_v)
+                real_error.backward()
+
+                # train discriminator on fake data
+                noise.normal_(0, 1)
+                noise_v = Variable(noise)
+                fake = self.generator.forward(noise_v)
+                label.fill_(fake_label)
+                label_v = Variable(label)
+                output = self.discriminator.forward(fake.detach())
+                fake_error = self.loss(output, label_v)
+                fake_error.backward()
+                discriminator_error = real_error + fake_error
+                discriminator_optim.step()
+
+                # train generator
+                self.generator.zero_grad()
+                label.fill_(real_label)
+                label_v = Variable(label)
+                output = self.discriminator.forward(fake)
+                generator_error = self.loss(output, label_v)
+                generator_error.backward()
+                generator_optim.step()
+
+                gl = generator_error.data[0]
+                dl = discriminator_error.data[0]
+                re = real_error.data[0]
+                fe = fake_error.data[0]
+
+                if i % 10 == 0:
+                    print \
+                        'Epoch {epoch}, batch {i}, generator {gl}, real_error {re}, fake_error {fe}' \
+                            .format(**locals())
+
+        return self.generator, self.discriminator
+
+
+class SupervisedTrainer(Trainer):
+    def __init__(
+            self,
+            model,
+            loss,
+            optimizer,
+            epochs,
+            batch_size):
+
+        super(SupervisedTrainer, self).__init__(
+            epochs,
+            batch_size)
+
+        self.optimizer = optimizer(model)
+        self.loss = loss
+        self.model = model
+
+    def train(self, data):
+        import torch
+        from torch.autograd import Variable
+
+        model = self.model.cuda()
+        loss = self.loss.cuda()
+
+        data, labels = data['data'], data['labels']
+
+        data = data.astype(np.float32)
+        labels = labels.astype(np.float32)
+
+        for epoch in xrange(self.epochs):
+            for i in xrange(0, len(data), self.batch_size):
+
+                model.zero_grad()
+
+                minibatch_slice = slice(i, i + self.batch_size)
+                minibatch_data = data[minibatch_slice]
+                minibatch_labels = labels[minibatch_slice]
+
+                inp = torch.from_numpy(minibatch_data)
+                inp = inp.cuda()
+                inp_v = Variable(inp)
+                output = model(inp_v)
+
+                labels_t = torch.from_numpy(minibatch_labels)
+                labels_t = labels_t.cuda()
+                labels_v = Variable(labels_t)
+
+                error = loss(output, labels_v)
+                error.backward()
+                self.optimizer.step()
+                e = error.data[0]
+
+                if i % 10 == 0:
+                    print 'Epoch {epoch}, batch {i}, error {e}'.format(
+                        **locals())
+
+        return model
 
 
 class PyTorchPreprocessResult(PreprocessResult):
@@ -43,10 +189,10 @@ class PyTorchPreprocessResult(PreprocessResult):
         forward_func = self.op._func
         inv_data_func = self.inversion_data._func
         backward_func = self.inverse._func
-        autoencoder = self.op.autoencoder.state_dict()
+        network_params = self.op.network.state_dict()
         weights = dict(
-            ((k, v.cpu().numpy()) for k, v in autoencoder.iteritems()))
-        cls = self.op.autoencoder.__class__
+            ((k, v.cpu().numpy()) for k, v in network_params.iteritems()))
+        cls = self.op.network.__class__
         name = self.name
         return dict(
             forward_func=forward_func,
@@ -62,12 +208,12 @@ class PyTorchPreprocessResult(PreprocessResult):
             ((k, torch.from_numpy(v).cuda())
              for k, v in state['weights'].iteritems()))
 
-        autoencoder = state['cls']()
-        autoencoder.load_state_dict(restored_weights)
-        autoencoder.cuda()
-        self.op = Op(state['forward_func'], autoencoder=autoencoder)
+        network = state['cls']()
+        network.load_state_dict(restored_weights)
+        network.cuda()
+        self.op = Op(state['forward_func'], network=network)
         self.inversion_data = Op(state['inv_data_func'],
-                                 autoencoder=autoencoder)
+                                 network=network)
         self.inverse = Op(state['backward_func'])
         self.name = state['name']
 
@@ -80,60 +226,131 @@ class PyTorchPreprocessResult(PreprocessResult):
             self.name)
 
 
-class PyTorchAutoEncoder(Preprocessor):
-    def __init__(
-            self,
-            model=None,
-            loss=None,
-            optimizer_func=None,
-            epochs=None,
-            batch_size=None,
-            needs=None):
-        super(PyTorchAutoEncoder, self).__init__(needs=needs)
-        self.optimizer_func = optimizer_func
-        self.epochs = epochs
-        self.batch_size = batch_size
-        self.loss = loss
-        self.model = model
+class PyTorchNetwork(Preprocessor):
+    def __init__(self, trainer=None, needs=None):
+        super(PyTorchNetwork, self).__init__(needs=needs)
+        self.trainer = trainer
+        self._cache = dict()
 
     def _forward_func(self):
-        def x(d, autoencoder=None):
+        def x(d, network=None):
             import torch
             from torch.autograd import Variable
             import numpy as np
             tensor = torch.from_numpy(d.astype(np.float32))
             gpu = tensor.cuda()
             v = Variable(gpu)
-            return autoencoder.encoder(v).data.cpu().numpy()
+            return network(v).data.cpu().numpy()
 
         return x
 
     def _backward_func(self):
-        def x(d, autoencoder=None):
-            import torch
-            from torch.autograd import Variable
-            tensor = torch.from_numpy(d)
-            gpu = tensor.cuda()
-            v = Variable(gpu)
-            return autoencoder.decoder(v).data.cpu().numpy()
+        def x(_):
+            raise NotImplementedError()
 
         return x
+
+    def _enqueue(self, data, pusher):
+        k = self._dependency_name(pusher)
+        self._cache[k] = data
+
+    def _dequeue(self):
+        if not self._finalized:
+            raise ff.NotEnoughData()
+        return self._cache
 
     def _process(self, data):
         data = self._extract_data(data)
 
-        trained_autoencoder = train_autoencoder(
-            self.model,
-            data,
-            self.loss,
-            self.optimizer_func(self.model),
-            self.epochs,
-            self.batch_size)
+        trained_network = self.trainer.train(data)
 
         ff = self._forward_func()
-        processed_data = ff(data, autoencoder=trained_autoencoder)
-        op = self.transform(autoencoder=trained_autoencoder)
-        inv_data = self.inversion_data(autoencoder=trained_autoencoder)
+        processed_data = ff(data['data'], network=trained_network)
+        op = self.transform(network=trained_network)
+        inv_data = self.inversion_data()
+        inv = self.inverse_transform()
+
+        yield PyTorchPreprocessResult(
+            processed_data,
+            op,
+            inversion_data=inv_data,
+            inverse=inv,
+            name='PyTorchNetwork')
+
+
+class PyTorchGan(PyTorchNetwork):
+    def __init__(self, trainer=None, needs=None):
+        super(PyTorchGan, self).__init__(trainer=trainer, needs=needs)
+        self._cache = None
+
+    def _enqueue(self, data, pusher):
+        self._cache = data
+
+    def _process(self, data):
+        data = self._extract_data(data)
+
+        generator, discriminator = self.trainer.train(data)
+
+        # note that the processed data passed on to the next step in the
+        # training pipeline will be the labels output by the discriminator
+        ff = self._forward_func()
+        processed_data = ff(data, network=discriminator)
+
+        op = self.transform(network=generator)
+        inv_data = self.inversion_data()
+        inv = self.inverse_transform()
+
+        yield PyTorchPreprocessResult(
+            processed_data,
+            op,
+            inversion_data=inv_data,
+            inverse=inv,
+            name='PyTorchGan')
+
+
+class PyTorchAutoEncoder(PyTorchNetwork):
+    def __init__(self, trainer=None, needs=None):
+        super(PyTorchAutoEncoder, self).__init__(trainer=trainer, needs=needs)
+        self._cache = None
+
+    def _forward_func(self):
+        def x(d, network=None):
+            import torch
+            from torch.autograd import Variable
+            import numpy as np
+            tensor = torch.from_numpy(d.astype(np.float32))
+            gpu = tensor.cuda()
+            v = Variable(gpu)
+            return network.encoder(v).data.cpu().numpy()
+
+        return x
+
+    def _backward_func(self):
+        def x(d, network=None):
+            import torch
+            from torch.autograd import Variable
+            import numpy as np
+            tensor = torch.from_numpy(d.astype(np.float32))
+            gpu = tensor.cuda()
+            v = Variable(gpu)
+            return network.decoder(v).data.cpu().numpy()
+
+        return x
+
+    def _enqueue(self, data, pusher):
+        self._cache = data
+
+    def _process(self, data):
+        data = self._extract_data(data)
+
+        data = dict(data=data, labels=data)
+
+        trained_network = self.trainer.train(data)
+
+        ff = self._forward_func()
+        processed_data = ff(data['data'], network=trained_network)
+        op = self.transform(network=trained_network)
+        inv_data = self.inversion_data(network=trained_network)
         inv = self.inverse_transform()
 
         yield PyTorchPreprocessResult(

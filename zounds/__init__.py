@@ -35,13 +35,8 @@ from synthesize import \
 from learn import \
     KMeans, Learned, MeanStdNormalization, UnitNorm, Log, Multiply, \
     PreprocessingPipeline, Slicer, ReservoirSampler, TemplateMatch, \
-    simple_settings, SklearnModel, WithComponents, InstanceScaling, \
-    PyTorchAutoEncoder, Reshape
-
-try:
-    from learn import GanTrainer
-except ImportError:
-    pass
+    simple_settings, SklearnModel, WithComponents, InstanceScaling, Reshape, \
+    ShuffledSamples, PyTorchNetwork, PyTorchGan, PyTorchAutoEncoder
 
 from ui import ZoundsApp, ZoundsSearch, RangeUnitUnsupportedException
 

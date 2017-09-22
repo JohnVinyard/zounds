@@ -6,15 +6,12 @@ from preprocess import \
 
 from sklearn_preprocessor import SklearnModel, WithComponents
 
-from pytorch_model import PyTorchAutoEncoder
+from pytorch_model import PyTorchAutoEncoder, PyTorchGan, PyTorchNetwork
 
-from random_samples import ReservoirSampler
+from random_samples import ReservoirSampler, ShuffledSamples
 
 from template_match import TemplateMatch
 
 from util import simple_settings
 
-try:
-    from gan_trainer import GanTrainer
-except ImportError:
-    pass
+

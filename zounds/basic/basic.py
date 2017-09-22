@@ -15,15 +15,10 @@ class Merge(Node):
     def __init__(self, needs=None):
         super(Merge, self).__init__(needs=needs)
         exc_msg = 'you must supply two or more dependencies'
-        try:
-            needs = list(needs)
-        except TypeError:
-            raise ValueError(exc_msg)
-
         if len(needs) < 2:
             raise ValueError(exc_msg)
 
-        self._cache = OrderedDict((id(n), None) for n in needs)
+        self._cache = OrderedDict((id(n), None) for n in needs.values())
 
     def _enqueue(self, data, pusher):
         key = id(pusher)

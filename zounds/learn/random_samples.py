@@ -5,6 +5,100 @@ from zounds.core import ArrayWithUnits, IdentityDimension
 import numpy as np
 
 
+class Reservoir(object):
+    def __init__(self, nsamples):
+        super(Reservoir, self).__init__()
+
+        if nsamples <= 0:
+            raise ValueError('nsamples must be greater than zero')
+
+        self.nsamples = nsamples
+        self.arr = None
+        self.indices = set()
+
+    def _init_arr(self, samples):
+        if self.arr is not None:
+            return
+
+        shape = (self.nsamples,) + samples.shape[1:]
+        self.arr = np.zeros(shape, dtype=samples.dtype)
+        try:
+            self.arr = ArrayWithUnits(
+                self.arr, (IdentityDimension(),) + samples.dimensions[1:])
+        except AttributeError:
+            pass
+
+    def add(self, samples, indices=None):
+        self._init_arr(samples)
+
+        if indices is None:
+            indices = np.random.randint(0, self.nsamples, len(samples))
+
+        if len(indices) != len(samples):
+            raise ValueError(
+                'number of input samples and indices must match'
+                ' but they were {samples} and {indices} respectively'
+                .format(samples=len(samples), indices=len(indices)))
+
+        self.arr[indices, ...] = samples
+        self.indices.update(indices)
+
+    def get(self):
+        if len(self.indices) == self.nsamples:
+            return self.arr
+
+        return self.arr[sorted(self.indices), ...]
+
+
+class MultiplexedReservoir(object):
+    def __init__(self, nsamples):
+        super(MultiplexedReservoir, self).__init__()
+        self.reservoir = None
+        self.nsamples = nsamples
+
+    def _init_dict(self, samples):
+        if self.reservoir is not None:
+            return
+
+        if self.reservoir is None:
+            self.reservoir = dict(
+                (k, Reservoir(self.nsamples)) for k in samples.iterkeys())
+
+    def _check_sample_keys(self, samples):
+        if set(self.reservoir.keys()) != set(samples.keys()):
+            raise ValueError(
+                'samples should have keys {keys}'
+                    .format(keys=self.reservoir.keys()))
+
+    def add(self, samples):
+        self._init_dict(samples)
+        self._check_sample_keys(samples)
+
+        indices = None
+        for k, v in samples.iteritems():
+            if indices is None:
+                indices = np.random.randint(0, self.nsamples, len(v))
+            self.reservoir[k].add(v, indices=indices)
+
+    def get(self):
+        return dict((k, v.get()) for k, v in self.reservoir.iteritems())
+
+
+class ShuffledSamples(Node):
+    def __init__(self, nsamples=None, multiplexed=False, needs=None):
+        super(ShuffledSamples, self).__init__(needs=needs)
+        self.reservoir = MultiplexedReservoir(nsamples) \
+            if multiplexed else Reservoir(nsamples)
+
+    def _enqueue(self, data, pusher):
+        self.reservoir.add(data)
+
+    def _dequeue(self):
+        if not self._finalized:
+            raise NotEnoughData()
+        return self.reservoir.get()
+
+
 class ReservoirSampler(Node):
     """
     Use reservoir sampling (http://en.wikipedia.org/wiki/Reservoir_sampling) to
