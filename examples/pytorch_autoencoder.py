@@ -183,10 +183,10 @@ if __name__ == '__main__':
         # compare the audio of the original and the reconstruction
         original = synth.synthesize(snd.freq_adaptive)
         recon = synth.synthesize(inverted)
-        return original, recon
+        return original, recon, encoded.data, inverted
 
     # get the original audio, and the reconstructed audio
-    o, r = random_reconstruction()
+    o, r, encoded, inverted = random_reconstruction()
 
     # start up an in-browser REPL to interact with the results
     app = zounds.ZoundsApp(
