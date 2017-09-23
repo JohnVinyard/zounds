@@ -11,6 +11,16 @@ class TestReservoir(unittest2.TestCase):
     def test_nsamples_must_be_gt_zero(self):
         self.assertRaises(ValueError, lambda: Reservoir(0))
 
+    def test_can_dictate_dtype(self):
+        r = Reservoir(100, dtype=np.float32)
+        r.add(np.ones(10, dtype=np.float64))
+        self.assertEqual(np.float32, r.get().dtype)
+
+    def test_reservoir_has_first_input_dtype_when_unspecified(self):
+        r = Reservoir(100)
+        r.add(np.ones(10, dtype=np.float64))
+        self.assertEqual(np.float64, r.get().dtype)
+
     def test_raises_if_nsamples_is_not_int(self):
         self.assertRaises(ValueError, lambda: Reservoir(1e2))
 

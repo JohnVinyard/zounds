@@ -6,7 +6,7 @@ import numpy as np
 
 
 class Reservoir(object):
-    def __init__(self, nsamples):
+    def __init__(self, nsamples, dtype=None):
         super(Reservoir, self).__init__()
 
         if not isinstance(nsamples, int):
@@ -18,13 +18,14 @@ class Reservoir(object):
         self.nsamples = nsamples
         self.arr = None
         self.indices = set()
+        self.dtype = dtype
 
     def _init_arr(self, samples):
         if self.arr is not None:
             return
 
         shape = (self.nsamples,) + samples.shape[1:]
-        self.arr = np.zeros(shape, dtype=samples.dtype)
+        self.arr = np.zeros(shape, dtype=self.dtype or samples.dtype)
         try:
             self.arr = ArrayWithUnits(
                 self.arr, (IdentityDimension(),) + samples.dimensions[1:])
@@ -54,8 +55,9 @@ class Reservoir(object):
 
 
 class MultiplexedReservoir(object):
-    def __init__(self, nsamples):
+    def __init__(self, nsamples, dtype=None):
         super(MultiplexedReservoir, self).__init__()
+        self.dtype = dtype
         self.reservoir = None
         self.nsamples = nsamples
 
@@ -65,7 +67,8 @@ class MultiplexedReservoir(object):
 
         if self.reservoir is None:
             self.reservoir = dict(
-                (k, Reservoir(self.nsamples)) for k in samples.iterkeys())
+                (k, Reservoir(self.nsamples, dtype=self.dtype))
+                for k in samples.iterkeys())
 
     def _check_sample_keys(self, samples):
         if set(self.reservoir.keys()) != set(samples.keys()):
@@ -88,10 +91,16 @@ class MultiplexedReservoir(object):
 
 
 class ShuffledSamples(Node):
-    def __init__(self, nsamples=None, multiplexed=False, needs=None):
+    def __init__(
+            self,
+            nsamples=None,
+            multiplexed=False,
+            dtype=None,
+            needs=None):
+
         super(ShuffledSamples, self).__init__(needs=needs)
-        self.reservoir = MultiplexedReservoir(nsamples) \
-            if multiplexed else Reservoir(nsamples)
+        self.reservoir = MultiplexedReservoir(nsamples, dtype=dtype) \
+            if multiplexed else Reservoir(nsamples, dtype=dtype)
 
     def _enqueue(self, data, pusher):
         self.reservoir.add(data)
