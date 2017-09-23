@@ -1,3 +1,4 @@
+import warnings
 import featureflow as ff
 from preprocess import Preprocessor, PreprocessResult, Op
 import numpy as np
@@ -270,8 +271,14 @@ class PyTorchNetwork(Preprocessor):
 
         trained_network = self.trainer.train(data)
 
-        ff = self._forward_func()
-        processed_data = ff(data['data'], network=trained_network)
+        try:
+            forward_func = self._forward_func()
+            processed_data = forward_func(data['data'], network=trained_network)
+        except RuntimeError as e:
+            processed_data = None
+            # the dataset may be too large to fit onto the GPU all at once
+            warnings.warn(e.message)
+
         op = self.transform(network=trained_network)
         inv_data = self.inversion_data()
         inv = self.inverse_transform()

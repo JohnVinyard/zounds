@@ -134,6 +134,12 @@ class FrequencyAdaptive(ArrayWithUnits):
     def iter_bands(self):
         return (self[:, band] for band in self.scale)
 
+    def like_dims(self, arr):
+        return self.__class__(
+            arr,
+            time_dimension=self.time_dimension,
+            explicit_freq_dimension=self.frequency_dimension)
+
     @classmethod
     def from_array_with_units(cls, arr):
         fdim = arr.dimensions[1]

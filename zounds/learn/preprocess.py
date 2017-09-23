@@ -445,13 +445,17 @@ class Pipeline(object):
             kwargs = None
         return cls, kwargs
 
-    def transform(self, data):
+    def transform(self, data, wrapper=None):
         inversion_data = []
         wrap_data = []
         for p in self.processors:
             inversion_data.append(p.inversion_data(data))
             wrap_data.append(self.wrap_data(data))
             data = p.op(data)
+
+        if wrapper is not None:
+            data = wrapper(data)
+
         return PipelineResult(data, self.processors, inversion_data, wrap_data)
 
 
@@ -481,14 +485,12 @@ class PipelineResult(object):
 class PreprocessingPipeline(Node):
     def __init__(self, needs=None):
         super(PreprocessingPipeline, self).__init__(needs=needs)
-        print 'PPP', needs
         self._pipeline = OrderedDict((id(n), None) for n in needs.values())
 
     def _enqueue(self, data, pusher):
         self._pipeline[id(pusher)] = data
 
     def _dequeue(self):
-        # TODO: Make this an aggregator
         if not self._finalized or not all(self._pipeline.itervalues()):
             raise NotEnoughData()
 
