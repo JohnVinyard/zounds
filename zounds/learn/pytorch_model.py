@@ -147,8 +147,14 @@ class SupervisedTrainer(Trainer):
 
         data, labels = data['data'], data['labels']
 
-        data = data.astype(np.float32)
-        labels = labels.astype(np.float32)
+        if data is labels:
+            # this is an autoencoder scenario, so let's saved on memory
+            print 'AUTOENCODER SCENARIO'
+            data = data.astype(np.float32)
+            labels = data
+        else:
+            data = data.astype(np.float32)
+            labels = labels.astype(np.float32)
 
         for epoch in xrange(self.epochs):
             for i in xrange(0, len(data), self.batch_size):

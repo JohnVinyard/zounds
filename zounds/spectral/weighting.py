@@ -42,6 +42,24 @@ class FrequencyWeighting(object):
     def __rmul__(self, other):
         return self.__mul__(other)
 
+    def __div__(self, other):
+        frequency_dim = other.dimensions[-1]
+
+        if isinstance(other, FrequencyAdaptive):
+            weights = self._wdata(frequency_dim.scale)
+            arrs = [
+                other[:, band] / w
+                for band, w in zip(frequency_dim.scale, weights)]
+            return FrequencyAdaptive(arrs, other.time_dimension, other.scale)
+
+        try:
+            return other / self._wdata(frequency_dim.scale)
+        except AttributeError:
+            raise ValueError('Last dimension must be FrequencyDimension')
+
+    def __rdiv__(self, other):
+        return self.__div__(other)
+
 
 class AWeighting(FrequencyWeighting):
     """

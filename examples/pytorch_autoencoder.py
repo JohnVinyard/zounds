@@ -114,30 +114,25 @@ class FreqAdaptiveAutoEncoder(ff.BaseModel):
         ff.IteratorNode,
         store=False)
 
-    shuffle = zounds.ArrayWithUnitsFeature(
-        zounds.ReservoirSampler,
-        nsamples=1e5,
+    shuffle = ff.PickleFeature(
+        zounds.ShuffledSamples,
+        nsamples=int(1e5),
         needs=docs,
-        store=True)
-
-    log = ff.PickleFeature(
-        zounds.Log,
-        needs=shuffle,
         store=False)
 
     scaled = ff.PickleFeature(
         zounds.InstanceScaling,
-        needs=log,
+        needs=shuffle,
         store=False)
 
     autoencoder = ff.PickleFeature(
         zounds.PyTorchAutoEncoder,
-        model=AutoEncoder(),
-        loss=nn.MSELoss(),
-        optimizer_func=lambda ae: optim.Adam(
-            ae.parameters(), lr=0.00005, betas=(0.5, 0.999)),
-        epochs=40,
-        batch_size=64,
+        trainer=zounds.SupervisedTrainer(
+            AutoEncoder(),
+            loss=nn.MSELoss(),
+            optimizer=lambda model: optim.Adam(model.parameters(), lr=0.00005),
+            epochs=40,
+            batch_size=64),
         needs=scaled,
         store=False)
 
@@ -145,7 +140,7 @@ class FreqAdaptiveAutoEncoder(ff.BaseModel):
     # forward and backward transformations
     pipeline = ff.PickleFeature(
         zounds.PreprocessingPipeline,
-        needs=(log, scaled, autoencoder),
+        needs=(scaled, autoencoder),
         store=True)
 
 
@@ -160,29 +155,38 @@ if __name__ == '__main__':
         print 'processed {request.url}'.format(**locals())
 
     # train the pipeline, including the autoencoder
-    try:
+    if not FreqAdaptiveAutoEncoder.exists():
         FreqAdaptiveAutoEncoder.process(
-            docs=(snd.freq_adaptive for snd in Sound),
-            raise_if_exists=True)
-    except ff.ModelExistsError:
-        print 'model already trained'
-        pass
+            docs=(snd.freq_adaptive for snd in Sound))
+
+    # get a reference to the trained pipeline
+    autoencoder = FreqAdaptiveAutoEncoder()
+
+    # get references to all the bach pieces.  features are lazily
+    # loaded/evaluated, so this is a cheap operation
+    snds = list(Sound)
 
     # choose a random bach piece
-    snds = list(Sound)
     snd = choice(snds)
-
-    # run the model forward and backward
-    autoencoder = FreqAdaptiveAutoEncoder()
-    encoded = autoencoder.pipeline.transform(snd.freq_adaptive)
-    inverted = encoded.inverse_transform()
 
     # create a synthesizer that can invert the frequency adaptive representation
     synth = zounds.FrequencyAdaptiveFFTSynthesizer(scale, samplerate)
 
-    # compare the audio of the original and the reconstruction
-    original = synth.synthesize(snd.freq_adaptive)
-    recon = synth.synthesize(inverted)
+    def random_reconstruction():
+        # choose a random bach piece
+        snd = choice(snds)
+
+        # run the model forward and backward
+        encoded = autoencoder.pipeline.transform(snd.freq_adaptive)
+        inverted = encoded.inverse_transform()
+
+        # compare the audio of the original and the reconstruction
+        original = synth.synthesize(snd.freq_adaptive)
+        recon = synth.synthesize(inverted)
+        return original, recon
+
+    # get the original audio, and the reconstructed audio
+    o, r = random_reconstruction()
 
     # start up an in-browser REPL to interact with the results
     app = zounds.ZoundsApp(

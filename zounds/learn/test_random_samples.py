@@ -11,6 +11,9 @@ class TestReservoir(unittest2.TestCase):
     def test_nsamples_must_be_gt_zero(self):
         self.assertRaises(ValueError, lambda: Reservoir(0))
 
+    def test_raises_if_nsamples_is_not_int(self):
+        self.assertRaises(ValueError, lambda: Reservoir(1e2))
+
     def test_array_has_correct_first_dimension(self):
         r = Reservoir(100)
         r.add(np.random.random_sample((10, 3)))

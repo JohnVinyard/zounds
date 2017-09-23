@@ -6,7 +6,9 @@ from preprocess import \
 
 from sklearn_preprocessor import SklearnModel, WithComponents
 
-from pytorch_model import PyTorchAutoEncoder, PyTorchGan, PyTorchNetwork
+from pytorch_model import \
+    PyTorchAutoEncoder, PyTorchGan, PyTorchNetwork, GanTrainer, \
+    SupervisedTrainer
 
 from random_samples import ReservoirSampler, ShuffledSamples
 

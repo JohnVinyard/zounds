@@ -9,6 +9,9 @@ class Reservoir(object):
     def __init__(self, nsamples):
         super(Reservoir, self).__init__()
 
+        if not isinstance(nsamples, int):
+            raise ValueError('nsamples must be an integer')
+
         if nsamples <= 0:
             raise ValueError('nsamples must be greater than zero')
 

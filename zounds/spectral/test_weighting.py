@@ -48,3 +48,24 @@ class WeightingTests(unittest2.TestCase):
         result = fa * weighting
         self.assertGreater(
             result[:, scale[-1]].sum(), result[:, scale[0]].sum())
+
+    def test_can_invert_frequency_weighting(self):
+        td = TimeDimension(Seconds(1), Seconds(1))
+        fd = FrequencyDimension(LinearScale(FrequencyBand(20, 22050), 100))
+        tf = ArrayWithUnits(np.random.random_sample((90, 100)), [td, fd])
+        weighted = tf * AWeighting()
+        inverted = weighted / AWeighting()
+        np.testing.assert_allclose(tf, inverted)
+
+    def test_can_invert_frequency_weighting_for_adaptive_representation(self):
+        td = TimeDimension(
+            duration=Seconds(1),
+            frequency=Milliseconds(500))
+        scale = GeometricScale(20, 5000, 0.05, 120)
+        arrs = [np.random.random_sample((10, x)) for x in xrange(1, 121)]
+        fa = FrequencyAdaptive(arrs, td, scale)
+        weighting = AWeighting()
+        result = fa * weighting
+        inverted = result / AWeighting()
+        np.testing.assert_allclose(fa, inverted)
+
