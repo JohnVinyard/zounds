@@ -304,10 +304,15 @@ class PyTorchGan(PyTorchNetwork):
 
         generator, discriminator = self.trainer.train(data)
 
-        # note that the processed data passed on to the next step in the
-        # training pipeline will be the labels output by the discriminator
-        ff = self._forward_func()
-        processed_data = ff(data, network=discriminator)
+        try:
+            # note that the processed data passed on to the next step in the
+            # training pipeline will be the labels output by the discriminator
+            forward_func = self._forward_func()
+            processed_data = forward_func(data, network=discriminator)
+        except RuntimeError as e:
+            processed_data = None
+            # the dataset may be too large to fit onto the GPU all at once
+            warnings.warn(e.message)
 
         op = self.transform(network=generator)
         inv_data = self.inversion_data()
