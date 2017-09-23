@@ -5,8 +5,6 @@ from zounds.util import simple_in_memory_settings
 from pytorch_model import \
     SupervisedTrainer, GanTrainer, PyTorchNetwork, PyTorchAutoEncoder, \
     PyTorchGan
-from torch import nn
-from torch.optim import SGD, Adam
 from random_samples import ShuffledSamples
 from preprocess import \
     UnitNorm, Binarize, PreprocessingPipeline, InstanceScaling
@@ -14,66 +12,69 @@ import numpy as np
 
 try:
     import torch
+    from torch import nn
+    from torch.optim import SGD, Adam
+
+
+    class SupervisedNetwork(nn.Module):
+        def __init__(self):
+            super(SupervisedNetwork, self).__init__()
+            self.visible = nn.Linear(2, 64, bias=False)
+            self.t1 = nn.Sigmoid()
+            self.hidden = nn.Linear(64, 1, bias=False)
+            self.t2 = nn.Sigmoid()
+
+        def forward(self, inp):
+            x = self.visible(inp)
+            x = self.t1(x)
+            x = self.hidden(x)
+            x = self.t2(x)
+            return x
+
+
+    class AutoEncoder(nn.Module):
+        def __init__(self):
+            super(AutoEncoder, self).__init__()
+
+            self.encoder = nn.Sequential(
+                nn.Linear(3, 2, bias=False),
+                nn.Sigmoid())
+
+            self.decoder = nn.Sequential(
+                nn.Linear(2, 3, bias=False),
+                nn.Sigmoid())
+
+        def forward(self, inp):
+            x = self.encoder(inp)
+            x = self.decoder(x)
+            return x
+
+
+    class GanGenerator(nn.Module):
+        def __init__(self):
+            super(GanGenerator, self).__init__()
+            self.linear = nn.Linear(2, 4)
+            self.tanh = nn.Tanh()
+
+        def forward(self, inp):
+            x = self.linear(inp)
+            x = self.tanh(x)
+            return x
+
+
+    class GanDiscriminator(nn.Module):
+        def __init__(self):
+            super(GanDiscriminator, self).__init__()
+            self.linear = nn.Linear(4, 1)
+            self.sigmoid = nn.Sigmoid()
+
+        def forward(self, inp):
+            x = self.linear(inp)
+            x = self.sigmoid(x)
+            return x
+
 except ImportError:
     torch = None
-
-
-class SupervisedNetwork(nn.Module):
-    def __init__(self):
-        super(SupervisedNetwork, self).__init__()
-        self.visible = nn.Linear(2, 64, bias=False)
-        self.t1 = nn.Sigmoid()
-        self.hidden = nn.Linear(64, 1, bias=False)
-        self.t2 = nn.Sigmoid()
-
-    def forward(self, inp):
-        x = self.visible(inp)
-        x = self.t1(x)
-        x = self.hidden(x)
-        x = self.t2(x)
-        return x
-
-
-class AutoEncoder(nn.Module):
-    def __init__(self):
-        super(AutoEncoder, self).__init__()
-
-        self.encoder = nn.Sequential(
-            nn.Linear(3, 2, bias=False),
-            nn.Sigmoid())
-
-        self.decoder = nn.Sequential(
-            nn.Linear(2, 3, bias=False),
-            nn.Sigmoid())
-
-    def forward(self, inp):
-        x = self.encoder(inp)
-        x = self.decoder(x)
-        return x
-
-
-class GanGenerator(nn.Module):
-    def __init__(self):
-        super(GanGenerator, self).__init__()
-        self.linear = nn.Linear(2, 4)
-        self.tanh = nn.Tanh()
-
-    def forward(self, inp):
-        x = self.linear(inp)
-        x = self.tanh(x)
-        return x
-
-
-class GanDiscriminator(nn.Module):
-    def __init__(self):
-        super(GanDiscriminator, self).__init__()
-        self.linear = nn.Linear(4, 1)
-        self.sigmoid = nn.Sigmoid()
-
-    def forward(self, inp):
-        x = self.linear(inp)
-        x = self.sigmoid(x)
-        return x
 
 
 class PyTorchModelTests(unittest2.TestCase):
@@ -288,5 +289,3 @@ class PyTorchModelTests(unittest2.TestCase):
         noise = np.random.normal(0, 1, (10, 2))
         result = pipe.pipeline.transform(noise)
         self.assertEqual((10, 4), result.data.shape)
-
-
