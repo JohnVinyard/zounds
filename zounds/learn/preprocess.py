@@ -211,6 +211,36 @@ class Log(Preprocessor):
             data, op, inversion_data=inv_data, inverse=inv, name='Log')
 
 
+class MuLawCompressed(Preprocessor):
+    def __init__(self, needs=None):
+        super(MuLawCompressed, self).__init__(needs=needs)
+
+    def _forward_func(self):
+        def x(d):
+            from zounds.loudness import mu_law
+            return mu_law(d)
+        return x
+
+    def _backward_func(self):
+        def x(d):
+            from zounds.loudness import inverse_mu_law
+            return inverse_mu_law(d)
+        return x
+
+    def _process(self, data):
+        data = self._extract_data(data)
+        op = self.transform()
+        inv_data = self.inversion_data()
+        inv = self.inverse_transform()
+        data = op(data)
+        yield PreprocessResult(
+            data,
+            op,
+            inversion_data=inv_data,
+            inverse=inv,
+            name='MuLawCompressed')
+
+
 class Slicer(Preprocessor):
     def __init__(self, slicex=None, needs=None):
         super(Slicer, self).__init__(needs=needs)
@@ -401,8 +431,6 @@ class Weighted(Preprocessor):
 
     def _forward_func(self):
         def x(d, weighting=None):
-            print d.__class__
-            print d.dimensions
             return d * weighting
 
         return x

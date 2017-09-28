@@ -4,6 +4,7 @@ import numpy as np
 from torch import nn, optim
 from random import choice
 
+
 samplerate = zounds.SR11025()
 BaseModel = zounds.stft(resample_to=samplerate, store_fft=True)
 
@@ -51,27 +52,12 @@ class Sound(BaseModel):
         store=False)
 
 
-class InnerLayer(nn.Module):
+class Layer(nn.Module):
     """
-    A single, hidden layer of our simple autoencoder
-    """
-    def __init__(self, in_size, out_size):
-        super(InnerLayer, self).__init__()
-        self.linear = nn.Linear(in_size, out_size, bias=False)
-        self.relu = nn.LeakyReLU(0.2)
-
-    def forward(self, inp):
-        x = self.linear(inp)
-        x = self.relu(x)
-        return x
-
-
-class OutputLayer(nn.Module):
-    """
-    The output layer of our simple autoencoder
+    A single layer of our simple autoencoder
     """
     def __init__(self, in_size, out_size):
-        super(OutputLayer, self).__init__()
+        super(Layer, self).__init__()
         self.linear = nn.Linear(in_size, out_size, bias=False)
         self.tanh = nn.Tanh()
 
@@ -88,13 +74,13 @@ class AutoEncoder(nn.Module):
     def __init__(self):
         super(AutoEncoder, self).__init__()
         self.encoder = nn.Sequential(
-            InnerLayer(8192, 1024),
-            InnerLayer(1024, 512),
-            InnerLayer(512, 256))
+            Layer(8192, 1024),
+            Layer(1024, 512),
+            Layer(512, 256))
         self.decoder = nn.Sequential(
-            InnerLayer(256, 512),
-            InnerLayer(512, 1024),
-            OutputLayer(1024, 8192))
+            Layer(256, 512),
+            Layer(512, 1024),
+            Layer(1024, 8192))
 
     def forward(self, inp):
         encoded = self.encoder(inp)
@@ -120,9 +106,14 @@ class FreqAdaptiveAutoEncoder(ff.BaseModel):
         needs=docs,
         store=False)
 
+    mu_law = ff.PickleFeature(
+        zounds.MuLawCompressed,
+        needs=shuffle,
+        store=False)
+
     scaled = ff.PickleFeature(
         zounds.InstanceScaling,
-        needs=shuffle,
+        needs=mu_law,
         store=False)
 
     autoencoder = ff.PickleFeature(
@@ -131,7 +122,7 @@ class FreqAdaptiveAutoEncoder(ff.BaseModel):
             AutoEncoder(),
             loss=nn.MSELoss(),
             optimizer=lambda model: optim.Adam(model.parameters(), lr=0.00005),
-            epochs=40,
+            epochs=100,
             batch_size=64),
         needs=scaled,
         store=False)
@@ -140,7 +131,7 @@ class FreqAdaptiveAutoEncoder(ff.BaseModel):
     # forward and backward transformations
     pipeline = ff.PickleFeature(
         zounds.PreprocessingPipeline,
-        needs=(scaled, autoencoder),
+        needs=(mu_law, scaled, autoencoder),
         store=True)
 
 
@@ -166,9 +157,6 @@ if __name__ == '__main__':
     # loaded/evaluated, so this is a cheap operation
     snds = list(Sound)
 
-    # choose a random bach piece
-    snd = choice(snds)
-
     # create a synthesizer that can invert the frequency adaptive representation
     synth = zounds.FrequencyAdaptiveFFTSynthesizer(scale, samplerate)
 
@@ -176,17 +164,19 @@ if __name__ == '__main__':
         # choose a random bach piece
         snd = choice(snds)
 
-        # run the model forward and backward
+        # run the model forward
         encoded = autoencoder.pipeline.transform(snd.freq_adaptive)
+        # then invert the encoded version
         inverted = encoded.inverse_transform()
 
         # compare the audio of the original and the reconstruction
         original = synth.synthesize(snd.freq_adaptive)
         recon = synth.synthesize(inverted)
-        return original, recon, encoded.data, inverted
+        return original, recon, encoded.data, snd.freq_adaptive, inverted
 
     # get the original audio, and the reconstructed audio
-    o, r, encoded, inverted = random_reconstruction()
+    orig_audio, recon_audio, encoded, orig_coeffs, inverted_coeffs = \
+        random_reconstruction()
 
     # start up an in-browser REPL to interact with the results
     app = zounds.ZoundsApp(

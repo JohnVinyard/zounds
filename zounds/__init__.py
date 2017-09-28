@@ -21,7 +21,8 @@ from spectral import \
     FrequencyAdaptive, FrequencyWeighting
 
 from loudness import \
-    log_modulus, inverse_log_modulus, decibel, mu_law, MuLaw, LogModulus
+    log_modulus, inverse_log_modulus, decibel, mu_law, MuLaw, LogModulus, \
+    inverse_mu_law
 
 from segment import MeasureOfTransience, MovingAveragePeakPicker, \
     ComplexDomain, TimeSliceFeature
@@ -37,7 +38,7 @@ from learn import \
     PreprocessingPipeline, Slicer, ReservoirSampler, TemplateMatch, \
     simple_settings, SklearnModel, WithComponents, InstanceScaling, Reshape, \
     ShuffledSamples, PyTorchNetwork, PyTorchGan, PyTorchAutoEncoder, \
-    GanTrainer, SupervisedTrainer, Weighted
+    GanTrainer, SupervisedTrainer, Weighted, MuLawCompressed
 
 from ui import ZoundsApp, ZoundsSearch, RangeUnitUnsupportedException
 

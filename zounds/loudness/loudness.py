@@ -1,3 +1,4 @@
+from __future__ import division
 import numpy as np
 from featureflow import Node
 
@@ -16,7 +17,16 @@ def decibel(x):
 
 def mu_law(x, mu=255):
     s = np.sign(x)
-    return s * (np.log(1 + (mu * np.abs(x))) / np.log(1 + mu))
+    x = np.abs(x)
+    return s * (np.log(1 + (mu * x)) / np.log(1 + mu))
+
+
+def inverse_mu_law(x, mu=255):
+    s = np.sign(x)
+    x = np.abs(x)
+    x *= np.log(1 + mu)
+    x = (np.exp(x) - 1) / mu
+    return x * s
 
 
 class MuLaw(Node):

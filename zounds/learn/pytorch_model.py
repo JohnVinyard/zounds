@@ -129,12 +129,14 @@ class SupervisedTrainer(Trainer):
             loss,
             optimizer,
             epochs,
-            batch_size):
+            batch_size,
+            regularization=None):
 
         super(SupervisedTrainer, self).__init__(
             epochs,
             batch_size)
 
+        self.regularization = regularization
         self.optimizer = optimizer(model)
         self.loss = loss
         self.model = model
@@ -150,7 +152,6 @@ class SupervisedTrainer(Trainer):
 
         if data is labels:
             # this is an autoencoder scenario, so let's saved on memory
-            print 'AUTOENCODER SCENARIO'
             data = data.astype(np.float32)
             labels = data
         else:
@@ -177,11 +178,18 @@ class SupervisedTrainer(Trainer):
 
                 error = loss(output, labels_v)
                 error.backward()
+
+                r_error = None
+                if self.regularization:
+                    r_error = self.regularization(model)
+                    r_error.backward()
+                    error = error + r_error
+
                 self.optimizer.step()
                 e = error.data[0]
 
                 if i % 10 == 0:
-                    print 'Epoch {epoch}, batch {i}, error {e}'.format(
+                    print 'Epoch {epoch}, batch {i}, error {e}, reg error {r_error}'.format(
                         **locals())
 
         return model

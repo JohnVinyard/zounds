@@ -2,7 +2,7 @@ from learn import KMeans, Learned
 
 from preprocess import \
     MeanStdNormalization, UnitNorm, Log, PreprocessingPipeline, Multiply, \
-    Slicer, InstanceScaling, Reshape, Weighted
+    Slicer, InstanceScaling, Reshape, Weighted, MuLawCompressed
 
 from sklearn_preprocessor import SklearnModel, WithComponents
 
