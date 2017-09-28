@@ -252,10 +252,16 @@ class PyTorchNetwork(Preprocessor):
             import torch
             from torch.autograd import Variable
             import numpy as np
+            from zounds.core import ArrayWithUnits, IdentityDimension
             tensor = torch.from_numpy(d.astype(np.float32))
             gpu = tensor.cuda()
             v = Variable(gpu)
-            return network(v).data.cpu().numpy()
+            result = network(v).data.cpu().numpy()
+            try:
+                return ArrayWithUnits(
+                    result, d.dimensions[:-1] + (IdentityDimension(),))
+            except AttributeError:
+                return result
 
         return x
 
@@ -344,10 +350,16 @@ class PyTorchAutoEncoder(PyTorchNetwork):
             import torch
             from torch.autograd import Variable
             import numpy as np
+            from zounds.core import ArrayWithUnits, IdentityDimension
             tensor = torch.from_numpy(d.astype(np.float32))
             gpu = tensor.cuda()
             v = Variable(gpu)
-            return network.encoder(v).data.cpu().numpy()
+            encoded = network.encoder(v).data.cpu().numpy()
+            try:
+                return ArrayWithUnits(
+                    encoded, d.dimensions[:-1] + (IdentityDimension(),))
+            except AttributeError:
+                return encoded
 
         return x
 
