@@ -126,7 +126,7 @@ class Discriminator(nn.Module):
             DiscriminatorLayer(64, 128),
             DiscriminatorLayer(128, 256),
             DiscriminatorLayer(256, 512),
-            DiscriminatorLayer(512, 1),
+            nn.Conv2d(512, 1, (2, 2), (2, 2), bias=False),
             nn.Sigmoid())
 
     def forward(self, inp):

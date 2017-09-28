@@ -26,6 +26,7 @@ class Reservoir(object):
 
         shape = (self.nsamples,) + samples.shape[1:]
         self.arr = np.zeros(shape, dtype=self.dtype or samples.dtype)
+
         try:
             self.arr = ArrayWithUnits(
                 self.arr, (IdentityDimension(),) + samples.dimensions[1:])

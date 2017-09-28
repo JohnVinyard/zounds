@@ -394,6 +394,35 @@ class Multiply(Preprocessor):
             data, op, inversion_data=inv_data, inverse=inv, name='Multiply')
 
 
+class Weighted(Preprocessor):
+    def __init__(self, weighting, needs=None):
+        super(Weighted, self).__init__(needs=needs)
+        self.weighting = weighting
+
+    def _forward_func(self):
+        def x(d, weighting=None):
+            print d.__class__
+            print d.dimensions
+            return d * weighting
+
+        return x
+
+    def _backward_func(self):
+        def x(d, weighting=None):
+            return d / weighting
+
+        return x
+
+    def _process(self, data):
+        data = self._extract_data(data)
+        op = self.transform(weighting=self.weighting)
+        inv_data = self.inversion_data(weighting=self.weighting)
+        inv = self.inverse_transform()
+        data = op(data)
+        yield PreprocessResult(
+            data, op, inversion_data=inv_data, inverse=inv, name='Weighted')
+
+
 class Binarize(Preprocessor):
     def __init__(self, threshold=0.5, needs=None):
         super(Binarize, self).__init__(needs=needs)

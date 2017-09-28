@@ -1,6 +1,6 @@
 import unittest2
 from random_samples import \
-    ReservoirSampler, Reservoir, MultiplexedReservoir, ShuffledSamples
+    ReservoirSampler, Reservoir, MultiplexedReservoir
 from zounds.timeseries import TimeDimension, Seconds
 from zounds.spectral import FrequencyDimension, FrequencyBand, LinearScale
 from zounds.core import ArrayWithUnits, IdentityDimension
@@ -8,6 +8,7 @@ import numpy as np
 
 
 class TestReservoir(unittest2.TestCase):
+
     def test_nsamples_must_be_gt_zero(self):
         self.assertRaises(ValueError, lambda: Reservoir(0))
 

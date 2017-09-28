@@ -24,38 +24,25 @@ class FrequencyWeighting(object):
             frequency_dim = other.dimensions[-1]
             return self._wdata(frequency_dim.scale)
 
+    def _get_factors(self, arr):
+        for i, d in enumerate(arr.dimensions):
+            try:
+                weights = self._wdata(d.scale)
+                expanded = d.weights(weights, arr, i)
+                return expanded
+            except AttributeError as e:
+                pass
+
+        raise ValueError('arr must have a frequency dimension')
+
     def __mul__(self, other):
-        frequency_dim = other.dimensions[-1]
-
-        if isinstance(other, FrequencyAdaptive):
-            weights = self._wdata(frequency_dim.scale)
-            arrs = [
-                other[:, band] * w
-                for band, w in zip(frequency_dim.scale, weights)]
-            return FrequencyAdaptive(arrs, other.time_dimension, other.scale)
-
-        try:
-            return self._wdata(frequency_dim.scale) * other
-        except AttributeError:
-            raise ValueError('Last dimension must be FrequencyDimension')
+        return self._get_factors(other) * other
 
     def __rmul__(self, other):
         return self.__mul__(other)
 
     def __div__(self, other):
-        frequency_dim = other.dimensions[-1]
-
-        if isinstance(other, FrequencyAdaptive):
-            weights = self._wdata(frequency_dim.scale)
-            arrs = [
-                other[:, band] / w
-                for band, w in zip(frequency_dim.scale, weights)]
-            return FrequencyAdaptive(arrs, other.time_dimension, other.scale)
-
-        try:
-            return other / self._wdata(frequency_dim.scale)
-        except AttributeError:
-            raise ValueError('Last dimension must be FrequencyDimension')
+        return other / self._get_factors(other)
 
     def __rdiv__(self, other):
         return self.__div__(other)

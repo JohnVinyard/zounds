@@ -37,7 +37,7 @@ from learn import \
     PreprocessingPipeline, Slicer, ReservoirSampler, TemplateMatch, \
     simple_settings, SklearnModel, WithComponents, InstanceScaling, Reshape, \
     ShuffledSamples, PyTorchNetwork, PyTorchGan, PyTorchAutoEncoder, \
-    GanTrainer, SupervisedTrainer
+    GanTrainer, SupervisedTrainer, Weighted
 
 from ui import ZoundsApp, ZoundsSearch, RangeUnitUnsupportedException
 

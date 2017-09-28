@@ -1,3 +1,4 @@
+import numpy as np
 import frequencyscale
 from zounds.core import Dimension
 from zounds.spectral.frequencyscale import ExplicitScale
@@ -34,6 +35,9 @@ class FrequencyDimension(Dimension):
     def __init__(self, scale):
         super(FrequencyDimension, self).__init__()
         self.scale = scale
+
+    def weights(self, weights, arr, i):
+        return weights
 
     def modified_dimension(self, size, windowsize, stepsize=None):
         raise NotImplementedError()
@@ -95,6 +99,12 @@ class ExplicitFrequencyDimension(Dimension):
         self.scale = scale
         self.slices = slices
         self._lookup = dict(zip(self.scale, self.slices))
+
+    def weights(self, weights, arr, i):
+        w = np.zeros(self.slices[-1].stop - self.slices[0].start)
+        for weight, sl in zip(weights, self.slices):
+            w[sl] = weight
+        return w
 
     def modified_dimension(self, size, windowsize, stepsize=None):
         raise NotImplementedError()
