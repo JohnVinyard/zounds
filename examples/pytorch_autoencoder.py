@@ -4,7 +4,6 @@ import numpy as np
 from torch import nn, optim
 from random import choice
 
-
 samplerate = zounds.SR11025()
 BaseModel = zounds.stft(resample_to=samplerate, store_fft=True)
 
@@ -14,6 +13,92 @@ scale = zounds.GeometricScale(
     bandwidth_ratio=0.016985,
     n_bands=300)
 scale.ensure_overlap_ratio(0.5)
+
+
+class Layer(nn.Module):
+    """
+    A single layer of our simple autoencoder
+    """
+
+    def __init__(self, in_size, out_size):
+        super(Layer, self).__init__()
+        self.linear = nn.Linear(in_size, out_size, bias=False)
+        self.tanh = nn.Tanh()
+
+    def forward(self, inp):
+        x = self.linear(inp)
+        x = self.tanh(x)
+        return x
+
+
+class AutoEncoder(nn.Module):
+    """
+    A simple autoencoder.  No bells, whistles, or convolutions
+    """
+
+    def __init__(self):
+        super(AutoEncoder, self).__init__()
+        self.encoder = nn.Sequential(
+            Layer(8192, 1024),
+            Layer(1024, 512),
+            Layer(512, 256))
+        self.decoder = nn.Sequential(
+            Layer(256, 512),
+            Layer(512, 1024),
+            Layer(1024, 8192))
+
+    def forward(self, inp):
+        encoded = self.encoder(inp)
+        decoded = self.decoder(encoded)
+        return decoded
+
+
+@zounds.simple_settings
+class FreqAdaptiveAutoEncoder(ff.BaseModel):
+    """
+    Define a processing pipeline to learn a compressed representation of the
+    Sound.freq_adaptive feature.  Once this is trained and the pipeline is
+    stored, we can apply all the pre-processing steps and the autoencoder
+    forward and in reverse.
+    """
+    docs = ff.Feature(
+        ff.IteratorNode,
+        store=False)
+
+    shuffle = ff.PickleFeature(
+        zounds.ShuffledSamples,
+        nsamples=int(1e5),
+        dtype=np.float32,
+        needs=docs,
+        store=False)
+
+    mu_law = ff.PickleFeature(
+        zounds.MuLawCompressed,
+        needs=shuffle,
+        store=False)
+
+    scaled = ff.PickleFeature(
+        zounds.InstanceScaling,
+        needs=mu_law,
+        store=False)
+
+    autoencoder = ff.PickleFeature(
+        zounds.PyTorchAutoEncoder,
+        trainer=zounds.SupervisedTrainer(
+            AutoEncoder(),
+            loss=nn.MSELoss(),
+            optimizer=lambda model: optim.Adam(model.parameters(), lr=0.00005),
+            epochs=100,
+            batch_size=64),
+        needs=scaled,
+        store=False)
+
+    # assemble the previous steps into a re-usable pipeline, which can perform
+    # forward and backward transformations
+    pipeline = ff.PickleFeature(
+        zounds.PreprocessingPipeline,
+        needs=(mu_law, scaled, autoencoder),
+        store=True)
 
 
 @zounds.simple_lmdb_settings('bach', map_size=1e10, user_supplied_id=True)
@@ -51,87 +136,10 @@ class Sound(BaseModel):
         needs=long_fft,
         store=False)
 
-
-class Layer(nn.Module):
-    """
-    A single layer of our simple autoencoder
-    """
-    def __init__(self, in_size, out_size):
-        super(Layer, self).__init__()
-        self.linear = nn.Linear(in_size, out_size, bias=False)
-        self.tanh = nn.Tanh()
-
-    def forward(self, inp):
-        x = self.linear(inp)
-        x = self.tanh(x)
-        return x
-
-
-class AutoEncoder(nn.Module):
-    """
-    A simple autoencoder.  No bells, whistles, or convolutions
-    """
-    def __init__(self):
-        super(AutoEncoder, self).__init__()
-        self.encoder = nn.Sequential(
-            Layer(8192, 1024),
-            Layer(1024, 512),
-            Layer(512, 256))
-        self.decoder = nn.Sequential(
-            Layer(256, 512),
-            Layer(512, 1024),
-            Layer(1024, 8192))
-
-    def forward(self, inp):
-        encoded = self.encoder(inp)
-        decoded = self.decoder(encoded)
-        return decoded
-
-
-@zounds.simple_settings
-class FreqAdaptiveAutoEncoder(ff.BaseModel):
-    """
-    Define a processing pipeline to learn a compressed representation of the
-    Sound.freq_adaptive feature.  Once this is trained and the pipeline is
-    stored, we can apply all the pre-processing steps and the autoencoder
-    forward and in reverse.
-    """
-    docs = ff.Feature(
-        ff.IteratorNode,
-        store=False)
-
-    shuffle = ff.PickleFeature(
-        zounds.ShuffledSamples,
-        nsamples=int(1e5),
-        needs=docs,
-        store=False)
-
-    mu_law = ff.PickleFeature(
-        zounds.MuLawCompressed,
-        needs=shuffle,
-        store=False)
-
-    scaled = ff.PickleFeature(
-        zounds.InstanceScaling,
-        needs=mu_law,
-        store=False)
-
-    autoencoder = ff.PickleFeature(
-        zounds.PyTorchAutoEncoder,
-        trainer=zounds.SupervisedTrainer(
-            AutoEncoder(),
-            loss=nn.MSELoss(),
-            optimizer=lambda model: optim.Adam(model.parameters(), lr=0.00005),
-            epochs=100,
-            batch_size=64),
-        needs=scaled,
-        store=False)
-
-    # assemble the previous steps into a re-usable pipeline, which can perform
-    # forward and backward transformations
-    pipeline = ff.PickleFeature(
-        zounds.PreprocessingPipeline,
-        needs=(mu_law, scaled, autoencoder),
+    encoded = zounds.ArrayWithUnitsFeature(
+        zounds.Learned,
+        learned=FreqAdaptiveAutoEncoder(),
+        needs=freq_adaptive,
         store=True)
 
 
@@ -160,6 +168,7 @@ if __name__ == '__main__':
     # create a synthesizer that can invert the frequency adaptive representation
     synth = zounds.FrequencyAdaptiveFFTSynthesizer(scale, samplerate)
 
+
     def random_reconstruction():
         # choose a random bach piece
         snd = choice(snds)
@@ -173,6 +182,7 @@ if __name__ == '__main__':
         original = synth.synthesize(snd.freq_adaptive)
         recon = synth.synthesize(inverted)
         return original, recon, encoded.data, snd.freq_adaptive, inverted
+
 
     # get the original audio, and the reconstructed audio
     orig_audio, recon_audio, encoded, orig_coeffs, inverted_coeffs = \
