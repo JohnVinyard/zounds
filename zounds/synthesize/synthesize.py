@@ -51,6 +51,43 @@ class WindowedAudioSynthesizer(ShortTimeTransformSynthesizer):
 
 
 class FFTSynthesizer(ShortTimeTransformSynthesizer):
+    """
+    Inverts the short-time fourier transform, e.g. the output of the
+    :class:`zounds.spectral.FFT` processing node.
+
+    Here's an example that extracts a short-time fourier transform, and then
+    inverts it.
+
+    .. code:: python
+
+        import zounds
+
+        STFT = zounds.stft(
+            resample_to=zounds.SR11025(),
+            store_fft=True)
+
+
+        @zounds.simple_in_memory_settings
+        class Sound(STFT):
+            pass
+
+        # produce some additive sine waves
+        sine_synth = zounds.SineSynthesizer(zounds.SR22050())
+        samples = sine_synth.synthesize(
+            zounds.Seconds(4), freqs_in_hz=[220, 400, 880])
+
+        # process the sound, including a short-time fourier transform feature
+        _id = Sound.process(meta=samples.encode())
+        snd = Sound(_id)
+
+        # invert the frequency-domain feature to reover the original audio
+        fft_synth = zounds.FFTSynthesizer()
+        recon = fft_synth.synthesize(snd.fft)
+        print recon.__class__  #  AudioSamples instance with reconstructed audio
+
+    See Also:
+        :class:`zounds.spectral.FFT`
+    """
     def __init__(self):
         super(FFTSynthesizer, self).__init__()
 
@@ -62,6 +99,51 @@ class FFTSynthesizer(ShortTimeTransformSynthesizer):
 
 
 class DCTSynthesizer(ShortTimeTransformSynthesizer):
+    """
+    Inverts the short-time discrete cosine transform (type II), e.g., the output
+    of the :class:`zounds.spectral.DCT` processing node
+
+    Here's an example that extracts a short-time discrete cosine transform, and
+    then inverts it.
+
+    .. code:: python
+
+        import zounds
+
+        Resampled = zounds.resampled(resample_to=zounds.SR11025())
+
+
+        @zounds.simple_in_memory_settings
+        class Sound(Resampled):
+            windowed = zounds.ArrayWithUnitsFeature(
+                zounds.SlidingWindow,
+                needs=Resampled.resampled,
+                wscheme=zounds.HalfLapped(),
+                wfunc=zounds.OggVorbisWindowingFunc(),
+                store=False)
+
+            dct = zounds.ArrayWithUnitsFeature(
+                zounds.DCT,
+                needs=windowed,
+                store=True)
+
+        # produce some additive sine waves
+        sine_synth = zounds.SineSynthesizer(zounds.SR22050())
+        samples = sine_synth.synthesize(
+            zounds.Seconds(4), freqs_in_hz=[220, 400, 880])
+
+        # process the sound, including a short-time fourier transform feature
+        _id = Sound.process(meta=samples.encode())
+        snd = Sound(_id)
+
+        # invert the frequency-domain feature to reover the original audio
+        dct_synth = zounds.DCTSynthesizer()
+        recon = dct_synth.synthesize(snd.dct)
+        print recon.__class__  # AudioSamples instance with reconstructed audio
+
+    See Also:
+        :class:`zounds.spectral.DCT`
+    """
     def __init__(self, windowing_func=IdentityWindowingFunc()):
         super(DCTSynthesizer, self).__init__()
         self.windowing_func = windowing_func
