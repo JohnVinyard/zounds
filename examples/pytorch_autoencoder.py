@@ -3,7 +3,6 @@ import zounds
 import numpy as np
 from torch import nn, optim
 from random import choice
-from multiprocessing.pool import ThreadPool, cpu_count
 
 samplerate = zounds.SR11025()
 BaseModel = zounds.stft(resample_to=samplerate, store_fft=True)
@@ -145,22 +144,12 @@ class Sound(BaseModel):
         store=False)
 
 
-def process(metadata):
-    request = metadata.request
-    url = request.url
-    # download a set of bach piano pieces, compute and store features
-    if Sound.exists(request.url):
-        print '{request.url} is already processed'.format(**locals())
-        return
-
-    Sound.process(meta=metadata, _id=request.url)
-    print 'processed {request.url}'.format(**locals())
-
-
 if __name__ == '__main__':
 
-    pool = ThreadPool(cpu_count())
-    pool.map(process, zounds.InternetArchive('AOC11B'))
+    zounds.ingest(
+        dataset=zounds.InternetArchive('AOC11B'),
+        cls=Sound,
+        multi_threaded=True)
 
     # train the pipeline, including the autoencoder
     if not FreqAdaptiveAutoEncoder.exists():

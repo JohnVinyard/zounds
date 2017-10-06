@@ -60,4 +60,5 @@ from persistence import \
     ArrayWithUnitsFeature, AudioSamplesFeature, FrequencyAdaptiveFeature
 
 from datasets import \
-    PhatDrumLoops, InternetArchive, FreeSoundSearch, DataSetCache, Directory
+    PhatDrumLoops, InternetArchive, FreeSoundSearch, DataSetCache, Directory, \
+    ingest

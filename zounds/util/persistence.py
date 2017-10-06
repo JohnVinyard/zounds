@@ -25,6 +25,8 @@ def simple_lmdb_settings(path, map_size=1e9, user_supplied_id=False):
         class Model(cls, Settings):
             pass
 
+        Model.__name__ = cls.__name__
+        Model.__module__ = cls.__module__
         return Model
 
     return decorator
@@ -41,6 +43,8 @@ def simple_object_storage_settings(container, region, username, api_key):
         class Model(cls, Settings):
             pass
 
+        Model.__name__ = cls.__name__
+        Model.__module__ = cls.__module__
         return Model
 
     return decorator
@@ -62,4 +66,7 @@ def simple_in_memory_settings(cls):
     class Model(cls, Settings):
         pass
 
+    Model.__name__ = cls.__name__
+    Model.__module__ = cls.__module__
     return Model
+

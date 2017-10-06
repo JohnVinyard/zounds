@@ -10,3 +10,4 @@ from internetarchive import InternetArchive
 from freesound import FreeSoundSearch
 from filesystem import Directory
 from cache import DataSetCache
+from ingest import ingest
