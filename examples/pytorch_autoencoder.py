@@ -3,6 +3,7 @@ import zounds
 import numpy as np
 from torch import nn, optim
 from random import choice
+from multiprocessing.pool import ThreadPool, cpu_count
 
 samplerate = zounds.SR11025()
 BaseModel = zounds.stft(resample_to=samplerate, store_fft=True)
@@ -67,7 +68,7 @@ class FreqAdaptiveAutoEncoder(ff.BaseModel):
 
     shuffle = ff.PickleFeature(
         zounds.ShuffledSamples,
-        nsamples=int(1e5),
+        nsamples=500000,
         dtype=np.float32,
         needs=docs,
         store=False)
@@ -89,7 +90,8 @@ class FreqAdaptiveAutoEncoder(ff.BaseModel):
             loss=nn.MSELoss(),
             optimizer=lambda model: optim.Adam(model.parameters(), lr=0.00005),
             epochs=100,
-            batch_size=64),
+            batch_size=64,
+            holdout_percent=0.5),
         needs=scaled,
         store=False)
 
@@ -140,18 +142,25 @@ class Sound(BaseModel):
         zounds.Learned,
         learned=FreqAdaptiveAutoEncoder(),
         needs=freq_adaptive,
-        store=True)
+        store=False)
+
+
+def process(metadata):
+    request = metadata.request
+    url = request.url
+    # download a set of bach piano pieces, compute and store features
+    if Sound.exists(request.url):
+        print '{request.url} is already processed'.format(**locals())
+        return
+
+    Sound.process(meta=metadata, _id=request.url)
+    print 'processed {request.url}'.format(**locals())
 
 
 if __name__ == '__main__':
 
-    # download a set of bach piano pieces, compute and store features
-    for request in zounds.InternetArchive('AOC11B'):
-        if Sound.exists(request.url):
-            print '{request.url} is already processed'.format(**locals())
-            continue
-        Sound.process(meta=request, _id=request.url)
-        print 'processed {request.url}'.format(**locals())
+    pool = ThreadPool(cpu_count())
+    pool.map(process, zounds.InternetArchive('AOC11B'))
 
     # train the pipeline, including the autoencoder
     if not FreqAdaptiveAutoEncoder.exists():
