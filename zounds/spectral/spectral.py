@@ -187,6 +187,8 @@ class FrequencyAdaptiveTransform(Node):
 
     See Also:
         :class:`~zounds.spectral.FrequencyAdaptive`
+        :class:`~zounds.synthesize.FrequencyAdaptiveDCTSynthesizer`
+        :class:`~zounds.synthesize.FrequencyAdaptiveFFTSynthesizer`
     """
     def __init__(
             self,
@@ -200,7 +202,12 @@ class FrequencyAdaptiveTransform(Node):
         self._transform = transform
 
     def _process_band(self, data, band):
-        raw_coeffs = data[:, band]
+        try:
+            raw_coeffs = data[:, band]
+        except IndexError:
+            raise ValueError(
+                'data must have FrequencyDimension as its last dimension, '
+                'but it was {dim}'.format(dim=data.dimensions[-1]))
         window = self._window_func(raw_coeffs.shape[1])
         return self._transform(raw_coeffs * window[None, :], norm='ortho')
 

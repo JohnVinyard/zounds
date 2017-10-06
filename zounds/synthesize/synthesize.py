@@ -53,7 +53,7 @@ class WindowedAudioSynthesizer(ShortTimeTransformSynthesizer):
 class FFTSynthesizer(ShortTimeTransformSynthesizer):
     """
     Inverts the short-time fourier transform, e.g. the output of the
-    :class:`zounds.spectral.FFT` processing node.
+    :class:`~zounds.spectral.FFT` processing node.
 
     Here's an example that extracts a short-time fourier transform, and then
     inverts it.
@@ -86,7 +86,7 @@ class FFTSynthesizer(ShortTimeTransformSynthesizer):
         print recon.__class__  #  AudioSamples instance with reconstructed audio
 
     See Also:
-        :class:`zounds.spectral.FFT`
+        :class:`~zounds.spectral.FFT`
     """
     def __init__(self):
         super(FFTSynthesizer, self).__init__()
@@ -101,7 +101,7 @@ class FFTSynthesizer(ShortTimeTransformSynthesizer):
 class DCTSynthesizer(ShortTimeTransformSynthesizer):
     """
     Inverts the short-time discrete cosine transform (type II), e.g., the output
-    of the :class:`zounds.spectral.DCT` processing node
+    of the :class:`~zounds.spectral.DCT` processing node
 
     Here's an example that extracts a short-time discrete cosine transform, and
     then inverts it.
@@ -142,7 +142,7 @@ class DCTSynthesizer(ShortTimeTransformSynthesizer):
         print recon.__class__  # AudioSamples instance with reconstructed audio
 
     See Also:
-        :class:`zounds.spectral.DCT`
+        :class:`~zounds.spectral.DCT`
     """
     def __init__(self, windowing_func=IdentityWindowingFunc()):
         super(DCTSynthesizer, self).__init__()
@@ -157,8 +157,49 @@ class DCTSynthesizer(ShortTimeTransformSynthesizer):
 
 class DCTIVSynthesizer(ShortTimeTransformSynthesizer):
     """
-    Perform the inverse of the DCTIV transform, which is the same as the forward
-    transformation
+    Inverts the short-time discrete cosine transform (type IV), e.g., the output
+    of the :class:`~zounds.spectral.DCTIV` processing node.
+
+    Here's an example that extracts a short-time DCT-IV transform, and inverts
+    it.
+
+    .. code:: python
+
+        import zounds
+
+        Resampled = zounds.resampled(resample_to=zounds.SR11025())
+
+
+        @zounds.simple_in_memory_settings
+        class Sound(Resampled):
+            windowed = zounds.ArrayWithUnitsFeature(
+                zounds.SlidingWindow,
+                needs=Resampled.resampled,
+                wscheme=zounds.HalfLapped(),
+                wfunc=zounds.OggVorbisWindowingFunc(),
+                store=False)
+
+            dct = zounds.ArrayWithUnitsFeature(
+                zounds.DCTIV,
+                needs=windowed,
+                store=True)
+
+        # produce some additive sine waves
+        sine_synth = zounds.SineSynthesizer(zounds.SR22050())
+        samples = sine_synth.synthesize(
+            zounds.Seconds(4), freqs_in_hz=[220, 400, 880])
+
+        # process the sound, including a short-time fourier transform feature
+        _id = Sound.process(meta=samples.encode())
+        snd = Sound(_id)
+
+        # invert the frequency-domain feature to reover the original audio
+        dct_synth = zounds.DCTIVSynthesizer()
+        recon = dct_synth.synthesize(snd.dct)
+        print recon.__class__  # AudioSamples instance with reconstructed audio
+
+    See Also:
+        :class:`~zounds.spectral.DCTIV`
     """
 
     def __init__(self, windowing_func=IdentityWindowingFunc()):
@@ -173,6 +214,51 @@ class DCTIVSynthesizer(ShortTimeTransformSynthesizer):
 
 
 class MDCTSynthesizer(ShortTimeTransformSynthesizer):
+    """
+    Inverts the modified discrete cosine transform, e.g., the output of the
+    :class:`~zounds.spectral.MDCT` processing node.
+
+    Here's an example that extracts a short-time MDCT transform, and inverts
+    it.
+
+    .. code:: python
+
+        import zounds
+
+        Resampled = zounds.resampled(resample_to=zounds.SR11025())
+
+
+        @zounds.simple_in_memory_settings
+        class Sound(Resampled):
+            windowed = zounds.ArrayWithUnitsFeature(
+                zounds.SlidingWindow,
+                needs=Resampled.resampled,
+                wscheme=zounds.HalfLapped(),
+                wfunc=zounds.OggVorbisWindowingFunc(),
+                store=False)
+
+            mdct = zounds.ArrayWithUnitsFeature(
+                zounds.MDCT,
+                needs=windowed,
+                store=True)
+
+        # produce some additive sine waves
+        sine_synth = zounds.SineSynthesizer(zounds.SR22050())
+        samples = sine_synth.synthesize(
+            zounds.Seconds(4), freqs_in_hz=[220, 400, 880])
+
+        # process the sound, including a short-time fourier transform feature
+        _id = Sound.process(meta=samples.encode())
+        snd = Sound(_id)
+
+        # invert the frequency-domain feature to reover the original audio
+        mdct_synth = zounds.MDCTSynthesizer()
+        recon = mdct_synth.synthesize(snd.mdct)
+        print recon.__class__  # AudioSamples instance with reconstructed audio
+
+    See Also:
+        :class:`~zounds.spectral.MDCT`
+    """
     def __init__(self):
         super(MDCTSynthesizer, self).__init__()
 
@@ -230,6 +316,77 @@ class BaseFrequencyAdaptiveSynthesizer(object):
 
 
 class FrequencyAdaptiveDCTSynthesizer(BaseFrequencyAdaptiveSynthesizer):
+    """
+    Invert a frequency-adaptive transform, e.g., one produced by the
+    :class:`zounds.spectral.FrequencyAdaptiveTransform` processing node which
+    has used a discrete cosine transform in its `transform` parameter.
+
+    Args:
+        scale (FrequencyScale): The scale used to produce the frequency-adaptive
+            transform
+        samplerate (SampleRate): The audio samplerate of the audio that was
+            originally transformed
+
+    Here's an example of how you might first extract a frequency-adaptive
+    representation, and then invert it:
+
+    .. code:: python
+
+        import zounds
+        import scipy
+        import numpy as np
+
+        samplerate = zounds.SR11025()
+        Resampled = zounds.resampled(resample_to=samplerate)
+
+        scale = zounds.GeometricScale(
+            100, 5000, bandwidth_ratio=0.089, n_bands=100)
+        scale.ensure_overlap_ratio(0.5)
+
+
+        @zounds.simple_in_memory_settings
+        class Sound(Resampled):
+            long_windowed = zounds.ArrayWithUnitsFeature(
+                zounds.SlidingWindow,
+                wscheme=zounds.SampleRate(
+                    frequency=zounds.Milliseconds(500),
+                    duration=zounds.Seconds(1)),
+                wfunc=zounds.OggVorbisWindowingFunc(),
+                needs=Resampled.resampled)
+
+            dct = zounds.ArrayWithUnitsFeature(
+                zounds.DCT,
+                scale_always_even=True,
+                needs=long_windowed)
+
+            freq_adaptive = zounds.FrequencyAdaptiveFeature(
+                zounds.FrequencyAdaptiveTransform,
+                transform=scipy.fftpack.idct,
+                window_func=np.hanning,
+                scale=scale,
+                needs=dct,
+                store=True)
+
+
+        # produce some additive sine waves
+        sine_synth = zounds.SineSynthesizer(zounds.SR22050())
+        samples = sine_synth.synthesize(
+            zounds.Seconds(10), freqs_in_hz=[220, 440, 880])
+
+        # process the sound, including a short-time fourier transform feature
+        _id = Sound.process(meta=samples.encode())
+        snd = Sound(_id)
+
+        # invert the sound
+        synth = zounds.FrequencyAdaptiveDCTSynthesizer(scale, samplerate)
+        recon = synth.synthesize(snd.freq_adaptive)
+        print recon  # AudioSamples instance with the reconstructed sound
+
+    See Also:
+        :class:`~zounds.spectral.DCT`
+        :class:`~zounds.spectral.FrequencyAdaptive`
+        :class:`~zounds.spectral.FrequencyAdaptiveTransform`
+    """
     def __init__(self, scale, samplerate):
         super(FrequencyAdaptiveDCTSynthesizer, self).__init__(
             scale,
@@ -245,6 +402,74 @@ class FrequencyAdaptiveDCTSynthesizer(BaseFrequencyAdaptiveSynthesizer):
 
 
 class FrequencyAdaptiveFFTSynthesizer(BaseFrequencyAdaptiveSynthesizer):
+    """
+    Invert a frequency-adaptive transform, e.g., one produced by the
+    :class:`zounds.spectral.FrequencyAdaptiveTransform` processing node which
+    has used a fast fouriter transform in its `transform` parameter.
+
+    Args:
+        scale (FrequencyScale): The scale used to produce the frequency-adaptive
+            transform
+        samplerate (SampleRate): The audio samplerate of the audio that was
+            originally transformed
+
+    Here's an example of how you might first extract a frequency-adaptive
+    representation, and then invert it:
+
+    .. code:: python
+
+        import zounds
+        import numpy as np
+
+        samplerate = zounds.SR11025()
+        Resampled = zounds.resampled(resample_to=samplerate)
+
+        scale = zounds.GeometricScale(100, 5000, bandwidth_ratio=0.089, n_bands=100)
+        scale.ensure_overlap_ratio(0.5)
+
+
+        @zounds.simple_in_memory_settings
+        class Sound(Resampled):
+            long_windowed = zounds.ArrayWithUnitsFeature(
+                zounds.SlidingWindow,
+                wscheme=zounds.SampleRate(
+                    frequency=zounds.Milliseconds(500),
+                    duration=zounds.Seconds(1)),
+                wfunc=zounds.OggVorbisWindowingFunc(),
+                needs=Resampled.resampled)
+
+            fft = zounds.ArrayWithUnitsFeature(
+                zounds.FFT,
+                needs=long_windowed)
+
+            freq_adaptive = zounds.FrequencyAdaptiveFeature(
+                zounds.FrequencyAdaptiveTransform,
+                transform=np.fft.irfft,
+                window_func=np.hanning,
+                scale=scale,
+                needs=fft,
+                store=True)
+
+
+        # produce some additive sine waves
+        sine_synth = zounds.SineSynthesizer(zounds.SR22050())
+        samples = sine_synth.synthesize(
+            zounds.Seconds(10), freqs_in_hz=[220, 440, 880])
+
+        # process the sound, including a short-time fourier transform feature
+        _id = Sound.process(meta=samples.encode())
+        snd = Sound(_id)
+
+        # invert the sound
+        synth = zounds.FrequencyAdaptiveFFTSynthesizer(scale, samplerate)
+        recon = synth.synthesize(snd.freq_adaptive)
+        print recon  # AudioSamples instance with the reconstructed sound
+
+    See Also:
+        :class:`~zounds.spectral.FFT`
+        :class:`~zounds.spectral.FrequencyAdaptive`
+        :class:`~zounds.spectral.FrequencyAdaptiveTransform`
+    """
     def __init__(self, scale, samplerate):
         super(FrequencyAdaptiveFFTSynthesizer, self).__init__(
             scale,
@@ -264,6 +489,27 @@ class FrequencyAdaptiveFFTSynthesizer(BaseFrequencyAdaptiveSynthesizer):
 class SineSynthesizer(object):
     """
     Synthesize sine waves
+
+    Args:
+        samplerate (Samplerate): the samplerate at which the sine waves should
+            be synthesized
+
+    Examples:
+        >>> import zounds
+        >>> synth = zounds.SineSynthesizer(zounds.SR22050())
+        >>> samples = synth.synthesize( \
+            zounds.Seconds(1), freqs_in_hz=[220., 440.])
+        >>> samples
+        AudioSamples([ 0.        ,  0.09384942,  0.18659419, ..., -0.27714552,
+               -0.18659419, -0.09384942])
+        >>> len(samples)
+        22050
+
+
+    See Also:
+        :class:`TickSynthesizer`
+        :class:`NoiseSynthesizer`
+        :class:`SilenceSynthesizer`
     """
 
     def __init__(self, samplerate):
@@ -271,6 +517,15 @@ class SineSynthesizer(object):
         self.samplerate = samplerate
 
     def synthesize(self, duration, freqs_in_hz=[440.]):
+        """
+        Synthesize one or more sine waves
+
+        Args:
+            duration (numpy.timdelta64): The duration of the sound to be
+                synthesized
+            freqs_in_hz (list of float): Numbers representing the frequencies
+                in hz that should be synthesized
+        """
         freqs = np.array(freqs_in_hz)
         scaling = 1 / len(freqs)
         sr = int(self.samplerate)
@@ -284,6 +539,24 @@ class SineSynthesizer(object):
 class TickSynthesizer(object):
     """
     Synthesize short, percussive, periodic "ticks"
+
+    Args:
+        samplerate (SampleRate): the samplerate at which the ticks should be
+            synthesized
+
+    Examples:
+        >>> import zounds
+        >>> synth = zounds.TickSynthesizer(zounds.SR22050())
+        >>> samples = synth.synthesize(\
+            duration=zounds.Seconds(3), tick_frequency=zounds.Milliseconds(100))
+        >>> samples
+        AudioSamples([ -3.91624993e-01,  -8.96939666e-01,   4.18165378e-01, ...,
+                -4.08054347e-04,  -2.32257899e-04,   0.00000000e+00])
+
+    See Also:
+        :class:`SineSynthesizer`
+        :class:`NoiseSynthesizer`
+        :class:`SilenceSynthesizer`
     """
 
     def __init__(self, samplerate):
@@ -291,6 +564,15 @@ class TickSynthesizer(object):
         self.samplerate = samplerate
 
     def synthesize(self, duration, tick_frequency):
+        """
+        Synthesize periodic "ticks", generated from white noise and an envelope
+
+        Args:
+            duration (numpy.timedelta64): The total duration of the sound to be
+                synthesized
+            tick_frequency (numpy.timedelta64): The frequency of the ticking
+                sound
+        """
         sr = self.samplerate.samples_per_second
         # create a short, tick sound
         tick = np.random.uniform(low=-1., high=1., size=int(sr * .1))
@@ -309,6 +591,23 @@ class TickSynthesizer(object):
 class NoiseSynthesizer(object):
     """
     Synthesize white noise
+
+    Args:
+        samplerate (SampleRate): the samplerate at which the ticks should be
+            synthesized
+
+    Examples:
+        >>> import zounds
+        >>> synth = zounds.NoiseSynthesizer(zounds.SR44100())
+        >>> samples = synth.synthesize(zounds.Seconds(2))
+        >>> samples
+        AudioSamples([ 0.1137964 , -0.02613194,  0.30963904, ..., -0.71398137,
+               -0.99840281,  0.74310827])
+
+    See Also:
+        :class:`SineSynthesizer`
+        :class:`TickSynthesizer`
+        :class:`SilenceSynthesizer`
     """
 
     def __init__(self, samplerate):
@@ -316,6 +615,12 @@ class NoiseSynthesizer(object):
         self.samplerate = samplerate
 
     def synthesize(self, duration):
+        """
+        Synthesize white noise
+
+        Args:
+            duration (numpy.timedelta64): The duration of the synthesized sound
+        """
         sr = self.samplerate.samples_per_second
         seconds = duration / Seconds(1)
         samples = np.random.uniform(low=-1., high=1., size=int(sr * seconds))
@@ -323,11 +628,31 @@ class NoiseSynthesizer(object):
 
 
 class SilenceSynthesizer(object):
+    """
+    Synthesize silence
+
+    Args:
+        samplerate (SampleRate): the samplerate at which the ticks should be
+            synthesized
+
+    Examples:
+        >>> import zounds
+        >>> synth = zounds.SilenceSynthesizer(zounds.SR11025())
+        >>> samples = synth.synthesize(zounds.Seconds(5))
+        >>> samples
+        AudioSamples([ 0.,  0.,  0., ...,  0.,  0.,  0.])
+    """
     def __init__(self, samplerate):
         super(SilenceSynthesizer, self).__init__()
         self.samplerate = samplerate
 
     def synthesize(self, duration):
+        """
+        Synthesize silence
+
+        Args:
+            duration (numpy.timedelta64): The duration of the synthesized sound
+        """
         sr = self.samplerate.samples_per_second
         seconds = duration / Seconds(1)
         samples = np.zeros(int(sr * seconds))

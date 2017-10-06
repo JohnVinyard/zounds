@@ -8,7 +8,7 @@ from zounds.core import ArrayWithUnits
 from zounds.persistence import ArrayWithUnitsFeature, FrequencyAdaptiveFeature
 from zounds.spectral import \
     SlidingWindow, DCTIV, MDCT, FFT, SpectralCentroid, OggVorbisWindowingFunc, \
-    SpectralFlatness, FrequencyAdaptiveTransform, DCT
+    SpectralFlatness, FrequencyAdaptiveTransform, DCT, FrequencyAdaptive
 from zounds.synthesize import \
     SineSynthesizer, DCTIVSynthesizer, MDCTSynthesizer, NoiseSynthesizer, \
     TickSynthesizer
@@ -20,6 +20,21 @@ from zounds.util import simple_in_memory_settings
 
 
 class FrequencyAdaptiveTransformTests(unittest2.TestCase):
+
+    def test_raises_useful_error_when_unexpected_dimensions_are_received(self):
+        scale = GeometricScale(20, 5000, 0.1, 25)
+
+        transform = FrequencyAdaptiveTransform(
+            transform=scipy.fftpack.idct,
+            scale=scale)
+
+        inp = ArrayWithUnits(
+            np.zeros((100, 10)),
+            dimensions=[
+                TimeDimension(Seconds(1)),
+                TimeDimension(Milliseconds(100))
+            ])
+        self.assertRaises(ValueError, lambda: list(transform._process(inp))[0])
 
     def test_square_form_with_overlap_add(self):
         samplerate = SR11025()

@@ -20,5 +20,10 @@ Frequency-Adaptive Transform Synthesizers
 Simple Signals
 --------------
 .. autoclass:: SineSynthesizer
+    :members:
 .. autoclass:: NoiseSynthesizer
+    :members:
+.. autoclass:: TickSynthesizer
+    :members:
 .. autoclass:: SilenceSynthesizer
+    :members:
