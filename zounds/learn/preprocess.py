@@ -50,6 +50,18 @@ class Op(object):
 
 
 class PreprocessResult(object):
+    """
+    `PreprocessResult` are the output of :class:`Preprocessor` nodes, and can
+    participate in a `Pipeline`.
+
+    Args:
+        data: the data on which the node in the graph was originally trained
+        op (Op): a callable that can transform data
+        inversion_data: data extracted in the forward pass of the model, that
+            can be used to invert the result
+        inverse (Op): a callable that given the output of `op`, and
+            `inversion_data`, can invert the result
+    """
     def __init__(self, data, op, inversion_data=None, inverse=None, name=None):
         super(PreprocessResult, self).__init__()
         self.name = name
@@ -79,6 +91,20 @@ class PreprocessResult(object):
 
 
 class Preprocessor(Node):
+    """
+    `Preprocessor` is the common base class for nodes in a processing graph that
+    will produce :class:`PreprocessingResult` instances that end up as part of
+    a :class:`Pipeline`.
+
+    Args:
+        needs (Node): previous processing node(s) on which this one depends
+            for its data
+
+    See Also:
+        :class:`PreprocessResult`
+        :class:`PreprocessingPipeline`
+        :class:`PipelineResult`
+    """
     def __init__(self, needs=None):
         super(Preprocessor, self).__init__(needs=needs)
 
@@ -482,6 +508,9 @@ class Binarize(Preprocessor):
 
 
 class Pipeline(object):
+    """
+
+    """
     def __init__(self, preprocess_results):
         self.processors = list(preprocess_results)
         self.version = hashlib.md5(
@@ -540,6 +569,89 @@ class PipelineResult(object):
 
 
 class PreprocessingPipeline(Node):
+    """
+    A `PreprocessingPipeline` is a node in the graph that can be connected to
+    one or more :class:`Preprocessor` nodes, whose output it will assemble into
+    a re-usable pipeline.
+
+    Args:
+        needs (list or tuple of Node): the :class:`Preprocessor` nodes on whose
+            output this pipeline depends
+
+    Here's an example of a learning pipeline that will first find the
+    feature-wise mean and standard deviation of a dataset, and will then learn
+    K-Means clusters from the dataset.  This will result in a re-usable pipeline
+    that can use statistics from the original dataset to normalize new examples,
+    assign them to a cluster, and finally, reconstruct them.
+
+    .. code:: python
+
+        import featureflow as ff
+        import zounds
+        from random import choice
+
+        samplerate = zounds.SR44100()
+        STFT = zounds.stft(resample_to=samplerate)
+
+
+        @zounds.simple_in_memory_settings
+        class Sound(STFT):
+            bark = zounds.ArrayWithUnitsFeature(
+                zounds.BarkBands,
+                samplerate=samplerate,
+                needs=STFT.fft,
+                store=True)
+
+
+        @zounds.simple_in_memory_settings
+        class ExamplePipeline(ff.BaseModel):
+            docs = ff.PickleFeature(
+                ff.IteratorNode,
+                needs=None)
+
+            shuffled = ff.PickleFeature(
+                zounds.ShuffledSamples,
+                nsamples=100,
+                needs=docs,
+                store=False)
+
+            meanstd = ff.PickleFeature(
+                zounds.MeanStdNormalization,
+                needs=docs,
+                store=False)
+
+            kmeans = ff.PickleFeature(
+                zounds.KMeans,
+                needs=meanstd,
+                centroids=32)
+
+            pipeline = ff.PickleFeature(
+                zounds.PreprocessingPipeline,
+                needs=(meanstd, kmeans),
+                store=True)
+
+        # apply the Sound processing graph to individual audio files
+        for metadata in zounds.InternetArchive('TheR.H.SFXLibrary'):
+            print 'processing {url}'.format(url=metadata.request.url)
+            Sound.process(meta=metadata)
+
+        # apply the ExamplePipeline processing graph to the entire corpus of audio
+        _id = ExamplePipeline.process(docs=(snd.bark for snd in Sound))
+        learned = ExamplePipeline(_id)
+
+        snd = choice(list(Sound))
+        result = learned.pipeline.transform(snd.bark)
+        print result.data  # print the assigned centroids for each FFT frame
+        inverted = result.inverse_transform()
+        print inverted  # the reconstructed FFT frames
+
+
+    See Also:
+        :class:`Pipeline`
+        :class:`Preprocessor`
+        :class:`PreprocessResult`
+        :class:`PipelineResult`
+    """
     def __init__(self, needs=None):
         super(PreprocessingPipeline, self).__init__(needs=needs)
         self._pipeline = OrderedDict((id(n), None) for n in needs.values())

@@ -4,6 +4,9 @@ from preprocess import PreprocessResult, Preprocessor
 
 
 class KMeans(Preprocessor):
+    """
+
+    """
     def __init__(self, centroids=None, needs=None):
         super(KMeans, self).__init__(needs=needs)
         self._centroids = centroids
@@ -46,6 +49,9 @@ class KMeans(Preprocessor):
 
 
 class Learned(Node):
+    """
+
+    """
     def __init__(self, learned=None, needs=None):
         super(Learned, self).__init__(needs=needs)
         self._learned = learned
