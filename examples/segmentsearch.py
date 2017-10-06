@@ -54,8 +54,8 @@ class BarkKmeans(ff.BaseModel):
         store=False)
 
     shuffle = ff.NumpyFeature(
-        zounds.ReservoirSampler,
-        nsamples=1e6,
+        zounds.ShuffledSamples,
+        nsamples=int(1e6),
         needs=docs,
         store=True)
 
@@ -81,6 +81,7 @@ class BarkKmeans(ff.BaseModel):
 class WithCodes(WithOnsets):
     bark_kmeans = zounds.ArrayWithUnitsFeature(
         zounds.Learned,
+        # this feature will be computed using the learned K-Means clusters
         learned=BarkKmeans(),
         needs=WithOnsets.bark,
         store=True)
@@ -96,23 +97,24 @@ class WithCodes(WithOnsets):
 if __name__ == '__main__':
     index = zounds.HammingIndex(WithCodes, WithCodes.pooled, listen=True)
 
-    # process the audio
-    for request in zounds.PhatDrumLoops():
-        try:
-            WithOnsets.process(
-                meta=request, _id=request.url, raise_if_exists=True)
-            print 'processing {request.url}'.format(**locals())
-        except Exception as e:
-            print e
+    # process the drum breaks
+    for metadata in zounds.PhatDrumLoops():
+        request = metadata.uri
+        url = request.url
+        if not WithOnsets.exists(url):
+            try:
+                WithOnsets.process(meta=metadata, _id=url)
+                print 'processed {url}'.format(**locals())
+            except Exception as e:
+                print url, e
+        else:
+            print 'already processed {url}'.format(**locals())
 
-    # learn K-Means centroids
-    try:
-        print 'learning K-Means centroids'
-        BarkKmeans.process(
-            docs=(wo.bark for wo in WithOnsets),
-            raise_if_exists=True)
-    except ff.ModelExistsError:
-        pass
+    # learn K-Means centroids from the drum hits
+    if not BarkKmeans.exists():
+        print 'learning K-Means clusters'
+        BarkKmeans.process(docs=(wo.bark for wo in WithOnsets))
+
     bark_kmeans = BarkKmeans()
 
     # force the new pooled feature to be computed

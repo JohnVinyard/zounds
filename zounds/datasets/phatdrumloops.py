@@ -1,3 +1,4 @@
+from zounds.soundfile import AudioMetaData
 import requests
 import re
 import urlparse
@@ -17,7 +18,8 @@ class PhatDrumLoops(object):
         for m in pattern.finditer(resp.content):
             url = urlparse.urljoin('http://phatdrumloops.com',
                                    m.groupdict()['uri'])
-            yield requests.Request(
+            request = requests.Request(
                 method='GET',
                 url=url,
                 headers={'Range': 'bytes=0-'})
+            yield AudioMetaData(uri=request)
