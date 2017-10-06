@@ -6,8 +6,20 @@ import urlparse
 
 class PhatDrumLoops(object):
     """
-    Returns prepared reqeusts for every drum loop available from
-    http://www.phatdrumloops.com/beats.php
+    Produces an iterable of :class:`zounds.soundfile.AudioMetaData` instances
+    for every drum break from http://phatdrumloops.com/beats.php
+
+    Examples
+        >>> from zounds import PhatDrumLoops
+        >>> pdl = PhatDrumLoops()
+        >>> iter(pdl).next()
+        {'description': None, 'tags': None, 'uri': <Request [GET]>, 'channels': None, 'licensing': None, 'samplerate': None}
+
+
+    See Also:
+        :class:`InternetArchive`
+        :class:`FreeSoundSearch`
+        :class:`zounds.soundfile.AudioMetaData`
     """
     def __init__(self):
         super(PhatDrumLoops, self).__init__()

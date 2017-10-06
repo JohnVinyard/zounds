@@ -10,6 +10,8 @@ import featureflow as ff
 
 class AudioMetaData(object):
     """
+    Encapsulates metadata about a source audio file, including things like
+    text descriptions and licensing information.
 
     Args:
         uri (requests.Request or str): uri may be either a string representing
@@ -22,6 +24,14 @@ class AudioMetaData(object):
         description (str): a text description of the source audio
         tags (str): text tags that apply to the source audio
         kwargs (dict): other arbitrary properties about the source audio
+
+    Raises:
+        ValueError: when `uri` is not provided
+
+    See Also:
+        :class:`zounds.datasets.FreeSoundSearch`
+        :class:`zounds.datasets.InternetArchive`
+        :class:`zounds.datasets.PhatDrumLoops`
     """
     def __init__(
             self,
@@ -33,6 +43,10 @@ class AudioMetaData(object):
             tags=None,
             **kwargs):
         super(AudioMetaData, self).__init__()
+
+        if not uri:
+            raise ValueError('You must at least supply a uri')
+
         self.uri = uri
         self.samplerate = samplerate
         self.channels = channels

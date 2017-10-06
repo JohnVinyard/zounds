@@ -5,11 +5,38 @@ from zounds.soundfile import AudioMetaData
 
 class FreeSoundSearch(object):
     """
-    Returns a prepared request for every result from a freesound.org search
+    Produces an iterable of :class:`zounds.soundfile.AudioMetaData` instances
+    for every result from a https://freesound.org search
+
+    Args:
+        api_key (str): Your freesound.org API key (get one here:
+            (http://freesound.org/apiv2/apply/))
+        query (str): The text query to perform
+
+    Raises
+        ValueError: when `api_key` and/or `query` are not supplied
+
+    Examples:
+        >>> from zounds import FreeSoundSearch
+        >>> fss = FreeSoundSearch('YOUR_API_KEY', 'guitar')
+        >>> iter(fss).next()
+        {'description': u'Etude of Electric Guitar in Dm. Used chorus and reverberation effects. Size 6/4. Tempo 100. Gloomy and sentimental.', 'tags': [u'Etude', u'Experemental', u'Guitar', u'guitar', u'Electric', u'Chorus'], 'uri': <Request [GET]>, 'channels': 2, 'licensing': u'http://creativecommons.org/licenses/by/3.0/', 'samplerate': 44100.0}
+
+    See Also:
+        :class:`InternetArchive`
+        :class:`PhatDrumLoops`
+        :class:`zounds.soundfile.AudioMetaData`
     """
 
     def __init__(self, api_key, query, n_results=10, delay=0.2):
         super(FreeSoundSearch, self).__init__()
+
+        if not api_key:
+            raise ValueError('You must supply a freesound.org API key')
+
+        if not query:
+            raise ValueError('You must supply a text query')
+
         self.delay = delay
         self.n_results = n_results
         self.query = query
