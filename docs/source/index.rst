@@ -20,6 +20,7 @@ API documentation
     soundfile
     spectral
     core
+    datasets
 
 Indices and tables
 ------------------

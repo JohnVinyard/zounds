@@ -9,6 +9,20 @@ import featureflow as ff
 
 
 class AudioMetaData(object):
+    """
+
+    Args:
+        uri (requests.Request or str): uri may be either a string representing
+            a network resource or a local file, or a :class:`requests.Request`
+            instance
+        samplerate (int): the samplerate of the source audio
+        channels (int): the number of channels of the source audio
+        licensing (str): The licensing agreement (if any) that applies to the
+            source audio
+        description (str): a text description of the source audio
+        tags (str): text tags that apply to the source audio
+        kwargs (dict): other arbitrary properties about the source audio
+    """
     def __init__(
             self,
             uri=None,
@@ -28,6 +42,11 @@ class AudioMetaData(object):
 
         for k, v in kwargs.iteritems():
             setattr(self, k, v)
+
+    @property
+    def request(self):
+        if isinstance(self.uri, requests.Request):
+            return self.uri
 
     def __eq__(self, other):
         return self.uri == other.uri \
@@ -64,26 +83,26 @@ class AudioMetaDataEncoder(Aggregator, Node):
         yield json.dumps(d)
 
 
-class FreesoundOrgConfig(object):
-    def __init__(self, api_key):
-        super(FreesoundOrgConfig, self).__init__()
-        self.api_key = api_key
-
-    def request(self, _id):
-        uri = 'http://freesound.org/apiv2/sounds/{_id}/'.format(_id=_id)
-        params = {'token': self.api_key}
-        metadata = requests.get(uri, params=params).json()
-        request = requests.Request(
-            method='GET',
-            url=metadata['previews']['preview-hq-ogg'],
-            params=params)
-        return AudioMetaData(
-            uri=request,
-            samplerate=metadata['samplerate'],
-            channels=metadata['channels'],
-            licensing=metadata['license'],
-            description=metadata['description'],
-            tags=metadata['tags'])
+# class FreesoundOrgConfig(object):
+#     def __init__(self, api_key):
+#         super(FreesoundOrgConfig, self).__init__()
+#         self.api_key = api_key
+#
+#     def request(self, _id):
+#         uri = 'http://freesound.org/apiv2/sounds/{_id}/'.format(_id=_id)
+#         params = {'token': self.api_key}
+#         metadata = requests.get(uri, params=params).json()
+#         request = requests.Request(
+#             method='GET',
+#             url=metadata['previews']['preview-hq-ogg'],
+#             params=params)
+#         return AudioMetaData(
+#             uri=request,
+#             samplerate=metadata['samplerate'],
+#             channels=metadata['channels'],
+#             licensing=metadata['license'],
+#             description=metadata['description'],
+#             tags=metadata['tags'])
 
 
 class MetaData(Node):

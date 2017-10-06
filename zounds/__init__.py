@@ -8,9 +8,9 @@ from timeseries import \
     ConstantRateTimeSeries, nearest_audio_sample_rate
 
 from soundfile import \
-    MetaData, AudioMetaDataEncoder, FreesoundOrgConfig, \
-    OggVorbis, OggVorbisDecoder, OggVorbisEncoder, OggVorbisFeature, \
-    OggVorbisWrapper, AudioStream, Resampler, ChunkSizeBytes
+    MetaData, AudioMetaData, AudioMetaDataEncoder, OggVorbis, \
+    OggVorbisDecoder, OggVorbisEncoder, OggVorbisFeature, OggVorbisWrapper, \
+    AudioStream, Resampler, ChunkSizeBytes
 
 from spectral import \
     SlidingWindow, OggVorbisWindowingFunc, WindowingFunc, \

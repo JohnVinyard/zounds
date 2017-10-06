@@ -1,11 +1,13 @@
 import requests
 import time
+from zounds.soundfile import AudioMetaData
 
 
 class FreeSoundSearch(object):
     """
     Returns a prepared request for every result from a freesound.org search
     """
+
     def __init__(self, api_key, query, n_results=10, delay=0.2):
         super(FreeSoundSearch, self).__init__()
         self.delay = delay
@@ -31,7 +33,8 @@ class FreeSoundSearch(object):
                 'http://www.freesound.org/apiv2/sounds/{id}'.format(**r),
                 params={'token': self.api_key}
             )
-            yield sound_data.json()['previews']['preview-hq-ogg']
+            yield sound_data.json()
+
             # prevent 429 "Too Many Requests" responses
             time.sleep(0.2)
 
@@ -39,11 +42,19 @@ class FreeSoundSearch(object):
             yield r
 
     def __iter__(self):
-        for i, url in enumerate(self._iter_results()):
+        for i, data in enumerate(self._iter_results()):
             if i > self.n_results:
                 break
 
-            yield requests.Request(
+            request = requests.Request(
                 method='GET',
-                url=url,
+                url=data['previews']['preview-hq-ogg'],
                 params={'token': self.api_key})
+
+            yield AudioMetaData(
+                uri=request,
+                samplerate=data['samplerate'],
+                channels=data['channels'],
+                licensing=data['license'],
+                description=data['description'],
+                tags=data['tags'])
