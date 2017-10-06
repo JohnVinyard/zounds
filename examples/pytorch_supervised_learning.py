@@ -107,20 +107,30 @@ class FeatureTransfer(ff.BaseModel):
 
     shuffled = ff.PickleFeature(
         zounds.ShuffledSamples,
-        nsamples=5000,
+        nsamples=int(1e5),
         multiplexed=True,
         dtype=np.float32,
         needs=docs,
         store=False)
 
+    mu_law_source = ff.PickleFeature(
+        zounds.MuLawCompressed,
+        needs=shuffled.aspect('data'),
+        store=False)
+
     scaled_source = ff.PickleFeature(
         zounds.InstanceScaling,
-        needs=shuffled.aspect('data'),
+        needs=mu_law_source,
+        store=False)
+
+    mu_law_target = ff.PickleFeature(
+        zounds.MuLawCompressed,
+        needs=shuffled.aspect('labels'),
         store=False)
 
     scaled_target = ff.PickleFeature(
         zounds.InstanceScaling,
-        needs=shuffled.aspect('labels'),
+        needs=mu_law_target,
         store=False)
 
     network = ff.PickleFeature(
@@ -129,14 +139,14 @@ class FeatureTransfer(ff.BaseModel):
             model=UpScale(),
             loss=nn.MSELoss(),
             optimizer=lambda model: optim.Adam(model.parameters()),
-            epochs=10,
+            epochs=20,
             batch_size=64),
         needs=dict(data=scaled_source, labels=scaled_target),
         store=False)
 
     pipeline = ff.PickleFeature(
         zounds.PreprocessingPipeline,
-        needs=(scaled_source, network),
+        needs=(mu_law_source, scaled_source, network),
         store=True)
 
 
@@ -170,7 +180,7 @@ if __name__ == '__main__':
         .transform(snd.rasterized, wrapper=snd.freq_adaptive.like_dims)\
         .data
 
-    recon = synth.synthesize(recon_coeffs)
+    recon = synth.synthesize(zounds.inverse_mu_law(recon_coeffs))
 
     # start up an in-browser REPL to interact with the results
     app = zounds.ZoundsApp(

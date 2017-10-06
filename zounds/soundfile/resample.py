@@ -9,7 +9,7 @@ from zounds.core import ArrayWithUnits
 
 try:
     libsamplerate = CDLL('libsamplerate.so')
-except OSError:
+except OSError, e:
     # KLUDGE: This is here to support building documentation on readthedocs
     pass
 
@@ -17,9 +17,9 @@ from featureflow import Node
 
 
 class SRC_DATA(Structure):
-    '''
+    """
     A wrapper for the libsamplerate.SRC_DATA struct
-    '''
+    """
     _fields_ = [('data_in', POINTER(c_float)),
                 ('data_out', POINTER(c_float)),
                 ('input_frames', c_long),
@@ -28,6 +28,14 @@ class SRC_DATA(Structure):
                 ('output_frames_gen', c_long),
                 ('end_of_input', c_int),
                 ('src_ratio', c_double), ]
+
+
+class SRC_STATE(Structure):
+    """
+    A dummy structure to represent the state returned from libsamplerate
+    src_new.
+    """
+    _fields_ = []
 
 
 class Resample(object):
@@ -53,6 +61,7 @@ class Resample(object):
                          and slowest converter
 
         """
+        super(Resample, self).__init__()
         self._ratio = new_sample_rate / orig_sample_rate
         # check if the conversion ratio is considered valid by libsamplerate
         if not libsamplerate.src_is_valid_ratio(c_double(self._ratio)):
@@ -60,60 +69,54 @@ class Resample(object):
                              (new_sample_rate, orig_sample_rate, self._ratio))
         # create a pointer to the SRC_STATE struct, which maintains state
         # between calls to src_process()
-        error = pointer(c_int(0))
+        self.error = pointer(c_int(0))
         self.nchannels = nchannels
         self.converter_type = converter_type
-        self._state = libsamplerate.src_new( \
-            c_int(converter_type), c_int(nchannels), error)
+        self.c_int_converter_type = c_int(converter_type)
+        self.c_int_channels = c_int(self.nchannels)
+        libsamplerate.src_new.restype = POINTER(SRC_STATE)
+        self._state = libsamplerate.src_new(
+            self.c_int_converter_type, self.c_int_channels, self.error)
 
     def _prepare_input(self, insamples):
         # ensure that the input is float data
         if np.float32 != insamples.dtype:
-            insamples = insamples.astype(np.float32)
-
+            return insamples.astype(np.float32)
         return insamples
 
     def _output_buffer(self, insamples):
         outsize = int(np.round(insamples.size * self._ratio))
         return np.zeros(outsize, dtype=np.float32)
 
-    def _src_data_struct(self, insamples, outsamples, end_of_input=False):
-        # Build the SRC_DATA struct
-        return SRC_DATA( \
+    def _check_for_error(self, return_code):
+        if return_code:
+            raise Exception(
+                c_char_p(
+                    libsamplerate.src_strerror(c_int(return_code))).value)
+
+    def __call__(self, insamples, end_of_input=False):
+
+        normalized_insamples = self._prepare_input(insamples)
+        outsamples = self._output_buffer(normalized_insamples)
+
+        insamples_ptr = normalized_insamples.ctypes.data_as(POINTER(c_float))
+        outsamples_ptr = outsamples.ctypes.data_as(POINTER(c_float))
+
+        sd = SRC_DATA(
             # a pointer to the input samples
-            data_in=insamples.ctypes.data_as(POINTER(c_float)),
+            data_in=insamples_ptr,
             # a pointer to the output buffer
-            data_out=outsamples.ctypes.data_as(POINTER(c_float)),
+            data_out=outsamples_ptr,
             # number of input samples
-            input_frames=insamples.size,
+            input_frames=normalized_insamples.size,
             # number of output samples
             output_frames=outsamples.size,
             # NOT the end of input, i.e., there is more data to process
             end_of_input=int(end_of_input),
             # the conversion ratio
             src_ratio=self._ratio)
-
-    def _check_for_error(self, return_code):
-        if return_code:
-            raise Exception( \
-                c_char_p(
-                    libsamplerate.src_strerror(c_int(return_code))).value)
-
-    def all_at_once(self, insamples):
-        insamples = self._prepare_input(insamples)
-        outsamples = self._output_buffer(insamples)
-        sd = self._src_data_struct(insamples, outsamples)
-        rv = libsamplerate.src_simple(pointer(sd),
-                                      c_int(self.converter_type),
-                                      c_int(self.nchannels))
-        self._check_for_error(rv)
-        return outsamples
-
-    def __call__(self, insamples, end_of_input=False):
-        insamples = self._prepare_input(insamples)
-        outsamples = self._output_buffer(insamples)
-        sd = self._src_data_struct(insamples, outsamples, end_of_input)
-        rv = libsamplerate.src_process(self._state, pointer(sd))
+        sd_ptr = pointer(sd)
+        rv = libsamplerate.src_process(self._state, sd_ptr)
         self._check_for_error(rv)
         return outsamples
 

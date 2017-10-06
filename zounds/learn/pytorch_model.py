@@ -130,13 +130,13 @@ class SupervisedTrainer(Trainer):
             optimizer,
             epochs,
             batch_size,
-            regularization=None):
+            holdout_percent=0.0):
 
         super(SupervisedTrainer, self).__init__(
             epochs,
             batch_size)
 
-        self.regularization = regularization
+        self.holdout_percent = holdout_percent
         self.optimizer = optimizer(model)
         self.loss = loss
         self.model = model
@@ -150,46 +150,66 @@ class SupervisedTrainer(Trainer):
 
         data, labels = data['data'], data['labels']
 
+        test_size = int(self.holdout_percent * len(data))
+        test_data, test_labels = data[:test_size], labels[:test_size]
+        data, labels = data[test_size:], labels[test_size:]
+
         if data is labels:
             # this is an autoencoder scenario, so let's saved on memory
             data = data.astype(np.float32)
+            test_data = data.astype(np.float32)
             labels = data
+            test_labels = labels
         else:
             data = data.astype(np.float32)
+            test_data = test_data.astype(np.float32)
             labels = labels.astype(np.float32)
+            test_labels = test_labels.astype(np.float32)
+
+        def batch(d, l, test=False):
+            inp = torch.from_numpy(d)
+            inp = inp.cuda()
+            inp_v = Variable(inp, volatile=test)
+            output = model(inp_v)
+
+            labels_t = torch.from_numpy(l)
+            labels_t = labels_t.cuda()
+            labels_v = Variable(labels_t)
+
+            error = loss(output, labels_v)
+
+            if not test:
+                error.backward()
+                self.optimizer.step()
+
+            return error.data[0]
 
         for epoch in xrange(self.epochs):
             for i in xrange(0, len(data), self.batch_size):
 
                 model.zero_grad()
 
+                # training batch
                 minibatch_slice = slice(i, i + self.batch_size)
                 minibatch_data = data[minibatch_slice]
                 minibatch_labels = labels[minibatch_slice]
 
-                inp = torch.from_numpy(minibatch_data)
-                inp = inp.cuda()
-                inp_v = Variable(inp)
-                output = model(inp_v)
+                e = training_error = batch(
+                    minibatch_data, minibatch_labels, test=False)
 
-                labels_t = torch.from_numpy(minibatch_labels)
-                labels_t = labels_t.cuda()
-                labels_v = Variable(labels_t)
+                # test batch
+                if test_size:
+                    indices = np.random.randint(0, test_size, self.batch_size)
+                    test_batch_data = test_data[indices, ...]
+                    test_batch_labels = test_labels[indices, ...]
 
-                error = loss(output, labels_v)
-                error.backward()
-
-                r_error = None
-                if self.regularization:
-                    r_error = self.regularization(model)
-                    r_error.backward()
-                    error = error + r_error
-
-                self.optimizer.step()
-                e = error.data[0]
+                    te = test_error = batch(
+                        test_batch_data, test_batch_labels, test=True)
+                else:
+                    te = 'n/a'
 
                 if i % 10 == 0:
-                    print 'Epoch {epoch}, batch {i}, error {e}, reg error {r_error}'.format(
+                    print 'Epoch {epoch}, batch {i}, train error {e}, test error {te}'.format(
                         **locals())
 
         return model
@@ -261,6 +281,9 @@ class PyTorchNetwork(Preprocessor):
                 return ArrayWithUnits(
                     result, d.dimensions[:-1] + (IdentityDimension(),))
             except AttributeError:
+                return result
+            except ValueError:
+                # the number of dimensions has likely changed
                 return result
 
         return x

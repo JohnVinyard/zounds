@@ -146,9 +146,14 @@ class GanPipeline(ff.BaseModel):
         needs=docs,
         store=False)
 
+    mu_law = ff.PickleFeature(
+        zounds.MuLawCompressed,
+        needs=shuffled,
+        store=False)
+
     scaled = ff.PickleFeature(
         zounds.InstanceScaling,
-        needs=shuffled,
+        needs=mu_law,
         store=False)
 
     network = ff.PickleFeature(
@@ -162,14 +167,14 @@ class GanPipeline(ff.BaseModel):
             discriminator_optim_func=lambda model: optim.Adam(
                 model.parameters(), lr=0.00005, betas=(0.5, 0.999)),
             latent_dimension=(LATENT_DIM,),
-            epochs=100,
+            epochs=500,
             batch_size=64),
         needs=scaled,
         store=False)
 
     pipeline = ff.PickleFeature(
         zounds.PreprocessingPipeline,
-        needs=(scaled, network),
+        needs=(mu_law, scaled, network),
         store=True)
 
 

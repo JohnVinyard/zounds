@@ -7,6 +7,7 @@ import io
 from urlparse import urlparse
 import featureflow as ff
 
+
 class AudioMetaData(object):
     def __init__(
             self,
@@ -15,7 +16,8 @@ class AudioMetaData(object):
             channels=None,
             licensing=None,
             description=None,
-            tags=None):
+            tags=None,
+            **kwargs):
         super(AudioMetaData, self).__init__()
         self.uri = uri
         self.samplerate = samplerate
@@ -23,6 +25,9 @@ class AudioMetaData(object):
         self.licensing = licensing
         self.description = description
         self.tags = tags
+
+        for k, v in kwargs.iteritems():
+            setattr(self, k, v)
 
     def __eq__(self, other):
         return self.uri == other.uri \
@@ -54,14 +59,9 @@ class AudioMetaDataEncoder(Aggregator, Node):
             return uri
 
     def _process(self, data):
-        yield json.dumps({
-            'uri': self._uri(data.uri),
-            'samplerate': data.samplerate,
-            'channels': data.channels,
-            'licensing': data.licensing,
-            'description': data.description,
-            'tags': data.tags
-        })
+        d = dict(data.__dict__)
+        d['uri'] = self._uri(data.uri)
+        yield json.dumps(d)
 
 
 class FreesoundOrgConfig(object):
@@ -74,16 +74,16 @@ class FreesoundOrgConfig(object):
         params = {'token': self.api_key}
         metadata = requests.get(uri, params=params).json()
         request = requests.Request(
-                method='GET',
-                url=metadata['previews']['preview-hq-ogg'],
-                params=params)
+            method='GET',
+            url=metadata['previews']['preview-hq-ogg'],
+            params=params)
         return AudioMetaData(
-                uri=request,
-                samplerate=metadata['samplerate'],
-                channels=metadata['channels'],
-                licensing=metadata['license'],
-                description=metadata['description'],
-                tags=metadata['tags'])
+            uri=request,
+            samplerate=metadata['samplerate'],
+            channels=metadata['channels'],
+            licensing=metadata['license'],
+            description=metadata['description'],
+            tags=metadata['tags'])
 
 
 class MetaData(Node):
@@ -117,9 +117,9 @@ class MetaData(Node):
             yield data
         elif self._is_url(data):
             req = requests.Request(
-                    method='GET',
-                    url=data,
-                    headers={'Range': 'bytes=0-'})
+                method='GET',
+                url=data,
+                headers={'Range': 'bytes=0-'})
             yield AudioMetaData(uri=req)
         elif isinstance(data, requests.Request):
             if 'range' not in data.headers:
@@ -128,8 +128,8 @@ class MetaData(Node):
         elif self._is_local_file(data) or self._is_file(data):
             sf = SoundFile(data)
             yield AudioMetaData(
-                    uri=data,
-                    samplerate=sf.samplerate,
-                    channels=sf.channels)
+                uri=data,
+                samplerate=sf.samplerate,
+                channels=sf.channels)
         else:
             yield AudioMetaData(uri=data)
