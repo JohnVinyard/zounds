@@ -3,16 +3,7 @@ import zounds
 import numpy as np
 from torch import nn, optim
 from random import choice
-
-samplerate = zounds.SR11025()
-BaseModel = zounds.stft(resample_to=samplerate, store_fft=True)
-
-scale = zounds.GeometricScale(
-    start_center_hz=300,
-    stop_center_hz=3040,
-    bandwidth_ratio=0.016985,
-    n_bands=300)
-scale.ensure_overlap_ratio(0.5)
+import argparse
 
 
 class Layer(nn.Module):
@@ -61,26 +52,21 @@ class FreqAdaptiveAutoEncoder(ff.BaseModel):
     stored, we can apply all the pre-processing steps and the autoencoder
     forward and in reverse.
     """
-    docs = ff.Feature(
-        ff.IteratorNode,
-        store=False)
+    docs = ff.Feature(ff.IteratorNode)
 
     shuffle = ff.PickleFeature(
         zounds.ShuffledSamples,
         nsamples=500000,
         dtype=np.float32,
-        needs=docs,
-        store=False)
+        needs=docs)
 
     mu_law = ff.PickleFeature(
         zounds.MuLawCompressed,
-        needs=shuffle,
-        store=False)
+        needs=shuffle)
 
     scaled = ff.PickleFeature(
         zounds.InstanceScaling,
-        needs=mu_law,
-        store=False)
+        needs=mu_law)
 
     autoencoder = ff.PickleFeature(
         zounds.PyTorchAutoEncoder,
@@ -91,8 +77,7 @@ class FreqAdaptiveAutoEncoder(ff.BaseModel):
             epochs=100,
             batch_size=64,
             holdout_percent=0.5),
-        needs=scaled,
-        store=False)
+        needs=scaled)
 
     # assemble the previous steps into a re-usable pipeline, which can perform
     # forward and backward transformations
@@ -102,7 +87,18 @@ class FreqAdaptiveAutoEncoder(ff.BaseModel):
         store=True)
 
 
-@zounds.simple_lmdb_settings('bach', map_size=1e10, user_supplied_id=True)
+samplerate = zounds.SR11025()
+BaseModel = zounds.stft(resample_to=samplerate, store_fft=True)
+
+scale = zounds.GeometricScale(
+    start_center_hz=300,
+    stop_center_hz=3040,
+    bandwidth_ratio=0.016985,
+    n_bands=300)
+scale.ensure_overlap_ratio(0.5)
+
+
+@zounds.simple_lmdb_settings('sounds', map_size=1e10, user_supplied_id=True)
 class Sound(BaseModel):
     """
     An audio processing pipeline that computes a frequency domain representation
@@ -145,9 +141,17 @@ class Sound(BaseModel):
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        '--internet-archive-id',
+        help='the internet archive id to process',
+        type=str,
+        required=False,
+        default='AOC11B')
+    args = parser.parse_args()
 
     zounds.ingest(
-        dataset=zounds.InternetArchive('AOC11B'),
+        dataset=zounds.InternetArchive(args.internet_archive_id),
         cls=Sound,
         multi_threaded=True)
 
@@ -159,7 +163,7 @@ if __name__ == '__main__':
     # get a reference to the trained pipeline
     autoencoder = FreqAdaptiveAutoEncoder()
 
-    # get references to all the bach pieces.  features are lazily
+    # get references to all the sounds.  features are lazily
     # loaded/evaluated, so this is a cheap operation
     snds = list(Sound)
 
@@ -167,12 +171,18 @@ if __name__ == '__main__':
     synth = zounds.FrequencyAdaptiveFFTSynthesizer(scale, samplerate)
 
 
-    def random_reconstruction():
-        # choose a random bach piece
+    def random_reconstruction(random_encoding=False):
+        # choose a random sound
         snd = choice(snds)
 
         # run the model forward
         encoded = autoencoder.pipeline.transform(snd.freq_adaptive)
+
+        if random_encoding:
+            mean = encoded.data.mean()
+            std = encoded.data.std()
+            encoded.data = np.random.normal(mean, std, encoded.data.shape)
+
         # then invert the encoded version
         inverted = encoded.inverse_transform()
 
