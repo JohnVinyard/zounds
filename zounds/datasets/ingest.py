@@ -10,8 +10,11 @@ def ingest_one(arg):
         print 'already processed {request.url}'.format(**locals())
         return
 
-    print 'processing {request.url}'.format(**locals())
-    cls.process(meta=metadata, _id=url)
+    try:
+        print 'processing {request.url}'.format(**locals())
+        cls.process(meta=metadata, _id=url)
+    except Exception as e:
+        print e
 
 
 def ingest(

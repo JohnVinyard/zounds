@@ -151,19 +151,6 @@ def speaker_identification_pipeline(epochs):
     return RichardNixonIdentifier
 
 
-def process(metadata):
-
-    request = metadata.request
-    url = request.url
-
-    if Sound.exists(url):
-        print 'already processed {url}'.format(**locals())
-        return
-
-    print 'processing {url}'.format(**locals())
-    Sound.process(meta=metadata, _id=url)
-
-
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
@@ -180,10 +167,10 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    source = zounds.InternetArchive('Greatest_Speeches_of_the_20th_Century')
-
-    pool = ThreadPool(cpu_count())
-    _ids = pool.map(process, source)
+    zounds.ingest(
+        zounds.InternetArchive('Greatest_Speeches_of_the_20th_Century'),
+        Sound,
+        multi_threaded=True)
 
     def generate_training_and_test_set():
         snds = list(Sound)

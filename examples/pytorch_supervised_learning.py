@@ -140,7 +140,8 @@ class FeatureTransfer(ff.BaseModel):
             loss=nn.MSELoss(),
             optimizer=lambda model: optim.Adam(model.parameters()),
             epochs=20,
-            batch_size=64),
+            batch_size=64,
+            holdout_percent=0.5),
         needs=dict(data=scaled_source, labels=scaled_target),
         store=False)
 
@@ -152,14 +153,10 @@ class FeatureTransfer(ff.BaseModel):
 
 if __name__ == '__main__':
 
-    source = zounds.InternetArchive('AOC11B')
-    for request in source:
-        if Sound.exists(request.url):
-            print 'already processed {request.url}'.format(**locals())
-            continue
-
-        print 'processing {request.url}'.format(**locals())
-        Sound.process(meta=request, _id=request.url)
+    zounds.ingest(
+        zounds.InternetArchive('AOC11B'),
+        Sound,
+        multi_threaded=True)
 
     if not FeatureTransfer.exists():
         FeatureTransfer.process(

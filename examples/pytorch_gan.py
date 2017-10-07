@@ -3,7 +3,6 @@ import numpy as np
 import zounds
 from torch import nn
 from torch import optim
-from multiprocessing.pool import ThreadPool, cpu_count
 
 samplerate = zounds.SR11025()
 BaseModel = zounds.stft(resample_to=samplerate, store_fft=True)
@@ -180,17 +179,10 @@ class GanPipeline(ff.BaseModel):
 
 
 if __name__ == '__main__':
-
-    source = zounds.InternetArchive('AOC11B')
-    for metadata in source:
-        request = metadata.request
-        url = request.url
-        if Sound.exists(request.url):
-            print 'already processed {request.url}'.format(**locals())
-            continue
-
-        print 'processing {request.url}'.format(**locals())
-        Sound.process(meta=request, _id=request.url)
+    zounds.ingest(
+        zounds.InternetArchive('AOC11B'),
+        Sound,
+        multi_threaded=True)
 
     if not GanPipeline.exists():
         GanPipeline.process(docs=(snd.rasterized for snd in Sound))

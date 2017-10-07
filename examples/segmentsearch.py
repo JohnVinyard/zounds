@@ -97,25 +97,17 @@ class WithCodes(WithOnsets):
 if __name__ == '__main__':
     index = zounds.HammingIndex(WithCodes, WithCodes.pooled, listen=True)
 
-    # process the drum breaks
-    for metadata in zounds.PhatDrumLoops():
-        request = metadata.uri
-        url = request.url
-        if not WithOnsets.exists(url):
-            try:
-                WithOnsets.process(meta=metadata, _id=url)
-                print 'processed {url}'.format(**locals())
-            except Exception as e:
-                print url, e
-        else:
-            print 'already processed {url}'.format(**locals())
+    zounds.ingest(
+        zounds.PhatDrumLoops(),
+        WithOnsets,
+        multi_threaded=True)
 
     # learn K-Means centroids from the drum hits
     if not BarkKmeans.exists():
         print 'learning K-Means clusters'
         BarkKmeans.process(docs=(wo.bark for wo in WithOnsets))
 
-    bark_kmeans = BarkKmeans()
+    # bark_kmeans = BarkKmeans()
 
     # force the new pooled feature to be computed
     for doc in WithCodes:
