@@ -408,8 +408,26 @@ class PyTorchAutoEncoder(PyTorchNetwork):
 
         trained_network = self.trainer.train(data)
 
-        ff = self._forward_func()
-        processed_data = ff(data['data'], network=trained_network)
+        # try:
+        #     # note that the processed data passed on to the next step in the
+        #     # training pipeline will be the labels output by the discriminator
+        #     forward_func = self._forward_func()
+        #     processed_data = forward_func(data, network=discriminator)
+        # except RuntimeError as e:
+        #     processed_data = None
+        #     # the dataset may be too large to fit onto the GPU all at once
+        #     warnings.warn(e.message)
+
+        # ff = self._forward_func()
+        # processed_data = ff(data['data'], network=trained_network)
+
+        try:
+            forward_func = self._forward_func()
+            processed_data = forward_func(data['data'], network=trained_network)
+        except RuntimeError as e:
+            processed_data = None
+            warnings.warn(e.message)
+
         op = self.transform(network=trained_network)
         inv_data = self.inversion_data(network=trained_network)
         inv = self.inverse_transform()
