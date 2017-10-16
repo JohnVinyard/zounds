@@ -1,8 +1,7 @@
 from __future__ import division
 from featureflow import IdentityEncoder, Node, Decoder, Feature
 from audiostream import MemoryBuffer
-from zounds.timeseries import \
-    audio_sample_rate, TimeSlice, TimeDimension, AudioSamples
+from zounds.timeseries import audio_sample_rate, TimeSlice, AudioSamples
 from soundfile import *
 from byte_depth import chunk_size_samples
 from zounds.timeseries import Picoseconds, Seconds
@@ -27,13 +26,14 @@ class OggVorbisWrapper(object):
         return len(self._sf) / self.samplerate
 
     def _n_samples(self, duration):
+        if duration is None:
+            return -1
         return int(duration / self._freq)
 
     def __getitem__(self, timeslice):
         self._flo.seek(0)
         self._sf = SoundFile(self._flo)
         sr = audio_sample_rate(self.samplerate)
-        td = TimeDimension(sr.frequency, sr.duration)
 
         if timeslice == slice(None):
             return AudioSamples(self._sf.read(len(self._sf)), sr)

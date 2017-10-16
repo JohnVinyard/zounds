@@ -53,6 +53,7 @@ class FreeSoundSearch(object):
                     'token': self.api_key
                 })
 
+        results.raise_for_status()
         results = results.json()
 
         for r in results['results']:
@@ -60,6 +61,7 @@ class FreeSoundSearch(object):
                 'http://www.freesound.org/apiv2/sounds/{id}'.format(**r),
                 params={'token': self.api_key}
             )
+            sound_data.raise_for_status()
             yield sound_data.json()
 
             # prevent 429 "Too Many Requests" responses

@@ -34,7 +34,8 @@ class HammingIndex(object):
         self.db_size_bytes = db_size_bytes
         self.path = path
         self.hamming_db_path = os.path.join(
-            self.path, 'index.{self.feature.key}'.format(**locals()))
+            self.path, 'index.{self.feature.key}.{self.feature.version}'
+                .format(**locals()))
 
         try:
             self.event_log = document.event_log
@@ -54,6 +55,12 @@ class HammingIndex(object):
 
         if listen:
             self.listen()
+
+    def __len__(self):
+        return len(self.hamming_db)
+
+    def stop(self):
+        self.event_log.unsubscribe()
 
     def listen(self):
         self.thread = threading.Thread(target=self._listen)
@@ -82,10 +89,10 @@ class HammingIndex(object):
 
             # parse the data from the event stream
             data = json.loads(data)
-            _id, name = data['_id'], data['name']
+            _id, name, version = data['_id'], data['name'], data['version']
 
             # ensure that it's about the feature we're subscribed to
-            if name != self.feature.key:
+            if name != self.feature.key or version != self.feature.version:
                 continue
 
             # load the feature from the feature database

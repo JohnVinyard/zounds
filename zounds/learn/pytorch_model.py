@@ -246,6 +246,7 @@ class PyTorchPreprocessResult(PreprocessResult):
         network = state['cls']()
         network.load_state_dict(restored_weights)
         network.cuda()
+        network.eval()
         self.op = Op(state['forward_func'], network=network)
         self.inversion_data = Op(state['inv_data_func'],
                                  network=network)
@@ -380,7 +381,7 @@ class PyTorchAutoEncoder(PyTorchNetwork):
             encoded = network.encoder(v).data.cpu().numpy()
             try:
                 return ArrayWithUnits(
-                    encoded, d.dimensions[:-1] + (IdentityDimension(),))
+                    encoded, d.dimensions[:1] + (IdentityDimension(),)  )
             except AttributeError:
                 return encoded
 

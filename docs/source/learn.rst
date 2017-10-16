@@ -34,6 +34,10 @@ Machine Learning Models
 .. autoclass:: SupervisedTrainer
 .. autoclass:: GanTrainer
 
+Hashing
+-------
+.. autoclass:: SimHash
+
 Learned Models in Audio Processing Graphs
 -----------------------------------------
 .. autoclass:: Learned

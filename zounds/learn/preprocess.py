@@ -62,6 +62,7 @@ class PreprocessResult(object):
         inverse (Op): a callable that given the output of `op`, and
             `inversion_data`, can invert the result
     """
+
     def __init__(self, data, op, inversion_data=None, inverse=None, name=None):
         super(PreprocessResult, self).__init__()
         self.name = name
@@ -105,6 +106,7 @@ class Preprocessor(Node):
         :class:`PreprocessingPipeline`
         :class:`PipelineResult`
     """
+
     def __init__(self, needs=None):
         super(Preprocessor, self).__init__(needs=needs)
 
@@ -245,12 +247,14 @@ class MuLawCompressed(Preprocessor):
         def x(d):
             from zounds.loudness import mu_law
             return mu_law(d)
+
         return x
 
     def _backward_func(self):
         def x(d):
             from zounds.loudness import inverse_mu_law
             return inverse_mu_law(d)
+
         return x
 
     def _process(self, data):
@@ -347,6 +351,61 @@ class Reshape(Preprocessor):
         data = op(data)
         yield PreprocessResult(
             data, op, inversion_data=inv_data, inverse=inv, name='Reshape')
+
+
+class SimHash(Preprocessor):
+    """
+    Hash feature vectors by computing on which side of N hyperplanes those
+    features lie.
+
+    Args:
+        bits (int): The number of hyperplanes, and hence, the number of bits
+            in the resulting hash
+        needs (Preprocessor): the processing node on which this node relies for
+            its data
+    """
+
+    def __init__(self, bits=None, needs=None):
+        super(SimHash, self).__init__(needs=needs)
+        self.bits = bits
+
+    def _forward_func(self):
+        def x(d, plane_vectors=None):
+            import numpy as np
+            from zounds.core import ArrayWithUnits, IdentityDimension
+            # determine on which side of each plane the points in d lie
+            bits = np.zeros((len(d), len(plane_vectors)), dtype=np.uint8)
+            flattened = d.reshape((len(d), -1))
+            x = np.dot(plane_vectors, flattened.T).T
+            bits[np.where(x > 1)] = 1
+            try:
+                return ArrayWithUnits(
+                    bits, [d.dimensions[0], IdentityDimension()])
+            except AttributeError:
+                return bits
+
+        return x
+
+    def _backward_func(self):
+        def x(d):
+            raise NotImplementedError()
+
+        return x
+
+    def _process(self, data):
+        data = self._extract_data(data)
+
+        # compute plane vectors for each bit in the has we'd like
+        features = np.product(data.shape[1:])
+        a = np.random.normal(0, 1, (self.bits, features))
+        b = np.random.normal(0, 1, (self.bits, features))
+
+        op = self.transform(plane_vectors=a - b)
+        inv_data = self.inversion_data()
+        inv = self.inverse_transform()
+        data = op(data)
+        yield PreprocessResult(
+            data, op, inversion_data=inv_data, inverse=inv, name='SimHash')
 
 
 class MeanStdNormalization(Preprocessor):
@@ -477,6 +536,44 @@ class Weighted(Preprocessor):
             data, op, inversion_data=inv_data, inverse=inv, name='Weighted')
 
 
+class AbsoluteValue(Preprocessor):
+    def __init__(self, needs=None):
+        super(AbsoluteValue, self).__init__(needs=needs)
+
+    def _forward_func(self):
+        def x(d):
+            import numpy as np
+            from zounds.core import ArrayWithUnits
+            processed = np.abs(d)
+            try:
+                return ArrayWithUnits(processed, d.dimensions)
+            except AttributeError:
+                return processed
+
+        return x
+
+    def _backward_func(self):
+        def x(d):
+            raise NotImplementedError()
+
+        return x
+
+    def _process(self, data):
+        data = self._extract_data(data)
+        op = self.transform()
+        inv_data = self.inversion_data()
+        inv = self.inverse_transform()
+
+        try:
+            data = op(data)
+        except:
+            data = None
+
+        yield PreprocessResult(
+            data, op, inversion_data=inv_data, inverse=inv,
+            name='AbsoluteValue')
+
+
 class Binarize(Preprocessor):
     def __init__(self, threshold=0.5, needs=None):
         super(Binarize, self).__init__(needs=needs)
@@ -485,9 +582,13 @@ class Binarize(Preprocessor):
     def _forward_func(self):
         def x(d, threshold=None):
             import numpy as np
+            from zounds.core import ArrayWithUnits
             data = np.zeros(d.shape, dtype=np.uint8)
             data[np.where(d > threshold)] = 1
-            return data
+            try:
+                return ArrayWithUnits(data, d.dimensions)
+            except AttributeError:
+                return data
 
         return x
 
@@ -502,7 +603,10 @@ class Binarize(Preprocessor):
         op = self.transform(threshold=self.threshold)
         inv_data = self.inversion_data()
         inv = self.inverse_transform()
-        data = op(data)
+        try:
+            data = op(data)
+        except:
+            data = None
         yield PreprocessResult(
             data, op, inversion_data=inv_data, inverse=inv, name='Binarize')
 
@@ -511,6 +615,7 @@ class Pipeline(object):
     """
 
     """
+
     def __init__(self, preprocess_results):
         self.processors = list(preprocess_results)
         self.version = hashlib.md5(
@@ -652,6 +757,7 @@ class PreprocessingPipeline(Node):
         :class:`PreprocessResult`
         :class:`PipelineResult`
     """
+
     def __init__(self, needs=None):
         super(PreprocessingPipeline, self).__init__(needs=needs)
         self._pipeline = OrderedDict((id(n), None) for n in needs.values())

@@ -160,6 +160,7 @@ class HammingDb(object):
 
         # indices = np.argsort(scores)[:n_results]
         indices = np.argpartition(scores, n_results)[:n_results]
+        print 'DISTANCES', scores[indices]
 
         nearest = self._codes.logical_data[indices]['id']
         with self.env.begin() as txn:
