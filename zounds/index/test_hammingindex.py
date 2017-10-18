@@ -20,11 +20,17 @@ class HammingIndexTests(unittest2.TestCase):
         shutil.rmtree(self.event_log_path, ignore_errors=True)
         shutil.rmtree(self.hamming_db_path, ignore_errors=True)
 
-    def test_raises_if_model_class_has_no_event_log_configured(self):
+    def test_listen_raises_if_model_class_has_no_event_log_configured(self):
         Model = self._model(
             slice_size=64,
             settings=self._settings_with_no_event_log())
-        self.assertRaises(ValueError, lambda: HammingIndex(Model, Model.sliced))
+
+        index = self._index(Model, Model.sliced)
+        signal = SineSynthesizer(SR11025()) \
+            .synthesize(Seconds(5), [220, 440, 880])
+        Model.process(meta=signal.encode())
+        self.assertRaises(
+            ValueError, lambda: index._synchronously_process_events())
 
     def test_correctly_infers_code_size_8(self):
         Model = self._model(

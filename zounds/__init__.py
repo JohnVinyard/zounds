@@ -39,7 +39,7 @@ from learn import \
     simple_settings, SklearnModel, WithComponents, InstanceScaling, Reshape, \
     ShuffledSamples, PyTorchNetwork, PyTorchGan, PyTorchAutoEncoder, \
     GanTrainer, SupervisedTrainer, Weighted, MuLawCompressed, SimHash, \
-    AbsoluteValue, Binarize
+    AbsoluteValue, Binarize, Sharpen
 
 from ui import ZoundsApp, ZoundsSearch, RangeUnitUnsupportedException
 

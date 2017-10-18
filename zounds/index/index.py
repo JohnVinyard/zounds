@@ -24,6 +24,7 @@ class HammingIndex(object):
             self,
             document,
             feature,
+            version=None,
             path='',
             db_size_bytes=1000000000,
             listen=False):
@@ -33,16 +34,17 @@ class HammingIndex(object):
         self.feature = feature
         self.db_size_bytes = db_size_bytes
         self.path = path
+
+        version = version or self.feature.version
+
         self.hamming_db_path = os.path.join(
-            self.path, 'index.{self.feature.key}.{self.feature.version}'
+            self.path, 'index.{self.feature.key}.{version}'
                 .format(**locals()))
 
         try:
             self.event_log = document.event_log
         except AttributeError:
-            raise ValueError(
-                '{document} must have an event log configured'
-                    .format(**locals()))
+            self.event_log = None
 
         try:
             self.hamming_db = HammingDb(self.hamming_db_path, code_size=None)
@@ -75,12 +77,40 @@ class HammingIndex(object):
     def _synchronously_process_events(self):
         self._listen(raise_when_empty=True)
 
+    def add_all(self):
+        for doc in self.document:
+            self.add(doc._id)
+
+    def add(self, _id, timestamp=''):
+        # load the feature from the feature database
+        feature = self.feature(_id=_id, persistence=self.document)
+
+        try:
+            arr = ConstantRateTimeSeries(feature)
+        except ValueError:
+            arr = feature
+
+        # extract codes and timeslices from the feature
+        for ts, data in arr.iter_slices():
+            code = self.encode_query(data)
+            encoded_ts = dict(
+                _id=_id,
+                **self.encoder.dict(ts))
+            self._init_hamming_db(code)
+            self.hamming_db.append(code, json.dumps(encoded_ts))
+            self.hamming_db.set_metadata('timestamp', bytes(timestamp))
+
     def _listen(self, raise_when_empty=False):
 
         if self.hamming_db is not None:
             last_timestamp = self.hamming_db.get_metadata('timestamp') or ''
         else:
             last_timestamp = ''
+
+        if not self.event_log:
+            raise ValueError(
+                '{self.document} must have an event log configured'
+                    .format(**locals()))
 
         subscription = self.event_log.subscribe(
             last_id=last_timestamp, raise_when_empty=raise_when_empty)
@@ -95,23 +125,7 @@ class HammingIndex(object):
             if name != self.feature.key or version != self.feature.version:
                 continue
 
-            # load the feature from the feature database
-            feature = self.feature(_id=_id, persistence=self.document)
-
-            try:
-                arr = ConstantRateTimeSeries(feature)
-            except ValueError:
-                arr = feature
-
-            # extract codes and timeslices from the feature
-            for ts, data in arr.iter_slices():
-                code = self.encode_query(data)
-                encoded_ts = dict(
-                    _id=_id,
-                    **self.encoder.dict(ts))
-                self._init_hamming_db(code)
-                self.hamming_db.append(code, json.dumps(encoded_ts))
-                self.hamming_db.set_metadata('timestamp', bytes(timestamp))
+            self.add(_id, timestamp)
 
     def _parse_result(self, result):
         d = json.loads(result)

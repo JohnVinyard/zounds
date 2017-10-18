@@ -397,8 +397,10 @@ class SimHash(Preprocessor):
 
         # compute plane vectors for each bit in the has we'd like
         features = np.product(data.shape[1:])
-        a = np.random.normal(0, 1, (self.bits, features))
-        b = np.random.normal(0, 1, (self.bits, features))
+        mean = data.mean()
+        std = data.std()
+        a = np.random.normal(mean, std, (self.bits, features))
+        b = np.random.normal(mean, std, (self.bits, features))
 
         op = self.transform(plane_vectors=a - b)
         inv_data = self.inversion_data()
@@ -572,6 +574,43 @@ class AbsoluteValue(Preprocessor):
         yield PreprocessResult(
             data, op, inversion_data=inv_data, inverse=inv,
             name='AbsoluteValue')
+
+
+class Sharpen(Preprocessor):
+    def __init__(self, kernel=None, needs=None):
+        super(Sharpen, self).__init__(needs=needs)
+        self.kernel = kernel
+
+    def _forward_func(self):
+        def x(d, kernel=None):
+            from scipy.signal import convolve
+            from zounds.core import ArrayWithUnits
+            data = convolve(d, kernel[None, ...], mode='same')
+            data[data < 0] = 0
+            try:
+                return ArrayWithUnits(data, d.dimensions)
+            except AttributeError:
+                return data
+
+        return x
+
+    def _backward_func(self):
+        def x(d):
+            raise NotImplementedError()
+
+        return x
+
+    def _process(self, data):
+        data = self._extract_data(data)
+        op = self.transform(kernel=self.kernel)
+        inv_data = self.inversion_data()
+        inv = self.inverse_transform()
+        try:
+            data = op(data)
+        except:
+            data = None
+        yield PreprocessResult(
+            data, op, inversion_data=inv_data, inverse=inv, name='Sharpen')
 
 
 class Binarize(Preprocessor):

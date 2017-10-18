@@ -52,13 +52,14 @@ class Learned(Node):
     """
 
     """
-    def __init__(self, learned=None, needs=None):
+    def __init__(self, learned=None, version=None, needs=None):
         super(Learned, self).__init__(needs=needs)
         self._learned = learned
+        self._version = version
 
     @property
     def version(self):
-        return self._learned.pipeline.version
+        return self._version or self._learned.pipeline.version
 
     def _process(self, data):
         transformed = self._learned.pipeline.transform(data).data

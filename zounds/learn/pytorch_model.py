@@ -375,13 +375,21 @@ class PyTorchAutoEncoder(PyTorchNetwork):
             from torch.autograd import Variable
             import numpy as np
             from zounds.core import ArrayWithUnits, IdentityDimension
-            tensor = torch.from_numpy(d.astype(np.float32))
-            gpu = tensor.cuda()
-            v = Variable(gpu)
-            encoded = network.encoder(v).data.cpu().numpy()
+
+            chunks = []
+            batch_size = 128
+
+            for i in xrange(0, len(d), batch_size):
+                tensor = torch.from_numpy(d[i:i+batch_size].astype(np.float32))
+                gpu = tensor.cuda()
+                v = Variable(gpu)
+                chunks.append(network.encoder(v).data.cpu().numpy())
+
+            encoded = np.concatenate(chunks)
+
             try:
                 return ArrayWithUnits(
-                    encoded, d.dimensions[:1] + (IdentityDimension(),)  )
+                    encoded, d.dimensions[:1] + (IdentityDimension(),))
             except AttributeError:
                 return encoded
 
@@ -392,10 +400,18 @@ class PyTorchAutoEncoder(PyTorchNetwork):
             import torch
             from torch.autograd import Variable
             import numpy as np
-            tensor = torch.from_numpy(d.astype(np.float32))
-            gpu = tensor.cuda()
-            v = Variable(gpu)
-            return network.decoder(v).data.cpu().numpy()
+
+            chunks = []
+            batch_size = 128
+
+            for i in xrange(0, len(d), batch_size):
+                tensor = torch.from_numpy(d.astype(np.float32))
+                gpu = tensor.cuda()
+                v = Variable(gpu)
+                chunks.append(network.decoder(v).data.cpu().numpy())
+
+            decoded = np.concatenate(chunks)
+            return decoded
 
         return x
 
@@ -409,12 +425,20 @@ class PyTorchAutoEncoder(PyTorchNetwork):
 
         trained_network = self.trainer.train(data)
 
-        try:
-            forward_func = self._forward_func()
-            processed_data = forward_func(data['data'], network=trained_network)
-        except RuntimeError as e:
-            processed_data = None
-            warnings.warn(e.message)
+        processed_data = None
+        inp = data['data']
+
+        while processed_data is None:
+            try:
+                forward_func = self._forward_func()
+                processed_data = forward_func(inp, network=trained_network)
+            except RuntimeError as e:
+                processed_data = None
+                warnings.warn(e.message)
+                # we've just experienced an out of memory exception.  Cut the
+                # size of the input data in half, so that downstream nodes that
+                # need some data to initialize themselves can do so
+                inp = inp[:len(inp) // 64]
 
         op = self.transform(network=trained_network)
         inv_data = self.inversion_data(network=trained_network)
