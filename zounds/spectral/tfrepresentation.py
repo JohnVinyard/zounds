@@ -36,6 +36,9 @@ class FrequencyDimension(Dimension):
         super(FrequencyDimension, self).__init__()
         self.scale = scale
 
+    def copy(self):
+        return FrequencyDimension(self.scale)
+
     def weights(self, weights, arr, i):
         return weights
 
@@ -99,6 +102,9 @@ class ExplicitFrequencyDimension(Dimension):
         self.scale = scale
         self.slices = slices
         self._lookup = dict(zip(self.scale, self.slices))
+
+    def copy(self):
+        return ExplicitFrequencyDimension(self.scale, self.slices)
 
     def weights(self, weights, arr, i):
         w = np.zeros(self.slices[-1].stop - self.slices[0].start)

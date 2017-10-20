@@ -49,7 +49,7 @@ class ArrayWithUnits(np.ndarray):
                 'They were {arr.shape} and {dimensions}'.format(**locals()))
 
         def dim_map(d):
-            return IdentityDimension() if d is None else copy.deepcopy(d)
+            return IdentityDimension() if d is None else d.copy()
 
         obj = np.asarray(arr).view(cls)
         obj.dimensions = tuple(map(dim_map, dimensions))

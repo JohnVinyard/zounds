@@ -42,6 +42,9 @@ class Dimension(object):
         """
         pass
 
+    def copy(self):
+        return Dimension()
+
 
 class IdentityDimension(Dimension):
     """
@@ -72,3 +75,6 @@ class IdentityDimension(Dimension):
 
     def __eq__(self, other):
         return self.__class__ == other.__class__
+
+    def copy(self):
+        return IdentityDimension()

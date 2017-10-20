@@ -146,6 +146,9 @@ class TimeDimension(Dimension):
         (50,)
     """
 
+    def copy(self):
+        return TimeDimension(self.frequency, self.duration, self.size)
+
     def __init__(self, frequency=None, duration=None, size=None):
         super(TimeDimension, self).__init__()
         self.size = size

@@ -19,6 +19,9 @@ class ContrivedDimension(Dimension):
         self.factor = factor
         self.size = None
 
+    def copy(self):
+        return ContrivedDimension(self.factor)
+
     def modified_dimension(self, size, windowsize, stepsize=None):
         yield ContrivedDimension(self.factor * windowsize)
         yield ContrivedDimension(self.factor)
@@ -45,6 +48,9 @@ class ContrivedDimension2(Dimension):
         self.factor = factor
         self.size = None
 
+    def copy(self):
+        return ContrivedDimension2(self.factor)
+
     def modified_dimension(self, size, windowsize, stepsize=None):
         yield ContrivedDimension(self.factor * windowsize)
         yield ContrivedDimension(self.factor)
@@ -69,6 +75,9 @@ class AsciiCharacterDimension(Dimension):
     def __init__(self, labels):
         super(AsciiCharacterDimension, self).__init__()
         self.labels = labels
+
+    def copy(self):
+        return AsciiCharacterDimension(self.labels)
 
     def modified_dimension(self, size, windowsize, stepsize=None):
         raise NotImplementedError()
