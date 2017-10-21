@@ -2,7 +2,6 @@ import numpy as np
 from zounds.nputil import sliding_window, windowed
 from zounds.util import tuplify
 from dimensions import IdentityDimension
-import copy
 
 
 class CustomSlice(object):
@@ -142,6 +141,10 @@ class ArrayWithUnits(np.ndarray):
     def dot(self, b):
         result = super(ArrayWithUnits, self).dot(b)
         return self.__class__(result, self.dimensions[:result.ndim])
+
+    def packbits(self, axis=None):
+        arr = np.packbits(self, axis=axis)
+        return ArrayWithUnits(arr, self.dimensions)
 
     def __array_finalize__(self, obj):
         if obj is None:

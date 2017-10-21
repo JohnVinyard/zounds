@@ -10,6 +10,53 @@ from zounds.core import ArrayWithUnits, IdentityDimension
 
 class TimeFrequencyRepresentationTests(unittest2.TestCase):
 
+    def test_can_iterate_over_time_frequency_representation(self):
+        tf = ArrayWithUnits(
+            np.ones((10, 10)),
+            dimensions=[
+                TimeDimension(Seconds(1), Seconds(1)),
+                FrequencyDimension(LinearScale(FrequencyBand(0, 1000), 10))
+            ])
+        rows = [row for row in tf]
+        self.assertEqual(10, len(rows))
+        for row in rows:
+            self.assertIsInstance(row, ArrayWithUnits)
+            self.assertIsInstance(row.dimensions[0], FrequencyDimension)
+            self.assertEqual((10,), row.shape)
+
+    def test_can_iterate_over_timeseries(self):
+        tf = ArrayWithUnits(
+            np.ones((10, 10)),
+            dimensions=[
+                TimeDimension(Seconds(1), Seconds(1)),
+                IdentityDimension()
+            ])
+        rows = [row for row in tf]
+        self.assertEqual(10, len(rows))
+        for row in rows:
+            self.assertIsInstance(row, ArrayWithUnits)
+            self.assertIsInstance(row.dimensions[0], IdentityDimension)
+            self.assertEqual((10,), row.shape)
+
+    def test_can_iterate_after_packbits(self):
+        tf = ArrayWithUnits(
+            np.random.binomial(1, 0.5, (10, 256)).astype(np.uint8),
+            dimensions=[
+                TimeDimension(Seconds(1), Seconds(1)),
+                IdentityDimension()
+            ])
+        tf = tf.packbits(axis=1)
+        self.assertIsInstance(tf, ArrayWithUnits)
+        self.assertEqual((10, 32), tf.shape)
+        self.assertIsInstance(tf.dimensions[0], TimeDimension)
+        self.assertIsInstance(tf.dimensions[1], IdentityDimension)
+        rows = [row for row in tf]
+        self.assertEqual(10, len(rows))
+        for row in rows:
+            self.assertIsInstance(row, ArrayWithUnits)
+            self.assertIsInstance(row.dimensions[0], IdentityDimension)
+            self.assertEqual((32,), row.shape)
+
     def test_can_use_tuple_indices_for_first_dimension(self):
         tf = ArrayWithUnits(
             np.ones((10, 10)),
