@@ -137,7 +137,11 @@ class HammingIndex(object):
         return np.unpackbits(packed)
 
     def encode_query(self, feature):
-        return np.packbits(feature).tostring()
+        try:
+            return np.packbits(feature).tostring()
+        except TypeError:
+            # the query is already packed and expressed as raw bytes
+            return feature
 
     def random_search(self, n_results, multithreaded=False):
         code, raw_results = self.hamming_db.random_search(n_results,

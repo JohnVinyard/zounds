@@ -87,6 +87,23 @@ class HammingIndexTests(unittest2.TestCase):
         encoded = index.encode_query(decoded)
         self.assertEqual(results.query, encoded)
 
+    def test_can_search_with_binary_code(self):
+        Model = self._model(
+            slice_size=128,
+            settings=self._settings_with_event_log())
+
+        index = self._index(Model, Model.sliced)
+        signal = SineSynthesizer(SR11025()) \
+            .synthesize(Seconds(5), [220, 440, 880])
+        Model.process(meta=signal.encode())
+        index._synchronously_process_events()
+
+        results = index.random_search(n_results=5)
+        decoded = index.decode_query(results.query)
+        encoded = index.encode_query(decoded)
+        results = index.search(encoded, 5)
+        self.assertEqual(5, len(list(results)))
+
     def correctly_infers_index_name(self):
         Model = self._model(
             slice_size=128,
