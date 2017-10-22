@@ -51,6 +51,18 @@ class HammingDb(object):
         self._thread_count = cpu_count()
         self._pool = ThreadPool(processes=self._thread_count)
 
+    def close(self):
+        self.env.close()
+
+    def __del__(self):
+        self.close()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+
     def set_metadata(self, key, value):
         with self.env.begin(write=True) as txn:
             txn.put(key, value, db=self.metadata)
@@ -160,7 +172,6 @@ class HammingDb(object):
 
         # indices = np.argsort(scores)[:n_results]
         indices = np.argpartition(scores, n_results)[:n_results]
-        print 'DISTANCES', scores[indices]
 
         nearest = self._codes.logical_data[indices]['id']
         with self.env.begin() as txn:
