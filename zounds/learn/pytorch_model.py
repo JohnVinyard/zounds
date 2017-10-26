@@ -388,8 +388,9 @@ class PyTorchAutoEncoder(PyTorchNetwork):
             encoded = np.concatenate(chunks)
 
             try:
+                extra_dims = (IdentityDimension(),) * (encoded.ndim - 1)
                 return ArrayWithUnits(
-                    encoded, d.dimensions[:1] + (IdentityDimension(),))
+                    encoded, d.dimensions[:1] + extra_dims)
             except AttributeError:
                 return encoded
 
@@ -424,6 +425,7 @@ class PyTorchAutoEncoder(PyTorchNetwork):
         data = dict(data=data, labels=data)
 
         trained_network = self.trainer.train(data)
+        trained_network.eval()
 
         processed_data = None
         inp = data['data']

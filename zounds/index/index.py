@@ -163,14 +163,15 @@ class HammingIndex(object):
             # the query is already packed and expressed as raw bytes
             return feature
 
-    def random_search(self, n_results, multithreaded=False):
-        code, raw_results = self.hamming_db.random_search(n_results,
-                                                          multithreaded)
+    def random_search(self, n_results, multithreaded=False, sort=False):
+        code, raw_results = self.hamming_db.random_search(
+            n_results, multithreaded, sort=sort)
         parsed_results = (self._parse_result(r) for r in raw_results)
         return SearchResults(code, parsed_results)
 
-    def search(self, feature, n_results, multithreaded=False):
+    def search(self, feature, n_results, multithreaded=False, sort=False):
         code = self.encode_query(feature)
-        raw_results = self.hamming_db.search(code, n_results, multithreaded)
+        raw_results = self.hamming_db.search(
+            code, n_results, multithreaded, sort=sort)
         parsed_results = (self._parse_result(r) for r in raw_results)
         return SearchResults(code, parsed_results)

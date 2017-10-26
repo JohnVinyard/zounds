@@ -397,8 +397,8 @@ class SimHash(Preprocessor):
 
         # compute plane vectors for each bit in the has we'd like
         features = np.product(data.shape[1:])
-        mean = data.mean()
-        std = data.std()
+        mean = data.mean(axis=0).flatten()
+        std = data.std(axis=0).flatten()
         a = np.random.normal(mean, std, (self.bits, features))
         b = np.random.normal(mean, std, (self.bits, features))
 
@@ -416,7 +416,10 @@ class MeanStdNormalization(Preprocessor):
 
     def _forward_func(self):
         def x(d, mean=None, std=None):
-            return (d - mean) / std
+            import numpy as np
+            x = (d - mean) / std
+            x[np.isinf(x)] = 0
+            return x
 
         return x
 

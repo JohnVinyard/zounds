@@ -147,16 +147,17 @@ class HammingDb(object):
                             cursor.key(), db=self.index)[:self.code_size]
                     continue
 
-    def random_search(self, n_results, multithreaded=False):
+    def random_search(self, n_results, multithreaded=False, sort=False):
         code = self._random_code()
-        return code, self.search(code, n_results, multithreaded)
+        return code, self.search(code, n_results, multithreaded, sort=sort)
 
-    def search(self, code, n_results, multithreaded=False):
+    def search(self, code, n_results, multithreaded=False, sort=False):
         self._validate_code_size(code)
         self._check_for_external_modifications()
         query = self._np_code(code)
 
         codes = self._codes.logical_data['code']
+
         if codes.ndim == 1:
             codes = codes[..., None]
 
@@ -171,9 +172,26 @@ class HammingDb(object):
                  xrange(0, n_codes, chunksize))))
 
         # indices = np.argsort(scores)[:n_results]
-        indices = np.argpartition(scores, n_results)[:n_results]
+
+        # argpartition will ensure that the lowest scores will all be
+        # withing the first n_results elements, but makes no guarantees
+        # about the ordering *within* n_results
+        partitioned_indices = np.argpartition(scores, n_results)[:n_results]
+
+        if sort:
+            # since argpartition doesn't guarantee that the results are
+            # sorted *within* n_results, sort the much smaller result set
+            sorted_indices = np.argsort(scores[partitioned_indices])
+
+            indices = partitioned_indices[sorted_indices]
+        else:
+            # the partitioned indices are good enough.  results will all be
+            # within some degree of similarity, but not necessarily in any
+            # particular order
+            indices = partitioned_indices
 
         nearest = self._codes.logical_data[indices]['id']
+
         with self.env.begin() as txn:
             for _id in nearest:
                 yield txn.get(_id, db=self.index)[self.code_size:]
