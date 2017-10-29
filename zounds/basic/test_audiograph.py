@@ -1,12 +1,39 @@
 import unittest2
-from audiograph import resampled, stft
-from zounds.timeseries.samplerate import SR11025, SR22050
-from zounds.timeseries.duration import Seconds
+from audiograph import resampled, stft, frequency_adaptive
+from zounds.timeseries.samplerate import SR11025, SR22050, SampleRate
+from zounds.timeseries.duration import Seconds, Milliseconds
 from zounds.util.persistence import simple_in_memory_settings
 from zounds.synthesize.synthesize import NoiseSynthesizer, SineSynthesizer
+from zounds.spectral import GeometricScale, FrequencyAdaptive
 import zipfile
 from io import BytesIO
 import featureflow
+
+
+class FrequencyAdaptiveTests(unittest2.TestCase):
+    def test_can_compute_frequency_adaptive_feature(self):
+        scale = GeometricScale(
+            start_center_hz=50,
+            stop_center_hz=5000,
+            bandwidth_ratio=0.07123,
+            n_bands=128)
+
+        fa = frequency_adaptive(
+            SampleRate(frequency=Milliseconds(358), duration=Milliseconds(716)),
+            scale,
+            rasterized_size=64,
+            store_freq_adaptive=True)
+
+        @simple_in_memory_settings
+        class Document(fa):
+            pass
+
+        synth = SineSynthesizer(SR22050())
+        samples = synth.synthesize(Seconds(10))
+        _id = Document.process(meta=samples.encode())
+        doc = Document(_id)
+        self.assertIsInstance(doc.freq_adaptive, FrequencyAdaptive)
+        self.assertEqual((64, 128), doc.rasterized.shape[-2:])
 
 
 class ResampledTests(unittest2.TestCase):
@@ -29,7 +56,6 @@ class ResampledTests(unittest2.TestCase):
 
 
 class StftTests(unittest2.TestCase):
-
     def test_can_hadle_zip_file(self):
         STFT = stft(resample_to=SR11025(), store_fft=True)
 

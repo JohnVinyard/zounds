@@ -5,11 +5,12 @@ from zounds.soundfile import \
     Resampler, ChunkSizeBytes
 from zounds.segment import \
     ComplexDomain, MovingAveragePeakPicker, TimeSliceFeature
-from zounds.persistence import ArrayWithUnitsFeature, AudioSamplesFeature
+from zounds.persistence import ArrayWithUnitsFeature, AudioSamplesFeature, \
+    FrequencyAdaptiveFeature
 from zounds.timeseries import SR44100, HalfLapped, Stride, Seconds
 from zounds.spectral import \
     SlidingWindow, OggVorbisWindowingFunc, FFT, BarkBands, SpectralCentroid, \
-    Chroma, BFCC, DCT
+    Chroma, BFCC, DCT, FrequencyAdaptiveTransform
 
 DEFAULT_CHUNK_SIZE = ChunkSizeBytes(
     samplerate=SR44100(),
@@ -62,6 +63,46 @@ def resampled(
             store=store_resampled)
 
     return Resampled
+
+
+def frequency_adaptive(
+        long_window_sample_rate,
+        scale,
+        rasterized_size=64,
+        store_freq_adaptive=False,
+        chunksize_bytes=DEFAULT_CHUNK_SIZE,
+        resample_to=SR44100(),
+        store_resampled=False):
+
+    BaseModel = resampled(chunksize_bytes, resample_to, store_resampled)
+
+    class FrequencyAdaptive(BaseModel):
+        long_windowed = ArrayWithUnitsFeature(
+            SlidingWindow,
+            wscheme=long_window_sample_rate,
+            wfunc=OggVorbisWindowingFunc(),
+            needs=BaseModel.resampled,
+            store=False)
+
+        long_fft = ArrayWithUnitsFeature(
+            FFT,
+            needs=long_windowed,
+            store=False)
+
+        freq_adaptive = FrequencyAdaptiveFeature(
+            FrequencyAdaptiveTransform,
+            transform=np.fft.irfft,
+            scale=scale,
+            window_func=np.hanning,
+            needs=long_fft,
+            store=store_freq_adaptive)
+
+        rasterized = ArrayWithUnitsFeature(
+            lambda fa: fa.rasterize(rasterized_size).astype(np.float32),
+            needs=freq_adaptive,
+            store=True)
+
+    return FrequencyAdaptive
 
 
 def stft(
