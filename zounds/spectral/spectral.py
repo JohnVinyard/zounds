@@ -184,6 +184,9 @@ class FrequencyAdaptiveTransform(Node):
         scale (FrequencyScale): the scale used to take frequency band slices
         window_func (numpy.ndarray): the windowing function to apply each band
             before the transform is applied
+        check_scale_overlap_ratio (bool): If this feature is to be used for
+            resynthesis later, ensure that each frequency band overlaps with
+            the previous one by at least half, to ensure artifact-free synthesis
 
     See Also:
         :class:`~zounds.spectral.FrequencyAdaptive`
@@ -195,8 +198,16 @@ class FrequencyAdaptiveTransform(Node):
             transform=None,
             scale=None,
             window_func=None,
+            check_scale_overlap_ratio=False,
             needs=None):
         super(FrequencyAdaptiveTransform, self).__init__(needs=needs)
+
+        if check_scale_overlap_ratio:
+            try:
+                scale.ensure_overlap_ratio(0.5)
+            except AssertionError as e:
+                raise ValueError(e.message)
+
         self._window_func = window_func or np.ones
         self._scale = scale
         self._transform = transform

@@ -20,6 +20,18 @@ from zounds.util import simple_in_memory_settings
 
 
 class FrequencyAdaptiveTransformTests(unittest2.TestCase):
+    def test_raises_when_scale_has_insufficient_overlap_and_check_is_requested(
+            self):
+        scale = GeometricScale(
+            start_center_hz=50,
+            stop_center_hz=5000,
+            bandwidth_ratio=0.01,
+            n_bands=128)
+
+        self.assertRaises(ValueError, lambda: FrequencyAdaptiveTransform(
+            transform=np.fft.irfft,
+            scale=scale,
+            check_scale_overlap_ratio=True))
 
     def test_raises_useful_error_when_unexpected_dimensions_are_received(self):
         scale = GeometricScale(20, 5000, 0.1, 25)
