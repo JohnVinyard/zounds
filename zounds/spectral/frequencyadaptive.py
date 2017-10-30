@@ -78,6 +78,19 @@ class FrequencyAdaptive(ArrayWithUnits):
     def rasterize(self, n_coeffs):
         return self.square(n_coeffs)
 
+    def _resample(self, band, n_coeffs):
+        rs = resample(band, n_coeffs, axis=1)
+
+        # resample doesn't necessarily maintain the correct scale/magnitude, as
+        # it isn't using the norm="ortho" argument when calling fft, so ensure
+        # that the original scale/magnitude is maintained after calling
+        # resample
+        m = band.max(axis=-1, keepdims=True)
+        ratio = np.divide(
+            rs.max(axis=-1, keepdims=True), m, where=m != 0)
+        normalized = np.divide(rs, ratio, where=ratio != 0)
+        return np.asarray(normalized.flatten())
+
     def square(self, n_coeffs, do_overlap_add=False):
         """
         Compute a "square" view of the frequency adaptive transform, by
@@ -88,7 +101,7 @@ class FrequencyAdaptive(ArrayWithUnits):
         be resampled
         """
         resampled_bands = [
-            resample(band, n_coeffs, axis=1).flatten()
+            self._resample(band, n_coeffs)
             for band in self.iter_bands()]
 
         stacked = np.vstack(resampled_bands).T

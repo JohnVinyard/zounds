@@ -9,7 +9,6 @@ import numpy as np
 
 
 class FrequencyAdaptiveTests(unittest2.TestCase):
-
     def test_raises_when_time_dimension_is_none(self):
         scale = GeometricScale(20, 5000, 0.05, 10)
         arrs = [np.zeros((10, x)) for x in xrange(1, 11)]
@@ -111,6 +110,40 @@ class FrequencyAdaptiveTests(unittest2.TestCase):
         fa = FrequencyAdaptive(arrs, td, scale)
         sliced = fa[:, scale[0]]
         self.assertEqual((10, 1), sliced.shape)
+
+    def test_rasterize_does_not_distort_spectral_shape(self):
+        n_bands = 8
+        td = TimeDimension(
+            duration=Seconds(1),
+            frequency=Milliseconds(500))
+        scale = GeometricScale(
+            start_center_hz=50,
+            stop_center_hz=5000,
+            bandwidth_ratio=0.07123,
+            n_bands=n_bands)
+        arrs = [np.random.normal(0, 1, (10, 2 ** (i + 1))) for i in
+                xrange(n_bands)]
+        maxes = [arr.max() for arr in arrs]
+        fa = FrequencyAdaptive(arrs, td, scale)
+        rasterized = fa.rasterize(n_coeffs=32)
+        np.testing.assert_allclose(rasterized.max(axis=(0, 1)), maxes)
+
+    def test_rasterize_gracefully_handles_band_with_no_energy(self):
+        n_bands = 8
+        td = TimeDimension(
+            duration=Seconds(1),
+            frequency=Milliseconds(500))
+        scale = GeometricScale(
+            start_center_hz=50,
+            stop_center_hz=5000,
+            bandwidth_ratio=0.07123,
+            n_bands=n_bands)
+        arrs = [np.random.normal(0, 1, (10, 2 ** (i + 1))) for i in
+                xrange(n_bands)]
+        arrs[0][:] = 0
+        fa = FrequencyAdaptive(arrs, td, scale)
+        rasterized = fa.rasterize(n_coeffs=32)
+        np.testing.assert_allclose(rasterized[:, :,  0], 0)
 
     def test_square_form_with_overlap(self):
         td = TimeDimension(
