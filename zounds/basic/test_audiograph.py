@@ -3,12 +3,13 @@ from audiograph import resampled, stft, frequency_adaptive
 from zounds.timeseries.samplerate import SR11025, SR22050, SampleRate
 from zounds.timeseries.duration import Seconds, Milliseconds
 from zounds.util.persistence import simple_in_memory_settings
+from zounds.persistence import ArrayWithUnitsFeature
 from zounds.synthesize.synthesize import NoiseSynthesizer, SineSynthesizer
 from zounds.spectral import GeometricScale, FrequencyAdaptive
 import zipfile
 from io import BytesIO
 import featureflow
-
+import numpy as np
 
 class FrequencyAdaptiveTests(unittest2.TestCase):
     def test_can_compute_frequency_adaptive_feature(self):
@@ -26,7 +27,10 @@ class FrequencyAdaptiveTests(unittest2.TestCase):
 
         @simple_in_memory_settings
         class Document(fa):
-            pass
+            rasterized = ArrayWithUnitsFeature(
+                lambda fa: fa.rasterize(64).astype(np.float32),
+                needs=fa.freq_adaptive,
+                store=True)
 
         synth = SineSynthesizer(SR22050())
         samples = synth.synthesize(Seconds(10))

@@ -70,6 +70,7 @@ def frequency_adaptive(
         scale,
         rasterized_size=64,
         store_freq_adaptive=False,
+        check_scale_overlap_ratio=False,
         chunksize_bytes=DEFAULT_CHUNK_SIZE,
         resample_to=SR44100(),
         store_resampled=False):
@@ -93,14 +94,10 @@ def frequency_adaptive(
             FrequencyAdaptiveTransform,
             transform=np.fft.irfft,
             scale=scale,
+            check_scale_overlap_ratio=check_scale_overlap_ratio,
             window_func=np.hanning,
             needs=long_fft,
             store=store_freq_adaptive)
-
-        rasterized = ArrayWithUnitsFeature(
-            lambda fa: fa.rasterize(rasterized_size).astype(np.float32),
-            needs=freq_adaptive,
-            store=True)
 
     return FrequencyAdaptive
 
