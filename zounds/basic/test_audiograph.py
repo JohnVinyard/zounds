@@ -11,6 +11,7 @@ from io import BytesIO
 import featureflow
 import numpy as np
 
+
 class FrequencyAdaptiveTests(unittest2.TestCase):
     def test_can_compute_frequency_adaptive_feature(self):
         scale = GeometricScale(
@@ -22,7 +23,6 @@ class FrequencyAdaptiveTests(unittest2.TestCase):
         fa = frequency_adaptive(
             SampleRate(frequency=Milliseconds(358), duration=Milliseconds(716)),
             scale,
-            rasterized_size=64,
             store_freq_adaptive=True)
 
         @simple_in_memory_settings

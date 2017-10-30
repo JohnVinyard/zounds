@@ -68,7 +68,6 @@ def resampled(
 def frequency_adaptive(
         long_window_sample_rate,
         scale,
-        rasterized_size=64,
         store_freq_adaptive=False,
         check_scale_overlap_ratio=False,
         chunksize_bytes=DEFAULT_CHUNK_SIZE,
