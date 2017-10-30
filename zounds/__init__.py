@@ -47,7 +47,7 @@ from index import SearchResults, HammingDb, HammingIndex
 
 from basic import \
     Slice, Sum, Max, Pooled, process_dir, stft, audio_graph, with_onsets, \
-    resampled
+    resampled, frequency_adaptive
 
 from util import \
     simple_lmdb_settings, simple_in_memory_settings, \
