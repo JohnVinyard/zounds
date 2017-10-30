@@ -42,6 +42,32 @@ class FreeSoundSearch(object):
         self.query = query
         self.api_key = api_key
 
+    def _get_metadata_by_id(self, _id):
+        sound_data = requests.get(
+            'http://www.freesound.org/apiv2/sounds/{_id}'.format(**locals()),
+            params={'token': self.api_key}
+        )
+        sound_data.raise_for_status()
+        return sound_data.json()
+
+    def _freesound_to_audio_metadata(self, data):
+        request = requests.Request(
+            method='GET',
+            url=data['previews']['preview-hq-ogg'],
+            params={'token': self.api_key})
+
+        return AudioMetaData(
+            uri=request,
+            samplerate=data['samplerate'],
+            channels=data['channels'],
+            licensing=data['license'],
+            description=data['description'],
+            tags=data['tags'])
+
+    def get_by_id(self, freesound_id):
+        data = self._get_metadata_by_id(freesound_id)
+        return self._freesound_to_audio_metadata(data)
+
     def _iter_results(self, link=None):
         if link:
             results = requests.get(link, params={'token': self.api_key})
@@ -57,12 +83,7 @@ class FreeSoundSearch(object):
         results = results.json()
 
         for r in results['results']:
-            sound_data = requests.get(
-                'http://www.freesound.org/apiv2/sounds/{id}'.format(**r),
-                params={'token': self.api_key}
-            )
-            sound_data.raise_for_status()
-            yield sound_data.json()
+            yield self._get_metadata_by_id(r['id'])
 
             # prevent 429 "Too Many Requests" responses
             time.sleep(0.2)
@@ -74,16 +95,4 @@ class FreeSoundSearch(object):
         for i, data in enumerate(self._iter_results()):
             if i > self.n_results:
                 break
-
-            request = requests.Request(
-                method='GET',
-                url=data['previews']['preview-hq-ogg'],
-                params={'token': self.api_key})
-
-            yield AudioMetaData(
-                uri=request,
-                samplerate=data['samplerate'],
-                channels=data['channels'],
-                licensing=data['license'],
-                description=data['description'],
-                tags=data['tags'])
+            yield self._freesound_to_audio_metadata(data)
