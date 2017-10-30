@@ -417,9 +417,7 @@ class MeanStdNormalization(Preprocessor):
     def _forward_func(self):
         def x(d, mean=None, std=None):
             import numpy as np
-            x = (d - mean) / std
-            x[np.isinf(x)] = 0
-            return x
+            return np.divide(d - mean, std, where=std != 0)
 
         return x
 
