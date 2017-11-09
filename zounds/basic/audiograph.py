@@ -106,7 +106,9 @@ def stft(
         resample_to=SR44100(),
         wscheme=HalfLapped(),
         store_fft=False,
-        store_windowed=False):
+        store_windowed=False,
+        store_resampled=False):
+
     class ShortTimeFourierTransform(BaseModel):
         meta = JSONFeature(
             MetaData,
@@ -133,7 +135,7 @@ def stft(
             Resampler,
             needs=pcm,
             samplerate=resample_to,
-            store=False)
+            store=store_resampled)
 
         windowed = ArrayWithUnitsFeature(
             SlidingWindow,
