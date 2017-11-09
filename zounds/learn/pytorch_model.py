@@ -61,7 +61,7 @@ class WassersteinGanTrainer(Trainer):
         fake_samples = fake_samples[:subset_size]
 
         # TODO: this should have the same number of dimensions as real and
-        # fake samples
+        # fake samples, and should not be hard-coded
         alpha = torch.rand(subset_size, 1).cuda()
 
         interpolates = alpha * real_samples + ((1 - alpha) * fake_samples)
@@ -141,9 +141,6 @@ class WassersteinGanTrainer(Trainer):
                         + self._gradient_penalty(input_v.data, fake.data)
                     d_loss.backward()
                     critic_optim.step()
-
-                    # for p in self.critic.parameters():
-                    #     p.data.clamp_(-0.01, 0.01)
 
                 # train generator
                 noise.normal_(0, 1)
@@ -481,8 +478,9 @@ class PyTorchNetwork(Preprocessor):
 
 
 class PyTorchGan(PyTorchNetwork):
-    def __init__(self, trainer=None, needs=None):
+    def __init__(self, keep_discriminator=False, trainer=None, needs=None):
         super(PyTorchGan, self).__init__(trainer=trainer, needs=needs)
+        self.keep_discriminator = keep_discriminator
         self._cache = None
 
     def _enqueue(self, data, pusher):
@@ -503,7 +501,8 @@ class PyTorchGan(PyTorchNetwork):
             # the dataset may be too large to fit onto the GPU all at once
             warnings.warn(e.message)
 
-        op = self.transform(network=generator)
+        op = self.transform(
+            network=discriminator if self.keep_discriminator else generator)
         inv_data = self.inversion_data()
         inv = self.inverse_transform()
 
