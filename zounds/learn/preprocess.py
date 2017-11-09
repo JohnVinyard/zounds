@@ -21,6 +21,10 @@ class Op(object):
     def version(self):
         return self._version
 
+    @property
+    def kwargs(self):
+        return self._kwargs
+
     def _compute_version(self):
         h = hashlib.md5(self._func)
         for v in self._kwargs.itervalues():

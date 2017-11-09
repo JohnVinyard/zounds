@@ -25,21 +25,22 @@ class WassersteinGanTrainer(Trainer):
 
     def __init__(
             self,
-            generator,
-            critic,
+            network,
             latent_dimension,
             n_critic_iterations,
             epochs,
             batch_size,
             preprocess=None,
             arg_maker=None):
+
         super(WassersteinGanTrainer, self).__init__(epochs, batch_size)
         self.arg_maker = arg_maker
         self.preprocess = preprocess
         self.n_critic_iterations = n_critic_iterations
         self.latent_dimension = latent_dimension
-        self.critic = critic
-        self.generator = generator
+        self.network = network
+        self.critic = network.discriminator
+        self.generator = network.generator
 
     def _minibatch(self, data):
         indices = np.random.randint(0, len(data), self.batch_size)
@@ -81,7 +82,7 @@ class WassersteinGanTrainer(Trainer):
     def train(self, data):
 
         import torch
-        from torch.optim import RMSprop, Adam
+        from torch.optim import Adam
         from torch.autograd import Variable
 
         data = data.astype(np.float32)
@@ -159,14 +160,13 @@ class WassersteinGanTrainer(Trainer):
                         'Epoch {epoch}, batch {i}, generator {gl}, critic {dl}' \
                             .format(**locals())
 
-        return self.generator, self.critic
+        return self.network
 
 
 class GanTrainer(Trainer):
     def __init__(
             self,
-            generator,
-            discriminator,
+            network,
             loss,
             generator_optim_func,
             discriminator_optim_func,
@@ -179,8 +179,9 @@ class GanTrainer(Trainer):
         self.generator_optim_func = generator_optim_func
         self.latent_dimension = latent_dimension
         self.loss = loss
-        self.discriminator = discriminator
-        self.generator = generator
+        self.network = network
+        self.discriminator = network.discriminator
+        self.generator = network.generator
 
     def train(self, data):
 
@@ -267,7 +268,7 @@ class GanTrainer(Trainer):
                         'Epoch {epoch}, batch {i}, generator {gl}, real_error {re}, fake_error {fe}' \
                             .format(**locals())
 
-        return self.generator, self.discriminator
+        return self.network
 
 
 class SupervisedTrainer(Trainer):
@@ -377,8 +378,13 @@ class PyTorchPreprocessResult(PreprocessResult):
             ((k, v.cpu().numpy()) for k, v in network_params.iteritems()))
         cls = self.op.network.__class__
         name = self.name
+
+        kwargs = self.op.kwargs
+        del kwargs['network']
+
         return dict(
             forward_func=forward_func,
+            op_kwargs=kwargs,
             inv_data_func=inv_data_func,
             backward_func=backward_func,
             weights=weights,
@@ -395,7 +401,8 @@ class PyTorchPreprocessResult(PreprocessResult):
         network.load_state_dict(restored_weights)
         network.cuda()
         network.eval()
-        self.op = Op(state['forward_func'], network=network)
+        self.op = Op(
+            state['forward_func'], network=network, **state['op_kwargs'])
         self.inversion_data = Op(state['inv_data_func'],
                                  network=network)
         self.inverse = Op(state['backward_func'])
@@ -478,10 +485,48 @@ class PyTorchNetwork(Preprocessor):
 
 
 class PyTorchGan(PyTorchNetwork):
-    def __init__(self, keep_discriminator=False, trainer=None, needs=None):
+    def __init__(self, apply_network='generator', trainer=None, needs=None):
         super(PyTorchGan, self).__init__(trainer=trainer, needs=needs)
-        self.keep_discriminator = keep_discriminator
+
+        if apply_network not in ('generator', 'discriminator'):
+            raise ValueError(
+                'apply_network must be one of (generator, discriminator)')
+
+        self.apply_network = apply_network
         self._cache = None
+
+    def _forward_func(self):
+        def x(d, network=None, apply_network=None):
+            import torch
+            from torch.autograd import Variable
+            import numpy as np
+            from zounds.core import ArrayWithUnits, IdentityDimension
+
+            if apply_network == 'generator':
+                n = network.generator
+            else:
+                n = network.discriminator
+
+            tensor = torch.from_numpy(d.astype(np.float32))
+            gpu = tensor.cuda()
+            v = Variable(gpu)
+            result = n(v).data.cpu().numpy()
+            try:
+                return ArrayWithUnits(
+                    result, d.dimensions[:-1] + (IdentityDimension(),))
+            except AttributeError:
+                return result
+            except ValueError:
+                # the number of dimensions has likely changed
+                return result
+
+        return x
+
+    def _backward_func(self):
+        def x(_):
+            raise NotImplementedError()
+
+        return x
 
     def _enqueue(self, data, pusher):
         self._cache = data
@@ -489,20 +534,22 @@ class PyTorchGan(PyTorchNetwork):
     def _process(self, data):
         data = self._extract_data(data)
 
-        generator, discriminator = self.trainer.train(data)
+        network = self.trainer.train(data)
 
         try:
             # note that the processed data passed on to the next step in the
             # training pipeline will be the labels output by the discriminator
             forward_func = self._forward_func()
-            processed_data = forward_func(data, network=discriminator)
+            processed_data = forward_func(
+                data, network=network, apply_network='discriminator')
         except RuntimeError as e:
             processed_data = None
             # the dataset may be too large to fit onto the GPU all at once
             warnings.warn(e.message)
 
-        op = self.transform(
-            network=discriminator if self.keep_discriminator else generator)
+        op = self.transform(network=network, apply_network=self.apply_network)
+        print op.network
+        print op.apply_network
         inv_data = self.inversion_data()
         inv = self.inverse_transform()
 

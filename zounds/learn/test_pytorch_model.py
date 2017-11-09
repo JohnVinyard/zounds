@@ -1,17 +1,19 @@
 from __future__ import division
+
 import featureflow as ff
+import numpy as np
 import unittest2
+
+from preprocess import \
+    UnitNorm, Binarize, PreprocessingPipeline, InstanceScaling
+from pytorch_model import \
+    SupervisedTrainer, PyTorchNetwork, PyTorchAutoEncoder, \
+    PyTorchGan, WassersteinGanTrainer
+from random_samples import ShuffledSamples
 from zounds.core import ArrayWithUnits, IdentityDimension
 from zounds.spectral import LinearScale, FrequencyBand, FrequencyDimension
 from zounds.timeseries import Seconds, TimeDimension
 from zounds.util import simple_in_memory_settings
-from pytorch_model import \
-    SupervisedTrainer, GanTrainer, PyTorchNetwork, PyTorchAutoEncoder, \
-    PyTorchGan
-from random_samples import ShuffledSamples
-from preprocess import \
-    UnitNorm, Binarize, PreprocessingPipeline, InstanceScaling
-import numpy as np
 
 try:
     import torch
@@ -75,6 +77,15 @@ try:
             x = self.linear(inp)
             x = self.sigmoid(x)
             return x
+
+    class GanPair(nn.Module):
+        def __init__(self):
+            super(GanPair, self).__init__()
+            self.generator = GanGenerator()
+            self.discriminator = GanDiscriminator()
+
+        def forward(self, x):
+            raise NotImplementedError()
 
 except ImportError:
     torch = None
@@ -397,13 +408,10 @@ class PyTorchModelTests(unittest2.TestCase):
 
     def test_can_train_gan(self):
 
-        trainer = GanTrainer(
-            GanGenerator(),
-            GanDiscriminator(),
-            loss=nn.BCELoss(),
-            generator_optim_func=lambda model: Adam(model.parameters()),
-            discriminator_optim_func=lambda model: Adam((model.parameters())),
+        trainer = WassersteinGanTrainer(
+            GanPair(),
             latent_dimension=(2,),
+            n_critic_iterations=5,
             epochs=10,
             batch_size=64)
 
@@ -426,6 +434,7 @@ class PyTorchModelTests(unittest2.TestCase):
 
             network = ff.PickleFeature(
                 PyTorchGan,
+                apply_network='generator',
                 trainer=trainer,
                 needs=scaled,
                 store=False)
