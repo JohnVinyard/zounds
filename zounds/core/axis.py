@@ -107,36 +107,33 @@ class ArrayWithUnits(np.ndarray):
         return cls.from_example(
             np.zeros(example.shape, dtype=example.dtype), example)
 
-    def sum(self, axis=None, dtype=None, **kwargs):
-        result = super(ArrayWithUnits, self).sum(axis, dtype, **kwargs)
-        if axis is not None:
-            new_dims = list(self.dimensions)
-            new_dims.pop(axis)
-            return ArrayWithUnits(result, new_dims)
-        else:
-            # we have a scalar
+    def _apply_reduction_to_dimensions(self, result, axis, keepdims):
+        if axis is None:
             return result
+
+        ndims = len(self.dimensions)
+        reduced_axes = set([ndims + a if a < 0 else a for a in tuplify(axis)])
+        all_axes = set(range(ndims))
+
+        if keepdims:
+            new_dims = [
+                IdentityDimension() if i in reduced_axes else dim
+                for i, dim in enumerate(self.dimensions)]
+        else:
+            remaining_axes = sorted(all_axes - reduced_axes)
+            new_dims = [self.dimensions[i] for i in remaining_axes]
+
+        return ArrayWithUnits(result, new_dims)
+
+    def sum(self, axis=None, dtype=None, keepdims=False, **kwargs):
+        result = super(ArrayWithUnits, self).sum(
+            axis, dtype, keepdims=keepdims, **kwargs)
+        return self._apply_reduction_to_dimensions(result, axis, keepdims)
 
     def max(self, axis=None, out=None, keepdims=False):
         result = super(ArrayWithUnits, self).max(
             axis=axis, out=out, keepdims=keepdims)
-
-        if axis is None:
-            # result is a scalar
-            return result
-
-        axes = set(tuplify(axis))
-        new_dims = []
-        for i, d in enumerate(self.dimensions):
-
-            if i not in axes:
-                new_dims.append(d)
-                continue
-
-            if keepdims:
-                new_dims.append(IdentityDimension())
-
-        return ArrayWithUnits(result, new_dims)
+        return self._apply_reduction_to_dimensions(result, axis, keepdims)
 
     def dot(self, b):
         result = super(ArrayWithUnits, self).dot(b)
@@ -237,7 +234,7 @@ class ArrayWithUnits(np.ndarray):
         dims_pos = 0
         shape_pos = 0
         not_ellipsis_or_none = len(filter(
-                lambda x: x is not Ellipsis and x is not None, index))
+            lambda x: x is not Ellipsis and x is not None, index))
         for sl in index:
             if sl is None:
                 # additional dimension via np.newaxis

@@ -129,6 +129,37 @@ class TimeFrequencyRepresentationTests(unittest2.TestCase):
         self.assertEqual((30,), result.shape)
         self.assertIsInstance(result.dimensions[0], TimeDimension)
 
+    def test_can_use_negative_axis_indices(self):
+        td = TimeDimension(Seconds(1), Seconds(1))
+        fd = FrequencyDimension(LinearScale(FrequencyBand(20, 22050), 100))
+        tf = ArrayWithUnits(np.ones((30, 100)), [td, fd])
+        result = tf.sum(axis=-1)
+        self.assertIsInstance(result, ArrayWithUnits)
+        self.assertEqual(1, len(result.dimensions))
+        self.assertEqual((30,), result.shape)
+        self.assertIsInstance(result.dimensions[0], TimeDimension)
+
+    def test_can_use_keepdims_with_sum(self):
+        td = TimeDimension(Seconds(1), Seconds(1))
+        fd = FrequencyDimension(LinearScale(FrequencyBand(20, 22050), 100))
+        tf = ArrayWithUnits(np.ones((30, 100)), [td, fd])
+        result = tf.sum(axis=-1, keepdims=True)
+        self.assertIsInstance(result, ArrayWithUnits)
+        self.assertEqual(2, len(result.dimensions))
+        self.assertEqual((30, 1), result.shape)
+        self.assertIsInstance(result.dimensions[0], TimeDimension)
+        self.assertIsInstance(result.dimensions[1], IdentityDimension)
+
+    def test_can_use_negative_axis_indices_max(self):
+        td = TimeDimension(Seconds(1), Seconds(1))
+        fd = FrequencyDimension(LinearScale(FrequencyBand(20, 22050), 100))
+        tf = ArrayWithUnits(np.ones((30, 100)), [td, fd])
+        result = tf.max(axis=-1)
+        self.assertIsInstance(result, ArrayWithUnits)
+        self.assertEqual(1, len(result.dimensions))
+        self.assertEqual((30,), result.shape)
+        self.assertIsInstance(result.dimensions[0], TimeDimension)
+
     def test_from_example(self):
         td = TimeDimension(Seconds(1), Seconds(1))
         fd = FrequencyDimension(LinearScale(FrequencyBand(20, 22050), 100))
