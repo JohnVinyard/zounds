@@ -38,8 +38,8 @@ from learn import \
     PreprocessingPipeline, Slicer, ReservoirSampler, TemplateMatch, \
     simple_settings, SklearnModel, WithComponents, InstanceScaling, Reshape, \
     ShuffledSamples, PyTorchNetwork, PyTorchGan, PyTorchAutoEncoder, \
-    GanTrainer, SupervisedTrainer, Weighted, MuLawCompressed, SimHash, \
-    AbsoluteValue, Binarize, Sharpen
+    GanTrainer, WassersteinGanTrainer, SupervisedTrainer, Weighted, \
+    MuLawCompressed, SimHash, AbsoluteValue, Binarize, Sharpen
 
 from ui import ZoundsApp, ZoundsSearch, RangeUnitUnsupportedException
 

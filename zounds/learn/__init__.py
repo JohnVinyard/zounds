@@ -20,7 +20,7 @@ from sklearn_preprocessor import SklearnModel, WithComponents
 
 from pytorch_model import \
     PyTorchAutoEncoder, PyTorchGan, PyTorchNetwork, GanTrainer, \
-    SupervisedTrainer
+    WassersteinGanTrainer, SupervisedTrainer
 
 from random_samples import ReservoirSampler, ShuffledSamples
 
