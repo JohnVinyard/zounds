@@ -2,23 +2,34 @@ import unittest2
 import numpy as np
 from duration import Seconds
 from samplerate import SR44100, SR11025, SampleRate
-from zounds.timeseries import TimeDimension
+from zounds.timeseries import TimeDimension, TimeSlice
 from zounds.core import IdentityDimension
 from audiosamples import AudioSamples
+from zounds.synthesize import SineSynthesizer
 
 
 class AudioSamplesTest(unittest2.TestCase):
+    def test_silence_creates_silence(self):
+        silence = AudioSamples.silence(SR11025(), Seconds(10))
+        self.assertEqual(0, silence.sum())
+
+    def test_pad_with_samples_adds_silence_at_end(self):
+        synth = SineSynthesizer(SR11025())
+        samples = synth.synthesize(Seconds(2))
+        padded = samples.pad_with_silence(Seconds(4))
+        silence = padded[TimeSlice(start=Seconds(2))]
+        self.assertEqual(0, silence.sum())
 
     def test_raises_if_not_audio_samplerate(self):
         arr = np.zeros(int(44100 * 2.5))
         one = Seconds(1)
         self.assertRaises(
-                TypeError, lambda: AudioSamples(arr, SampleRate(one, one)))
+            TypeError, lambda: AudioSamples(arr, SampleRate(one, one)))
 
     def test_raises_if_array_is_more_than_2d(self):
         arr = np.zeros((int(44100 * 2.5), 2, 2))
         self.assertRaises(
-            ValueError, lambda:  AudioSamples(arr, SR44100()))
+            ValueError, lambda: AudioSamples(arr, SR44100()))
 
     def test_can_create_instance(self):
         arr = np.zeros(int(44100 * 2.5))

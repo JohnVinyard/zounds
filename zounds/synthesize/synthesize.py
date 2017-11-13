@@ -653,7 +653,4 @@ class SilenceSynthesizer(object):
         Args:
             duration (numpy.timedelta64): The duration of the synthesized sound
         """
-        sr = self.samplerate.samples_per_second
-        seconds = duration / Seconds(1)
-        samples = np.zeros(int(sr * seconds))
-        return AudioSamples(samples, self.samplerate)
+        return AudioSamples.silence(self.samplerate, duration)

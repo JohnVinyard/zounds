@@ -2,9 +2,10 @@ from samplerate import AudioSampleRate, audio_sample_rate
 from soundfile import SoundFile
 from io import BytesIO
 from zounds.core import IdentityDimension, ArrayWithUnits
-from timeseries import TimeDimension
+from timeseries import TimeDimension, Seconds
 from duration import Picoseconds
 from samplerate import SampleRate
+import numpy as np
 
 
 class AudioSamples(ArrayWithUnits):
@@ -47,7 +48,7 @@ class AudioSamples(ArrayWithUnits):
             dimensions = [TimeDimension(*samplerate), IdentityDimension()]
         else:
             raise ValueError(
-                    'array must be one (mono) or two (multi-channel) dimensions')
+                'array must be one (mono) or two (multi-channel) dimensions')
 
         if not isinstance(samplerate, AudioSampleRate):
             raise TypeError('samplerate should be an AudioSampleRate instance')
@@ -58,8 +59,8 @@ class AudioSamples(ArrayWithUnits):
         try:
             if self.samplerate != other.samplerate:
                 raise ValueError(
-                        'Samplerates must match, but they were '
-                        '{self.samplerate} and {other.samplerate}'
+                    'Samplerates must match, but they were '
+                    '{self.samplerate} and {other.samplerate}'
                         .format(**locals()))
         except AttributeError:
             pass
@@ -74,6 +75,17 @@ class AudioSamples(ArrayWithUnits):
             return AudioSamples(result, self.samplerate)
         else:
             return result
+
+    @classmethod
+    def silence(cls, samplerate, duration, dtype=np.float32):
+        discrete_samples = int(duration / samplerate.frequency)
+        silence = np.zeros(discrete_samples, dtype=dtype)
+        return cls(silence, samplerate)
+
+    def pad_with_silence(self, silence_duration):
+        silence = self.__class__.silence(
+            self.samplerate, silence_duration, self.dtype)
+        return AudioSamples(np.concatenate([self, silence]), self.samplerate)
 
     @property
     def samples_per_second(self):
