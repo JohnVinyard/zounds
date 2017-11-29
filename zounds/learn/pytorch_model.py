@@ -31,9 +31,13 @@ class WassersteinGanTrainer(Trainer):
             epochs,
             batch_size,
             preprocess=None,
-            arg_maker=None):
+            arg_maker=None,
+            generator_loss_term=lambda network, output: 0,
+            critic_loss_term=lambda network, output: 0):
 
         super(WassersteinGanTrainer, self).__init__(epochs, batch_size)
+        self.critic_loss_term = critic_loss_term
+        self.generator_loss_term = generator_loss_term
         self.arg_maker = arg_maker
         self.preprocess = preprocess
         self.n_critic_iterations = n_critic_iterations
@@ -45,6 +49,14 @@ class WassersteinGanTrainer(Trainer):
     def _minibatch(self, data):
         indices = np.random.randint(0, len(data), self.batch_size)
         return data[indices, ...]
+
+    def _weight_initialization(self, layer):
+        from torch import nn
+        if isinstance(layer, nn.Conv1d) or isinstance(layer, nn.ConvTranspose1d):
+            layer.weight.data.normal_(0, 0.02)
+        elif isinstance(layer, nn.BatchNorm1d):
+            layer.weight.data.normal_(1, 0.02)
+            layer.bias.data.fill_(0)
 
     def _gradient_penalty(self, real_samples, fake_samples):
         """
@@ -97,10 +109,18 @@ class WassersteinGanTrainer(Trainer):
         self.critic.cuda()
         noise, fixed_noise = noise.cuda(), fixed_noise.cuda()
 
+        # self.generator.apply(self._weight_initialization)
+        # self.critic.apply(self._weight_initialization)
+
+        trainable_generator_params = (
+            p for p in self.generator.parameters() if p.requires_grad)
+        trainable_critic_params = (
+            p for p in self.critic.parameters() if p.requires_grad)
+
         generator_optim = Adam(
-            self.generator.parameters(), lr=0.0001, betas=(0, 0.9))
+            trainable_generator_params, lr=0.0001, betas=(0, 0.9))
         critic_optim = Adam(
-            self.critic.parameters(), lr=0.0001, betas=(0, 0.9))
+            trainable_critic_params, lr=0.0001, betas=(0, 0.9))
 
         for epoch in xrange(self.epochs):
             if self.arg_maker:
@@ -112,10 +132,11 @@ class WassersteinGanTrainer(Trainer):
                 self.generator.zero_grad()
                 self.critic.zero_grad()
 
+                self.generator.eval()
+                self.critic.train()
+
                 for c in xrange(self.n_critic_iterations):
 
-                    # train discriminator on real data with one-sided label
-                    # smoothing
                     self.critic.zero_grad()
 
                     minibatch = self._minibatch(data)
@@ -133,22 +154,36 @@ class WassersteinGanTrainer(Trainer):
                     noise_v = Variable(noise, volatile=True)
                     fake = Variable(
                         self.generator.forward(noise_v, **kwargs).data)
+
+                    if self.preprocess:
+                        fake = self.preprocess(epoch, fake)
+
                     d_fake = self.critic.forward(fake, **kwargs)
 
                     real_mean = torch.mean(d_real)
                     fake_mean = torch.mean(d_fake)
                     d_loss = \
                         (fake_mean - real_mean) \
-                        + self._gradient_penalty(input_v.data, fake.data)
+                        + self._gradient_penalty(input_v.data, fake.data) \
+                        + self.critic_loss_term(self.critic, d_fake)
                     d_loss.backward()
                     critic_optim.step()
+
+                self.generator.train()
+                self.critic.eval()
 
                 # train generator
                 noise.normal_(0, 1)
                 noise_v = Variable(noise)
                 fake = self.generator.forward(noise_v, **kwargs)
+
+                if self.preprocess:
+                    fake = self.preprocess(epoch, fake)
+
                 d_fake = self.critic.forward(fake, **kwargs)
-                g_loss = -torch.mean(d_fake)
+                g_loss = \
+                    -torch.mean(d_fake) \
+                    + self.generator_loss_term(self.generator, fake)
                 g_loss.backward()
                 generator_optim.step()
 
@@ -507,10 +542,23 @@ class PyTorchGan(PyTorchNetwork):
             else:
                 n = network.discriminator
 
-            tensor = torch.from_numpy(d.astype(np.float32))
-            gpu = tensor.cuda()
-            v = Variable(gpu)
-            result = n(v).data.cpu().numpy()
+            chunks = []
+            batch_size = 128
+
+            for i in xrange(0, len(d), batch_size):
+                tensor = torch.from_numpy(
+                    d[i:i + batch_size].astype(np.float32))
+                gpu = tensor.cuda()
+                v = Variable(gpu)
+                chunks.append(n(v).data.cpu().numpy())
+
+            result = np.concatenate(chunks)
+
+            # tensor = torch.from_numpy(d.astype(np.float32))
+            # gpu = tensor.cuda()
+            # v = Variable(gpu)
+            # result = n(v).data.cpu().numpy()
+
             try:
                 return ArrayWithUnits(
                     result, d.dimensions[:-1] + (IdentityDimension(),))
@@ -535,6 +583,7 @@ class PyTorchGan(PyTorchNetwork):
         data = self._extract_data(data)
 
         network = self.trainer.train(data)
+        network.eval()
 
         try:
             # note that the processed data passed on to the next step in the
