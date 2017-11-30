@@ -26,7 +26,11 @@ from random_samples import ReservoirSampler, ShuffledSamples
 
 from template_match import TemplateMatch
 
-from util import \
-    simple_settings, Conv1d, ConvTranspose1d, Conv2d, ConvTranspose2d
+from util import simple_settings
+
+try:
+    from util import Conv1d, ConvTranspose1d, Conv2d, ConvTranspose2d
+except ImportError:
+    pass
 
 
