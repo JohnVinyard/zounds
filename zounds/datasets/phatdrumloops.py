@@ -9,6 +9,9 @@ class PhatDrumLoops(object):
     Produces an iterable of :class:`zounds.soundfile.AudioMetaData` instances
     for every drum break from http://phatdrumloops.com/beats.php
 
+    Args:
+        attrs (dict): Extra properties to add to the :class:`AudioMetaData`
+
     Examples
         >>> from zounds import PhatDrumLoops
         >>> pdl = PhatDrumLoops()
@@ -21,8 +24,9 @@ class PhatDrumLoops(object):
         :class:`FreeSoundSearch`
         :class:`zounds.soundfile.AudioMetaData`
     """
-    def __init__(self):
+    def __init__(self, **attrs):
         super(PhatDrumLoops, self).__init__()
+        self.attrs = attrs
 
     def __iter__(self):
         resp = requests.get('http://phatdrumloops.com/beats.php')
@@ -34,4 +38,4 @@ class PhatDrumLoops(object):
                 method='GET',
                 url=url,
                 headers={'Range': 'bytes=0-'})
-            yield AudioMetaData(uri=request)
+            yield AudioMetaData(uri=request, **self.attrs)

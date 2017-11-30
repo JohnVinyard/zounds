@@ -11,6 +11,7 @@ class InternetArchive(object):
     Args:
         archive_id (str): the Internet Archive identifier
         format_filter (str): The file format to return
+        attrs (dict): Extra attributes to add to the :class:`AudioMetaData`
 
     Raises:
         ValueError: when archive_id is not provided
@@ -26,9 +27,10 @@ class InternetArchive(object):
         :class:`PhatDrumLoops`
         :class:`zounds.soundfile.AudioMetaData`
     """
-    def __init__(self, archive_id, format_filter=None):
+    def __init__(self, archive_id, format_filter=None, **attrs):
         super(InternetArchive, self).__init__()
 
+        self.attrs = attrs
         if not archive_id:
             raise ValueError('You must supply an Internet Archive id')
 
@@ -55,6 +57,6 @@ class InternetArchive(object):
                 sound_url = urlparse.urljoin(
                     base_url, '/download/{archive_id}{k}'.format(**locals()))
                 request = requests.Request(method='GET', url=sound_url)
-                yield AudioMetaData(
-                    uri=request,
-                    **self._get_metadata(v, all_files))
+                metadata = self._get_metadata(v, all_files)
+                metadata.update(self.attrs)
+                yield AudioMetaData(uri=request, **metadata)
