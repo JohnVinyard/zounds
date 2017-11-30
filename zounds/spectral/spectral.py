@@ -5,6 +5,7 @@ from featureflow import Node
 from scipy.fftpack import dct
 from scipy.stats.mstats import gmean
 
+from functional import fft
 from frequencyscale import LinearScale
 from psychacoustics import Chroma as ChromaScale, Bark as BarkScale
 from tfrepresentation import FrequencyDimension
@@ -50,14 +51,15 @@ class FFT(Node):
         self._axis = axis
 
     def _process(self, data):
-        transformed = np.fft.rfft(data, axis=self._axis, norm='ortho')
-
-        sr = audio_sample_rate(
-            int(data.shape[1] / data.dimensions[0].duration_in_seconds))
-        scale = LinearScale.from_sample_rate(sr, transformed.shape[-1])
-
-        yield ArrayWithUnits(
-            transformed, [data.dimensions[0], FrequencyDimension(scale)])
+        # transformed = np.fft.rfft(data, axis=self._axis, norm='ortho')
+        #
+        # sr = audio_sample_rate(
+        #     int(data.shape[1] / data.dimensions[0].duration_in_seconds))
+        # scale = LinearScale.from_sample_rate(sr, transformed.shape[-1])
+        #
+        # yield ArrayWithUnits(
+        #     transformed, [data.dimensions[0], FrequencyDimension(scale)])
+        yield fft(data, self._axis)
 
 
 class DCT(Node):

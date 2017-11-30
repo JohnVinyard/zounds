@@ -19,3 +19,5 @@ from frequencyscale import \
     ExplicitScale
 
 from frequencyadaptive import FrequencyAdaptive
+
+from functional import fft, stft, apply_scale

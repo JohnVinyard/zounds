@@ -138,6 +138,12 @@ class AudioSampleRate(SampleRate):
             self.one_sample * self.suggested_hop,
             self.one_sample * self.suggested_window)
 
+    def windowing_scheme(self, duration_samples, frequency_samples=None):
+        frequency_samples = frequency_samples or duration_samples
+        return SampleRate(
+            self.frequency * frequency_samples,
+            self.duration * duration_samples)
+
 
 class SR96000(AudioSampleRate):
     """

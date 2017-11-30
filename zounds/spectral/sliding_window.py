@@ -51,6 +51,7 @@ class WindowingFunc(object):
         :class:`~zounds.spectral.OggVorbisWindowingFunc`
         :class:`~zounds.spectral.HanningWindowingFunc`
     """
+
     def __init__(self, windowing_func=None):
         super(WindowingFunc, self).__init__()
         self.windowing_func = windowing_func
@@ -83,6 +84,7 @@ class IdentityWindowingFunc(WindowingFunc):
     """
     An identity windowing function
     """
+
     def __init__(self):
         super(IdentityWindowingFunc, self).__init__()
 
@@ -92,6 +94,7 @@ class OggVorbisWindowingFunc(WindowingFunc):
     The windowing function described in the `ogg vorbis specification
     <https://xiph.org/vorbis/doc/Vorbis_I_spec.html#x1-230001.3.2>`_
     """
+
     def __init__(self):
         super(OggVorbisWindowingFunc, self).__init__(windowing_func=oggvorbis)
 
@@ -100,6 +103,7 @@ class HanningWindowingFunc(WindowingFunc):
     """
     A hanning window function
     """
+
     def __init__(self):
         super(HanningWindowingFunc, self).__init__(windowing_func=np.hanning)
 
@@ -154,6 +158,7 @@ class SlidingWindow(Node):
         :class:`~zounds.spectral.WindowingFunc`
         :class:`~zounds.timeseries.SampleRate`
     """
+
     def __init__(self, wscheme, wfunc=None, padwith=0, needs=None):
         super(SlidingWindow, self).__init__(needs=needs)
         self._scheme = wscheme
@@ -164,7 +169,7 @@ class SlidingWindow(Node):
     def _first_chunk(self, data):
         if self._padwith:
             padding = np.zeros(
-                    (self._padwith,) + data.shape[1:], dtype=data.dtype)
+                (self._padwith,) + data.shape[1:], dtype=data.dtype)
             padding_ts = ArrayWithUnits(padding, data.dimensions)
             return padding_ts.concatenate(data)
         else:
@@ -182,9 +187,9 @@ class SlidingWindow(Node):
         frequency = TimeSlice(self._scheme.frequency)
 
         leftover, arr = self._cache.sliding_window_with_leftovers(
-                duration,
-                frequency,
-                dopad=self._finalized)
+            duration,
+            frequency,
+            dopad=self._finalized)
 
         if not arr.size:
             raise NotEnoughData()
@@ -195,5 +200,4 @@ class SlidingWindow(Node):
         # why does that statement result in __rmul__ being called for each
         # scalar value in arr?
         out = (self._func * arr) if self._func else arr
-
         return out
