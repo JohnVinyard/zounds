@@ -43,7 +43,7 @@ class Reservoir(object):
             raise ValueError(
                 'number of input samples and indices must match'
                 ' but they were {samples} and {indices} respectively'
-                .format(samples=len(samples), indices=len(indices)))
+                    .format(samples=len(samples), indices=len(indices)))
 
         self.arr[indices, ...] = samples
         self.indices.update(indices)
@@ -53,6 +53,27 @@ class Reservoir(object):
             return self.arr
 
         return self.arr[sorted(self.indices), ...]
+
+    def get_batch(self, batch_size):
+        if batch_size > self.nsamples:
+            raise ValueError(
+                'Requested {batch_size} samples, but this instance can provide '
+                'at maximum {nsamples}'
+                    .format(batch_size=batch_size, nsamples=self.nsamples))
+
+        if batch_size > len(self.indices):
+            raise ValueError(
+                'Requested {batch_size} samples, but this instance only '
+                'currently has {n} samples, with a maximum of {nsamples}'
+                    .format(
+                        batch_size=batch_size,
+                        n=len(self.indices),
+                        nsamples=self.nsamples))
+
+        # TODO: this would be much more efficient for repeated calls if I
+        # instead maintained a sorted set
+        indices = np.random.choice(list(self.indices), batch_size)
+        return self.arr[indices, ...]
 
 
 class MultiplexedReservoir(object):
@@ -98,7 +119,6 @@ class ShuffledSamples(Node):
             multiplexed=False,
             dtype=None,
             needs=None):
-
         super(ShuffledSamples, self).__init__(needs=needs)
         self.reservoir = MultiplexedReservoir(nsamples, dtype=dtype) \
             if multiplexed else Reservoir(nsamples, dtype=dtype)
