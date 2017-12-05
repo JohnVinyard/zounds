@@ -1,11 +1,28 @@
 import numpy as np
 import unittest2
-from functional import stft, apply_scale
+from functional import stft, apply_scale, frequency_decomposition
 from zounds.core import ArrayWithUnits
 from zounds.synthesize import SilenceSynthesizer, TickSynthesizer
-from zounds.timeseries import SR22050, Milliseconds, TimeDimension
+from zounds.timeseries import SR22050, Milliseconds, TimeDimension, TimeSlice
 from zounds.spectral import \
-    HanningWindowingFunc, FrequencyDimension, LinearScale, GeometricScale
+    HanningWindowingFunc, FrequencyDimension, LinearScale, GeometricScale, \
+    ExplicitFrequencyDimension
+
+
+class FrequencyDecompositionTests(unittest2.TestCase):
+    def test_can_decompose(self):
+        sr = SR22050()
+        samples = SilenceSynthesizer(sr).synthesize(Milliseconds(9999))
+        wscheme = sr.windowing_scheme(8192, 4096)
+        duration = TimeSlice(wscheme.duration)
+        frequency = TimeSlice(wscheme.frequency)
+        _, windowed = samples.sliding_window_with_leftovers(
+            duration, frequency, dopad=True)
+        fa = frequency_decomposition(
+            windowed, [32, 64, 128, 256, 512, 1024, 2048, 4096])
+        self.assertEqual(windowed.dimensions[0], fa.dimensions[0])
+        self.assertIsInstance(
+            fa.dimensions[1], ExplicitFrequencyDimension)
 
 
 class STFTTests(unittest2.TestCase):
@@ -73,4 +90,3 @@ class ApplyScaleTests(unittest2.TestCase):
         geom_zeros = np.where(geom_envelope == 0)
 
         np.testing.assert_allclose(tf_zeros, geom_zeros)
-

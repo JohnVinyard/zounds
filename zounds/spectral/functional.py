@@ -1,9 +1,12 @@
-from frequencyscale import LinearScale
+from __future__ import division
+from frequencyscale import LinearScale, FrequencyBand, ExplicitScale
 from tfrepresentation import FrequencyDimension
+from frequencyadaptive import FrequencyAdaptive
 from zounds.timeseries import audio_sample_rate, TimeSlice
 from zounds.core import ArrayWithUnits
 from sliding_window import IdentityWindowingFunc
 import numpy as np
+from scipy.signal import resample
 
 
 def fft(x, axis=-1):
@@ -38,3 +41,34 @@ def apply_scale(short_time_fft, scale, reducer=np.sum, window=None):
         reduced_band = reducer(magnitudes[..., freq_band] * window, axis=-1)
         output[..., i] = reduced_band
     return output
+
+
+def frequency_decomposition(x, sizes):
+    sizes = sorted(sizes)
+
+    original_size = x.shape[-1]
+    time_dimension = x.dimensions[-1]
+    samplerate = audio_sample_rate(time_dimension.samples_per_second)
+    data = x.copy()
+
+    bands = []
+    frequency_bands = []
+    start_hz = 0
+
+    for size in sizes:
+        if size != original_size:
+            s = resample(data, size, axis=-1)
+        else:
+            s = data
+
+        bands.append(s)
+        data -= resample(s, original_size, axis=-1)
+
+        stop_hz = samplerate.nyquist * (size / original_size)
+        frequency_bands.append(FrequencyBand(start_hz, stop_hz))
+        start_hz = stop_hz
+
+    scale = ExplicitScale(frequency_bands)
+    return FrequencyAdaptive(bands, scale=scale, time_dimension=x.dimensions[0])
+
+

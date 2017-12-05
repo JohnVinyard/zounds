@@ -3,16 +3,16 @@ import unittest2
 
 from synthesize import \
     SineSynthesizer, DCTSynthesizer, FFTSynthesizer, NoiseSynthesizer, \
-    SilenceSynthesizer
+    SilenceSynthesizer, FrequencyDecompositionSynthesizer
 from zounds.basic import stft, resampled
 from zounds.core import ArrayWithUnits
 from zounds.persistence import ArrayWithUnitsFeature
 from zounds.spectral import \
     FrequencyDimension, FrequencyBand, LinearScale, FFT, SlidingWindow, \
-    OggVorbisWindowingFunc
+    OggVorbisWindowingFunc, frequency_decomposition
 from zounds.timeseries import \
     SR22050, SR44100, SR11025, SR48000, SR96000, HalfLapped, Seconds, \
-    TimeDimension, AudioSamples, SampleRate, Milliseconds
+    TimeDimension, AudioSamples, SampleRate, Milliseconds, TimeSlice
 from zounds.util import simple_in_memory_settings
 
 
@@ -147,3 +147,25 @@ class SilenceSynthesizerTests(unittest2.TestCase):
         synth = SilenceSynthesizer(SR11025())
         audio = synth.synthesize(Seconds(1))
         np.testing.assert_allclose(audio, 0)
+
+
+class FrequencyDecompositionSynthesizerTests(unittest2.TestCase):
+    def test_can_resynthesize_frequency_decomposition(self):
+        sr = SR22050()
+        samples = SilenceSynthesizer(sr).synthesize(Milliseconds(9999))
+        window_size = 8192
+
+        wscheme = sr.windowing_scheme(window_size, window_size // 2)
+        duration = TimeSlice(wscheme.duration)
+        frequency = TimeSlice(wscheme.frequency)
+        _, windowed = samples.sliding_window_with_leftovers(
+            duration, frequency, dopad=True)
+        fa = frequency_decomposition(
+            windowed, [32, 64, 128, 256, 512, 1024, 2048, 4096])
+
+        fdsynth = FrequencyDecompositionSynthesizer(sr, window_size)
+
+        samples = fdsynth.synthesize(fa)
+        self.assertEqual(2, samples.ndim)
+        self.assertEqual(windowed.dimensions[1], samples.dimensions[1])
+        self.assertEqual(windowed.dimensions[0], samples.dimensions[0])

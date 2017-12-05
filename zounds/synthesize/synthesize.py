@@ -2,6 +2,7 @@ from __future__ import division
 
 import numpy as np
 from scipy.fftpack import dct, idct
+from scipy.signal import resample
 
 from zounds.core import ArrayWithUnits, IdentityDimension
 from zounds.spectral import DCTIV, LinearScale
@@ -9,7 +10,7 @@ from zounds.spectral import FrequencyDimension
 from zounds.spectral.sliding_window import \
     IdentityWindowingFunc, OggVorbisWindowingFunc
 from zounds.timeseries import \
-    nearest_audio_sample_rate, Seconds, AudioSamples
+    nearest_audio_sample_rate, Seconds, AudioSamples, TimeDimension
 
 
 class ShortTimeTransformSynthesizer(object):
@@ -88,6 +89,7 @@ class FFTSynthesizer(ShortTimeTransformSynthesizer):
     See Also:
         :class:`~zounds.spectral.FFT`
     """
+
     def __init__(self):
         super(FFTSynthesizer, self).__init__()
 
@@ -144,6 +146,7 @@ class DCTSynthesizer(ShortTimeTransformSynthesizer):
     See Also:
         :class:`~zounds.spectral.DCT`
     """
+
     def __init__(self, windowing_func=IdentityWindowingFunc()):
         super(DCTSynthesizer, self).__init__()
         self.windowing_func = windowing_func
@@ -259,6 +262,7 @@ class MDCTSynthesizer(ShortTimeTransformSynthesizer):
     See Also:
         :class:`~zounds.spectral.MDCT`
     """
+
     def __init__(self):
         super(MDCTSynthesizer, self).__init__()
 
@@ -273,6 +277,25 @@ class MDCTSynthesizer(ShortTimeTransformSynthesizer):
         a = frames * np.exp(cpi * (f + 0.5) * (l + 1) / 2 / l)
         b = np.fft.fft(a, 2 * l)
         return np.sqrt(2 / l) * np.real(b * np.exp(cpi * t / 2 / l))
+
+
+class FrequencyDecompositionSynthesizer(object):
+    def __init__(self, samplerate, output_size):
+        super(FrequencyDecompositionSynthesizer, self).__init__()
+        self.output_size = output_size
+        self.samplerate = samplerate
+
+    def synthesize(self, x, bands=None):
+        output = ArrayWithUnits(
+            np.zeros((len(x), self.output_size)),
+            dimensions=[x.time_dimension, TimeDimension(*self.samplerate)])
+
+        for i, band in enumerate(x.scale):
+            if bands and i not in bands:
+                continue
+            output += resample(x[:, band], self.output_size, axis=-1)
+
+        return output
 
 
 class BaseFrequencyAdaptiveSynthesizer(object):
@@ -387,6 +410,7 @@ class FrequencyAdaptiveDCTSynthesizer(BaseFrequencyAdaptiveSynthesizer):
         :class:`~zounds.spectral.FrequencyAdaptive`
         :class:`~zounds.spectral.FrequencyAdaptiveTransform`
     """
+
     def __init__(self, scale, samplerate):
         super(FrequencyAdaptiveDCTSynthesizer, self).__init__(
             scale,
@@ -470,6 +494,7 @@ class FrequencyAdaptiveFFTSynthesizer(BaseFrequencyAdaptiveSynthesizer):
         :class:`~zounds.spectral.FrequencyAdaptive`
         :class:`~zounds.spectral.FrequencyAdaptiveTransform`
     """
+
     def __init__(self, scale, samplerate):
         super(FrequencyAdaptiveFFTSynthesizer, self).__init__(
             scale,
@@ -642,6 +667,7 @@ class SilenceSynthesizer(object):
         >>> samples
         AudioSamples([ 0.,  0.,  0., ...,  0.,  0.,  0.])
     """
+
     def __init__(self, samplerate):
         super(SilenceSynthesizer, self).__init__()
         self.samplerate = samplerate
