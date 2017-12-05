@@ -47,11 +47,10 @@ class ArrayWithUnits(np.ndarray):
                 'arr.ndim and len(dimensions) must match.  '
                 'They were {arr.shape} and {dimensions}'.format(**locals()))
 
-        def dim_map(d):
-            return IdentityDimension() if d is None else d.copy()
-
         obj = np.asarray(arr).view(cls)
-        obj.dimensions = tuple(map(dim_map, dimensions))
+        obj.dimensions = tuple(map(
+            lambda d: IdentityDimension() if d is None else d.copy(),
+            dimensions))
 
         for dim, size in zip(obj.dimensions, obj.shape):
             try:
