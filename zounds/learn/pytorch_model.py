@@ -363,7 +363,7 @@ class SupervisedTrainer(Trainer):
             error = loss(output, labels_v)
 
             if not test:
-                error.backward()
+                grad = error.backward()
                 self.optimizer.step()
 
             return error.data[0]

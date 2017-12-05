@@ -29,7 +29,10 @@ from template_match import TemplateMatch
 from util import simple_settings
 
 try:
-    from util import Conv1d, ConvTranspose1d, Conv2d, ConvTranspose2d
+    from util import \
+        Conv1d, ConvTranspose1d, Conv2d, ConvTranspose2d, to_var, from_var, \
+        try_network, apply_network, feature_map_size, \
+        FrequencyDecompositionAnalyzer, FrequencyDecompositionGenerator
 except ImportError:
     pass
 
