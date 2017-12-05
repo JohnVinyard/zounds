@@ -55,11 +55,17 @@ class WindowingFunc(object):
     def __init__(self, windowing_func=None):
         super(WindowingFunc, self).__init__()
         self.windowing_func = windowing_func
+        self._cache = dict()
 
     def _wdata(self, size):
         if self.windowing_func is None:
             return None
-        return self.windowing_func(size)
+        try:
+            return self._cache[size]
+        except KeyError:
+            window = self.windowing_func(size)
+            self._cache[size] = window
+            return window
 
     def __numpy_ufunc__(self, *args, **kwargs):
         # KLUDGE: This seems really odd, but the mere presence of this

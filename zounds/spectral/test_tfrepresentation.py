@@ -3,12 +3,27 @@ import numpy as np
 import unittest2
 from frequencyscale import LinearScale, LogScale, FrequencyBand
 from weighting import AWeighting
-from zounds.timeseries import Seconds, TimeDimension, TimeSlice
-from zounds.spectral import FrequencyDimension
+from zounds.timeseries import Seconds, TimeDimension, TimeSlice, SR11025
+from zounds.spectral import FrequencyDimension, GeometricScale
 from zounds.core import ArrayWithUnits, IdentityDimension
 
 
 class TimeFrequencyRepresentationTests(unittest2.TestCase):
+
+    def test_can_apply_sliding_window(self):
+        sr = SR11025()
+        hl = sr.half_lapped()
+        scale = GeometricScale(20, sr.nyquist, 0.175, 64)
+        td = TimeDimension(frequency=hl.frequency, duration=hl.duration)
+        fd = FrequencyDimension(scale)
+
+        arr = ArrayWithUnits(np.zeros((99, 64)), [td, fd])
+
+        ts = TimeSlice(duration=hl.frequency * 64)
+        fs = FrequencyBand(0, sr.nyquist)
+
+        windowed = arr.sliding_window((ts, fs))
+        self.assertEqual((1, 64, 64), windowed.shape)
 
     def test_can_iterate_over_time_frequency_representation(self):
         tf = ArrayWithUnits(

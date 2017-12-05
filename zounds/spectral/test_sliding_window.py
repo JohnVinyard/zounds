@@ -50,11 +50,11 @@ class SlidingWindowTests(unittest2.TestCase):
     def _check(self, samplerate, expected_window_size, expected_step_size):
         # sw = SlidingWindow(wscheme=samplerate.half_lapped())
         samples = AudioSamples(
-                np.zeros(5 * samplerate.samples_per_second), samplerate)
+            np.zeros(5 * samplerate.samples_per_second), samplerate)
         # sw._enqueue(samples, None)
         wscheme = samplerate.half_lapped()
         ws, ss = samples._sliding_window_integer_slices(
-                TimeSlice(wscheme.duration), TimeSlice(wscheme.frequency))
+            TimeSlice(wscheme.duration), TimeSlice(wscheme.frequency))
         self.assertEqual(expected_window_size, ws[0])
         self.assertEqual(expected_step_size, ss[0])
 
@@ -83,10 +83,10 @@ class SlidingWindowTests(unittest2.TestCase):
         @simple_in_memory_settings
         class Document(rs):
             windowed = ArrayWithUnitsFeature(
-                    SlidingWindow,
-                    wscheme=wscheme,
-                    needs=rs.resampled,
-                    store=True)
+                SlidingWindow,
+                wscheme=wscheme,
+                needs=rs.resampled,
+                store=True)
 
         synth = NoiseSynthesizer(samplerate)
         audio = synth.synthesize(Milliseconds(5500))
@@ -103,10 +103,10 @@ class SlidingWindowTests(unittest2.TestCase):
         @simple_in_memory_settings
         class Document(rs):
             windowed = ArrayWithUnitsFeature(
-                    SlidingWindow,
-                    wscheme=HalfLapped(),
-                    needs=rs.resampled,
-                    store=True)
+                SlidingWindow,
+                wscheme=HalfLapped(),
+                needs=rs.resampled,
+                store=True)
 
         synth = NoiseSynthesizer(samplerate)
         audio = synth.synthesize(Milliseconds(5500))
@@ -125,9 +125,9 @@ class SlidingWindowTests(unittest2.TestCase):
         @simple_in_memory_settings
         class Document(BaseModel):
             windowed = ArrayWithUnitsFeature(
-                    SlidingWindow,
-                    wscheme=sw,
-                    store=True)
+                SlidingWindow,
+                wscheme=sw,
+                store=True)
 
         _id = Document.process(windowed=arr)
         result = Document(_id).windowed
@@ -144,16 +144,16 @@ class SlidingWindowTests(unittest2.TestCase):
         band = FrequencyBand(0, 22000)
         scale = LinearScale(band, 100)
         arr = ArrayWithUnits(
-                np.zeros((200, 100)),
-                [TimeDimension(Seconds(1)), FrequencyDimension(scale)])
+            np.zeros((200, 100)),
+            [TimeDimension(Seconds(1)), FrequencyDimension(scale)])
         sw = SampleRate(Seconds(2), Seconds(2))
 
         @simple_in_memory_settings
         class Document(BaseModel):
             windowed = ArrayWithUnitsFeature(
-                    SlidingWindow,
-                    wscheme=sw,
-                    store=True)
+                SlidingWindow,
+                wscheme=sw,
+                store=True)
 
         _id = Document.process(windowed=arr)
         result = Document(_id).windowed
@@ -185,5 +185,3 @@ class SlidingWindowTests(unittest2.TestCase):
         _id = Document.process(windowed=arr)
         result = Document(_id).windowed
         self.assertEqual(np.uint8, result.dtype)
-
-
