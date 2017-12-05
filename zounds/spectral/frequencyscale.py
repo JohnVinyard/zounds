@@ -133,6 +133,8 @@ class FrequencyScale(object):
         self.n_bands = n_bands
         self.frequency_band = frequency_band
         self._bands = None
+        self._starts = None
+        self._stops = None
 
     @property
     def bands(self):
@@ -142,6 +144,18 @@ class FrequencyScale(object):
         if self._bands is None:
             self._bands = self._compute_bands()
         return self._bands
+
+    @property
+    def band_starts(self):
+        if self._starts is None:
+            self._starts = [b.start_hz for b in self.bands]
+        return self._starts
+
+    @property
+    def band_stops(self):
+        if self._stops is None:
+            self._stops = [b.stop_hz for b in self.bands]
+        return self._stops
 
     def _compute_bands(self):
         raise NotImplementedError()
@@ -226,10 +240,10 @@ class FrequencyScale(object):
         extract only the frequency samples that intersect with the frequency
         band
         """
-        starts = [b.start_hz for b in self.bands]
-        stops = [b.stop_hz for b in self.bands]
-        start_index = bisect.bisect_left(stops, frequency_band.start_hz)
-        stop_index = bisect.bisect_left(starts, frequency_band.stop_hz)
+        start_index = bisect.bisect_left(
+            self.band_stops, frequency_band.start_hz)
+        stop_index = bisect.bisect_left(
+            self.band_starts, frequency_band.stop_hz)
 
         if self.always_even and (stop_index - start_index) % 2:
             # KLUDGE: This is simple, but it may make sense to choose move the
