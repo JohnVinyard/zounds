@@ -37,4 +37,6 @@ def inverse_categorical(x, mu=255):
     flat = x.reshape((-1, x.shape[-1]))
     indices = np.argmax(flat, axis=1).astype(np.float32)
     indices = (indices / mu) - 0.5
-    return inverse_mu_law(indices, mu=mu).reshape(x.shape[:-1])
+    inverted = inverse_mu_law(indices, mu=mu).reshape(x.shape[:-1])
+    return ArrayWithUnits(inverted, x.dimensions[:2])
+

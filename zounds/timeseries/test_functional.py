@@ -1,5 +1,6 @@
 import unittest2
 from functional import categorical, inverse_categorical
+from zounds.core import ArrayWithUnits
 from zounds.synthesize import SineSynthesizer
 from zounds.timeseries import Seconds, SR11025, TimeSlice
 import numpy as np
@@ -27,3 +28,6 @@ class CategoricalTests(unittest2.TestCase):
         c = categorical(windowed, mu=255)
         inverted = inverse_categorical(c, mu=255)
         self.assertEqual(windowed.shape, inverted.shape)
+        self.assertIsInstance(inverted, ArrayWithUnits)
+        self.assertSequenceEqual(windowed.dimensions, inverted.dimensions)
+
