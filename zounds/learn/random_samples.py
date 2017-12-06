@@ -1,6 +1,4 @@
-from featureflow import Node, Feature, DatabaseIterator, BaseModel, \
-    NotEnoughData
-from featureflow.nmpy import NumpyFeature
+from featureflow import Node, NotEnoughData
 from zounds.core import ArrayWithUnits, IdentityDimension
 import numpy as np
 
@@ -189,38 +187,3 @@ class ReservoirSampler(Node):
             return arr
 
         return self._r
-
-
-class RequireSignalToNoiseRatio(Node):
-    def __init__(self, max_snr=None, needs=None):
-        super(RequireSignalToNoiseRatio, self).__init__(needs=needs)
-        self._max_snr = max_snr
-
-    def _process(self, data):
-        axes = tuple(range(len(data.shape))[1:])
-        a = np.abs(data)
-        snr = a.mean(axis=axes) / a.std(axis=axes)
-        filtered = data[snr < self._max_snr]
-        print len(data), len(filtered)
-        yield filtered
-
-
-def random_samples(feature_func, nsamples, store_shuffled=True):
-    """
-    Return a base class that samples randomly from examples of the data returned
-    by feature_func
-    """
-
-    class RandomSamples(BaseModel):
-        docs = Feature(
-            DatabaseIterator,
-            func=feature_func,
-            store=False)
-
-        patches = NumpyFeature( \
-            ReservoirSampler,
-            nsamples=nsamples,
-            needs=docs,
-            store=store_shuffled)
-
-    return RandomSamples
