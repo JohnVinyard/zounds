@@ -314,12 +314,16 @@ class SupervisedTrainer(Trainer):
             optimizer,
             epochs,
             batch_size,
-            holdout_percent=0.0):
+            holdout_percent=0.0,
+            data_preprocessor=lambda x: x,
+            label_preprocessor=lambda x: x):
 
         super(SupervisedTrainer, self).__init__(
             epochs,
             batch_size)
 
+        self.label_preprocessor = label_preprocessor
+        self.data_preprocessor = data_preprocessor
         self.holdout_percent = holdout_percent
         self.optimizer = optimizer(model)
         self.loss = loss
@@ -351,6 +355,8 @@ class SupervisedTrainer(Trainer):
             test_labels = test_labels.astype(np.float32)
 
         def batch(d, l, test=False):
+            d = self.data_preprocessor(d).astype(np.float32)
+            l = self.label_preprocessor(l).astype(np.float32)
             inp = torch.from_numpy(d)
             inp = inp.cuda()
             inp_v = Variable(inp, volatile=test)
@@ -688,6 +694,8 @@ class PyTorchAutoEncoder(PyTorchNetwork):
                 # size of the input data in half, so that downstream nodes that
                 # need some data to initialize themselves can do so
                 inp = inp[:len(inp) // 64]
+            except ValueError:
+                break
 
         op = self.transform(network=trained_network)
         inv_data = self.inversion_data(network=trained_network)

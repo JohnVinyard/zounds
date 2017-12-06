@@ -50,6 +50,7 @@ try:
     def try_network(network, x):
         network = network.cuda()
         x = to_var(x)
+        print(x.size())
         result = network(x)
         return result
 
