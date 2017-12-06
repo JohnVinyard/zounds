@@ -20,3 +20,5 @@ from variablerate import \
     VariableRateTimeSeriesEncoder, VariableRateTimeSeriesDecoder
 
 from constantrate import ConstantRateTimeSeries
+
+from functional import categorical, inverse_categorical
