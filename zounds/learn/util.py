@@ -3,14 +3,6 @@ import numpy as np
 import featureflow as ff
 
 
-def sigmoid(a):
-    return 1. / (1 + np.exp(-a))
-
-
-def stochastic_binary(a):
-    return a > np.random.random_sample(a.shape)
-
-
 def simple_settings(cls):
     """
     Create sane default persistence settings for learning pipelines
