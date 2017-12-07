@@ -1,5 +1,5 @@
 from multiprocessing.pool import ThreadPool, Pool, cpu_count
-from itertools import repeat, izip
+from itertools import repeat, izip, imap
 
 
 def ingest_one(arg):
@@ -25,16 +25,26 @@ def ingest(
         multi_threaded=False,
         cores=None):
 
+    pool = None
+
     if multi_process:
         pool = Pool(cores or cpu_count())
-        map_func = pool.map
+        map_func = pool.imap_unordered
     elif multi_threaded:
         pool = ThreadPool(cores or cpu_count())
-        map_func = pool.map
+        map_func = pool.imap_unordered
     else:
-        map_func = map
+        map_func = imap
 
     cls_args = repeat(cls)
     skip_args = repeat(skip_if_exists)
 
     map_func(ingest_one, izip(dataset, cls_args, skip_args))
+
+    if pool is not None:
+        # if we're ingesting using multiple processes or threads, the processing
+        # should be parallel, but this method should be synchronous from the
+        # caller's perspective
+        pool.close()
+        pool.join()
+
