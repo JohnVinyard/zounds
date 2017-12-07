@@ -466,16 +466,9 @@ class PyTorchNetwork(Preprocessor):
 
     def _forward_func(self):
         def x(d, network=None):
-            import torch
-            from torch.autograd import Variable
-            import numpy as np
             from zounds.core import ArrayWithUnits, IdentityDimension
             from zounds.learn import apply_network
 
-            # tensor = torch.from_numpy(d.astype(np.float32))
-            # gpu = tensor.cuda()
-            # v = Variable(gpu)
-            # result = network(v).data.cpu().numpy()
             result = apply_network(network, d, chunksize=500)
             try:
                 return ArrayWithUnits(
