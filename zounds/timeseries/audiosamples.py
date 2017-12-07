@@ -145,6 +145,12 @@ class AudioSamples(ArrayWithUnits):
         y = x * 0.5
         return AudioSamples(y, self.samplerate)
 
+    @property
+    def stereo(self):
+        if self.channels == 2:
+            return self
+        return AudioSamples(np.vstack([self, self]).T, self.samplerate)
+
     def encode(self, flo=None, fmt='WAV', subtype='PCM_16'):
         """
         Return audio samples encoded as bytes given a particular audio format

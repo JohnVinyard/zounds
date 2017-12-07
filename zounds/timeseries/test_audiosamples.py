@@ -9,6 +9,16 @@ from zounds.synthesize import SineSynthesizer
 
 
 class AudioSamplesTest(unittest2.TestCase):
+
+    def test_stereo(self):
+        silence = AudioSamples.silence(SR11025(), Seconds(10))
+        self.assertEqual(1, silence.channels)
+        stereo = silence.stereo
+        self.assertEqual(2, stereo.channels)
+        self.assertEqual((len(silence), 2), stereo.shape)
+        np.testing.assert_allclose(silence, stereo[:, 0])
+        np.testing.assert_allclose(silence, stereo[:, 1])
+
     def test_silence_creates_silence(self):
         silence = AudioSamples.silence(SR11025(), Seconds(10))
         self.assertEqual(0, silence.sum())

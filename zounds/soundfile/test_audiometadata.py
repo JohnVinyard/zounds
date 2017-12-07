@@ -1,27 +1,18 @@
-import unittest2
-from audio_metadata import AudioMetaData, MetaData
-import numpy as np
-from io import BytesIO
-from soundfile import SoundFile
 import tempfile
+
 import requests
-import zipfile
-import featureflow
+import unittest2
+
+from audio_metadata import AudioMetaData, MetaData
+from zounds.synthesize import NoiseSynthesizer
+from zounds.timeseries import SR44100, Seconds
 
 
-def soundfile(hz=440, seconds=5., sr=44100., flo=None):
-    bio = flo or BytesIO()
-    s = np.random.random_sample((int(seconds * sr), 2))
-    with SoundFile(
-            bio,
-            mode='w',
-            channels=2,
-            format='WAV',
-            subtype='PCM_16',
-            samplerate=int(sr)) as f:
-        f.write(s)
-    bio.seek(0)
-    return s, bio
+def soundfile(flo=None):
+    synth = NoiseSynthesizer(SR44100())
+    samples = synth.synthesize(Seconds(5)).stereo
+    flo = samples.encode(flo=flo)
+    return samples, flo
 
 
 class AudioMetaDataTests(unittest2.TestCase):
