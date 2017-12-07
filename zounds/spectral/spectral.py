@@ -106,10 +106,10 @@ class DCTIV(Node):
         l = data.shape[1]
         tf = np.arange(0, l)
         z = np.zeros((len(data), l * 2))
-        z[:, :l] = data * np.exp(-1j * np.pi * tf / 2 / l)
+        z[:, :l] = (data * np.exp(-1j * np.pi * tf / 2 / l)).real
         z = np.fft.fft(z)[:, :l]
         raw = np.sqrt(2 / l) * \
-              np.real(z * np.exp(-1j * np.pi * (tf + 0.5) / 2 / l))
+              (z * np.exp(-1j * np.pi * (tf + 0.5) / 2 / l)).real
         return raw
 
     def _process(self, data):
