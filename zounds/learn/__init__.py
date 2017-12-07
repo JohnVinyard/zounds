@@ -28,6 +28,8 @@ from template_match import TemplateMatch
 
 from util import simple_settings
 
+from graph import learning_pipeline
+
 try:
     from util import \
         Conv1d, ConvTranspose1d, Conv2d, ConvTranspose2d, to_var, from_var, \

@@ -470,10 +470,13 @@ class PyTorchNetwork(Preprocessor):
             from torch.autograd import Variable
             import numpy as np
             from zounds.core import ArrayWithUnits, IdentityDimension
-            tensor = torch.from_numpy(d.astype(np.float32))
-            gpu = tensor.cuda()
-            v = Variable(gpu)
-            result = network(v).data.cpu().numpy()
+            from zounds.learn import apply_network
+
+            # tensor = torch.from_numpy(d.astype(np.float32))
+            # gpu = tensor.cuda()
+            # v = Variable(gpu)
+            # result = network(v).data.cpu().numpy()
+            result = apply_network(network, d, chunksize=500)
             try:
                 return ArrayWithUnits(
                     result, d.dimensions[:-1] + (IdentityDimension(),))
@@ -512,6 +515,8 @@ class PyTorchNetwork(Preprocessor):
             processed_data = None
             # the dataset may be too large to fit onto the GPU all at once
             warnings.warn(e.message)
+        except KeyError:
+            processed_data = None
 
         op = self.transform(network=trained_network)
         inv_data = self.inversion_data()

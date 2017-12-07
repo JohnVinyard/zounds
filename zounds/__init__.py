@@ -39,11 +39,12 @@ from learn import \
     simple_settings, SklearnModel, WithComponents, InstanceScaling, Reshape, \
     ShuffledSamples, PyTorchNetwork, PyTorchGan, PyTorchAutoEncoder, \
     GanTrainer, WassersteinGanTrainer, SupervisedTrainer, Weighted, \
-    MuLawCompressed, SimHash, AbsoluteValue, Binarize, Sharpen
+    MuLawCompressed, SimHash, AbsoluteValue, Binarize, Sharpen, \
+    learning_pipeline
 
 from ui import ZoundsApp, ZoundsSearch, RangeUnitUnsupportedException
 
-from index import SearchResults, HammingDb, HammingIndex
+from index import SearchResults, HammingDb, HammingIndex, BruteForceSearch
 
 from basic import \
     Slice, Sum, Max, Pooled, process_dir, stft, audio_graph, with_onsets, \
