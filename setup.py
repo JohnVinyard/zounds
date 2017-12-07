@@ -80,7 +80,8 @@ setup(
         'tornado',
         'pysoundfile',
         'matplotlib',
-        'argparse'
+        'argparse',
+        'intervaltree'
     ],
     package_data={
         'nputil': ['*.pyx', '*.pyxbld'],

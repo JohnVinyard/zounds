@@ -63,4 +63,4 @@ from persistence import \
 
 from datasets import \
     PhatDrumLoops, InternetArchive, FreeSoundSearch, DataSetCache, Directory, \
-    ingest
+    ingest, MusicNet

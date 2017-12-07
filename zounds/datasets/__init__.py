@@ -5,9 +5,11 @@ internet.  In general, a dataset instance is an iterable of
 root node of an audio processing graph.
 """
 
+from musicnet import MusicNet
 from phatdrumloops import PhatDrumLoops
 from internetarchive import InternetArchive
 from freesound import FreeSoundSearch
 from filesystem import Directory
 from cache import DataSetCache
 from ingest import ingest
+

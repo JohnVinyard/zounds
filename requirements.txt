@@ -6,3 +6,4 @@ requests
 tornado
 pysoundfile
 matplotlib
+intervaltree
