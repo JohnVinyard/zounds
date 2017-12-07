@@ -33,6 +33,7 @@ class AudioMetaData(object):
         :class:`zounds.datasets.InternetArchive`
         :class:`zounds.datasets.PhatDrumLoops`
     """
+
     def __init__(
             self,
             uri=None,
@@ -95,28 +96,6 @@ class AudioMetaDataEncoder(Aggregator, Node):
         d = dict(data.__dict__)
         d['uri'] = self._uri(data.uri)
         yield json.dumps(d)
-
-
-# class FreesoundOrgConfig(object):
-#     def __init__(self, api_key):
-#         super(FreesoundOrgConfig, self).__init__()
-#         self.api_key = api_key
-#
-#     def request(self, _id):
-#         uri = 'http://freesound.org/apiv2/sounds/{_id}/'.format(_id=_id)
-#         params = {'token': self.api_key}
-#         metadata = requests.get(uri, params=params).json()
-#         request = requests.Request(
-#             method='GET',
-#             url=metadata['previews']['preview-hq-ogg'],
-#             params=params)
-#         return AudioMetaData(
-#             uri=request,
-#             samplerate=metadata['samplerate'],
-#             channels=metadata['channels'],
-#             licensing=metadata['license'],
-#             description=metadata['description'],
-#             tags=metadata['tags'])
 
 
 class MetaData(Node):
