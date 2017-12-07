@@ -35,12 +35,11 @@ from synthesize import \
 
 from learn import \
     KMeans, Learned, MeanStdNormalization, UnitNorm, Log, Multiply, \
-    PreprocessingPipeline, Slicer, ReservoirSampler, TemplateMatch, \
-    simple_settings, SklearnModel, WithComponents, InstanceScaling, Reshape, \
-    ShuffledSamples, PyTorchNetwork, PyTorchGan, PyTorchAutoEncoder, \
-    GanTrainer, WassersteinGanTrainer, SupervisedTrainer, Weighted, \
-    MuLawCompressed, SimHash, AbsoluteValue, Binarize, Sharpen, \
-    learning_pipeline
+    PreprocessingPipeline, Slicer, ReservoirSampler, simple_settings, \
+    SklearnModel, WithComponents, InstanceScaling, Reshape, ShuffledSamples, \
+    PyTorchNetwork, PyTorchGan, PyTorchAutoEncoder, GanTrainer, \
+    WassersteinGanTrainer, SupervisedTrainer, Weighted, MuLawCompressed, \
+    SimHash, AbsoluteValue, Binarize, Sharpen, learning_pipeline
 
 from ui import ZoundsApp, ZoundsSearch, RangeUnitUnsupportedException
 
