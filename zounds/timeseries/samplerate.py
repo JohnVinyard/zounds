@@ -159,6 +159,7 @@ class SR96000(AudioSampleRate):
         >>> sr.nyquist
         48000
     """
+
     def __init__(self):
         super(SR96000, self).__init__(96000, 4096, 2048)
 
@@ -177,6 +178,7 @@ class SR48000(AudioSampleRate):
         >>> sr.nyquist
         24000
     """
+
     def __init__(self):
         super(SR48000, self).__init__(48000, 2048, 1024)
 
@@ -195,6 +197,7 @@ class SR44100(AudioSampleRate):
         >>> sr.nyquist
         22050
     """
+
     def __init__(self):
         super(SR44100, self).__init__(44100, 2048, 1024)
 
@@ -213,8 +216,27 @@ class SR22050(AudioSampleRate):
         >>> sr.nyquist
         11025
     """
+
     def __init__(self):
         super(SR22050, self).__init__(22050, 1024, 512)
+
+
+class SR16000(AudioSampleRate):
+    """
+        A :class:`SampleRate` representing the common audio sampling rate 16kHz
+
+        Examples:
+            >>> from zounds import SR16000
+            >>> sr = SR16000()
+            >>> sr.samples_per_second
+            16000
+            >>> int(sr)
+            16000
+            >>> sr.nyquist
+            8000
+        """
+    def __init__(self):
+        super(SR16000, self).__init__(16000, 512, 256)
 
 
 class SR11025(AudioSampleRate):
@@ -231,11 +253,13 @@ class SR11025(AudioSampleRate):
         >>> sr.nyquist
         5512
     """
+
     def __init__(self):
         super(SR11025, self).__init__(11025, 512, 256)
 
 
-_samplerates = (SR96000(), SR48000(), SR44100(), SR22050(), SR11025())
+_samplerates = (
+    SR96000(), SR48000(), SR44100(), SR22050(), SR16000(), SR11025())
 
 
 def audio_sample_rate(samples_per_second):

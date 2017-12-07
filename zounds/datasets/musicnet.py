@@ -14,7 +14,7 @@ class MusicNet(object):
     info can be found here:
     https://homes.cs.washington.edu/~thickstn/musicnet.html
     """
-    def     __init__(self, path):
+    def __init__(self, path):
         super(MusicNet, self).__init__()
         self.path = path
         self._url = \

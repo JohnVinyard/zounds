@@ -2,7 +2,7 @@ __version__ = '0.22.12'
 
 from timeseries import \
     Hours, Minutes, Seconds, Milliseconds, Microseconds, Picoseconds, \
-    SR11025, SR22050, SR44100, SR48000, SR96000, HalfLapped, Stride, \
+    SR11025, SR16000, SR22050, SR44100, SR48000, SR96000, HalfLapped, Stride, \
     TimeSlice, VariableRateTimeSeries, VariableRateTimeSeriesFeature, \
     SampleRate, AudioSamples, TimeDimension, audio_sample_rate, \
     ConstantRateTimeSeries, nearest_audio_sample_rate
@@ -63,4 +63,4 @@ from persistence import \
 
 from datasets import \
     PhatDrumLoops, InternetArchive, FreeSoundSearch, DataSetCache, Directory, \
-    ingest, MusicNet
+    ingest, MusicNet, NSynth
