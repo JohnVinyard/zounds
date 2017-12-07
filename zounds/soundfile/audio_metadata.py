@@ -59,7 +59,7 @@ class AudioMetaData(object):
 
     @property
     def request(self):
-        if isinstance(self.uri, requests.Request):
+        if hasattr(self.uri, 'url'):
             return self.uri
 
     def __eq__(self, other):

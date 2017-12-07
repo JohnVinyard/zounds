@@ -1,6 +1,7 @@
 import requests
 from zounds.soundfile import AudioMetaData
 from zounds.timeseries import SR44100, AudioSamples
+from predownload import PreDownload
 import os
 import urlparse
 import numpy as np
@@ -62,7 +63,10 @@ class MusicNet(object):
                 samples, labels = v
                 samples = AudioSamples(samples, self._samplerate)
                 meta = metadata[_id]
+                url = \
+                    'https://homes.cs.washington.edu/~thickstn/media/{_id}'\
+                        .format(**locals())
                 yield AudioMetaData(
-                    uri=samples.encode(),
+                    uri=PreDownload(samples.encode().read(), url),
                     samplerate=int(self._samplerate),
                     **meta)
