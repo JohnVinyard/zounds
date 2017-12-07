@@ -34,7 +34,7 @@ def ingest(
         pool = ThreadPool(cores or cpu_count())
         map_func = pool.imap_unordered
     else:
-        map_func = imap
+        map_func = map
 
     cls_args = repeat(cls)
     skip_args = repeat(skip_if_exists)

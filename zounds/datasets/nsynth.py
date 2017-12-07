@@ -1,10 +1,10 @@
-import requests
-import os
-import urlparse
-import tarfile
 import fnmatch
 import json
+import os
+import tarfile
+
 from predownload import PreDownload
+from util import ensure_local_file
 from zounds.soundfile import AudioMetaData
 
 
@@ -21,37 +21,19 @@ class NSynth(object):
         self.path = path
         self._url = \
             'http://download.magenta.tensorflow.org/datasets/nsynth/nsynth-valid.jsonwav.tar.gz'
-        self._local_data = os.path.join(
-            self.path, self._remote_filename(self._url))
-
-    # TODO: Factor all of this out from MusicNet and NSynth
-    def _remote_filename(self, uri):
-        parsed = urlparse.urlparse(uri)
-        return os.path.split(parsed.path)[-1]
-
-    def _ensure_file_contents(self):
-        if not os.path.exists(self._local_data):
-            with open(self._local_data, 'wb') as f:
-                resp = requests.get(self._url, stream=True)
-                chunk_size = 4096
-                total_bytes = int(resp.headers['Content-Length'])
-                for i, chunk in enumerate(
-                        resp.iter_content(chunk_size=chunk_size)):
-                    f.write(chunk)
-                    progress = ((i * chunk_size) / float(total_bytes)) * 100
-                    print '{progress:.2f}% complete'.format(**locals())
 
     def __iter__(self):
-        self._ensure_file_contents()
+        local_data = ensure_local_file(self._url, self.path)
+
         json_data = None
-        with tarfile.open(self._local_data) as tar:
+        with tarfile.open(local_data) as tar:
             for info in tar:
 
                 if fnmatch.fnmatch(info.name, '*.json'):
                     flo = tar.extractfile(member=info)
                     json_data = json.load(flo)
 
-        with tarfile.open(self._local_data) as tar:
+        with tarfile.open(local_data) as tar:
             for info in tar:
                 if fnmatch.fnmatch(info.name, '*.json'):
                     continue

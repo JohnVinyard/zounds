@@ -16,7 +16,7 @@ if __name__ == '__main__':
         '--local-path',
         required=True,
         type=str,
-        help='local path where music net csv and npz files should be stored')
+        help='local path where the nsynth tar files should be stored')
     parser.add_argument(
         '--port',
         default=8888,
