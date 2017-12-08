@@ -1,10 +1,8 @@
 from random import choice
 import numpy as np
-from util import to_var
+
 
 class TripletEmbeddingTrainer(object):
-
-
     """
     Learn an embedding by applying the triplet loss to anchor examples, negative
     examples, and deformed or adjacent examples, akin to:
@@ -65,6 +63,7 @@ class TripletEmbeddingTrainer(object):
     def train(self, data):
         from torch import nn
         from torch.optim import Adam
+        from util import to_var
 
         # TODO: Why is this necessary?
         data = data['scaled']
