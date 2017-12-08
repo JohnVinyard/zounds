@@ -32,7 +32,9 @@ Machine Learning Models
 .. autoclass:: PyTorchGan
 .. autoclass:: PyTorchAutoEncoder
 .. autoclass:: SupervisedTrainer
+.. autoclass:: TripletEmbeddingTrainer
 .. autoclass:: GanTrainer
+.. autoclass:: WassersteinGanTrainer
 
 Hashing
 -------

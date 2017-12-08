@@ -23,6 +23,7 @@ from pytorch_model import PyTorchAutoEncoder, PyTorchGan, PyTorchNetwork
 from gan import GanTrainer
 from wgan import WassersteinGanTrainer
 from supervised import SupervisedTrainer
+from embedding import TripletEmbeddingTrainer
 
 from random_samples import ReservoirSampler, ShuffledSamples
 
