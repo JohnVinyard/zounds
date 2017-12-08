@@ -4,6 +4,7 @@ import types
 from collections import OrderedDict
 import hashlib
 import numpy as np
+from functional import hyperplanes, simhash
 
 
 class Op(object):
@@ -375,13 +376,8 @@ class SimHash(Preprocessor):
 
     def _forward_func(self):
         def x(d, plane_vectors=None):
-            import numpy as np
             from zounds.core import ArrayWithUnits, IdentityDimension
-            # determine on which side of each plane the points in d lie
-            bits = np.zeros((len(d), len(plane_vectors)), dtype=np.uint8)
-            flattened = d.reshape((len(d), -1))
-            x = np.dot(plane_vectors, flattened.T).T
-            bits[np.where(x > 1)] = 1
+            bits = simhash(plane_vectors, d)
             try:
                 return ArrayWithUnits(
                     bits, [d.dimensions[0], IdentityDimension()])
@@ -398,15 +394,10 @@ class SimHash(Preprocessor):
 
     def _process(self, data):
         data = self._extract_data(data)
-
-        # compute plane vectors for each bit in the has we'd like
-        features = np.product(data.shape[1:])
         mean = data.mean(axis=0).flatten()
         std = data.std(axis=0).flatten()
-        a = np.random.normal(mean, std, (self.bits, features))
-        b = np.random.normal(mean, std, (self.bits, features))
-
-        op = self.transform(plane_vectors=a - b)
+        plane_vectors = hyperplanes(mean, std, self.bits)
+        op = self.transform(plane_vectors=plane_vectors)
         inv_data = self.inversion_data()
         inv = self.inverse_transform()
         data = op(data)

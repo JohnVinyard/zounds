@@ -52,11 +52,12 @@ class TripletEmbeddingTrainer(object):
                 yield epoch, batch
 
     def _apply_network_and_normalize(self, x):
-        import torch
         """
         Pass x through the network, and give the output unit norm, as specified
         by section 4.2 of https://arxiv.org/pdf/1711.02209.pdf
         """
+
+        import torch
         x = self.network(x)
         return x / torch.norm(x, dim=1).view(-1, 1)
 
