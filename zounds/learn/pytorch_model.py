@@ -156,11 +156,6 @@ class PyTorchGan(PyTorchNetwork):
 
             result = np.concatenate(chunks)
 
-            # tensor = torch.from_numpy(d.astype(np.float32))
-            # gpu = tensor.cuda()
-            # v = Variable(gpu)
-            # result = n(v).data.cpu().numpy()
-
             try:
                 return ArrayWithUnits(
                     result, d.dimensions[:-1] + (IdentityDimension(),))
