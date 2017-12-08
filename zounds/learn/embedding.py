@@ -1,14 +1,10 @@
 from random import choice
-
 import numpy as np
-import torch
-from torch import nn
-from torch.optim import Adam
-
 from util import to_var
 
-
 class TripletEmbeddingTrainer(object):
+
+
     """
     Learn an embedding by applying the triplet loss to anchor examples, negative
     examples, and deformed or adjacent examples, akin to:
@@ -58,6 +54,7 @@ class TripletEmbeddingTrainer(object):
                 yield epoch, batch
 
     def _apply_network_and_normalize(self, x):
+        import torch
         """
         Pass x through the network, and give the output unit norm, as specified
         by section 4.2 of https://arxiv.org/pdf/1711.02209.pdf
@@ -66,6 +63,9 @@ class TripletEmbeddingTrainer(object):
         return x / torch.norm(x, dim=1).view(-1, 1)
 
     def train(self, data):
+        from torch import nn
+        from torch.optim import Adam
+
         # TODO: Why is this necessary?
         data = data['scaled']
 
