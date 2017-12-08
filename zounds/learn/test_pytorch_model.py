@@ -6,9 +6,9 @@ import unittest2
 
 from preprocess import \
     UnitNorm, Binarize, PreprocessingPipeline, InstanceScaling
-from pytorch_model import \
-    SupervisedTrainer, PyTorchNetwork, PyTorchAutoEncoder, \
-    PyTorchGan, WassersteinGanTrainer
+from pytorch_model import PyTorchNetwork, PyTorchAutoEncoder, PyTorchGan
+from supervised import SupervisedTrainer
+from wgan import WassersteinGanTrainer
 from random_samples import ShuffledSamples
 from zounds.core import ArrayWithUnits, IdentityDimension
 from zounds.spectral import LinearScale, FrequencyBand, FrequencyDimension
