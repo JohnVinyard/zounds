@@ -57,9 +57,11 @@ class PyTorchPreprocessResult(PreprocessResult):
 
 
 class PyTorchNetwork(Preprocessor):
-    def __init__(self, trainer=None, needs=None):
+    def __init__(self, trainer=None, post_training_func=None, needs=None):
+
         super(PyTorchNetwork, self).__init__(needs=needs)
         self.trainer = trainer
+        self.post_training_func = post_training_func or (lambda x: x)
         self._cache = dict()
 
     def _forward_func(self):
@@ -70,7 +72,7 @@ class PyTorchNetwork(Preprocessor):
             result = apply_network(network, d, chunksize=128)
             try:
                 return ArrayWithUnits(
-                    result, d.dimensions[:-1] + (IdentityDimension(),))
+                    result, [d.dimensions[0], IdentityDimension()])
             except AttributeError:
                 return result
             except ValueError:
@@ -101,13 +103,12 @@ class PyTorchNetwork(Preprocessor):
 
         try:
             forward_func = self._forward_func()
-            processed_data = forward_func(data['data'], network=trained_network)
+            x = self.post_training_func(data['data'])
+            processed_data = forward_func(x, network=trained_network)
         except RuntimeError as e:
             processed_data = None
             # the dataset may be too large to fit onto the GPU all at once
             warnings.warn(e.message)
-        except KeyError:
-            processed_data = None
 
         op = self.transform(network=trained_network)
         inv_data = self.inversion_data()

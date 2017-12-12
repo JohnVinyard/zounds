@@ -66,8 +66,7 @@ class TripletEmbeddingTrainer(object):
         from torch.optim import Adam
         from util import to_var
 
-        # TODO: Why is this necessary?
-        data = data['scaled']
+        data = data['data']
 
         self.network.cuda()
         optimizer = Adam(self.network.parameters(), lr=1e-5)

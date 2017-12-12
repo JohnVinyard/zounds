@@ -18,3 +18,11 @@ def simhash(plane_vectors, data):
     x = np.dot(plane_vectors, flattened.T).T
     output[np.where(x > 0)] = 1
     return output
+
+
+def example_wise_unit_norm(x):
+    original_shape = x.shape
+    x = x.reshape((len(x), -1))
+    norms = np.linalg.norm(x, axis=-1, keepdims=True)
+    normed = np.divide(x, norms, where=norms != 0)
+    return normed.reshape(original_shape)

@@ -31,7 +31,7 @@ from util import simple_settings
 
 from graph import learning_pipeline
 
-from functional import hyperplanes, simhash
+from functional import hyperplanes, simhash, example_wise_unit_norm
 
 try:
     from util import \

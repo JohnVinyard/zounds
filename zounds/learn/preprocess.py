@@ -4,7 +4,7 @@ import types
 from collections import OrderedDict
 import hashlib
 import numpy as np
-from functional import hyperplanes, simhash
+from functional import hyperplanes
 
 
 class Op(object):
@@ -174,10 +174,9 @@ class UnitNorm(Preprocessor):
 
     def _forward_func(self):
         def x(d):
-            from zounds.nputil import safe_unit_norm
             from zounds.core import ArrayWithUnits
-            normed = safe_unit_norm(d.reshape((d.shape[0], -1)))
-            normed = normed.reshape(d.shape)
+            from functional import example_wise_unit_norm
+            normed = example_wise_unit_norm(d)
             try:
                 return ArrayWithUnits(normed, d.dimensions)
             except AttributeError:
@@ -377,6 +376,7 @@ class SimHash(Preprocessor):
     def _forward_func(self):
         def x(d, plane_vectors=None):
             from zounds.core import ArrayWithUnits, IdentityDimension
+            from zounds.learn import simhash
             bits = simhash(plane_vectors, d)
             try:
                 return ArrayWithUnits(
