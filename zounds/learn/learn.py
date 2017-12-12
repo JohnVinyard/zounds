@@ -52,8 +52,9 @@ class Learned(Node):
     """
 
     """
-    def __init__(self, learned=None, version=None, needs=None):
+    def __init__(self, learned=None, version=None, wrapper=None, needs=None):
         super(Learned, self).__init__(needs=needs)
+        self._wrapper = wrapper
         self._learned = learned
         self._version = version
 
@@ -62,5 +63,6 @@ class Learned(Node):
         return self._version or self._learned.pipeline.version
 
     def _process(self, data):
-        transformed = self._learned.pipeline.transform(data).data
+        transformed = self._learned.pipeline\
+            .transform(data, wrapper=self._wrapper).data
         yield transformed

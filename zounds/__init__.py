@@ -44,7 +44,9 @@ from learn import \
 
 from ui import ZoundsApp, ZoundsSearch, RangeUnitUnsupportedException
 
-from index import SearchResults, HammingDb, HammingIndex, BruteForceSearch
+from index import \
+    SearchResults, HammingDb, HammingIndex, BruteForceSearch, \
+    HammingDistanceBruteForceSearch
 
 from basic import \
     Slice, Sum, Max, Pooled, process_dir, stft, audio_graph, with_onsets, \

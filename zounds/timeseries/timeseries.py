@@ -105,6 +105,12 @@ class TimeSlice(object):
     def __ne__(self, other):
         return not self.__eq__(other)
 
+    def __hash__(self):
+        start = self.start / Picoseconds(1)
+        duration = \
+            None if self.duration is None else (self.duration / Picoseconds(1))
+        return (start, duration).__hash__()
+
     def __repr__(self):
         dur = self.duration / Seconds(1) if self.duration is not None else None
         return '{cls}(start = {start}, duration = {duration})'.format(

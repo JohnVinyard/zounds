@@ -28,6 +28,21 @@ class ConvenienceClassTests(unittest2.TestCase):
 
 class TimeSliceTests(unittest2.TestCase):
 
+    def test_equivalent_timeslices_hash_to_the_same_value(self):
+        ts1 = TimeSlice(start=Seconds(1), duration=Seconds(7))
+        ts2 = TimeSlice(start=Milliseconds(1000), duration=Milliseconds(7000))
+        self.assertEqual(hash(ts1), hash(ts2))
+
+    def test_exactly_equal_timeslices_hash_to_the_same_value(self):
+        ts1 = TimeSlice(start=Seconds(1), duration=Seconds(7))
+        ts2 = TimeSlice(start=Seconds(1), duration=Seconds(7))
+        self.assertEqual(hash(ts1), hash(ts2))
+
+    def test_different_timeslices_hash_to_different_values(self):
+        ts1 = TimeSlice(start=Seconds(1), duration=Seconds(7))
+        ts2 = TimeSlice(start=Seconds(1), duration=Seconds(8))
+        self.assertNotEqual(hash(ts1), hash(ts2))
+
     def test_can_produce_time_slice_iterable_from_timestamps(self):
         slices = TimeSlice.slices([
             Seconds(1),

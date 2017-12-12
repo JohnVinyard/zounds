@@ -16,5 +16,5 @@ def simhash(plane_vectors, data):
     output = np.zeros((len(data), len(plane_vectors)), dtype=np.uint8)
     flattened = data.reshape((len(data), -1))
     x = np.dot(plane_vectors, flattened.T).T
-    output[np.where(x > 1)] = 1
-    return x
+    output[np.where(x > 0)] = 1
+    return output

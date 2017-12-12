@@ -67,7 +67,7 @@ class PyTorchNetwork(Preprocessor):
             from zounds.core import ArrayWithUnits, IdentityDimension
             from zounds.learn import apply_network
 
-            result = apply_network(network, d, chunksize=500)
+            result = apply_network(network, d, chunksize=128)
             try:
                 return ArrayWithUnits(
                     result, d.dimensions[:-1] + (IdentityDimension(),))
