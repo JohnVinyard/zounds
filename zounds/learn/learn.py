@@ -52,19 +52,28 @@ class Learned(Node):
     """
 
     """
-    def __init__(self, learned=None, version=None, wrapper=None, needs=None):
+    def __init__(
+            self, 
+            learned=None, 
+            version=None, 
+            wrapper=None,
+            pipeline_slice=None,
+            needs=None):
         super(Learned, self).__init__(needs=needs)
+        self._pipeline_slice = pipeline_slice or slice(None)
         self._wrapper = wrapper
-        try:
-            self._pipeline = learned.pipeline
-        except AttributeError:
-            self._pipeline = learned
+        self._learned = learned
         self._version = version
 
     @property
     def version(self):
-        return self._version or self._pipeline.version
+        if self._version is not None:
+            return self._version
+
+        pipeline = self._learned.pipeline[self._pipeline_slice]
+        return pipeline.version
 
     def _process(self, data):
-        transformed = self._pipeline.transform(data, wrapper=self._wrapper).data
+        pipeline = self._learned.pipeline[self._pipeline_slice]
+        transformed = pipeline.transform(data, wrapper=self._wrapper).data
         yield transformed
