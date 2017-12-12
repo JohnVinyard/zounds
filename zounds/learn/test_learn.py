@@ -60,7 +60,7 @@ def build_classes():
 
 def data():
     for i in xrange(100):
-        yield np.random.random_sample((np.random.randint(10, 100), 3))
+        yield np.random.random_sample((np.random.randint(10, 100), 9))
 
 
 class RbmTests(unittest2.TestCase):
@@ -75,7 +75,7 @@ class LearnedTests(unittest2.TestCase):
         KMeans = build_classes()
         KMeans.process(iterator=data())
         l = Learned(learned=KMeans())
-        results = list(l._process(np.random.random_sample((33, 3))))[0]
+        results = list(l._process(np.random.random_sample((33, 9))))[0]
         self.assertEqual((33, 3), results.shape)
 
     def test_pipeline_changes_version_when_recomputed(self):
@@ -94,3 +94,17 @@ class LearnedTests(unittest2.TestCase):
         rbm = Rbm()
         pipeline_data = rbm.pipeline.processors[-1].data
         self.assertIsNone(pipeline_data)
+
+    def test_can_pass_pipeline_as_argument(self):
+        KMeans = build_classes()
+        KMeans.process(iterator=data())
+        l = Learned(learned=KMeans().pipeline)
+        results = list(l._process(np.random.random_sample((33, 9))))[0]
+        self.assertEqual((33, 3), results.shape)
+
+    def test_can_pass_subset_of_pipeline_as_argument(self):
+        KMeans = build_classes()
+        KMeans.process(iterator=data())
+        l = Learned(learned=KMeans().pipeline[:2])
+        results = list(l._process(np.random.random_sample((33, 9))))[0]
+        self.assertEqual((33, 9), results.shape)
