@@ -57,10 +57,10 @@ class Learned(Node):
             learned=None, 
             version=None, 
             wrapper=None,
-            pipeline_slice=None,
+            pipeline_func=None,
             needs=None):
         super(Learned, self).__init__(needs=needs)
-        self._pipeline_slice = pipeline_slice or slice(None)
+        self._pipeline_func = pipeline_func or (lambda x: x.pipeline)
         self._wrapper = wrapper
         self._learned = learned
         self._version = version
@@ -70,10 +70,10 @@ class Learned(Node):
         if self._version is not None:
             return self._version
 
-        pipeline = self._learned.pipeline[self._pipeline_slice]
+        pipeline = self._pipeline_func(self._learned)
         return pipeline.version
 
     def _process(self, data):
-        pipeline = self._learned.pipeline[self._pipeline_slice]
+        pipeline = self._pipeline_func(self._learned)
         transformed = pipeline.transform(data, wrapper=self._wrapper).data
         yield transformed

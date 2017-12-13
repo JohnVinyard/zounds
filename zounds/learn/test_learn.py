@@ -98,6 +98,6 @@ class LearnedTests(unittest2.TestCase):
     def test_can_pass_a_pipeline_slice_to_be_applied_at_inference_time(self):
         KMeans = build_classes()
         KMeans.process(iterator=data())
-        l = Learned(learned=KMeans(), pipeline_slice=slice(0, 2))
+        l = Learned(learned=KMeans(), pipeline_func=lambda x: x.pipeline[:2])
         results = list(l._process(np.random.random_sample((33, 9))))[0]
         self.assertEqual((33, 9), results.shape)
