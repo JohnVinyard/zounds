@@ -43,6 +43,8 @@ class MusicNet(object):
                 url = \
                     'https://homes.cs.washington.edu/~thickstn/media/{_id}'\
                         .format(**locals())
+                meta['web_url'] = \
+                    'https://homes.cs.washington.edu/~thickstn/musicnet.html'
                 yield AudioMetaData(
                     uri=PreDownload(samples.encode().read(), url),
                     samplerate=int(SR44100()),

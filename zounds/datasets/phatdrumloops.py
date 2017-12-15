@@ -27,6 +27,7 @@ class PhatDrumLoops(object):
     def __init__(self, **attrs):
         super(PhatDrumLoops, self).__init__()
         self.attrs = attrs
+        self.attrs.update(web_url='http://www.phatdrumloops.com/beats.php')
 
     def __iter__(self):
         resp = requests.get('http://phatdrumloops.com/beats.php')

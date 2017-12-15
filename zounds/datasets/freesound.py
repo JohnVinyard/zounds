@@ -56,16 +56,21 @@ class FreeSoundSearch(object):
             url=data['previews']['preview-hq-ogg'],
             params={'token': self.api_key})
 
+        web_url = 'https://freesound.org/people/{username}/sounds/{id}/'\
+            .format(**data)
+
         return AudioMetaData(
             uri=request,
             samplerate=data['samplerate'],
             channels=data['channels'],
             licensing=data['license'],
             description=data['description'],
-            tags=data['tags'])
+            tags=data['tags'],
+            web_url=web_url)
 
     def get_by_id(self, freesound_id):
         data = self._get_metadata_by_id(freesound_id)
+        print data
         return self._freesound_to_audio_metadata(data)
 
     def _iter_results(self, link=None):

@@ -46,4 +46,7 @@ class NSynth(object):
                     'https://magenta.tensorflow.org/datasets/nsynth/{_id}' \
                         .format(**locals())
                 pdl = PreDownload(wav_flo.read(), url)
-                yield AudioMetaData(uri=pdl, **json_data[_id])
+                yield AudioMetaData(
+                    uri=pdl,
+                    web_url='https://magenta.tensorflow.org/datasets/nsynth',
+                    **json_data[_id])

@@ -59,4 +59,7 @@ class InternetArchive(object):
                 request = requests.Request(method='GET', url=sound_url)
                 metadata = self._get_metadata(v, all_files)
                 metadata.update(self.attrs)
+                web_url = 'https://archive.org//details/{archive_id}'\
+                    .format(**locals())
+                metadata.update(web_url=web_url)
                 yield AudioMetaData(uri=request, **metadata)
