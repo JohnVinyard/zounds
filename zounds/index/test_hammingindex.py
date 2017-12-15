@@ -7,6 +7,7 @@ from zounds.basic import stft, Slice, Binarize
 from zounds.timeseries import SR11025, Seconds
 from zounds.synthesize import SineSynthesizer
 from zounds.persistence import ArrayWithUnitsFeature
+from zounds.soundfile import AudioMetaData
 import shutil
 from uuid import uuid4
 
@@ -104,6 +105,27 @@ class HammingIndexTests(unittest2.TestCase):
         results = index.search(encoded, 5)
         self.assertEqual(5, len(list(results)))
 
+    def test_can_add_additional_data_to_index(self):
+        Model = self._model(
+            slice_size=128,
+            settings=self._settings_with_event_log())
+
+        index = self._index(
+            Model,
+            Model.sliced,
+            web_url=lambda doc, ts: doc.meta['web_url'])
+
+        signal = SineSynthesizer(SR11025()) \
+            .synthesize(Seconds(5), [220, 440, 880])
+        meta = AudioMetaData(uri=signal.encode(), web_url='https://example.com')
+        _id = Model.process(meta=meta)
+        index._synchronously_process_events()
+
+        results = list(index.random_search(n_results=5))
+        result_id, ts, extra_data = results[0]
+        self.assertEqual(_id, result_id)
+        self.assertEqual('https://example.com', extra_data['web_url'])
+
     def correctly_infers_index_name(self):
         Model = self._model(
             slice_size=128,
@@ -153,8 +175,9 @@ class HammingIndexTests(unittest2.TestCase):
 
         return Model
 
-    def _index(self, document, feature):
+    def _index(self, document, feature, **extra_data):
         return HammingIndex(
             document,
             feature,
-            path=self.hamming_db_path)
+            path=self.hamming_db_path,
+            **extra_data)

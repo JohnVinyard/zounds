@@ -27,13 +27,15 @@ class HammingIndex(object):
             version=None,
             path='',
             db_size_bytes=1000000000,
-            listen=False):
+            listen=False,
+            **extra_data):
 
         super(HammingIndex, self).__init__()
         self.document = document
         self.feature = feature
         self.db_size_bytes = db_size_bytes
         self.path = path
+        self.extra_data = extra_data
 
         version = version or self.feature.version
 
@@ -101,6 +103,14 @@ class HammingIndex(object):
         for doc in self.document:
             self.add(doc._id)
 
+    def _collect_extra_data(self, _id, ts):
+        if not self.extra_data:
+            return None
+
+        doc = self.document(_id)
+        return dict(
+            ((key, func(doc, ts)) for key, func in self.extra_data.iteritems()))
+
     def add(self, _id, timestamp=''):
         # load the feature from the feature database
         feature = self.feature(_id=_id, persistence=self.document)
@@ -116,6 +126,9 @@ class HammingIndex(object):
             encoded_ts = dict(
                 _id=_id,
                 **self.encoder.dict(ts))
+            extra_data = self._collect_extra_data(_id, ts)
+            if extra_data:
+                encoded_ts['extra_data'] = extra_data
             self._init_hamming_db(code)
             self.hamming_db.append(code, json.dumps(encoded_ts))
             self.hamming_db.set_metadata('timestamp', bytes(timestamp))
@@ -150,7 +163,11 @@ class HammingIndex(object):
     def _parse_result(self, result):
         d = json.loads(result)
         ts = TimeSlice(**self.decoder.kwargs(d))
-        return d['_id'], ts
+
+        if not self.extra_data:
+            return d['_id'], ts
+
+        return d['_id'], ts, d['extra_data']
 
     def decode_query(self, binary_query):
         packed = np.fromstring(binary_query, dtype=np.uint8)
