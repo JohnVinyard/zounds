@@ -18,7 +18,7 @@ class PyTorchPreprocessResult(PreprocessResult):
         cls = self.op.network.__class__
         name = self.name
 
-        kwargs = self.op.kwargs
+        kwargs = dict(self.op.kwargs)
         del kwargs['network']
 
         return dict(
