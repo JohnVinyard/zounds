@@ -438,36 +438,39 @@ class MeanStdNormalization(Preprocessor):
 
 
 class InstanceScaling(Preprocessor):
-    def __init__(self, needs=None):
+    def __init__(self, max_value=1, needs=None):
         super(InstanceScaling, self).__init__(needs=needs)
+        self.max_value = max_value
 
     def _forward_func(self):
-        def x(d):
+        def x(d, max_value=None):
             import numpy as np
             axes = tuple(range(1, len(d.shape)))
             m = np.max(np.abs(d), axis=axes, keepdims=True)
-            return np.divide(d, m, where=m != 0)
+            return max_value * np.divide(d, m, where=m != 0)
 
         return x
 
     def _inversion_data(self):
-        def x(d):
+        def x(d, max_value=None):
             import numpy as np
             axes = tuple(range(1, len(d.shape)))
-            return dict(max=np.max(np.abs(d), axis=axes, keepdims=True))
+            return dict(
+                max=np.max(np.abs(d), axis=axes, keepdims=True),
+                max_value=max_value)
 
         return x
 
     def _backward_func(self):
-        def x(d, max=None):
-            return d * max
+        def x(d, max=None, max_value=None):
+            return (d * max) / max_value
 
         return x
 
     def _process(self, data):
         data = self._extract_data(data)
-        op = self.transform()
-        inv_data = self.inversion_data()
+        op = self.transform(max_value=self.max_value)
+        inv_data = self.inversion_data(max_value=self.max_value)
         inv = self.inverse_transform()
         data = op(data)
         yield PreprocessResult(
