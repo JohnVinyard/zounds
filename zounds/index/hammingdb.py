@@ -101,7 +101,7 @@ class HammingDb(object):
     def _initialize_in_memory_store(self):
         if self._codes is not None:
             return
-        initial_size = min(int(1e6), len(self))
+        initial_size = max(int(1e6), len(self))
         self._codes = Growable(self._recarray(initial_size))
 
     def _np_code(self, code):
