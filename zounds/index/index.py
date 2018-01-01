@@ -91,10 +91,11 @@ class HammingIndex(object):
         self.thread.daemon = True
         self.thread.start()
 
-    def _init_hamming_db(self, code):
+    def _init_hamming_db(self, code=None):
         if self.hamming_db is not None:
             return
-        self.hamming_db = HammingDb(self.hamming_db_path, code_size=len(code))
+        code_size = len(code) if code else None
+        self.hamming_db = HammingDb(self.hamming_db_path, code_size=code_size)
 
     def _synchronously_process_events(self):
         self._listen(raise_when_empty=True)
@@ -181,12 +182,14 @@ class HammingIndex(object):
             return feature
 
     def random_search(self, n_results, multithreaded=False, sort=False):
+        self._init_hamming_db()
         code, raw_results = self.hamming_db.random_search(
             n_results, multithreaded, sort=sort)
         parsed_results = (self._parse_result(r) for r in raw_results)
         return SearchResults(code, parsed_results)
 
     def search(self, feature, n_results, multithreaded=False, sort=False):
+        self._init_hamming_db()
         code = self.encode_query(feature)
         raw_results = self.hamming_db.search(
             code, n_results, multithreaded, sort=sort)
