@@ -79,7 +79,7 @@ def downsample(arr, factor, method=np.max):
         lf = len(factor)
         if lf > arr.ndim:
             raise ValueError( \
-                    'The number of factors must be less than or equal to the number of dimensions in arr')
+                'The number of factors must be less than or equal to the number of dimensions in arr')
 
     # the axes over which to apply the reduction
     axes = -np.arange(1, lf + 1)
@@ -254,11 +254,11 @@ def windowed(a, windowsize, stepsize=None, dopad=False):
     newstrides = (stepsize * s, s) + a.strides[1:]
 
     out = np.ndarray.__new__( \
-            np.ndarray,
-            strides=newstrides,
-            shape=newshape,
-            buffer=a,
-            dtype=a.dtype)
+        np.ndarray,
+        strides=newstrides,
+        shape=newshape,
+        buffer=a,
+        dtype=a.dtype)
 
     return leftover, out
 
@@ -297,13 +297,13 @@ def sliding_window(a, ws, ss=None, flatten=True):
     ls = [len(shape), len(ws), len(ss)]
     if 1 != len(set(ls)):
         raise ValueError( \
-                'a.shape, ws and ss must all have the same length. They were %s' % str(
-                    ls))
+            'a.shape, ws and ss must all have the same length. They were %s' % str(
+                ls))
 
     # ensure that ws is smaller than a in every dimension
     if np.any(ws > shape):
         raise ValueError( \
-                'ws cannot be larger than a in any dimension.\
+            'ws cannot be larger than a in any dimension.\
  a.shape was %s and ws was %s' % (str(a.shape), str(ws)))
 
     # how many slices will there be in each dimension?
@@ -314,7 +314,6 @@ def sliding_window(a, ws, ss=None, flatten=True):
     # the strides tuple will be the array's strides multiplied by step size, plus
     # the array's strides (tuple addition)
     newstrides = norm_shape(np.array(a.strides) * ss) + a.strides
-
 
     strided = ast(a, shape=newshape, strides=newstrides)
     if not flatten:
@@ -445,7 +444,7 @@ class Growable(object):
     def _tmp(self, amt=None):
         n_items = self._tmp_size() if None is amt else amt
         return np.ndarray( \
-                (n_items,) + self._data.shape[1:], dtype=self._data.dtype)
+            (n_items,) + self._data.shape[1:], dtype=self._data.dtype)
 
     def _grow(self, amt=None):
         new_mem = self._tmp(amt=amt)
@@ -506,18 +505,7 @@ def packed_hamming_distance(a, b):
     the same length as a.
     """
     xored = a ^ b
-    bitcount = count_bits(xored.ravel())
-    return bitcount.reshape(xored.shape).sum(1)
-
-
-def jaccard_distance(a, b):
-    """
-    a - scalar
-    b - array of scalars
-    """
-    intersection = count_bits(a & b)
-    union = count_bits(a | b)
-    return 1 - (intersection / union)
+    return count_packed_bits(xored)
 
 
 # TODO: Write tests

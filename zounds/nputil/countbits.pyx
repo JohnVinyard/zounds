@@ -15,7 +15,12 @@ ctypedef unsigned long ULong
 
 cimport cython
 
+cdef extern int __builtin_popcount(unsigned int) nogil
+cdef extern int __builtin_popcountl(unsigned long) nogil
+cdef extern int __builtin_popcountll(unsigned long long) nogil
+
 @cython.boundscheck(False)
+@cython.wraparound(False)
 def count_bits(np.ndarray[UINT64_DTYPE_t,ndim = 1] n):
     cdef np.ndarray[INT_DTYPE_t,ndim = 1] out = \
         np.ndarray(n.size,dtype = INT_DTYPE)
@@ -34,7 +39,8 @@ def count_bits(np.ndarray[UINT64_DTYPE_t,ndim = 1] n):
     return out
 
 
-# TODO: Why doesn't this function have boundscheck = False too?
+@cython.boundscheck(False)
+@cython.wraparound(False)
 def count_packed_bits(np.ndarray[UINT64_DTYPE_t,ndim = 2] n):
     cdef int ns = n.shape[0]
     cdef int ns2 = n.shape[1]
@@ -42,7 +48,7 @@ def count_packed_bits(np.ndarray[UINT64_DTYPE_t,ndim = 2] n):
         np.ndarray(ns,dtype = INT_DTYPE)
     cdef int i = 0
     cdef int j = 0
-    cdef int q = 0
+    cdef UINT64_DTYPE_t q = 0
     cdef UINT64_DTYPE_t a = 0x5555555555555555
     cdef UINT64_DTYPE_t b = 0x3333333333333333
     cdef UINT64_DTYPE_t c = 0xF0F0F0F0F0F0F0F
@@ -51,7 +57,7 @@ def count_packed_bits(np.ndarray[UINT64_DTYPE_t,ndim = 2] n):
     for i in range(ns):
         z = 0
         for j in range(ns2):
-            q = n[i][j]
+            q = n[i, j]
             q = q - ((q >> 1) & a)
             q = (q & b) + ((q >> 2) & b)
             z += ((q + (q >> 4)) & c) * d >> 56
