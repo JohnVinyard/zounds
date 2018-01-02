@@ -7,7 +7,6 @@ import os
 
 
 class HammingDbTests(unittest2.TestCase):
-
     def setUp(self):
         self._db_name = uuid4().hex
         self._path = '/tmp/{path}'.format(path=self._db_name)
@@ -20,6 +19,7 @@ class HammingDbTests(unittest2.TestCase):
                 hashed = hash(trigram)
                 code[hashed % n_bits] = 1
             return np.packbits(code).tostring()
+
         self.extract_code_from_text = extract_code_from_text
 
     def tearDown(self):
@@ -85,6 +85,33 @@ class HammingDbTests(unittest2.TestCase):
         self.assertEqual(t1, results[0])
         self.assertEqual(t2, results[1])
         self.assertEqual(t4, results[2])
+
+    def test_can_run_in_write_only_mode(self):
+        db = HammingDb(self._path, code_size=16, writeonly=True)
+        t1 = 'Mary had a little lamb'
+        t2 = 'Mary had a little dog'
+        t3 = 'Permanent Midnight'
+        t4 = 'Mary sad a little cog'
+        extract_code = lambda x: self.extract_code_from_text(x, n_chunks=2)
+        db.append(extract_code(t1), t1)
+        db.append(extract_code(t2), t2)
+        db.append(extract_code(t3), t3)
+        db.append(extract_code(t4), t4)
+        self.assertIsNone(db._codes)
+
+    def test_search_raises_in_write_only_mode(self):
+        db = HammingDb(self._path, code_size=16, writeonly=True)
+        t1 = 'Mary had a little lamb'
+        t2 = 'Mary had a little dog'
+        t3 = 'Permanent Midnight'
+        t4 = 'Mary sad a little cog'
+        extract_code = lambda x: self.extract_code_from_text(x, n_chunks=2)
+        db.append(extract_code(t1), t1)
+        db.append(extract_code(t2), t2)
+        db.append(extract_code(t3), t3)
+        db.append(extract_code(t4), t4)
+        self.assertRaises(
+            RuntimeError, lambda: list(db.search(extract_code(t1), 3)))
 
     def test_constructor_raises_when_not_multiple_of_eight(self):
         self.assertRaises(

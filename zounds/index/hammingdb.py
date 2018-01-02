@@ -8,8 +8,10 @@ import binascii
 
 
 class HammingDb(object):
-    def __init__(self, path, map_size=1000000000, code_size=8):
+    def __init__(self, path, map_size=1000000000, code_size=8, writeonly=False):
         super(HammingDb, self).__init__()
+
+        self.writeonly = writeonly
 
         if not os.path.exists(path):
             os.makedirs(path)
@@ -99,6 +101,9 @@ class HammingDb(object):
             order='F')
 
     def _initialize_in_memory_store(self):
+        if self.writeonly:
+            return
+
         if self._codes is not None:
             return
         initial_size = max(int(1e6), len(self))
@@ -116,6 +121,9 @@ class HammingDb(object):
             raise ValueError(fmt.format(**locals()))
 
     def _add_code(self, _id, code):
+        if self.writeonly:
+            return
+
         arr = self._append_buffer
         arr[0]['id'] = _id
         arr[0]['code'] = self._np_code(code)
@@ -153,6 +161,11 @@ class HammingDb(object):
         return code, self.search(code, n_results, multithreaded, sort=sort)
 
     def search(self, code, n_results, multithreaded=False, sort=False):
+
+        if self.writeonly:
+            error_msg = 'searches may not be performed in writeonly mode'
+            raise RuntimeError(error_msg)
+
         self._validate_code_size(code)
         self._check_for_external_modifications()
         query = self._np_code(code)
@@ -171,8 +184,6 @@ class HammingDb(object):
                 lambda x: packed_hamming_distance(query, x),
                 (codes[i: i + chunksize] for i in
                  xrange(0, n_codes, chunksize))))
-
-        # indices = np.argsort(scores)[:n_results]
 
         # argpartition will ensure that the lowest scores will all be
         # withing the first n_results elements, but makes no guarantees
