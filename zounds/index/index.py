@@ -28,6 +28,7 @@ class HammingIndex(object):
             path='',
             db_size_bytes=1000000000,
             listen=False,
+            writeonly=False,
             **extra_data):
 
         super(HammingIndex, self).__init__()
@@ -36,6 +37,7 @@ class HammingIndex(object):
         self.db_size_bytes = db_size_bytes
         self.path = path
         self.extra_data = extra_data
+        self.writeonly = writeonly
 
         version = version or self.feature.version
 
@@ -49,7 +51,8 @@ class HammingIndex(object):
             self.event_log = None
 
         try:
-            self.hamming_db = HammingDb(self.hamming_db_path, code_size=None)
+            self.hamming_db = HammingDb(
+                self.hamming_db_path, code_size=None, writeonly=self.writeonly)
         except ValueError:
             self.hamming_db = None
 
@@ -95,7 +98,8 @@ class HammingIndex(object):
         if self.hamming_db is not None:
             return
         code_size = len(code) if code else None
-        self.hamming_db = HammingDb(self.hamming_db_path, code_size=code_size)
+        self.hamming_db = HammingDb(
+            self.hamming_db_path, code_size=code_size, writeonly=self.writeonly)
 
     def _synchronously_process_events(self):
         self._listen(raise_when_empty=True)
