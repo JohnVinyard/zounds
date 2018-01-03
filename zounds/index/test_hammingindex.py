@@ -126,6 +126,29 @@ class HammingIndexTests(unittest2.TestCase):
         self.assertEqual(_id, result_id)
         self.assertEqual('https://example.com', extra_data['web_url'])
 
+    def test_can_add_multiple_properties_to_index(self):
+        Model = self._model(
+            slice_size=128,
+            settings=self._settings_with_event_log())
+
+        index = self._index(
+            Model,
+            Model.sliced,
+            web_url=lambda doc, ts: doc.meta['web_url'],
+            total_duration=lambda doc, ts: doc.fft.dimensions[0].end / Seconds(1))
+
+        signal = SineSynthesizer(SR11025()) \
+            .synthesize(Seconds(5), [220, 440, 880])
+        meta = AudioMetaData(uri=signal.encode(), web_url='https://example.com')
+        _id = Model.process(meta=meta)
+        index._synchronously_process_events()
+
+        results = list(index.random_search(n_results=5))
+        result_id, ts, extra_data = results[0]
+        self.assertEqual(_id, result_id)
+        self.assertEqual('https://example.com', extra_data['web_url'])
+        self.assertAlmostEqual(5, extra_data['total_duration'], 1)
+
     def correctly_infers_index_name(self):
         Model = self._model(
             slice_size=128,

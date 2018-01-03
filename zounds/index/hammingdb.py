@@ -24,6 +24,7 @@ class HammingDb(object):
             writemap=True,
             map_async=True,
             metasync=True)
+        self.env.reader_check()
 
         self.metadata = self.env.open_db('metadata')
         try:
