@@ -179,11 +179,16 @@ class HammingIndex(object):
         return np.unpackbits(packed)
 
     def encode_query(self, feature):
-        try:
-            return np.packbits(feature).tostring()
-        except TypeError:
-            # the query is already packed and expressed as raw bytes
+        if isinstance(feature, str):
             return feature
+        elif feature.dtype == np.uint64:
+            return feature.tostring()
+        elif feature.dtype == np.uint8 or feature.dtype == np.bool:
+            return np.packbits(feature).tostring()
+        else:
+            raise ValueError(
+                'feature must be a raw bit string, an already packed uint64'
+                'array, or an "unpacked" uint8 or bool array')
 
     def random_search(self, n_results, multithreaded=False, sort=False):
         self._init_hamming_db()

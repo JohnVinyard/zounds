@@ -3,6 +3,7 @@ from index import HammingIndex
 from featureflow import \
     PersistenceSettings, UuidProvider, StringDelimitedKeyBuilder, \
     InMemoryDatabase, InMemoryChannel, EventLog
+from zounds.core import ArrayWithUnits, IdentityDimension
 from zounds.basic import stft, Slice, Binarize
 from zounds.timeseries import SR11025, Seconds
 from zounds.synthesize import SineSynthesizer
@@ -10,6 +11,7 @@ from zounds.persistence import ArrayWithUnitsFeature
 from zounds.soundfile import AudioMetaData
 import shutil
 from uuid import uuid4
+import numpy as np
 
 
 class HammingIndexTests(unittest2.TestCase):
@@ -135,7 +137,8 @@ class HammingIndexTests(unittest2.TestCase):
             Model,
             Model.sliced,
             web_url=lambda doc, ts: doc.meta['web_url'],
-            total_duration=lambda doc, ts: doc.fft.dimensions[0].end / Seconds(1))
+            total_duration=lambda doc, ts: doc.fft.dimensions[0].end / Seconds(
+                1))
 
         signal = SineSynthesizer(SR11025()) \
             .synthesize(Seconds(5), [220, 440, 880])
@@ -161,6 +164,19 @@ class HammingIndexTests(unittest2.TestCase):
         index._synchronously_process_events()
         self.assertTrue('index.sliced' in index.hamming_db.path)
 
+    def test_can_add_already_packed_feature(self):
+        Model = self._model(
+            slice_size=128,
+            settings=self._settings_with_no_event_log())
+
+        index = self._index(Model, Model.packed)
+        signal = SineSynthesizer(SR11025()) \
+            .synthesize(Seconds(5), [220, 440, 880])
+        _id = Model.process(meta=signal.encode())
+        model = Model(_id)
+        index.add(_id)
+        self.assertEqual(len(model.packed), len(index))
+
     def _settings_with_no_event_log(self):
         class Settings(PersistenceSettings):
             id_provider = UuidProvider()
@@ -183,6 +199,10 @@ class HammingIndexTests(unittest2.TestCase):
     def _model(self, slice_size, settings):
         STFT = stft(resample_to=SR11025(), store_fft=True)
 
+        def pack(x):
+            arr = np.zeros((len(x), 16), dtype=np.uint64)
+            return ArrayWithUnits(arr, [x.dimensions[0], IdentityDimension()])
+
         class Model(STFT, settings):
             binary = ArrayWithUnitsFeature(
                 Binarize,
@@ -194,6 +214,11 @@ class HammingIndexTests(unittest2.TestCase):
                 Slice,
                 sl=slice(0, slice_size),
                 needs=binary,
+                store=True)
+
+            packed = ArrayWithUnitsFeature(
+                pack,
+                needs=sliced,
                 store=True)
 
         return Model
