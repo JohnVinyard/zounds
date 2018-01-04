@@ -78,6 +78,7 @@ try:
             x = self.sigmoid(x)
             return x
 
+
     class GanPair(nn.Module):
         def __init__(self):
             super(GanPair, self).__init__()
@@ -405,125 +406,6 @@ class PyTorchModelTests(unittest2.TestCase):
 
         inverted = result.inverse_transform()
         self.assertEqual((10, 3), inverted.shape)
-
-    def test_duplicate_network_is_only_created_in_memory_once(self):
-        trainer = WassersteinGanTrainer(
-            GanPair(),
-            latent_dimension=(2,),
-            n_critic_iterations=5,
-            epochs=10,
-            batch_size=64)
-
-        @simple_in_memory_settings
-        class Pipeline(ff.BaseModel):
-            inp = ff.PickleFeature(
-                ff.IteratorNode,
-                store=False)
-
-            samples = ff.PickleFeature(
-                ShuffledSamples,
-                nsamples=500,
-                needs=inp,
-                store=False)
-
-            scaled = ff.PickleFeature(
-                InstanceScaling,
-                needs=samples,
-                store=False)
-
-            network = ff.PickleFeature(
-                PyTorchGan,
-                apply_network='generator',
-                trainer=trainer,
-                needs=scaled,
-                store=False)
-
-            pipeline = ff.PickleFeature(
-                PreprocessingPipeline,
-                needs=(scaled, network),
-                store=True)
-
-            pipeline2 = ff.PickleFeature(
-                PreprocessingPipeline,
-                needs=(scaled, network),
-                store=True)
-
-        training_data = np.random.normal(0, 1, (1000, 4))
-
-        def gen(chunksize, s):
-            for i in xrange(0, len(s), chunksize):
-                yield s[i: i + chunksize]
-
-        _id = Pipeline.process(inp=gen(100, training_data))
-        pipe = Pipeline(_id)
-        self.assertIs(pipe.pipeline[-1].network, pipe.pipeline2[-1].network)
-
-    def test_different_networks_are_different_instances(self):
-
-        trainer = WassersteinGanTrainer(
-            GanPair(),
-            latent_dimension=(2,),
-            n_critic_iterations=5,
-            epochs=10,
-            batch_size=64)
-
-        trainer2 = WassersteinGanTrainer(
-            GanPair(),
-            latent_dimension=(2,),
-            n_critic_iterations=5,
-            epochs=10,
-            batch_size=64)
-
-        @simple_in_memory_settings
-        class Pipeline(ff.BaseModel):
-            inp = ff.PickleFeature(
-                ff.IteratorNode,
-                store=False)
-
-            samples = ff.PickleFeature(
-                ShuffledSamples,
-                nsamples=500,
-                needs=inp,
-                store=False)
-
-            scaled = ff.PickleFeature(
-                InstanceScaling,
-                needs=samples,
-                store=False)
-
-            network = ff.PickleFeature(
-                PyTorchGan,
-                apply_network='generator',
-                trainer=trainer,
-                needs=scaled,
-                store=False)
-
-            network2 = ff.PickleFeature(
-                PyTorchGan,
-                apply_network='generator',
-                trainer=trainer2,
-                needs=scaled,
-                store=False)
-
-            pipeline = ff.PickleFeature(
-                PreprocessingPipeline,
-                needs=(scaled, network),
-                store=True)
-
-            pipeline2 = ff.PickleFeature(
-                PreprocessingPipeline,
-                needs=(scaled, network2),
-                store=True)
-
-        training_data = np.random.normal(0, 1, (1000, 4))
-
-        def gen(chunksize, s):
-            for i in xrange(0, len(s), chunksize):
-                yield s[i: i + chunksize]
-
-        _id = Pipeline.process(inp=gen(100, training_data))
-        pipe = Pipeline(_id)
-        self.assertIsNot(pipe.pipeline[-1].network, pipe.pipeline2[-1].network)
 
     def test_can_train_gan(self):
 

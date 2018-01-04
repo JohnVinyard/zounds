@@ -20,7 +20,28 @@ class SimHashPipeline(ff.BaseModel):
         store=True)
 
 
+@simple_in_memory_settings
+class SimHashPipelineWithPackedBits(ff.BaseModel):
+    simhash = ff.PickleFeature(
+        SimHash,
+        packbits=True,
+        bits=1024)
+
+    pipeline = ff.PickleFeature(
+        PreprocessingPipeline,
+        needs=(simhash,),
+        store=True)
+
+
 class SimHashTests(unittest2.TestCase):
+    def test_can_compute_hash_and_pack_bits(self):
+        training_data = np.random.normal(0, 1, size=(100, 9))
+        _id = SimHashPipelineWithPackedBits.process(simhash=training_data)
+        p = SimHashPipelineWithPackedBits(_id)
+        test_data = np.random.normal(0, 1, size=(1000, 9))
+        result = p.pipeline.transform(test_data).data
+        self.assertEqual((1000, 16), result.shape)
+        self.assertEqual(np.uint64, result.dtype)
 
     def test_can_compute_hash_for_1d_vectors(self):
         training_data = np.random.normal(0, 1, size=(100, 9))

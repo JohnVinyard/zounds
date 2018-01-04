@@ -5,8 +5,7 @@ from preprocess import Preprocessor, PreprocessResult, Op
 
 
 class PyTorchPreprocessResult(PreprocessResult):
-
-    network_cache = dict()
+    # network_cache = dict()
 
     def __init__(self, data, op, inversion_data=None, inverse=None, name=None):
         super(PyTorchPreprocessResult, self).__init__(
@@ -34,30 +33,25 @@ class PyTorchPreprocessResult(PreprocessResult):
             name=name,
             cls=cls)
 
-    def _network_identifier(self, weight_dict):
-        sorted_keys = sorted(weight_dict.iterkeys())
-        hashed = md5()
-        for key in sorted_keys:
-            value = weight_dict[key]
-            hashed.update(key)
-            hashed.update(value)
-        return hashed.hexdigest()
+    # def _network_identifier(self, weight_dict):
+    #     sorted_keys = sorted(weight_dict.iterkeys())
+    #     hashed = md5()
+    #     for key in sorted_keys:
+    #         value = weight_dict[key]
+    #         hashed.update(key)
+    #         hashed.update(value)
+    #     return hashed.hexdigest()
 
     def __setstate__(self, state):
         import torch
 
-        network_id = self._network_identifier(state['weights'])
-        try:
-            network = self.network_cache[network_id]
-        except KeyError:
-            restored_weights = dict(
-                ((k, torch.from_numpy(v).cuda())
-                 for k, v in state['weights'].iteritems()))
-            network = state['cls']()
-            network.load_state_dict(restored_weights)
-            network.cuda()
-            network.eval()
-            self.network_cache[network_id] = network
+        restored_weights = dict(
+            ((k, torch.from_numpy(v).cuda())
+             for k, v in state['weights'].iteritems()))
+        network = state['cls']()
+        network.load_state_dict(restored_weights)
+        network.cuda()
+        network.eval()
 
         self.op = Op(
             state['forward_func'], network=network, **state['op_kwargs'])

@@ -42,7 +42,6 @@ try:
     def try_network(network, x):
         network = network.cuda()
         x = to_var(x)
-        print(x.size())
         result = network(x)
         return result
 
@@ -75,17 +74,21 @@ try:
                 stride,
                 padding,
                 activation=lambda x: F.leaky_relu(x, 0.2),
-                dropout=True):
+                dropout=True,
+                batch_norm=True):
             super(ConvLayer, self).__init__()
             self.dropout = dropout
             self.l1 = layer_type(
                 in_channels, out_channels, kernel_size, stride, padding,
                 bias=False)
 
-            if '1d' in layer_type.__name__:
-                self.bn = nn.BatchNorm1d(out_channels)
-            else:
-                self.bn = nn.BatchNorm2d(out_channels)
+            self.bn = None
+
+            if batch_norm:
+                if '1d' in layer_type.__name__:
+                    self.bn = nn.BatchNorm1d(out_channels)
+                else:
+                    self.bn = nn.BatchNorm2d(out_channels)
 
             self.activation = activation
 
@@ -111,10 +114,11 @@ try:
 
         def forward(self, x):
             x = self.l1(x)
-            x = self.bn(x)
+            if self.bn:
+                x = self.bn(x)
             x = self.activation(x)
             if self.dropout:
-                x = F.dropout(x, 0.2)
+                x = F.dropout(x, 0.2, self.training)
             return x
 
 
@@ -126,7 +130,8 @@ try:
                 kernel_size,
                 stride,
                 padding,
-                dropout=True):
+                dropout=True,
+                batch_norm=True):
             super(Conv1d, self).__init__(
                 nn.Conv1d,
                 in_channels,
@@ -135,7 +140,8 @@ try:
                 stride,
                 padding,
                 activation=lambda x: F.leaky_relu(x, 0.2),
-                dropout=dropout)
+                dropout=dropout,
+                batch_norm=batch_norm)
 
 
     class ConvTranspose1d(ConvLayer):
@@ -147,7 +153,8 @@ try:
                 stride,
                 padding,
                 activation=lambda x: F.leaky_relu(x, 0.2),
-                dropout=True):
+                dropout=True,
+                batch_norm=True):
             super(ConvTranspose1d, self).__init__(
                 nn.ConvTranspose1d,
                 in_channels,
@@ -156,7 +163,8 @@ try:
                 stride,
                 padding,
                 activation=activation,
-                dropout=dropout)
+                dropout=dropout,
+                batch_norm=batch_norm)
 
 
     class Conv2d(ConvLayer):
@@ -167,7 +175,8 @@ try:
                 kernel_size,
                 stride,
                 padding,
-                dropout=True):
+                dropout=True,
+                batch_norm=True):
             super(Conv2d, self).__init__(
                 nn.Conv2d,
                 in_channels,
@@ -176,7 +185,8 @@ try:
                 stride,
                 padding,
                 activation=lambda x: F.leaky_relu(x, 0.2),
-                dropout=dropout)
+                dropout=dropout,
+                batch_norm=batch_norm)
 
 
     class ConvTranspose2d(ConvLayer):
@@ -188,7 +198,8 @@ try:
                 stride,
                 padding,
                 activation=lambda x: F.leaky_relu(x, 0.2),
-                dropout=True):
+                dropout=True,
+                batch_norm=True):
             super(ConvTranspose2d, self).__init__(
                 nn.ConvTranspose2d,
                 in_channels,
@@ -197,7 +208,8 @@ try:
                 stride,
                 padding,
                 activation=activation,
-                dropout=dropout)
+                dropout=dropout,
+                batch_norm=batch_norm)
 
 
     class FrequencyDecompositionAnalyzer(nn.Module):

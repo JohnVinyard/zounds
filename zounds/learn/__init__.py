@@ -25,7 +25,7 @@ from wgan import WassersteinGanTrainer
 from supervised import SupervisedTrainer
 from embedding import TripletEmbeddingTrainer
 
-from random_samples import ReservoirSampler, ShuffledSamples
+from random_samples import Reservoir, ReservoirSampler, ShuffledSamples
 
 from util import simple_settings
 

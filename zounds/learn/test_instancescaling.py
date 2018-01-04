@@ -43,6 +43,12 @@ class InstanceScalingTests(unittest2.TestCase):
         transformed = model.pipeline.transform(inp).data
         self.assertEqual(1.0, transformed.max())
 
+    def test_each_example_has_same_max(self):
+        model = self.get_model()
+        inp = np.random.normal(0, 1, (100, 30)) * 50
+        transformed = model.pipeline.transform(inp).data
+        np.testing.assert_allclose(np.abs(transformed).max(axis=-1), 1)
+
     def test_forward_transform_scales_data_3d(self):
         model = self.get_model()
         inp = np.random.random_sample((100, 30, 3)) - 0.5

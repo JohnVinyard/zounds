@@ -365,19 +365,28 @@ class SimHash(Preprocessor):
     Args:
         bits (int): The number of hyperplanes, and hence, the number of bits
             in the resulting hash
+        packbits (bool): Should the result be bit-packed?
         needs (Preprocessor): the processing node on which this node relies for
             its data
     """
 
-    def __init__(self, bits=None, needs=None):
+    def __init__(self, bits=None, packbits=False, needs=None):
         super(SimHash, self).__init__(needs=needs)
+        self.packbits = packbits
         self.bits = bits
 
     def _forward_func(self):
-        def x(d, plane_vectors=None):
+        def x(d, plane_vectors=None, packbits=None):
+
             from zounds.core import ArrayWithUnits, IdentityDimension
             from zounds.learn import simhash
+            import numpy as np
+
             bits = simhash(plane_vectors, d)
+
+            if packbits:
+                bits = np.packbits(bits, axis=-1).view(np.uint64)
+
             try:
                 return ArrayWithUnits(
                     bits, [d.dimensions[0], IdentityDimension()])
@@ -397,7 +406,7 @@ class SimHash(Preprocessor):
         mean = data.mean(axis=0).flatten()
         std = data.std(axis=0).flatten()
         plane_vectors = hyperplanes(mean, std, self.bits)
-        op = self.transform(plane_vectors=plane_vectors)
+        op = self.transform(plane_vectors=plane_vectors, packbits=self.packbits)
         inv_data = self.inversion_data()
         inv = self.inverse_transform()
         data = op(data)
