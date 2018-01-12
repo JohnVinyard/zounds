@@ -1,13 +1,21 @@
 from trainer import Trainer
 import numpy as np
 
+
 class WassersteinGanTrainer(Trainer):
     """
     Args:
-        preprocess (function): function that takes the current epoch, and
-        a minibatch, and mutates the minibatch
-        arg_maker (function): function that takes the current epoch and outputs
-            args to pass to the generator and discriminator
+        network (nn.Module): the network to train
+        latent_dimension (tuple): A tuple that defines the shape of the latent
+            dimension (noise) that is the generator's input
+        n_critic_iterations (int): The number of minibatches the critic sees
+            for every minibatch the generator sees
+        epochs: The total number of passes over the training set
+        batch_size: The size of a minibatch
+        preprocess_minibatch (function): function that takes the current
+            epoch, and a minibatch, and mutates the minibatch
+        kwargs_factory (function): function that takes the current epoch and
+            outputs args to pass to the generator and discriminator
     """
 
     def __init__(
@@ -17,16 +25,12 @@ class WassersteinGanTrainer(Trainer):
             n_critic_iterations,
             epochs,
             batch_size,
-            preprocess=None,
-            arg_maker=None,
-            generator_loss_term=lambda network, output: 0,
-            critic_loss_term=lambda network, output: 0):
+            preprocess_minibatch=None,
+            kwargs_factory=None):
 
         super(WassersteinGanTrainer, self).__init__(epochs, batch_size)
-        self.critic_loss_term = critic_loss_term
-        self.generator_loss_term = generator_loss_term
-        self.arg_maker = arg_maker
-        self.preprocess = preprocess
+        self.arg_maker = kwargs_factory
+        self.preprocess = preprocess_minibatch
         self.n_critic_iterations = n_critic_iterations
         self.latent_dimension = latent_dimension
         self.network = network
@@ -37,7 +41,7 @@ class WassersteinGanTrainer(Trainer):
         indices = np.random.randint(0, len(data), self.batch_size)
         return data[indices, ...]
 
-    def _gradient_penalty(self, real_samples, fake_samples):
+    def _gradient_penalty(self, real_samples, fake_samples, kwargs):
         """
         Compute the norm of the gradients for each sample in a batch, and
         penalize anything on either side of unit norm
@@ -54,12 +58,13 @@ class WassersteinGanTrainer(Trainer):
 
         # TODO: this should have the same number of dimensions as real and
         # fake samples, and should not be hard-coded
-        alpha = torch.rand(subset_size, 1).cuda()
+        alpha = torch.rand(subset_size).cuda()
+        alpha = alpha.view((-1,) + ((1,) * (real_samples.dim() - 1)))
 
         interpolates = alpha * real_samples + ((1 - alpha) * fake_samples)
         interpolates = Variable(interpolates.cuda(), requires_grad=True)
 
-        d_output = self.critic(interpolates)
+        d_output = self.critic(interpolates, **kwargs)
 
         gradients = grad(
             outputs=d_output,
@@ -140,8 +145,7 @@ class WassersteinGanTrainer(Trainer):
                     fake_mean = torch.mean(d_fake)
                     d_loss = \
                         (fake_mean - real_mean) \
-                        + self._gradient_penalty(input_v.data, fake.data) \
-                        + self.critic_loss_term(self.critic, d_fake)
+                        + self._gradient_penalty(input_v.data, fake.data, kwargs)
                     d_loss.backward()
                     critic_optim.step()
 
@@ -157,9 +161,7 @@ class WassersteinGanTrainer(Trainer):
                     fake = self.preprocess(epoch, fake)
 
                 d_fake = self.critic.forward(fake, **kwargs)
-                g_loss = \
-                    -torch.mean(d_fake) \
-                    + self.generator_loss_term(self.generator, fake)
+                g_loss = -torch.mean(d_fake)
                 g_loss.backward()
                 generator_optim.step()
 
