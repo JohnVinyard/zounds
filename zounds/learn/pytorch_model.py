@@ -70,12 +70,13 @@ class PyTorchPreprocessResult(PreprocessResult):
 
 
 class PyTorchNetwork(Preprocessor):
-    def __init__(self, trainer=None, post_training_func=None, needs=None):
+    def __init__(self, trainer=None, post_training_func=None, needs=None, training_set_prep=None):
 
         super(PyTorchNetwork, self).__init__(needs=needs)
         self.trainer = trainer
         self.post_training_func = post_training_func or (lambda x: x)
         self._cache = dict()
+        self.training_set_prep = training_set_prep
 
     def _forward_func(self):
         def x(d, network=None):
@@ -111,6 +112,8 @@ class PyTorchNetwork(Preprocessor):
 
     def _process(self, data):
         data = self._extract_data(data)
+        if self.training_set_prep:
+            data = self.training_set_prep(data)
 
         trained_network = self.trainer.train(data)
 
@@ -237,8 +240,7 @@ class PyTorchAutoEncoder(PyTorchNetwork):
             batch_size = 128
 
             for i in xrange(0, len(d), batch_size):
-                tensor = torch.from_numpy(
-                    d[i:i + batch_size].astype(np.float32))
+                tensor = torch.from_numpy(d[i:i + batch_size])
                 gpu = tensor.cuda()
                 v = Variable(gpu)
                 chunks.append(network.encoder(v).data.cpu().numpy())

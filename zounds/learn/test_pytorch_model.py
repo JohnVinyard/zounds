@@ -103,7 +103,9 @@ class PyTorchModelTests(unittest2.TestCase):
             loss=nn.BCELoss(),
             optimizer=lambda model: SGD(model.parameters(), lr=0.2),
             epochs=1,
-            batch_size=64)
+            batch_size=64,
+            data_preprocessor=lambda x: x.astype(np.float32),
+            label_preprocessor=lambda x: x.astype(np.float32))
 
         @simple_in_memory_settings
         class Pipeline(ff.BaseModel):
@@ -115,6 +117,7 @@ class PyTorchModelTests(unittest2.TestCase):
                 ShuffledSamples,
                 nsamples=500,
                 multiplexed=True,
+                dtype=np.float32,
                 needs=inp,
                 store=False)
 
@@ -185,7 +188,7 @@ class PyTorchModelTests(unittest2.TestCase):
                 FrequencyDimension(LinearScale(FrequencyBand(100, 1000), 2))
             ])
 
-        result = pipe.pipeline.transform(arr)
+        result = pipe.pipeline.transform(arr.astype(np.float32))
         self.assertIsInstance(result.data, ArrayWithUnits)
         self.assertIsInstance(result.data.dimensions[0], TimeDimension)
 
@@ -201,7 +204,9 @@ class PyTorchModelTests(unittest2.TestCase):
             loss=nn.BCELoss(),
             optimizer=lambda model: SGD(model.parameters(), lr=0.2),
             epochs=100,
-            batch_size=64)
+            batch_size=64,
+            data_preprocessor=lambda x: x.astype(np.float32),
+            label_preprocessor=lambda x: x.astype(np.float32))
 
         @simple_in_memory_settings
         class Pipeline(ff.BaseModel):
@@ -213,6 +218,7 @@ class PyTorchModelTests(unittest2.TestCase):
                 ShuffledSamples,
                 nsamples=500,
                 multiplexed=True,
+                dtype=np.float32,
                 needs=inp,
                 store=False)
 
@@ -280,7 +286,7 @@ class PyTorchModelTests(unittest2.TestCase):
         new_factors = np.random.randint(1, 1000, (len(samples), 1))
         new_scaled_samples = new_factors * new_samples
 
-        result = pipe.pipeline.transform(new_scaled_samples)
+        result = pipe.pipeline.transform(new_scaled_samples.astype(np.float32))
 
         # reshape the data, and normalize to 0 or 1
         result = np.round(result.data.squeeze())
@@ -308,6 +314,7 @@ class PyTorchModelTests(unittest2.TestCase):
             samples = ff.PickleFeature(
                 ShuffledSamples,
                 nsamples=500,
+                dtype=np.float32,
                 needs=inp,
                 store=False)
 
@@ -337,7 +344,7 @@ class PyTorchModelTests(unittest2.TestCase):
         pipe = Pipeline(_id)
 
         test = ArrayWithUnits(
-            np.random.random_sample((10, 3)),
+            np.random.random_sample((10, 3)).astype(np.float32),
             dimensions=[
                 TimeDimension(Seconds(1)),
                 FrequencyDimension(LinearScale(FrequencyBand(100, 1000), 3))
@@ -372,6 +379,7 @@ class PyTorchModelTests(unittest2.TestCase):
             samples = ff.PickleFeature(
                 ShuffledSamples,
                 nsamples=500,
+                dtype=np.float32,
                 needs=inp,
                 store=False)
 
@@ -400,7 +408,7 @@ class PyTorchModelTests(unittest2.TestCase):
         _id = Pipeline.process(inp=gen(100, training))
         pipe = Pipeline(_id)
 
-        test = np.random.random_sample((10, 3))
+        test = np.random.random_sample((10, 3)).astype(np.float32)
         result = pipe.pipeline.transform(test)
         self.assertEqual((10, 2), result.data.shape)
 
@@ -426,6 +434,7 @@ class PyTorchModelTests(unittest2.TestCase):
                 ShuffledSamples,
                 nsamples=500,
                 needs=inp,
+                dtype=np.float32,
                 store=False)
 
             scaled = ff.PickleFeature(
