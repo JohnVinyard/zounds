@@ -263,3 +263,9 @@ class WindowedTest(unittest.TestCase):
         f = np.fft.fft(w)[:, 1:]
         _, w2 = windowed(f, 3, 1)
         self.assertEqual((3, 511), w2.shape[1:])
+
+    def test_can_apply_windowed_to_integer_dtype(self):
+        samples = np.zeros(44100).astype(np.int64)
+        l, w = windowed(samples, 8192, 4096)
+        self.assertEqual(w.dtype, np.int64)
+        self.assertEqual(8192, w.shape[1])
