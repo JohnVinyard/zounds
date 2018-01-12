@@ -8,6 +8,7 @@ from contentrange import RangeRequest, UnsatisfiableRangeRequestException
 from serializer import DefaultSerializer, AudioSamplesSerializer, \
     NumpySerializer, OggVorbisSerializer, ConstantRateTimeSeriesSerializer, \
     OnsetsSerializer, SearchResultsSerializer
+import threading
 
 
 class NoMatchingSerializerException(Exception):
@@ -61,15 +62,17 @@ class BaseZoundsApp(object):
             DefaultSerializer('audio/ogg'),
             NumpySerializer(),
             OnsetsSerializer(
-                    self.visualization_feature,
-                    self.audio_feature,
-                    self.feature_path),
+                self.visualization_feature,
+                self.audio_feature,
+                self.feature_path),
             SearchResultsSerializer(
-                    self.visualization_feature,
-                    self.audio_feature,
-                    self.feature_path)
+                self.visualization_feature,
+                self.audio_feature,
+                self.feature_path)
         ]
         self._html_content = self._get_html(html)
+        self.server = None
+        self.thread = None
 
     SCRIPT_TAG = re.compile('<script\s+src="/(?P<filename>[^"]+)"></script>')
 
@@ -84,19 +87,19 @@ class BaseZoundsApp(object):
         for filename, tag in to_replace:
             with open(os.path.join(path, filename)) as scriptfile:
                 html = html.replace(
-                        tag, '<script>{}</script>'.format(scriptfile.read()))
+                    tag, '<script>{}</script>'.format(scriptfile.read()))
 
         return html
 
     def feature_path(self, _id, feature):
         _id = urllib.quote(_id, safe='')
         return '{base_path}{_id}/{feature}'.format(
-                base_path=self.base_path, _id=_id, feature=feature)
+            base_path=self.base_path, _id=_id, feature=feature)
 
     def find_serializer(self, context):
         try:
             return filter(
-                    lambda x: x.matches(context), self.serializers)[0]
+                lambda x: x.matches(context), self.serializers)[0]
         except IndexError:
             raise NoMatchingSerializerException()
 
@@ -119,7 +122,7 @@ class BaseZoundsApp(object):
                 except KeyError:
                     slce = slice(None)
                 context = RequestContext(
-                        document=doc, feature=feature, slce=slce)
+                    document=doc, feature=feature, slce=slce)
                 try:
                     result = app.serialize(context)
                 except UnsatisfiableRangeRequestException:
@@ -130,8 +133,8 @@ class BaseZoundsApp(object):
                 self.write(result.data)
                 self.set_header('ETag', self.compute_etag())
                 self.set_status(
-                        httplib.PARTIAL_CONTENT if result.is_partial
-                        else httplib.OK)
+                    httplib.PARTIAL_CONTENT if result.is_partial
+                    else httplib.OK)
                 if result.content_range:
                     self.set_header('Content-Range', str(result.content_range))
                 self.finish()
@@ -159,9 +162,33 @@ class BaseZoundsApp(object):
     def custom_routes(self):
         return []
 
-    def start(self, port=8888):
-        app = tornado.web.Application(
-                self.custom_routes() + self.base_routes())
-        app.listen(port)
+    def _start(self):
+        tornado.ioloop.IOLoop.instance().start()
+
+    def _make_app(self):
+        return tornado.web.Application(
+            self.custom_routes() + self.base_routes())
+
+    def start_in_thread(self, port=8888):
+        app = self._make_app()
+        self.server = app.listen(port)
+        self.thread = threading.Thread(target=self._start)
+        self.thread.daemon = True
+        self.thread.start()
         print 'Interactive REPL at http://localhost:{port}'.format(port=port)
-        tornado.ioloop.IOLoop.current().start()
+        return self
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        ioloop = tornado.ioloop.IOLoop.instance()
+        ioloop.add_callback(ioloop.stop)
+        self.server.stop()
+        self.thread.join()
+
+    def start(self, port=8888):
+        app = self._make_app()
+        self.server = app.listen(port)
+        print 'Interactive REPL at http://localhost:{port}'.format(**locals())
+        self._start()
