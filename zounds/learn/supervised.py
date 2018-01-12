@@ -38,21 +38,9 @@ class SupervisedTrainer(Trainer):
         test_data, test_labels = data[:test_size], labels[:test_size]
         data, labels = data[test_size:], labels[test_size:]
 
-        if data is labels:
-            # this is an autoencoder scenario, so let's saved on memory
-            data = data.astype(np.float32)
-            test_data = data.astype(np.float32)
-            labels = data
-            test_labels = labels
-        else:
-            data = data.astype(np.float32)
-            test_data = test_data.astype(np.float32)
-            labels = labels.astype(np.float32)
-            test_labels = test_labels.astype(np.float32)
-
         def batch(d, l, test=False):
-            d = self.data_preprocessor(d).astype(np.float32)
-            l = self.label_preprocessor(l).astype(np.float32)
+            d = self.data_preprocessor(d)
+            l = self.label_preprocessor(l)
             inp = torch.from_numpy(d)
             inp = inp.cuda()
             inp_v = Variable(inp, volatile=test)
