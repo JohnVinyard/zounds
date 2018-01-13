@@ -14,8 +14,10 @@ class WassersteinGanTrainer(Trainer):
         batch_size: The size of a minibatch
         preprocess_minibatch (function): function that takes the current
             epoch, and a minibatch, and mutates the minibatch
-        kwargs_factory (function): function that takes the current epoch and
+        kwargs_factory (callable): function that takes the current epoch and
             outputs args to pass to the generator and discriminator
+        on_batch_complete (callable): callable invoked after each epoch,
+            accepting epoch and network being trained as arguments
     """
 
     def __init__(
@@ -26,9 +28,11 @@ class WassersteinGanTrainer(Trainer):
             epochs,
             batch_size,
             preprocess_minibatch=None,
-            kwargs_factory=None):
+            kwargs_factory=None,
+            on_batch_complete=None):
 
         super(WassersteinGanTrainer, self).__init__(epochs, batch_size)
+        self.on_batch_complete = on_batch_complete
         self.arg_maker = kwargs_factory
         self.preprocess = preprocess_minibatch
         self.n_critic_iterations = n_critic_iterations
@@ -167,6 +171,9 @@ class WassersteinGanTrainer(Trainer):
 
                 gl = g_loss.data[0]
                 dl = d_loss.data[0]
+
+                if self.on_batch_complete:
+                    self.on_batch_complete(epoch, self.network)
 
                 if i % 10 == 0:
                     print \
