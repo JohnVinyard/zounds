@@ -10,6 +10,15 @@ from zounds.core import ArrayWithUnits, IdentityDimension
 
 class TimeFrequencyRepresentationTests(unittest2.TestCase):
 
+    def test_sliding_window_has_correct_dimensions(self):
+        arr = np.random.randint(0, 255, (11025 * 2)).astype(np.int64)
+        sr = SR11025()
+        awu = ArrayWithUnits(arr, [TimeDimension(*sr)])
+        ws = TimeSlice(duration=sr.frequency * 8192)
+        ss = TimeSlice(duration=sr.frequency * 4096)
+        l, x = awu.sliding_window_with_leftovers(ws, ss)
+        self.assertEqual(8192, x.shape[1])
+
     def test_can_apply_sliding_window(self):
         sr = SR11025()
         hl = sr.half_lapped()

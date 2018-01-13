@@ -1,6 +1,6 @@
 import numpy as np
 import unittest2
-from functional import stft, apply_scale, frequency_decomposition
+from functional import fft, stft, apply_scale, frequency_decomposition
 from zounds.core import ArrayWithUnits
 from zounds.synthesize import SilenceSynthesizer, TickSynthesizer
 from zounds.timeseries import SR22050, Milliseconds, TimeDimension, TimeSlice
@@ -23,6 +23,27 @@ class FrequencyDecompositionTests(unittest2.TestCase):
         self.assertEqual(windowed.dimensions[0], fa.dimensions[0])
         self.assertIsInstance(
             fa.dimensions[1], ExplicitFrequencyDimension)
+
+
+class FFTTests(unittest2.TestCase):
+    def test_can_take_fft_of_1d_signal(self):
+        samples = SilenceSynthesizer(SR22050()).synthesize(Milliseconds(2500))
+        coeffs = fft(samples)
+        self.assertIsInstance(coeffs, ArrayWithUnits)
+        self.assertEqual(1, len(coeffs.dimensions))
+        self.assertIsInstance(coeffs.dimensions[0], FrequencyDimension)
+
+    def test_can_take_fft_of_2d_stacked_signal(self):
+        samples = SilenceSynthesizer(SR22050()).synthesize(Milliseconds(2500))
+        windowsize = TimeSlice(duration=Milliseconds(200))
+        stepsize = TimeSlice(duration=Milliseconds(100))
+        _, windowed = samples.sliding_window_with_leftovers(
+            windowsize=windowsize, stepsize=stepsize, dopad=True)
+        coeffs = fft(windowed)
+        self.assertIsInstance(coeffs, ArrayWithUnits)
+        self.assertEqual(2, len(coeffs.dimensions))
+        self.assertEqual(windowed.dimensions[0], coeffs.dimensions[0])
+        self.assertIsInstance(coeffs.dimensions[1], FrequencyDimension)
 
 
 class STFTTests(unittest2.TestCase):

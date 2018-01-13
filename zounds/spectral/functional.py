@@ -2,7 +2,7 @@ from __future__ import division
 from frequencyscale import LinearScale, FrequencyBand, ExplicitScale
 from tfrepresentation import FrequencyDimension
 from frequencyadaptive import FrequencyAdaptive
-from zounds.timeseries import audio_sample_rate, TimeSlice
+from zounds.timeseries import audio_sample_rate, TimeSlice, Seconds
 from zounds.core import ArrayWithUnits
 from sliding_window import IdentityWindowingFunc
 import numpy as np
@@ -11,13 +11,11 @@ from scipy.signal import resample
 
 def fft(x, axis=-1):
     transformed = np.fft.rfft(x, axis=axis, norm='ortho')
-
-    sr = audio_sample_rate(
-        int(x.shape[1] / x.dimensions[0].duration_in_seconds))
+    sr = audio_sample_rate(int(Seconds(1) / x.dimensions[axis].frequency))
     scale = LinearScale.from_sample_rate(sr, transformed.shape[-1])
-
-    return ArrayWithUnits(
-        transformed, [x.dimensions[0], FrequencyDimension(scale)])
+    new_dimensions = list(x.dimensions)
+    new_dimensions[axis] = FrequencyDimension(scale)
+    return ArrayWithUnits(transformed, new_dimensions)
 
 
 def stft(x, window_sample_rate, window=None):
@@ -70,5 +68,3 @@ def frequency_decomposition(x, sizes):
 
     scale = ExplicitScale(frequency_bands)
     return FrequencyAdaptive(bands, scale=scale, time_dimension=x.dimensions[0])
-
-
