@@ -1,4 +1,4 @@
-import json
+import ujson as json
 import os
 import threading
 import numpy as np
@@ -84,6 +84,8 @@ class HammingIndex(object):
         self.close()
 
     def __len__(self):
+        if self.hamming_db is None:
+            return 0
         return len(self.hamming_db)
 
     def stop(self):

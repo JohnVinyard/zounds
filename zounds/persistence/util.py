@@ -11,9 +11,9 @@ def encode_timedelta(td):
 
 
 def decode_timedelta(t):
-    if isinstance(t, np.timedelta64):
+    try:
+        v = np.frombuffer(base64.b64decode(t[0]), dtype=np.uint64)[0]
+        s = t[1]
+        return np.timedelta64(long(v), s)
+    except IndexError:
         return t
-
-    v = np.fromstring(base64.b64decode(t[0]), dtype=np.uint64)[0]
-    s = t[1]
-    return np.timedelta64(long(v), s)

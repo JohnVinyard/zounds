@@ -47,6 +47,14 @@ class HammingIndexTests(unittest2.TestCase):
         index._synchronously_process_events()
         self.assertEqual(8, index.hamming_db.code_size)
 
+    def test_hamming_index_len_returns_even_when_underlying_db_uniitialized(self):
+        Model = self._model(
+            slice_size=128,
+            settings=self._settings_with_event_log())
+
+        index = self._index(Model, Model.sliced)
+        self.assertEqual(0, len(index))
+
     def test_hamming_db_is_initialized_if_docs_exist(self):
         Model = self._model(
             slice_size=128,

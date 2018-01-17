@@ -81,7 +81,8 @@ setup(
         'pysoundfile',
         'matplotlib',
         'argparse',
-        'intervaltree'
+        'intervaltree',
+        'ujson'
     ],
     package_data={
         'nputil': ['*.pyx', '*.pyxbld'],
