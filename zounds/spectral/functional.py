@@ -9,8 +9,27 @@ import numpy as np
 from scipy.signal import resample
 
 
-def fft(x, axis=-1):
-    transformed = np.fft.rfft(x, axis=axis, norm='ortho')
+def fft(x, axis=-1, padding_samples=0):
+    """
+    Apply an FFT along the given dimension, and with the specified amount of
+    zero-padding
+
+    Args:
+        x (ArrayWithUnits): an :class:`~zounds.core.ArrayWithUnits` instance
+            which has one or more :class:`~zounds.timeseries.TimeDimension`
+            axes
+        axis (int): The axis along which the fft should be applied
+        padding_samples (int): The number of padding zeros to apply along
+            axis before performing the FFT
+    """
+    if padding_samples > 0:
+        padded = np.concatenate(
+            [x, np.zeros((len(x), padding_samples), dtype=x.dtype)],
+            axis=axis)
+    else:
+        padded = x
+
+    transformed = np.fft.rfft(padded, axis=axis, norm='ortho')
     sr = audio_sample_rate(int(Seconds(1) / x.dimensions[axis].frequency))
     scale = LinearScale.from_sample_rate(sr, transformed.shape[-1])
     new_dimensions = list(x.dimensions)

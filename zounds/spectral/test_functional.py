@@ -26,6 +26,20 @@ class FrequencyDecompositionTests(unittest2.TestCase):
 
 
 class FFTTests(unittest2.TestCase):
+    def test_can_pad_for_better_frequency_resolution(self):
+        samples = SilenceSynthesizer(SR22050()).synthesize(Milliseconds(2500))
+        windowsize = TimeSlice(duration=Milliseconds(200))
+        stepsize = TimeSlice(duration=Milliseconds(100))
+        _, windowed = samples.sliding_window_with_leftovers(
+            windowsize=windowsize, stepsize=stepsize, dopad=True)
+        coeffs = fft(windowed, padding_samples=1024)
+        self.assertIsInstance(coeffs, ArrayWithUnits)
+        self.assertEqual(2, len(coeffs.dimensions))
+        self.assertEqual(windowed.dimensions[0], coeffs.dimensions[0])
+        self.assertIsInstance(coeffs.dimensions[1], FrequencyDimension)
+        expected_size = ((windowed.shape[-1] + 1024) // 2) + 1
+        self.assertEqual(expected_size, coeffs.shape[-1])
+
     def test_can_take_fft_of_1d_signal(self):
         samples = SilenceSynthesizer(SR22050()).synthesize(Milliseconds(2500))
         coeffs = fft(samples)

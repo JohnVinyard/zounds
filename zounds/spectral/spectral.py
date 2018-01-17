@@ -40,18 +40,21 @@ class FFT(Node):
 
     Args:
         axis (int): The axis over which the FFT should be computed
+        padding_samples (int): number of zero samples to pad each window with
+            before applying the FFT
         needs (Node): a processing node on which this one depends
 
     See Also:
         :class:`~zounds.synthesize.FFTSynthesizer`
     """
 
-    def __init__(self, needs=None, axis=-1):
+    def __init__(self, needs=None, axis=-1, padding_samples=0):
         super(FFT, self).__init__(needs=needs)
         self._axis = axis
+        self._padding_samples = padding_samples
 
     def _process(self, data):
-        yield fft(data, self._axis)
+        yield fft(data, axis=self._axis, padding_samples=self._padding_samples)
 
 
 class DCT(Node):
