@@ -47,6 +47,32 @@ def stft(x, window_sample_rate, window=None):
     return fft(windowed)
 
 
+def phase_shift(coeffs, samplerate, time_shift, axis=-1, frequency_band=None):
+    frequency_dim = coeffs.dimensions[axis]
+    if not isinstance(frequency_dim, FrequencyDimension):
+        raise ValueError(
+            'dimension {axis} of coeffs must be a FrequencyDimension instance, '
+            'but was {cls}'.format(axis=axis, cls=frequency_dim.__class__))
+
+    n_coeffs = coeffs.shape[axis]
+    shift_samples = int(time_shift / samplerate.frequency)
+    shift = (np.arange(0, n_coeffs) * 2j * np.pi) / n_coeffs
+    shift = np.exp(-shift * shift_samples)
+    shift = ArrayWithUnits(shift, [frequency_dim])
+
+    frequency_band = frequency_band or slice(None)
+    new_coeffs = coeffs.copy()
+
+    if coeffs.ndim == 1:
+        new_coeffs[frequency_band] *= shift[frequency_band]
+        return new_coeffs
+
+    slices = [slice(None) for _ in xrange(coeffs.ndim)]
+    slices[axis] = frequency_band
+    new_coeffs[tuple(slices)] *= shift[frequency_band]
+    return new_coeffs
+
+
 def apply_scale(short_time_fft, scale, reducer=np.sum, window=None):
     magnitudes = np.abs(short_time_fft.real)
     output = np.zeros(

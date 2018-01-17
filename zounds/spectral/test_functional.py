@@ -1,12 +1,15 @@
 import numpy as np
 import unittest2
-from functional import fft, stft, apply_scale, frequency_decomposition
+from functional import \
+    fft, stft, apply_scale, frequency_decomposition, phase_shift
 from zounds.core import ArrayWithUnits
-from zounds.synthesize import SilenceSynthesizer, TickSynthesizer
-from zounds.timeseries import SR22050, Milliseconds, TimeDimension, TimeSlice
+from zounds.synthesize import \
+    SilenceSynthesizer, TickSynthesizer, SineSynthesizer, FFTSynthesizer
+from zounds.timeseries import SR22050, SR11025, Seconds, Milliseconds, \
+    TimeDimension, TimeSlice
 from zounds.spectral import \
     HanningWindowingFunc, FrequencyDimension, LinearScale, GeometricScale, \
-    ExplicitFrequencyDimension
+    ExplicitFrequencyDimension, FrequencyBand
 
 
 class FrequencyDecompositionTests(unittest2.TestCase):
@@ -58,6 +61,103 @@ class FFTTests(unittest2.TestCase):
         self.assertEqual(2, len(coeffs.dimensions))
         self.assertEqual(windowed.dimensions[0], coeffs.dimensions[0])
         self.assertIsInstance(coeffs.dimensions[1], FrequencyDimension)
+
+
+class PhaseShiftTests(unittest2.TestCase):
+    def _mean_squared_error(self, x, y):
+        l = min(len(x), len(y))
+        return ((x[:l] - y[:l]) ** 2).mean()
+
+    def test_1d_phase_shift_returns_correct_size(self):
+        samplerate = SR22050()
+        samples = SineSynthesizer(samplerate) \
+            .synthesize(Milliseconds(5500), [220, 440, 880])
+        coeffs = fft(samples)
+        shifted = phase_shift(
+            coeffs=coeffs,
+            samplerate=samplerate,
+            time_shift=Milliseconds(5500),
+            frequency_band=FrequencyBand(50, 5000))
+        self.assertEqual(coeffs.shape, shifted.shape)
+
+    def test_can_phase_shift_1d_signal(self):
+        samplerate = SR22050()
+        samples = SineSynthesizer(samplerate) \
+            .synthesize(Milliseconds(5000), [220, 440, 880])
+        coeffs = fft(samples)
+        shifted = phase_shift(coeffs, samplerate, Milliseconds(10))
+        new_samples = np.fft.irfft(shifted, norm='ortho')
+        self.assertNotEqual(0, self._mean_squared_error(samples, new_samples))
+
+    def test_can_phase_shift_1d_signal_180_degrees(self):
+        samplerate = SR22050()
+        samples = SineSynthesizer(samplerate) \
+            .synthesize(Seconds(1), [110, 220, 440, 880])
+        coeffs = fft(samples)
+        shifted = phase_shift(
+            coeffs=coeffs,
+            samplerate=samplerate,
+            time_shift=-Milliseconds(1000),
+            frequency_band=FrequencyBand(50, 5000))
+        new_samples = np.fft.irfft(shifted, norm='ortho')
+        self.assertAlmostEqual(
+            0, self._mean_squared_error(samples, new_samples), 1)
+
+    def test_2d_phase_shift_returns_correct_shape(self):
+        samplerate = SR22050()
+        samples = SineSynthesizer(samplerate) \
+            .synthesize(Milliseconds(2500), [220, 440, 880])
+        windowsize = TimeSlice(duration=Milliseconds(200))
+        stepsize = TimeSlice(duration=Milliseconds(100))
+        _, windowed = samples.sliding_window_with_leftovers(
+            windowsize=windowsize, stepsize=stepsize, dopad=True)
+        coeffs = fft(windowed)
+        shifted = phase_shift(
+            coeffs=coeffs,
+            samplerate=samplerate,
+            time_shift=Milliseconds(40),
+            frequency_band=FrequencyBand(50, 5000))
+        self.assertEqual(coeffs.shape, shifted.shape)
+
+    def test_can_phase_shift_2d_signal(self):
+        samplerate = SR22050()
+        samples = SineSynthesizer(samplerate) \
+            .synthesize(Milliseconds(2500), [220, 440, 880])
+        windowsize = TimeSlice(duration=Milliseconds(200))
+        stepsize = TimeSlice(duration=Milliseconds(100))
+        _, windowed = samples.sliding_window_with_leftovers(
+            windowsize=windowsize, stepsize=stepsize, dopad=True)
+        coeffs = fft(windowed)
+        shifted = phase_shift(coeffs, samplerate, Milliseconds(40))
+        synth = FFTSynthesizer()
+        new_samples = synth.synthesize(shifted).squeeze()
+        self.assertNotEqual(0, self._mean_squared_error(samples, new_samples))
+
+    def test_can_phase_shift_2d_signal_180_degrees(self):
+        samplerate = SR22050()
+        samples = SineSynthesizer(samplerate) \
+            .synthesize(Milliseconds(2500), [220, 440, 880])
+        windowsize = TimeSlice(duration=Milliseconds(200))
+        stepsize = TimeSlice(duration=Milliseconds(100))
+        _, windowed = samples.sliding_window_with_leftovers(
+            windowsize=windowsize, stepsize=stepsize, dopad=True)
+        coeffs = fft(windowed)
+        shifted = phase_shift(
+            coeffs=coeffs,
+            samplerate=samplerate,
+            time_shift=Milliseconds(100))
+        synth = FFTSynthesizer()
+        new_samples = synth.synthesize(shifted).squeeze()
+        self.assertAlmostEqual(
+            0, self._mean_squared_error(samples, new_samples), 1)
+
+    def test_raises_value_error_when_specified_axis_not_frequency_dim(self):
+        samplerate = SR22050()
+        samples = SineSynthesizer(samplerate) \
+            .synthesize(Milliseconds(2500), [220, 440, 880])
+        self.assertRaises(
+            ValueError,
+            lambda: phase_shift(samples, samplerate, Milliseconds(10)))
 
 
 class STFTTests(unittest2.TestCase):

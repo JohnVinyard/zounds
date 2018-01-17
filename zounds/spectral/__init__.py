@@ -20,4 +20,5 @@ from frequencyscale import \
 
 from frequencyadaptive import FrequencyAdaptive
 
-from functional import fft, stft, apply_scale, frequency_decomposition
+from functional import \
+    fft, stft, apply_scale, frequency_decomposition, phase_shift
