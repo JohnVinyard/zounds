@@ -1,8 +1,9 @@
+from trainer import Trainer
 from random import choice
 import numpy as np
 
 
-class TripletEmbeddingTrainer(object):
+class TripletEmbeddingTrainer(Trainer):
     """
     Learn an embedding by applying the triplet loss to anchor examples, negative
     examples, and deformed or adjacent examples, akin to:
@@ -34,11 +35,9 @@ class TripletEmbeddingTrainer(object):
             anchor_slice,
             deformations=None):
 
-        super(TripletEmbeddingTrainer, self).__init__()
+        super(TripletEmbeddingTrainer, self).__init__(epochs, batch_size)
         self.anchor_slice = anchor_slice
         self.network = network
-        self.epochs = epochs
-        self.batch_size = batch_size
         self.deformations = deformations
 
         # The margin hyperparameter is set to 0.1 in, according to section 4.2
@@ -61,6 +60,11 @@ class TripletEmbeddingTrainer(object):
         x = self.network(x)
         return x / torch.norm(x, dim=1).view(-1, 1)
 
+    def _select_batch(self, training_set):
+        indices = np.random.randint(0, len(training_set), self.batch_size)
+        batch = training_set[indices, self.anchor_slice]
+        return indices, batch.astype(np.float32)
+
     def train(self, data):
         from torch import nn
         from torch.optim import Adam
@@ -69,29 +73,29 @@ class TripletEmbeddingTrainer(object):
         data = data['data']
 
         self.network.cuda()
+        self.network.train()
+
         optimizer = Adam(self.network.parameters(), lr=1e-5)
-        loss = nn.TripletMarginLoss(margin=0.1).cuda()
+        loss = nn.TripletMarginLoss(margin=self.margin).cuda()
 
         for epoch, batch in self._driver(data):
             self.network.zero_grad()
 
-            # choose a batch
-            indices = np.random.randint(0, len(data), self.batch_size)
-
-            # choose the anchors from the batch
-            anchor = data[indices, self.anchor_slice]
+            # choose a batch of anchors
+            indices, anchor = self._select_batch(data)
             anchor_v = to_var(anchor)
             a = self._apply_network_and_normalize(anchor_v)
 
             # choose negative examples
-            negative_indices = np.random.randint(0, len(data), self.batch_size)
-            negative = data[negative_indices, self.anchor_slice]
+            negative_indices, negative = self._select_batch(data)
             negative_v = to_var(negative)
             n = self._apply_network_and_normalize(negative_v)
 
-            # choose a deformation for this batch
+            # choose a deformation for this batch and apply it to produce the
+            # positive examples
             deformation = choice(self.deformations)
-            positive = deformation(anchor, data[indices, ...])
+            positive = deformation(anchor, data[indices, ...]) \
+                .astype(np.float32)
             positive_v = to_var(positive)
             p = self._apply_network_and_normalize(positive_v)
 
