@@ -79,6 +79,22 @@ class WassersteinGanTrainer(Trainer):
             only_inputs=True)[0]
         return ((gradients.norm(2, dim=1) - 1) ** 2).mean() * 10
 
+    def freeze_generator(self):
+        for p in self.generator.parameters():
+            p.requires_grad = False
+
+    def unfreeze_generator(self):
+        for p in self.generator.parameters():
+            p.requires_grad = True
+
+    def freeze_discriminator(self):
+        for p in self.critic.parameters():
+            p.requires_grad = False
+
+    def unfreeze_discriminator(self):
+        for p in self.critic.parameters():
+            p.requires_grad = True
+
     def train(self, data):
 
         import torch
@@ -117,8 +133,8 @@ class WassersteinGanTrainer(Trainer):
                 self.generator.zero_grad()
                 self.critic.zero_grad()
 
-                self.generator.eval()
-                self.critic.train()
+                self.freeze_generator()
+                self.unfreeze_discriminator()
 
                 for c in xrange(self.n_critic_iterations):
 
@@ -153,8 +169,11 @@ class WassersteinGanTrainer(Trainer):
                     d_loss.backward()
                     critic_optim.step()
 
-                self.generator.train()
-                self.critic.eval()
+                self.generator.zero_grad()
+                self.critic.zero_grad()
+
+                self.unfreeze_generator()
+                self.freeze_discriminator()
 
                 # train generator
                 noise.normal_(0, 1)
