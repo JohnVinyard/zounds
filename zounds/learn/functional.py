@@ -20,9 +20,17 @@ def simhash(plane_vectors, data):
     return output
 
 
-def example_wise_unit_norm(x):
+def example_wise_unit_norm(x, return_norms=False):
     original_shape = x.shape
+
+    # flatten all dimensions of x, treating the first axis as examples and all
+    # other axes as features
     x = x.reshape((len(x), -1))
     norms = np.linalg.norm(x, axis=-1, keepdims=True)
     normed = np.divide(x, norms, where=norms != 0)
-    return normed.reshape(original_shape)
+    normed = normed.reshape(original_shape)
+
+    if return_norms:
+        return normed, norms
+    else:
+        return normed
