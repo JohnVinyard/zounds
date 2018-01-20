@@ -5,6 +5,7 @@ from collections import OrderedDict
 import hashlib
 import numpy as np
 from functional import hyperplanes
+from zounds.loudness import log_modulus, inverse_log_modulus
 
 
 class Op(object):
@@ -176,25 +177,21 @@ class UnitNorm(Preprocessor):
         def x(d):
             from zounds.core import ArrayWithUnits
             from functional import example_wise_unit_norm
-            normed = example_wise_unit_norm(d)
+            normed, norms = example_wise_unit_norm(d, return_norms=True)
             try:
-                return ArrayWithUnits(normed, d.dimensions)
+                normed = ArrayWithUnits(normed, d.dimensions)
             except AttributeError:
-                return normed
+                pass
 
-        return x
-
-    def _inversion_data(self):
-        def x(d):
-            import numpy as np
-            return dict(norm=np.linalg.norm(
-                d.reshape((d.shape[0], -1)), axis=1))
+            return ForwardResult(normed, norm=norms)
 
         return x
 
     def _backward_func(self):
         def x(d, norm=None):
-            return (d.T * norm).T
+            dim_diff = d.ndim - norm.ndim
+            new_dims = (1,) * dim_diff
+            return d * norm.reshape(norm.shape + new_dims)
 
         return x
 
@@ -203,35 +200,31 @@ class UnitNorm(Preprocessor):
         op = self.transform()
         inv_data = self.inversion_data()
         inv = self.inverse_transform()
-        data = op(data)
+        try:
+            forward_result = op(data)
+            data = forward_result.output_value
+        except AttributeError:
+            data = None
         yield PreprocessResult(
             data, op, inversion_data=inv_data, inverse=inv, name='UnitNorm')
 
 
-class Log(Preprocessor):
-    """
-    Perform the log-modulus transform on data
-    (http://blogs.sas.com/content/iml/2014/07/14/log-transformation-of-pos-neg.html)
+class BasePreprocessor(Preprocessor):
+    def __init__(self, forward=None, backward=None, name=None, needs=None):
+        super(BasePreprocessor, self).__init__(needs=needs)
 
-    This transform will tend to compress the overall range of values
-    """
+        def not_implemented():
+            raise NotImplementedError()
 
-    def __init__(self, needs=None):
-        super(Log, self).__init__(needs=needs)
+        self.forward = forward
+        self.backward = backward or not_implemented
+        self.name = name
 
     def _forward_func(self):
-        def x(d):
-            from zounds.loudness import log_modulus
-            return log_modulus(d)
-
-        return x
+        return self.forward
 
     def _backward_func(self):
-        def x(d):
-            from zounds.loudness import inverse_log_modulus
-            return inverse_log_modulus(d)
-
-        return x
+        return self.backward
 
     def _process(self, data):
         data = self._extract_data(data)
@@ -240,7 +233,54 @@ class Log(Preprocessor):
         inv = self.inverse_transform()
         data = op(data)
         yield PreprocessResult(
-            data, op, inversion_data=inv_data, inverse=inv, name='Log')
+            data, op, inversion_data=inv_data, inverse=inv, name=self.name)
+
+
+# class Log(Preprocessor):
+#     """
+#     Perform the log-modulus transform on data
+#     (http://blogs.sas.com/content/iml/2014/07/14/log-transformation-of-pos-neg.html)
+#
+#     This transform will tend to compress the overall range of values
+#     """
+#
+#     def __init__(self, needs=None):
+#         super(Log, self).__init__(needs=needs)
+#
+#     def _forward_func(self):
+#         def x(d):
+#             from zounds.loudness import log_modulus
+#             return log_modulus(d)
+#
+#         return x
+#
+#     def _backward_func(self):
+#         def x(d):
+#             from zounds.loudness import inverse_log_modulus
+#             return inverse_log_modulus(d)
+#
+#         return x
+#
+#     def _process(self, data):
+#         data = self._extract_data(data)
+#         op = self.transform()
+#         inv_data = self.inversion_data()
+#         inv = self.inverse_transform()
+#         data = op(data)
+#         yield PreprocessResult(
+#             data, op, inversion_data=inv_data, inverse=inv, name='Log')
+
+
+# TODO: what about functions with imports that aren't in the calling namespace?
+# TODO: what about functions that require inversion data?
+# TODO: what about functions that need to do some processing first (e.g. SimHash)
+class Log(BasePreprocessor):
+    def __init__(self, needs=None):
+        super(Log, self).__init__(
+            forward=log_modulus,
+            backward=inverse_log_modulus,
+            name='Log',
+            needs=needs)
 
 
 class MuLawCompressed(Preprocessor):
@@ -446,6 +486,12 @@ class MeanStdNormalization(Preprocessor):
             data, op, inversion_data=inv_data, inverse=inv, name='MeanStd')
 
 
+class ForwardResult(object):
+    def __init__(self, output_value, **inversion_data):
+        self.output_value = output_value
+        self.inversion_data = inversion_data
+
+
 class InstanceScaling(Preprocessor):
     def __init__(self, max_value=1, needs=None):
         super(InstanceScaling, self).__init__(needs=needs)
@@ -455,18 +501,11 @@ class InstanceScaling(Preprocessor):
         def x(d, max_value=None):
             import numpy as np
             axes = tuple(range(1, len(d.shape)))
+            # TODO: it should be possible to hand this intermediate value off
+            # to inversion data, and to ignore the extra
             m = np.max(np.abs(d), axis=axes, keepdims=True)
-            return max_value * np.divide(d, m, where=m != 0)
-
-        return x
-
-    def _inversion_data(self):
-        def x(d, max_value=None):
-            import numpy as np
-            axes = tuple(range(1, len(d.shape)))
-            return dict(
-                max=np.max(np.abs(d), axis=axes, keepdims=True),
-                max_value=max_value)
+            output = max_value * np.divide(d, m, where=m != 0)
+            return ForwardResult(output, max=m, max_value=max_value)
 
         return x
 
@@ -479,9 +518,10 @@ class InstanceScaling(Preprocessor):
     def _process(self, data):
         data = self._extract_data(data)
         op = self.transform(max_value=self.max_value)
-        inv_data = self.inversion_data(max_value=self.max_value)
+        inv_data = self.inversion_data()
         inv = self.inverse_transform()
-        data = op(data)
+        forward_result = op(data)
+        data = forward_result.output_value
         yield PreprocessResult(
             data,
             op,
@@ -685,9 +725,17 @@ class Pipeline(object):
         inversion_data = []
         wrap_data = []
         for p in self.processors:
-            inversion_data.append(p.inversion_data(data))
             wrap_data.append(self.wrap_data(data))
-            data = p.op(data)
+            processed_data = p.op(data)
+
+            if isinstance(processed_data, ForwardResult):
+                inv_data = processed_data.inversion_data
+                processed_data = processed_data.output_value
+            else:
+                inv_data = p.inversion_data(data)
+
+            inversion_data.append(inv_data)
+            data = processed_data
 
         if wrapper is not None:
             data = wrapper(data)
