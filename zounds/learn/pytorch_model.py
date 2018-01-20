@@ -1,12 +1,10 @@
-from hashlib import md5
+
 import warnings
 import featureflow as ff
 from preprocess import Preprocessor, PreprocessResult, Op
 
 
 class PyTorchPreprocessResult(PreprocessResult):
-    # network_cache = dict()
-
     def __init__(self, data, op, inversion_data=None, inverse=None, name=None):
         super(PyTorchPreprocessResult, self).__init__(
             data, op, inversion_data, inverse, name)
@@ -32,15 +30,6 @@ class PyTorchPreprocessResult(PreprocessResult):
             weights=weights,
             name=name,
             cls=cls)
-
-    # def _network_identifier(self, weight_dict):
-    #     sorted_keys = sorted(weight_dict.iterkeys())
-    #     hashed = md5()
-    #     for key in sorted_keys:
-    #         value = weight_dict[key]
-    #         hashed.update(key)
-    #         hashed.update(value)
-    #     return hashed.hexdigest()
 
     def __setstate__(self, state):
         import torch
@@ -70,27 +59,32 @@ class PyTorchPreprocessResult(PreprocessResult):
 
 
 class PyTorchNetwork(Preprocessor):
-    def __init__(self, trainer=None, post_training_func=None, needs=None, training_set_prep=None):
+    def __init__(
+            self,
+            trainer=None,
+            post_training_func=None,
+            needs=None,
+            training_set_prep=None,
+            chunksize=None):
 
         super(PyTorchNetwork, self).__init__(needs=needs)
         self.trainer = trainer
         self.post_training_func = post_training_func or (lambda x: x)
         self._cache = dict()
         self.training_set_prep = training_set_prep
+        self.chunksize = chunksize
 
     def _forward_func(self):
-        def x(d, network=None):
+
+        def x(d, network=None, chunk_size=None):
             from zounds.core import ArrayWithUnits, IdentityDimension
             from zounds.learn import apply_network
 
-            result = apply_network(network, d, chunksize=128)
+            result = apply_network(network, d, chunksize=chunk_size)
             try:
                 return ArrayWithUnits(
                     result, [d.dimensions[0], IdentityDimension()])
-            except AttributeError:
-                return result
-            except ValueError:
-                # the number of dimensions has likely changed
+            except (AttributeError, ValueError):
                 return result
 
         return x
@@ -98,7 +92,6 @@ class PyTorchNetwork(Preprocessor):
     def _backward_func(self):
         def x(_):
             raise NotImplementedError()
-
         return x
 
     def _enqueue(self, data, pusher):
@@ -110,23 +103,34 @@ class PyTorchNetwork(Preprocessor):
             raise ff.NotEnoughData()
         return self._cache
 
+    def _train(self, data):
+        trained_network = self.trainer.train(data)
+        trained_network.zero_grad()
+        trained_network.eval()
+        return trained_network
+
     def _process(self, data):
         data = self._extract_data(data)
         if self.training_set_prep:
             data = self.training_set_prep(data)
 
-        trained_network = self.trainer.train(data)
+        trained_network = self._train(data)
+
+        chunksize = self.chunksize or self.trainer.batch_size
 
         try:
             forward_func = self._forward_func()
             x = self.post_training_func(data['data'])
-            processed_data = forward_func(x, network=trained_network)
+            print x.shape, x.dtype, self.chunksize
+            processed_data = forward_func(
+                x, network=trained_network, chunk_size=chunksize)
         except RuntimeError as e:
             processed_data = None
             # the dataset may be too large to fit onto the GPU all at once
             warnings.warn(e.message)
 
-        op = self.transform(network=trained_network)
+        op = self.transform(
+            network=trained_network, chunk_size=self.trainer.batch_size)
         inv_data = self.inversion_data()
         inv = self.inverse_transform()
 
@@ -196,8 +200,7 @@ class PyTorchGan(PyTorchNetwork):
     def _process(self, data):
         data = self._extract_data(data)
 
-        network = self.trainer.train(data)
-        network.eval()
+        network = self._train(data)
 
         try:
             # note that the processed data passed on to the next step in the
@@ -284,8 +287,7 @@ class PyTorchAutoEncoder(PyTorchNetwork):
 
         data = dict(data=data, labels=data)
 
-        trained_network = self.trainer.train(data)
-        trained_network.eval()
+        trained_network = self._train(data)
 
         processed_data = None
         inp = data['data']
