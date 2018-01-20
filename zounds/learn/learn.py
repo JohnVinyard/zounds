@@ -58,8 +58,10 @@ class Learned(Node):
             version=None, 
             wrapper=None,
             pipeline_func=None,
-            needs=None):
+            needs=None,
+            dtype=None):
         super(Learned, self).__init__(needs=needs)
+        self.dtype = dtype
         self._pipeline_func = pipeline_func or (lambda x: x.pipeline)
         self._wrapper = wrapper
         self._learned = learned
@@ -75,5 +77,7 @@ class Learned(Node):
 
     def _process(self, data):
         pipeline = self._pipeline_func(self._learned)
+        if self.dtype:
+            data = data.astype(self.dtype)
         transformed = pipeline.transform(data, wrapper=self._wrapper).data
         yield transformed
