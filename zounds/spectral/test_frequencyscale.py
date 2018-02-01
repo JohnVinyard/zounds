@@ -6,6 +6,12 @@ from zounds.timeseries import SR44100
 import numpy as np
 
 
+class HertzTests(unittest2.TestCase):
+    def test_can_negate_hertz(self):
+        hz = -Hertz(10)
+        self.assertIsInstance(hz, Hertz)
+
+
 class FrequencyBandTests(unittest2.TestCase):
     def test_can_create_from_center_frequency(self):
         fb = FrequencyBand.from_center(1000, 50)
@@ -32,7 +38,7 @@ class FrequencyBandTests(unittest2.TestCase):
     def test_error_raised_when_no_intersection(self):
         fb1 = FrequencyBand(0, 100)
         fb2 = FrequencyBand(200, 500)
-        self.assertRaises(ValueError, lambda:   fb1.intersect(fb2))
+        self.assertRaises(ValueError, lambda: fb1.intersect(fb2))
 
     def test_intersection_ratio(self):
         fb1 = FrequencyBand(0, 100)

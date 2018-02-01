@@ -8,6 +8,9 @@ class Hertz(float):
         super(Hertz, self).__init__(hz)
         self.hz = hz
 
+    def __neg__(self):
+        return Hertz(-self.hz)
+
     def __add__(self, other):
         return Hertz(self + other)
 
