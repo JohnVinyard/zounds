@@ -29,6 +29,13 @@ def inverse_mu_law(x, mu=255):
     return x * s
 
 
+def unit_scale(x, axis=None):
+    scaled = x - x.min(axis=axis, keepdims=True)
+    mx = scaled.max(axis=axis, keepdims=True)
+    scaled = np.divide(scaled, mx, where=max != 0)
+    return scaled
+
+
 class MuLaw(Node):
     def __init__(self, mu=255, needs=None):
         super(MuLaw, self).__init__(needs=needs)
