@@ -14,3 +14,5 @@ from audiostream import AudioStream
 from resample import Resampler
 
 from chunksize import ChunkSizeBytes
+
+from functional import resample

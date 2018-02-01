@@ -38,8 +38,9 @@ class OggVorbisWrapper(object):
             return AudioSamples(self._sf.read(len(self._sf)), sr)
 
         start_sample = int(timeslice.start / self._freq)
-        self._sf.seek(start_sample)
         n_samples = self._n_samples(timeslice.duration)
+
+        self._sf.seek(start_sample)
         return AudioSamples(self._sf.read(n_samples), sr)
 
     def iter_chunks(self):

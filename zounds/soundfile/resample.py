@@ -4,7 +4,7 @@ from ctypes import *
 
 import numpy as np
 
-from zounds.timeseries import SR44100, AudioSamples
+from zounds.timeseries import SR44100, AudioSamples, Seconds
 from zounds.core import ArrayWithUnits
 
 try:
@@ -63,6 +63,7 @@ class Resample(object):
         """
         super(Resample, self).__init__()
         self._ratio = new_sample_rate / orig_sample_rate
+        print self._ratio
         # check if the conversion ratio is considered valid by libsamplerate
         if not libsamplerate.src_is_valid_ratio(c_double(self._ratio)):
             raise ValueError('%1.2f / %1.2f = %1.4f is not a valid ratio' % \
@@ -85,14 +86,14 @@ class Resample(object):
         return insamples
 
     def _output_buffer(self, insamples):
-        outsize = int(np.round(insamples.size * self._ratio))
-        return np.zeros(outsize, dtype=np.float32)
+        outsize = (int(np.round(len(insamples) * self._ratio)), self.nchannels)
+        return np.zeros(outsize, dtype=np.float32).squeeze()
 
     def _check_for_error(self, return_code):
         if return_code:
             raise Exception(
-                c_char_p(
-                    libsamplerate.src_strerror(c_int(return_code))).value)
+                'libsamplerate sent non-zero return code {return_code}'
+                    .format(**locals()))
 
     def __call__(self, insamples, end_of_input=False):
 
@@ -108,9 +109,9 @@ class Resample(object):
             # a pointer to the output buffer
             data_out=outsamples_ptr,
             # number of input samples
-            input_frames=normalized_insamples.size,
+            input_frames=len(normalized_insamples),
             # number of output samples
-            output_frames=outsamples.size,
+            output_frames=len(outsamples),
             # NOT the end of input, i.e., there is more data to process
             end_of_input=int(end_of_input),
             # the conversion ratio
@@ -206,7 +207,8 @@ class Resampler(Node):
                 # libsamplerate doesn't generate enough samples the first time
                 # src_process is called. We're calling it once here, so the "real"
                 # output will come out click-free
-                self._resample(np.zeros(target_sr, dtype=np.float32))
+                # self._resample(np.zeros(target_sr, dtype=np.float32))
+                self._resample(data.silence_like(Seconds(1)))
             else:
                 self._rs = self._noop
 

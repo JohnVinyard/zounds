@@ -18,3 +18,10 @@ class ResampleTests(unittest2.TestCase):
 
         resampled = pool.map(x, audio)
         self.assertEqual(10, len(resampled))
+
+    def test_correct_output_with_stereo(self):
+        synth = SilenceSynthesizer(SR44100())
+        samples = synth.synthesize(Seconds(1)).stereo
+        rs = Resample(int(samples.samplerate), int(SR11025()), nchannels=2)
+        resampled = rs(samples, end_of_input=True)
+        self.assertEqual((11025, 2), resampled.shape)
