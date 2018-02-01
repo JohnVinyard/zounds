@@ -1,6 +1,7 @@
 import unittest2
 from audiograph import resampled, stft, frequency_adaptive
-from zounds.timeseries.samplerate import SR11025, SR22050, SampleRate
+from zounds.timeseries.samplerate import \
+    SR11025, SR22050, SampleRate, nearest_audio_sample_rate, HalfLapped
 from zounds.timeseries.duration import Seconds, Milliseconds
 from zounds.util.persistence import simple_in_memory_settings
 from zounds.persistence import ArrayWithUnitsFeature
@@ -60,7 +61,28 @@ class ResampledTests(unittest2.TestCase):
 
 
 class StftTests(unittest2.TestCase):
-    def test_can_hadle_zip_file(self):
+
+    def test_can_pass_padding_samples(self):
+        samplerate = SR11025()
+
+        STFT = stft(
+            resample_to=samplerate,
+            store_fft=True,
+            fft_padding_samples=1024)
+
+        @simple_in_memory_settings
+        class Document(STFT):
+            pass
+
+        samples = SineSynthesizer(samplerate).synthesize(Seconds(2))
+        _id = Document.process(meta=samples.encode())
+        doc = Document(_id)
+        stft_window_duration = int(np.round(
+            HalfLapped().duration / samplerate.frequency))
+        expected_samples = ((stft_window_duration + 1024) // 2) + 1
+        self.assertEqual(expected_samples, doc.fft.shape[-1])
+
+    def test_can_handle_zip_file(self):
         STFT = stft(resample_to=SR11025(), store_fft=True)
 
         @simple_in_memory_settings

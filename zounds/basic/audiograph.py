@@ -106,6 +106,7 @@ def stft(
         resample_to=SR44100(),
         wscheme=HalfLapped(),
         store_fft=False,
+        fft_padding_samples=None,
         store_windowed=False,
         store_resampled=False):
 
@@ -146,6 +147,7 @@ def stft(
 
         fft = ArrayWithUnitsFeature(
             FFT,
+            padding_samples=fft_padding_samples,
             needs=windowed,
             store=store_fft)
 
