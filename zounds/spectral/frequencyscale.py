@@ -278,6 +278,15 @@ class FrequencyScale(object):
         index = frequency_band
 
         if isinstance(index, slice):
+            types = {
+                index.start.__class__,
+                index.stop.__class__,
+                index.step.__class__
+            }
+
+            if Hertz not in types:
+                return index
+
             try:
                 start = Hertz(0) if index.start is None else index.start
                 if start < Hertz(0):

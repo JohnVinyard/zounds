@@ -77,6 +77,7 @@ class Slice(Node):
         self._sl = sl
 
     def _process(self, data):
+        print np.array(data), self._sl
         yield data[:, self._sl]
 
 

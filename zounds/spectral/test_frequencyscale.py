@@ -1,7 +1,7 @@
 from __future__ import division
 import unittest2
 from frequencyscale import \
-    FrequencyBand, LinearScale, LogScale, ExplicitScale, GeometricScale
+    FrequencyBand, LinearScale, LogScale, ExplicitScale, GeometricScale, Hertz
 from zounds.timeseries import SR44100
 import numpy as np
 
@@ -42,6 +42,21 @@ class FrequencyBandTests(unittest2.TestCase):
 
 
 class FrequencyScaleTests(unittest2.TestCase):
+    def test_get_slice_converts_frequency_band_to_integer_based_slice(self):
+        scale = LinearScale(FrequencyBand(0, 100), 10)
+        slce = scale.get_slice(FrequencyBand(0, 20))
+        self.assertEqual(slice(0, 2), slce)
+
+    def test_get_slice_converts_hz_based_slice_to_integer_based_slice(self):
+        scale = LinearScale(FrequencyBand(0, 100), 10)
+        slce = scale.get_slice(slice(Hertz(0), Hertz(20)))
+        self.assertEqual(slice(0, 2), slce)
+
+    def test_get_slice_returns_integer_based_slice_unaltered(self):
+        scale = LinearScale(FrequencyBand(0, 100), 10)
+        slce = scale.get_slice(slice(0, 20))
+        self.assertEqual(slice(0, 20), slce)
+
     def test_can_get_all_even_sized_bands(self):
         samplerate = SR44100()
         scale = LinearScale.from_sample_rate(

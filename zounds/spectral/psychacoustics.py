@@ -125,6 +125,7 @@ class Scale(object):
     def transform(self, fft):
         slices, triwins = self.data
         cb = np.ndarray((fft.shape[0], self._nb), dtype=np.float32)
+        fft = np.array(fft)
         for i in xrange(self._nb):
             a = fft[:, slices[i]]
             b = a * triwins[i]
