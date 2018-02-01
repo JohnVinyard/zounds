@@ -2,7 +2,7 @@ from samplerate import AudioSampleRate, audio_sample_rate
 from soundfile import SoundFile
 from io import BytesIO
 from zounds.core import IdentityDimension, ArrayWithUnits
-from timeseries import TimeDimension, Seconds
+from timeseries import TimeDimension, TimeSlice
 from duration import Picoseconds
 from samplerate import SampleRate
 import numpy as np
@@ -77,10 +77,22 @@ class AudioSamples(ArrayWithUnits):
             return result
 
     @classmethod
-    def silence(cls, samplerate, duration, dtype=np.float32):
-        discrete_samples = int(duration / samplerate.frequency)
-        silence = np.zeros(discrete_samples, dtype=dtype)
+    def from_file(cls, file_like_object):
+        with SoundFile(file_like_object, mode='r') as f:
+            samples = f.read(dtype=np.float32)
+            return AudioSamples(samples, audio_sample_rate(f.samplerate))
+
+    @classmethod
+    def silence(cls, samplerate, duration, dtype=np.float32, channels=1):
+        shape = (int(duration / samplerate.frequency), channels)
+        silence = np.zeros(shape, dtype=dtype).squeeze()
         return cls(silence, samplerate)
+
+    def silence_like(self, duration):
+        x = self.__class__.silence(
+            self.samplerate, duration, self.dtype, self.channels)
+        x[:] = 1
+        return x
 
     def pad_with_silence(self, silence_duration):
         silence = self.__class__.silence(
@@ -150,6 +162,18 @@ class AudioSamples(ArrayWithUnits):
         if self.channels == 2:
             return self
         return AudioSamples(np.vstack([self, self]).T, self.samplerate)
+
+    def __getitem__(self, item):
+        sliced = super(AudioSamples, self).__getitem__(item)
+        if sliced.shape == ():
+            return sliced
+        return AudioSamples(sliced, self.samplerate)
+
+    def sliding_window(self, samplerate, padding=True):
+        ws = TimeSlice(duration=samplerate.duration)
+        ss = TimeSlice(duration=samplerate.frequency)
+        _, windowed = self.sliding_window_with_leftovers(ws, ss, dopad=padding)
+        return windowed
 
     def encode(self, flo=None, fmt='WAV', subtype='PCM_16'):
         """

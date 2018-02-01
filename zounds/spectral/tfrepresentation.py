@@ -1,5 +1,6 @@
 import numpy as np
 import frequencyscale
+from frequencyscale import Hertz
 from zounds.core import Dimension
 from zounds.spectral.frequencyscale import ExplicitScale
 
@@ -49,9 +50,6 @@ class FrequencyDimension(Dimension):
         return FrequencyDimension(self.scale[index])
 
     def integer_based_slice(self, index):
-        if not isinstance(index, frequencyscale.FrequencyBand):
-            return index
-
         return self.scale.get_slice(index)
 
     def validate(self, size):

@@ -10,6 +10,19 @@ from zounds.synthesize import SineSynthesizer
 
 class AudioSamplesTest(unittest2.TestCase):
 
+    def test_time_slice_should_return_audio_samples(self):
+        silence = AudioSamples.silence(SR11025(), Seconds(10))
+        ts = TimeSlice(duration=Seconds(1))
+        sliced = silence[ts]
+        self.assertIsInstance(sliced, AudioSamples)
+        self.assertEqual(int(SR11025()), len(sliced))
+        self.assertEqual(SR11025(), sliced.samplerate)
+
+    def test_integer_slice_should_return_scalar(self):
+        silence = AudioSamples.silence(SR11025(), Seconds(10))
+        sliced = silence[10]
+        self.assertIsInstance(sliced, np.float32)
+
     def test_stereo(self):
         silence = AudioSamples.silence(SR11025(), Seconds(10))
         self.assertEqual(1, silence.channels)
@@ -22,6 +35,18 @@ class AudioSamplesTest(unittest2.TestCase):
     def test_silence_creates_silence(self):
         silence = AudioSamples.silence(SR11025(), Seconds(10))
         self.assertEqual(0, silence.sum())
+
+    def test_silence_honors_channels(self):
+        silence = AudioSamples.silence(SR11025(), Seconds(1), channels=2)
+        self.assertEqual((11025, 2), silence.shape)
+        self.assertEqual(2, silence.channels)
+
+    def test_silence_like_creates_silence(self):
+        silence = AudioSamples.silence(SR11025(), Seconds(1), channels=2)
+        silence2 = silence.silence_like(Seconds(2))
+        self.assertEqual((22050, 2), silence2.shape)
+        self.assertEqual(SR11025(), silence2.samplerate)
+        self.assertEqual(2, silence2.channels)
 
     def test_pad_with_samples_adds_silence_at_end(self):
         synth = SineSynthesizer(SR11025())

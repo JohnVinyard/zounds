@@ -156,6 +156,41 @@ class TimeSliceTests(unittest2.TestCase):
 
 class TimeSeriesTests(unittest2.TestCase):
 
+    def test_can_slice_time_series_with_end_time(self):
+        arr = np.arange(10)
+        freq = Seconds(1)
+        ts = ArrayWithUnits(arr, [TimeDimension(freq)])
+        sliced = ts[:Seconds(7)]
+        self.assertEqual(7, len(sliced))
+
+    def test_can_slice_time_series_with_start_time(self):
+        arr = np.arange(10)
+        freq = Seconds(1)
+        ts = ArrayWithUnits(arr, [TimeDimension(freq)])
+        sliced = ts[Seconds(7):]
+        self.assertEqual(3, len(sliced))
+
+    def test_can_slice_time_series_with_start_and_end_time(self):
+        arr = np.arange(10)
+        freq = Seconds(1)
+        ts = ArrayWithUnits(arr, [TimeDimension(freq)])
+        sliced = ts[Seconds(5):Seconds(7)]
+        self.assertEqual(2, len(sliced))
+
+    def test_can_slice_time_series_with_negative_start_time(self):
+        arr = np.arange(10)
+        freq = Seconds(1)
+        ts = ArrayWithUnits(arr, [TimeDimension(freq)])
+        sliced = ts[-Seconds(7):]
+        self.assertEqual(7, len(sliced))
+
+    def test_can_slice_time_series_with_negative_end_time(self):
+        arr = np.arange(10)
+        freq = Seconds(1)
+        ts = ArrayWithUnits(arr, [TimeDimension(freq)])
+        sliced = ts[:-Seconds(2)]
+        self.assertEqual(8, len(sliced))
+
     def test_can_slice_time_series_with_time_slice(self):
         arr = np.arange(10)
         freq = Seconds(1)

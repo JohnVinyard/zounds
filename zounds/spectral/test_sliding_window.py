@@ -10,6 +10,7 @@ from zounds.synthesize import NoiseSynthesizer
 from zounds.core import ArrayWithUnits
 from zounds.persistence import ArrayWithUnitsFeature
 from zounds.spectral import FrequencyDimension, LinearScale, FrequencyBand
+from zounds.synthesize import SilenceSynthesizer
 import numpy as np
 import unittest2
 
@@ -48,10 +49,8 @@ class OggVorbisWindowingFunctionTests(unittest2.TestCase):
 
 class SlidingWindowTests(unittest2.TestCase):
     def _check(self, samplerate, expected_window_size, expected_step_size):
-        # sw = SlidingWindow(wscheme=samplerate.half_lapped())
         samples = AudioSamples(
             np.zeros(5 * samplerate.samples_per_second), samplerate)
-        # sw._enqueue(samples, None)
         wscheme = samplerate.half_lapped()
         ws, ss = samples._sliding_window_integer_slices(
             TimeSlice(wscheme.duration), TimeSlice(wscheme.frequency))

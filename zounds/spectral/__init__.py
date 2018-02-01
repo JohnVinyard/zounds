@@ -16,9 +16,9 @@ from weighting import AWeighting
 
 from frequencyscale import \
     LinearScale, LogScale, FrequencyBand, FrequencyScale, GeometricScale, \
-    ExplicitScale
+    ExplicitScale, Hertz
 
 from frequencyadaptive import FrequencyAdaptive
 
 from functional import \
-    fft, stft, apply_scale, frequency_decomposition, phase_shift
+    fft, stft, apply_scale, frequency_decomposition, phase_shift, rainbowgram

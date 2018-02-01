@@ -3,6 +3,7 @@ from zounds.loudness import mu_law, inverse_mu_law
 from zounds.core import ArrayWithUnits, IdentityDimension
 
 
+# TODO: decompose this into the quantization, and then a one-hot function
 def categorical(x, mu=255):
     """
     Mu-law compress a block of audio samples, and convert them into a
@@ -30,6 +31,7 @@ def categorical(x, mu=255):
         x.dimensions + (IdentityDimension(),))
 
 
+# TODO: decompose this into de-quantization, and then a one-hot function
 def inverse_categorical(x, mu=255):
     """
     Invert categorical samples
@@ -39,4 +41,3 @@ def inverse_categorical(x, mu=255):
     indices = (indices / mu) - 0.5
     inverted = inverse_mu_law(indices, mu=mu).reshape(x.shape[:-1])
     return ArrayWithUnits(inverted, x.dimensions[:2])
-

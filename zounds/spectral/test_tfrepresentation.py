@@ -1,7 +1,7 @@
 from __future__ import division
 import numpy as np
 import unittest2
-from frequencyscale import LinearScale, LogScale, FrequencyBand
+from frequencyscale import LinearScale, LogScale, FrequencyBand, Hertz
 from weighting import AWeighting
 from zounds.timeseries import Seconds, TimeDimension, TimeSlice, SR11025
 from zounds.spectral import FrequencyDimension, GeometricScale
@@ -9,6 +9,52 @@ from zounds.core import ArrayWithUnits, IdentityDimension
 
 
 class TimeFrequencyRepresentationTests(unittest2.TestCase):
+
+    def test_can_slice_frequency_dim_with_end_hz(self):
+        scale = LinearScale(FrequencyBand(0, 100), 10)
+        arr = ArrayWithUnits(
+            np.zeros((13, 10)),
+            [IdentityDimension(), FrequencyDimension(scale)])
+        sliced = arr[:, :Hertz(50)]
+        self.assertEqual((13, 5), sliced.shape)
+        self.assertEqual(
+            FrequencyDimension(LinearScale(FrequencyBand(0, 50), 5)),
+            sliced.dimensions[-1])
+
+    def test_can_slice_frequency_dim_with_start_hz(self):
+        scale = LinearScale(FrequencyBand(0, 100), 10)
+        arr = ArrayWithUnits(
+            np.zeros((13, 10)),
+            [IdentityDimension(), FrequencyDimension(scale)])
+        sliced = arr[:, Hertz(50):]
+        self.assertEqual((13, 6), sliced.shape)
+
+    def test_can_slice_frequency_dim_with_start_and_end_hz(self):
+        scale = LinearScale(FrequencyBand(0, 100), 10)
+        arr = ArrayWithUnits(
+            np.zeros((13, 10)),
+            [IdentityDimension(), FrequencyDimension(scale)])
+        sliced = arr[:, Hertz(20):Hertz(80)]
+        self.assertEqual((13, 7), sliced.shape)
+
+    def test_can_slice_frequency_dim_with_negative_start_hz(self):
+        scale = LinearScale(FrequencyBand(0, 100), 10)
+        arr = ArrayWithUnits(
+            np.zeros((13, 10)),
+            [IdentityDimension(), FrequencyDimension(scale)])
+        sliced = arr[:, -Hertz(20):]
+        self.assertEqual((13, 3), sliced.shape)
+
+    def test_can_slice_frequency_dim_with_negative_stop_hz(self):
+        scale = LinearScale(FrequencyBand(0, 100), 10)
+        arr = ArrayWithUnits(
+            np.zeros((13, 10)),
+            [IdentityDimension(), FrequencyDimension(scale)])
+        sliced = arr[:, :-Hertz(20)]
+        self.assertEqual((13, 8), sliced.shape)
+        self.assertEqual(
+            FrequencyDimension(LinearScale(FrequencyBand(0, 80), 8)),
+            sliced.dimensions[-1])
 
     def test_sliding_window_has_correct_dimensions(self):
         arr = np.random.randint(0, 255, (11025 * 2)).astype(np.int64)
@@ -18,6 +64,33 @@ class TimeFrequencyRepresentationTests(unittest2.TestCase):
         ss = TimeSlice(duration=sr.frequency * 4096)
         l, x = awu.sliding_window_with_leftovers(ws, ss)
         self.assertEqual(8192, x.shape[1])
+
+    def test_can_transpose(self):
+        sr = SR11025()
+        hl = sr.half_lapped()
+        scale = GeometricScale(20, sr.nyquist, 0.175, 64)
+        td = TimeDimension(frequency=hl.frequency, duration=hl.duration)
+        fd = FrequencyDimension(scale)
+
+        arr = ArrayWithUnits(np.zeros((99, 64)), [td, fd])
+        transposed = arr.T
+        self.assertEqual((64, 99), transposed.shape)
+        self.assertEqual(arr.dimensions[0], transposed.dimensions[1])
+        self.assertEqual(arr.dimensions[1], transposed.dimensions[0])
+
+    @unittest2.skip('this requires that frequency scales be reversible')
+    def test_can_rotate_90_degrees(self):
+        sr = SR11025()
+        hl = sr.half_lapped()
+        scale = GeometricScale(20, sr.nyquist, 0.175, 64)
+        td = TimeDimension(frequency=hl.frequency, duration=hl.duration)
+        fd = FrequencyDimension(scale)
+
+        arr = ArrayWithUnits(np.zeros((99, 64)), [td, fd])
+        rotated = np.rot90(arr)
+        self.assertEqual((64, 99), rotated.shape)
+        self.assertEqual(arr.dimensions[0], rotated.dimensions[1])
+        self.assertEqual(arr.dimensions[1], rotated.dimensions[0])
 
     def test_can_apply_sliding_window(self):
         sr = SR11025()
@@ -272,8 +345,8 @@ class TimeFrequencyRepresentationTests(unittest2.TestCase):
         fd = FrequencyDimension(scale)
 
         self.assertRaises(
-                ValueError,
-                lambda: ArrayWithUnits(np.ones((30, 100)), [td, fd]))
+            ValueError,
+            lambda: ArrayWithUnits(np.ones((30, 100)), [td, fd]))
 
     def test_can_slice_frequency_dimension_with_integer_indices(self):
         frequency = Seconds(1)
@@ -329,14 +402,12 @@ class TimeFrequencyRepresentationTests(unittest2.TestCase):
     def test_ellipsis(self):
         scale = LinearScale(FrequencyBand(0, 10000), 100)
         arr = ArrayWithUnits(
-                np.zeros((10, 3, 100)),
-                [IdentityDimension(),
-                 TimeDimension(Seconds(1)),
-                 FrequencyDimension(scale)])
+            np.zeros((10, 3, 100)),
+            [IdentityDimension(),
+             TimeDimension(Seconds(1)),
+             FrequencyDimension(scale)])
         sliced = arr[..., FrequencyBand(1000, 5000)]
         self.assertEqual((10, 3, 41), sliced.shape)
         self.assertIsInstance(sliced.dimensions[0], IdentityDimension)
         self.assertIsInstance(sliced.dimensions[1], TimeDimension)
         self.assertIsInstance(sliced.dimensions[2], FrequencyDimension)
-
-

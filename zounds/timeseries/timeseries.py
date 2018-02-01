@@ -168,12 +168,7 @@ class TimeDimension(Dimension):
         self.duration = duration or frequency
         self.frequency = frequency
 
-    def modified_dimension(self, size, windowsize, stepsize=None):
-        stepsize = stepsize or windowsize
-        yield TimeDimension(
-            self.frequency * stepsize,
-            (self.frequency * windowsize) + self.overlap)
-        yield self
+
 
     def __str__(self):
         fs = self.frequency / Picoseconds(int(1e12))
@@ -223,14 +218,36 @@ class TimeDimension(Dimension):
     def metaslice(self, index, size):
         return TimeDimension(self.frequency, self.duration, size)
 
+    def modified_dimension(self, size, windowsize, stepsize=None):
+        stepsize = stepsize or windowsize
+        yield TimeDimension(
+            self.frequency * stepsize,
+            (self.frequency * windowsize) + self.overlap)
+        yield self
+
     def integer_based_slice(self, ts):
         """
         Transform a :class:`TimeSlice` into integer indices that numpy can work
         with
 
         Args:
-            ts (TimeSlice): the time slice to translate into integer indices
+            ts (slice, TimeSlice): the time slice to translate into integer
+                indices
         """
+
+        if isinstance(ts, slice):
+            try:
+                start = Seconds(0) if ts.start is None else ts.start
+                if start < Seconds(0):
+                    start = self.end + start
+                stop = self.end if ts.stop is None else ts.stop
+                if stop < Seconds(0):
+                    stop = self.end + stop
+                duration = stop - start
+                ts = TimeSlice(start=start, duration=duration)
+            except (ValueError, TypeError):
+                pass
+
         if not isinstance(ts, TimeSlice):
             return ts
 

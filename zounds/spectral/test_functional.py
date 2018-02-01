@@ -1,15 +1,16 @@
 import numpy as np
 import unittest2
 from functional import \
-    fft, stft, apply_scale, frequency_decomposition, phase_shift
-from zounds.core import ArrayWithUnits
+    fft, stft, apply_scale, frequency_decomposition, phase_shift, rainbowgram
+from zounds.core import ArrayWithUnits, IdentityDimension
 from zounds.synthesize import \
     SilenceSynthesizer, TickSynthesizer, SineSynthesizer, FFTSynthesizer
-from zounds.timeseries import SR22050, SR11025, Seconds, Milliseconds, \
-    TimeDimension, TimeSlice
+from zounds.timeseries import SR22050, Seconds, Milliseconds, TimeDimension, \
+    TimeSlice
 from zounds.spectral import \
     HanningWindowingFunc, FrequencyDimension, LinearScale, GeometricScale, \
     ExplicitFrequencyDimension, FrequencyBand
+from matplotlib import cm
 
 
 class FrequencyDecompositionTests(unittest2.TestCase):
@@ -181,7 +182,34 @@ class STFTTests(unittest2.TestCase):
         self.assertIsInstance(tf.dimensions[1].scale, LinearScale)
 
 
+class RainbowgramTests(unittest2.TestCase):
+    def test_should_have_correct_shape_and_dimensions(self):
+        samplerate = SR22050()
+        samples = SineSynthesizer(samplerate).synthesize(Milliseconds(8888))
+        wscheme = samplerate.windowing_scheme(256, 128)
+        tf = stft(samples, wscheme, HanningWindowingFunc())
+        rg = rainbowgram(tf, cm.rainbow)
+        self.assertEqual(3, rg.ndim)
+        self.assertEqual(tf.shape + (3,), rg.shape)
+        self.assertEqual(3, len(rg.dimensions))
+        self.assertEqual(tf.dimensions[0], rg.dimensions[0])
+        self.assertEqual(tf.dimensions[1], rg.dimensions[1])
+        self.assertEqual(rg.dimensions[2], IdentityDimension())
+        self.assertEqual(3, rg.shape[-1])
+
+
 class ApplyScaleTests(unittest2.TestCase):
+    def test_apply_scale_to_self_is_identity_function(self):
+        samplerate = SR22050()
+        samples = SineSynthesizer(samplerate).synthesize(Milliseconds(8888))
+        wscheme = samplerate.windowing_scheme(256, 128)
+        tf = stft(samples, wscheme, HanningWindowingFunc())
+        scale = tf.dimensions[-1].scale
+        transformed = apply_scale(tf, scale, HanningWindowingFunc())
+        self.assertEqual(tf.shape, transformed.shape)
+        self.assertEqual(tf.dimensions[0], transformed.dimensions[0])
+        self.assertEqual(tf.dimensions[1], transformed.dimensions[1])
+
     def test_has_correct_shape(self):
         sr = SR22050()
         samples = SilenceSynthesizer(sr).synthesize(Milliseconds(9999))

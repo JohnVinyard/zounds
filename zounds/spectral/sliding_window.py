@@ -189,9 +189,8 @@ class SlidingWindow(Node):
 
     def _dequeue(self):
 
-        duration = TimeSlice(self._scheme.duration)
-        frequency = TimeSlice(self._scheme.frequency)
-
+        duration = TimeSlice(duration=self._scheme.duration)
+        frequency = TimeSlice(duration=self._scheme.frequency)
         leftover, arr = self._cache.sliding_window_with_leftovers(
             duration,
             frequency,

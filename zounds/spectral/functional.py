@@ -3,8 +3,9 @@ from frequencyscale import LinearScale, FrequencyBand, ExplicitScale
 from tfrepresentation import FrequencyDimension
 from frequencyadaptive import FrequencyAdaptive
 from zounds.timeseries import audio_sample_rate, TimeSlice, Seconds
-from zounds.core import ArrayWithUnits
+from zounds.core import ArrayWithUnits, IdentityDimension
 from sliding_window import IdentityWindowingFunc
+from zounds.loudness import log_modulus, unit_scale
 import numpy as np
 from scipy.signal import resample
 
@@ -73,17 +74,47 @@ def phase_shift(coeffs, samplerate, time_shift, axis=-1, frequency_band=None):
     return new_coeffs
 
 
-def apply_scale(short_time_fft, scale, reducer=np.sum, window=None):
+# def apply_scale(short_time_fft, scale, reducer=np.sum, window=None):
+#     magnitudes = np.abs(short_time_fft.real)
+#     output = np.zeros(
+#         short_time_fft.shape[:-1] + (len(scale),), dtype=magnitudes.dtype)
+#     output = ArrayWithUnits(
+#         output, short_time_fft.dimensions[:-1] + (FrequencyDimension(scale),))
+#     window = window or IdentityWindowingFunc()
+#     for i, freq_band in enumerate(scale):
+#         reduced_band = reducer(magnitudes[..., freq_band] * window, axis=-1)
+#         output[..., i] = reduced_band
+#     return output
+
+
+def apply_scale(short_time_fft, scale, window=None):
     magnitudes = np.abs(short_time_fft.real)
-    output = np.zeros(
-        short_time_fft.shape[:-1] + (len(scale),), dtype=magnitudes.dtype)
-    output = ArrayWithUnits(
-        output, short_time_fft.dimensions[:-1] + (FrequencyDimension(scale),))
-    window = window or IdentityWindowingFunc()
-    for i, freq_band in enumerate(scale):
-        reduced_band = reducer(magnitudes[..., freq_band] * window, axis=-1)
-        output[..., i] = reduced_band
-    return output
+    spectrogram = scale.apply(magnitudes, window)
+    dimensions = short_time_fft.dimensions[:-1] + (FrequencyDimension(scale),)
+    return ArrayWithUnits(spectrogram, dimensions)
+
+
+def rainbowgram(time_frequency_repr, colormap):
+
+    # magnitudes on a log scale, and shifted and
+    # scaled to the unit interval
+    magnitudes = np.abs(time_frequency_repr.real)
+    magnitudes = log_modulus(magnitudes * 1000)
+    magnitudes = unit_scale(magnitudes)
+
+    angles = np.angle(time_frequency_repr)
+    angles = np.unwrap(angles, axis=0)
+    angles = np.gradient(angles)[0]
+    angles = unit_scale(angles)
+
+    colors = colormap(angles)
+    colors *= magnitudes[..., None]
+
+    # exclude the alpha channel, if there is one
+    colors = colors[..., :3]
+    arr = ArrayWithUnits(
+        colors, time_frequency_repr.dimensions + (IdentityDimension(),))
+    return arr
 
 
 def frequency_decomposition(x, sizes):

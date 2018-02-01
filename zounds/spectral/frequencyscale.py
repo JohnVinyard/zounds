@@ -3,6 +3,15 @@ import numpy as np
 import bisect
 
 
+class Hertz(float):
+    def __init__(self, hz):
+        super(Hertz, self).__init__(hz)
+        self.hz = hz
+
+    def __add__(self, other):
+        return Hertz(self + other)
+
+
 # TODO: What commonalities can be factored out of this class and TimeSlice?
 # TODO: Deprecate stuff in psychoacoustics.py in favor of these classes
 class FrequencyBand(object):
@@ -233,24 +242,18 @@ class FrequencyScale(object):
         """
         return self.frequency_band.stop_hz
 
-    def get_slice(self, frequency_band):
-        """
-        Given a frequency band, and a frequency dimension comprised of
-        n_samples, return a slice using integer indices that may be used to
-        extract only the frequency samples that intersect with the frequency
-        band
-        """
-        start_index = bisect.bisect_left(
-            self.band_stops, frequency_band.start_hz)
-        stop_index = bisect.bisect_left(
-            self.band_starts, frequency_band.stop_hz)
+    def _basis(self, other_scale, window):
+        weights = np.zeros((len(self), len(other_scale)))
+        for i, band in enumerate(self):
+            band_slice = other_scale.get_slice(band)
+            slce = weights[i, band_slice]
+            slce[:] = window * np.ones(len(slce))
+        return weights
 
-        if self.always_even and (stop_index - start_index) % 2:
-            # KLUDGE: This is simple, but it may make sense to choose move the
-            # upper *or* lower bound, based on which one introduces a lower
-            # error
-            stop_index += 1
-        return slice(start_index, stop_index)
+    def apply(self, time_frequency_repr, window):
+        basis = self._basis(time_frequency_repr.dimensions[-1].scale, window)
+        transformed = np.dot(basis, time_frequency_repr.T).T
+        return transformed
 
     def __eq__(self, other):
         return \
@@ -265,7 +268,41 @@ class FrequencyScale(object):
         freq_band = FrequencyBand(bands[0].start_hz, bands[-1].stop_hz)
         return self.__class__(freq_band, len(bands))
 
+    def get_slice(self, frequency_band):
+        """
+        Given a frequency band, and a frequency dimension comprised of
+        n_samples, return a slice using integer indices that may be used to
+        extract only the frequency samples that intersect with the frequency
+        band
+        """
+        index = frequency_band
+
+        if isinstance(index, slice):
+            try:
+                start = Hertz(0) if index.start is None else index.start
+                if start < Hertz(0):
+                    start = self.stop_hz + start
+                stop = self.stop_hz if index.stop is None else index.stop
+                if stop < Hertz(0):
+                    stop = self.stop_hz + stop
+                frequency_band = FrequencyBand(start, stop)
+            except (ValueError, TypeError):
+                pass
+
+        start_index = bisect.bisect_left(
+            self.band_stops, frequency_band.start_hz)
+        stop_index = bisect.bisect_left(
+            self.band_starts, frequency_band.stop_hz)
+
+        if self.always_even and (stop_index - start_index) % 2:
+            # KLUDGE: This is simple, but it may make sense to choose move the
+            # upper *or* lower bound, based on which one introduces a lower
+            # error
+            stop_index += 1
+        return slice(start_index, stop_index)
+
     def __getitem__(self, index):
+
         try:
             # index is an integer or slice
             bands = self.bands[index]
@@ -430,6 +467,7 @@ class ExplicitScale(FrequencyScale):
     See Also:
         :class:`~zounds.spectral.FrequencyAdaptive`
     """
+
     def __init__(self, bands):
         bands = list(bands)
         frequency_band = FrequencyBand(bands[0].start_hz, bands[-1].stop_hz)
@@ -460,3 +498,12 @@ class MelScale(FrequencyScale):
 class ChromaScale(FrequencyScale):
     def __init__(self, frequency_band, n_bands):
         super(ChromaScale, self).__init__(frequency_band, n_bands)
+
+    def _compute_bands(self):
+        raise NotImplementedError()
+
+    def get_slice(self, frequency_band):
+        raise NotImplementedError()
+
+    def _basis(self, other_scale, window):
+        raise NotImplementedError()
