@@ -36,7 +36,7 @@ from functional import hyperplanes, simhash, example_wise_unit_norm
 try:
     from util import \
         Conv1d, ConvTranspose1d, Conv2d, ConvTranspose2d, to_var, from_var, \
-        try_network, apply_network, feature_map_size, \
+        try_network, apply_network, feature_map_size, sample_norm, \
         FrequencyDecompositionAnalyzer, FrequencyDecompositionGenerator
 except ImportError:
     pass

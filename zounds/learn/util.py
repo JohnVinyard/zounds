@@ -59,6 +59,21 @@ try:
             [from_var(network(x[i: i + chunksize]))
              for i in xrange(0, len(x), chunksize)])
 
+    def sample_norm(x):
+        """
+        pixel norm as described in section 4.2 here:
+        https://arxiv.org/pdf/1710.10196.pdf
+        """
+        original = x
+        # square
+        x = x ** 2
+        # feature-map-wise sum
+        x = torch.sum(x, dim=1)
+        # scale by number of feature maps
+        x *= 1.0 / original.shape[1]
+        x += 10e-8
+        x = torch.sqrt(x)
+        return original / x.view(-1, 1, x.shape[-1])
 
     def feature_map_size(inp, kernel, stride=1, padding=0):
         return ((inp - kernel + (2 * padding)) / stride) + 1
@@ -101,21 +116,6 @@ try:
 
             self.activation = activation
 
-        def _sample_norm(self, x):
-            """
-            pixel norm as described in section 4.2 here:
-            https://arxiv.org/pdf/1710.10196.pdf
-            """
-            original = x
-            # square
-            x = x ** 2
-            # feature-map-wise sum
-            x = torch.sum(x, dim=1)
-            # scale by number of feature maps
-            x *= 1.0 / original.shape[1]
-            x += 10e-8
-            x = torch.sqrt(x)
-            return original / x.view(-1, 1, x.shape[-1])
 
         @property
         def out_channels(self):
@@ -141,7 +141,7 @@ try:
             x = self.l1(x)
 
             if self.sample_norm:
-                x = self._sample_norm(x)
+                x = sample_norm(x)
             elif self.bn:
                 x = self.bn(x)
 
