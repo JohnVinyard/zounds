@@ -40,6 +40,7 @@ class WassersteinGanTrainer(Trainer):
         self.network = network
         self.critic = network.discriminator
         self.generator = network.generator
+        self.samples = None
 
     def _minibatch(self, data):
         indices = np.random.randint(0, len(data), self.batch_size)
@@ -53,9 +54,11 @@ class WassersteinGanTrainer(Trainer):
         import torch
         from torch.autograd import Variable, grad
 
+        real_samples = real_samples.view(fake_samples.shape)
+
         # computing the norm of the gradients is very expensive, so I'm only
         # taking a subset of the minibatch here
-        subset_size = 10
+        subset_size = min(10, real_samples.shape[0])
 
         real_samples = real_samples[:subset_size]
         fake_samples = fake_samples[:subset_size]
@@ -163,9 +166,8 @@ class WassersteinGanTrainer(Trainer):
 
                     real_mean = torch.mean(d_real)
                     fake_mean = torch.mean(d_fake)
-                    d_loss = \
-                        (fake_mean - real_mean) \
-                        + self._gradient_penalty(input_v.data, fake.data, kwargs)
+                    gp = self._gradient_penalty(input_v.data, fake.data, kwargs)
+                    d_loss = (fake_mean - real_mean) + gp
                     d_loss.backward()
                     critic_optim.step()
 
@@ -183,6 +185,8 @@ class WassersteinGanTrainer(Trainer):
                 if self.preprocess:
                     fake = self.preprocess(epoch, fake)
 
+                self.samples = fake
+
                 d_fake = self.critic.forward(fake, **kwargs)
                 g_loss = -torch.mean(d_fake)
                 g_loss.backward()
@@ -192,7 +196,7 @@ class WassersteinGanTrainer(Trainer):
                 dl = d_loss.data[0]
 
                 if self.on_batch_complete:
-                    self.on_batch_complete(epoch, self.network)
+                    self.on_batch_complete(epoch, self.network, self.samples)
 
                 if i % 10 == 0:
                     print \
