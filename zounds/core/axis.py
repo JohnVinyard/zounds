@@ -64,6 +64,11 @@ class ArrayWithUnits(np.ndarray):
 
         return obj
 
+    @property
+    def T(self):
+        arr = super(ArrayWithUnits, self).T
+        return ArrayWithUnits(arr, self.dimensions[::-1])
+
     def kwargs(self):
         return self.__dict__
 
@@ -211,12 +216,23 @@ class ArrayWithUnits(np.ndarray):
             except (AttributeError, TypeError):
                 yield sl
 
+    def _is_integer_based_slice(self, sl):
+        if not isinstance(sl, slice):
+            return False
+
+        try:
+            return \
+                (sl.start is None or sl.start.bit_length()) \
+                and (sl.stop is None or sl.stop.bit_length())
+        except AttributeError:
+            return False
+
     def _compute_indices(self, index):
         dims_pos = 0
         for sl in index:
             if sl is None \
                     or isinstance(sl, int) \
-                    or isinstance(sl, slice) \
+                    or self._is_integer_based_slice(sl) \
                     or isinstance(sl, list):
                 # burn one
                 dims_pos += 1
