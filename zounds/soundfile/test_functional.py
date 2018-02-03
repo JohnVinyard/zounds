@@ -4,7 +4,7 @@ from zounds import AudioSamples
 from zounds import SR11025
 from zounds import SR44100
 from zounds import Seconds
-from zounds import SineSynthesizer
+from zounds import SineSynthesizer, SilenceSynthesizer
 
 
 class ResampleTests(unittest2.TestCase):
@@ -27,3 +27,10 @@ class ResampleTests(unittest2.TestCase):
         resampled = resample(new_samples, SR11025())
         self.assertIsInstance(resampled, AudioSamples)
         self.assertEqual(int(SR11025()), len(resampled))
+
+    def test_resample_does_not_introduce_pops(self):
+        samplerate = SR44100()
+        synth = SilenceSynthesizer(samplerate)
+        samples = synth.synthesize(Seconds(1))
+        resampled = resample(samples, SR11025())
+        self.assertEqual(0, resampled.max())

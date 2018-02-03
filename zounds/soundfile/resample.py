@@ -207,8 +207,9 @@ class Resampler(Node):
                 # libsamplerate doesn't generate enough samples the first time
                 # src_process is called. We're calling it once here, so the "real"
                 # output will come out click-free
-                # self._resample(np.zeros(target_sr, dtype=np.float32))
-                self._resample(data.silence_like(Seconds(1)))
+                silence = AudioSamples.silence(
+                    self._samplerate, Seconds(1), channels=data.channels)
+                self._resample(silence)
             else:
                 self._rs = self._noop
 
