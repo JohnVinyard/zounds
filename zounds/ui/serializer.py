@@ -139,15 +139,20 @@ class OggVorbisSerializer(object):
 
 def generate_image(data, is_partial=False, content_range=None):
     fig = plt.figure()
-    if len(data.shape) == 1:
+    if data.ndim == 1:
         plt.plot(data)
-    elif len(data.shape) == 2:
+    elif data.ndim == 2:
         data = np.abs(np.asarray(data))
         mat = plt.matshow(np.rot90(data), cmap=plt.cm.viridis)
         mat.axes.get_xaxis().set_visible(False)
         mat.axes.get_yaxis().set_visible(False)
+    elif data.ndim == 3 and data.shape[-1] in (3, 4):
+        data = np.array(data)
+        mat = plt.imshow(np.rot90(data))
+        mat.axes.get_xaxis().set_visible(False)
+        mat.axes.get_yaxis().set_visible(False)
     else:
-        raise ValueError('cannot handle dimensions > 2')
+        raise ValueError('cannot handle dimensions > 3')
     bio = BytesIO()
     plt.savefig(bio, bbox_inches='tight', pad_inches=0, format='png')
     bio.seek(0)
@@ -194,7 +199,7 @@ class NumpySerializer(object):
     def matches(self, context):
         return \
             isinstance(context.value, np.ndarray) \
-            and len(context.value.shape) in (1, 2)
+            and len(context.value.shape) in (1, 2, 3)
 
     @property
     def content_type(self):
