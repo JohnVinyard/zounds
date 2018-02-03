@@ -63,7 +63,6 @@ class Resample(object):
         """
         super(Resample, self).__init__()
         self._ratio = new_sample_rate / orig_sample_rate
-        print self._ratio
         # check if the conversion ratio is considered valid by libsamplerate
         if not libsamplerate.src_is_valid_ratio(c_double(self._ratio)):
             raise ValueError('%1.2f / %1.2f = %1.4f is not a valid ratio' % \
