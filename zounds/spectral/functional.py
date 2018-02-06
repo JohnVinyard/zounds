@@ -104,6 +104,13 @@ def rainbowgram(time_frequency_repr, colormap=cm.rainbow):
     return arr
 
 
+def dct_basis(size):
+    r = np.arange(size)
+    basis = np.outer(r, r + 0.5)
+    basis = np.cos((np.pi / size) * basis)
+    return basis
+
+
 def frequency_decomposition(x, sizes):
     sizes = sorted(sizes)
 
