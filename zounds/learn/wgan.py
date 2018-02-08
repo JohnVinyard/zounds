@@ -29,9 +29,11 @@ class WassersteinGanTrainer(Trainer):
             batch_size,
             preprocess_minibatch=None,
             kwargs_factory=None,
-            on_batch_complete=None):
+            on_batch_complete=None,
+            debug_gradient=False):
 
         super(WassersteinGanTrainer, self).__init__(epochs, batch_size)
+        self.debug_gradient = debug_gradient
         self.on_batch_complete = on_batch_complete
         self.arg_maker = kwargs_factory
         self.preprocess = preprocess_minibatch
@@ -98,6 +100,23 @@ class WassersteinGanTrainer(Trainer):
         for p in self.critic.parameters():
             p.requires_grad = True
 
+    def _debug_network_gradient(self, network):
+        if not self.debug_gradient:
+            return
+
+        for n, p in network.named_parameters():
+            g = p.grad
+            if g is not None:
+                print(n, g.min().data[0], g.max().data[0], g.mean().data[0])
+
+    def zero_generator_gradients(self):
+        self._debug_network_gradient(self.generator)
+        self.generator.zero_grad()
+
+    def zero_discriminator_gradients(self):
+        self._debug_network_gradient(self.critic)
+        self.critic.zero_grad()
+
     def train(self, data):
 
         import torch
@@ -133,15 +152,15 @@ class WassersteinGanTrainer(Trainer):
                 kwargs = dict()
 
             for i in xrange(0, len(data), self.batch_size):
-                self.generator.zero_grad()
-                self.critic.zero_grad()
+                self.zero_generator_gradients()
+                self.zero_discriminator_gradients()
 
                 self.freeze_generator()
                 self.unfreeze_discriminator()
 
                 for c in xrange(self.n_critic_iterations):
 
-                    self.critic.zero_grad()
+                    self.zero_discriminator_gradients()
 
                     minibatch = self._minibatch(data)
                     inp = torch.from_numpy(minibatch)
@@ -171,8 +190,8 @@ class WassersteinGanTrainer(Trainer):
                     d_loss.backward()
                     critic_optim.step()
 
-                self.generator.zero_grad()
-                self.critic.zero_grad()
+                self.zero_discriminator_gradients()
+                self.zero_generator_gradients()
 
                 self.unfreeze_generator()
                 self.freeze_discriminator()
