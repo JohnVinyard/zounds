@@ -38,49 +38,41 @@ class Sound(Resampled):
 
     mdct = zounds.ArrayWithUnitsFeature(
         zounds.MDCT,
-        needs=windowed,
-        store=False)
+        needs=windowed)
 
     weighted = zounds.ArrayWithUnitsFeature(
-        zounds.FrequencyWeighting,
-        weighting=zounds.AWeighting(),
-        needs=mdct,
-        store=False)
+        lambda x: x * zounds.AWeighting(),
+        needs=mdct)
 
 if __name__ == '__main__':
 
-    # produce some audio to test our pipeline
+    # produce some audio to test our pipeline, and encode it as FLAC
     synth = zounds.SineSynthesizer(zounds.SR44100())
     samples = synth.synthesize(zounds.Seconds(5), [220., 440., 880.])
+    encoded = samples.encode(fmt='FLAC')
 
     # process the audio, and fetch features from our in-memory store
-    _id = Sound.process(meta=samples.encode())
+    _id = Sound.process(meta=encoded)
     sound = Sound(_id)
 
-    # produce a time slice that starts half a second in, and lasts for two
-    # seconds
-    time_slice = zounds.TimeSlice(
-        start=zounds.Milliseconds(500),
-        duration=zounds.Seconds(2))
     # grab all the frequency information, for a subset of the duration
-    snippet = sound.weighted[time_slice, :]
+    start = zounds.Milliseconds(500)
+    end = start + zounds.Seconds(2)
+    snippet = sound.weighted[start: end, :]
 
-    # produce a frequency slice that spans 400hz-500hz
-    freq_band = zounds.FrequencyBand(400, 500)
     # grab a subset of frequency information for the duration of the sound
+    freq_band = slice(zounds.Hertz(400), zounds.Hertz(500))
     a440 = sound.mdct[:, freq_band]
 
     # produce a new set of coefficients where only the 440hz sine wave is
     # present
-    filtered = sound.mdct.copy()
-    filtered[:] = 0
+    filtered = sound.mdct.zeros_like()
     filtered[:, freq_band] = a440
 
     # apply a geometric scale, which more closely matches human pitch
     # perception, and apply it to the linear frequency axis
     scale = zounds.GeometricScale(50, 4000, 0.05, 100)
-    bands = [sound.weighted[:, band] for band in scale]
-    band_sizes = [band.shape[1] for band in bands]
+    log_coeffs = scale.apply(sound.mdct, zounds.HanningWindowingFunc())
 
     # reconstruct audio from the MDCT coefficients
     mdct_synth = zounds.MDCTSynthesizer()
@@ -95,7 +87,7 @@ if __name__ == '__main__':
         visualization_feature=Sound.weighted,
         globals=globals(),
         locals=locals())
-    app.start(8888)
+    app.start(9999)
 ```
 
 Find more inspiration in the [examples folder](https://github.com/JohnVinyard/zounds/tree/master/examples),
