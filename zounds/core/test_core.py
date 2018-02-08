@@ -104,13 +104,14 @@ class CoreTests(unittest2.TestCase):
         self.assertIsInstance(arr.dimensions[0], ContrivedDimension)
         self.assertIsInstance(arr.dimensions[1], ContrivedDimension2)
 
-    def test_can_reshape_and_downgrade_to_numpy_array(self):
+    def test_can_reshape_and_downgrade_to_identity_dimension(self):
         arr = ArrayWithUnits(
             np.zeros((100, 10)),
             [ContrivedDimension(10), ContrivedDimension2(10)])
         flattened = arr.reshape((-1,))
         self.assertEqual((1000,), flattened.shape)
-        self.assertNotIsInstance(flattened, ArrayWithUnits)
+        self.assertIsInstance(flattened, ArrayWithUnits)
+        self.assertIsInstance(flattened.dimensions[0], IdentityDimension)
 
     def test_can_maintain_array_with_units_when_reshaping_2d(self):
         arr = ArrayWithUnits(
@@ -172,6 +173,65 @@ class CoreTests(unittest2.TestCase):
         self.assertIsInstance(squeezed.dimensions[0], ContrivedDimension)
         self.assertIsInstance(squeezed.dimensions[1], IdentityDimension)
         self.assertIsInstance(squeezed.dimensions[2], ContrivedDimension2)
+
+    def test_can_add_dimension_of_size_one_to_2d_array(self):
+        arr = ArrayWithUnits(
+            np.zeros((3, 10)),
+            [
+                ContrivedDimension(10),
+                ContrivedDimension2(10)
+            ])
+        rs = arr.reshape((3, 1, 10))
+        self.assertIsInstance(rs, ArrayWithUnits)
+        self.assertIsInstance(rs.dimensions[0], ContrivedDimension)
+        self.assertIsInstance(rs.dimensions[1], IdentityDimension)
+        self.assertIsInstance(rs.dimensions[2], ContrivedDimension2)
+
+    def test_can_add_dimension_of_size_one_to_1d_array(self):
+        arr = ArrayWithUnits(np.zeros((3,)), [ContrivedDimension(10)])
+        rs = arr.reshape((1, 1, arr.size))
+        self.assertIsInstance(rs, ArrayWithUnits)
+        self.assertIsInstance(rs.dimensions[0], IdentityDimension)
+        self.assertIsInstance(rs.dimensions[1], IdentityDimension)
+        self.assertIsInstance(rs.dimensions[2], ContrivedDimension)
+
+    def test_can_add_dimension_of_size_one_with_wildcard_axis(self):
+        arr = ArrayWithUnits(np.zeros((3,)), [ContrivedDimension(10)])
+        rs = arr.reshape((-1, 1, arr.size))
+        self.assertIsInstance(rs, ArrayWithUnits)
+        print rs.dimensions
+        self.assertIsInstance(rs.dimensions[0], IdentityDimension)
+        self.assertIsInstance(rs.dimensions[1], IdentityDimension)
+        self.assertIsInstance(rs.dimensions[2], ContrivedDimension)
+
+    def test_identity_dimension_when_existing_dim_split_across_axes(self):
+        arr = ArrayWithUnits(np.zeros((12,)), [ContrivedDimension(10)])
+        rs = arr.reshape((2, 2, 3))
+        self.assertIsInstance(rs, ArrayWithUnits)
+        self.assertIsInstance(rs.dimensions[0], IdentityDimension)
+        self.assertIsInstance(rs.dimensions[1], IdentityDimension)
+        self.assertIsInstance(rs.dimensions[2], IdentityDimension)
+
+    def test_identity_dimension_when_existing_dim_split_with_wildcard(self):
+        arr = ArrayWithUnits(np.zeros((12,)), [ContrivedDimension(10)])
+        rs = arr.reshape((2, -1, 3))
+        self.assertIsInstance(rs, ArrayWithUnits)
+        self.assertIsInstance(rs.dimensions[0], IdentityDimension)
+        self.assertIsInstance(rs.dimensions[1], IdentityDimension)
+        self.assertIsInstance(rs.dimensions[2], IdentityDimension)
+
+    def test_zeros_like(self):
+        arr = ArrayWithUnits(
+            np.zeros((3, 2, 10)),
+            [
+                ContrivedDimension(10),
+                IdentityDimension(),
+                ContrivedDimension2(10)
+            ])
+        zeros = arr.zeros_like()
+        self.assertEqual(zeros.shape, arr.shape)
+        self.assertEqual(zeros.dimensions, arr.dimensions)
+        np.testing.assert_allclose(0, zeros)
 
     def test_assigns_size_where_appropriate(self):
         arr = ArrayWithUnits(

@@ -79,11 +79,26 @@ class ArrayWithUnits(np.ndarray):
             raise ValueError('All dimensions must match to concatenate')
 
     def reshape(self, shape, order='C'):
-        if shape == filter(lambda x: x > 1, self.shape):
-            return self.squeeze()
+        non_one = lambda x: abs(x) != 1
 
+        if shape == filter(non_one, self.shape):
+            # the new shape is this array's shape will all ones removed
+            return self.squeeze()
+        elif self.shape == filter(non_one, shape):
+            # the new shape just adds some single dimension axes
+            dims = iter(self.dimensions)
+            new_dims = [
+                IdentityDimension() if abs(size) == 1 else dims.next()
+                for size in shape
+            ]
+            raw = np.asarray(self)
+            return ArrayWithUnits(raw.reshape(shape), new_dims)
+
+        # treat every axis as an IdentityDimension
         raw = np.asarray(self)
-        return np.reshape(raw, shape, order)
+        return ArrayWithUnits(
+            np.reshape(raw, shape, order),
+            [IdentityDimension() for _ in shape])
 
     def squeeze(self):
         zipped = filter(lambda x: x[0] > 1, zip(self.shape, self.dimensions))
@@ -110,6 +125,9 @@ class ArrayWithUnits(np.ndarray):
     def zeros(cls, example):
         return cls.from_example(
             np.zeros(example.shape, dtype=example.dtype), example)
+
+    def zeros_like(self):
+        return self.__class__.zeros(self)
 
     def _apply_reduction_to_dimensions(self, result, axis, keepdims):
         if axis is None:

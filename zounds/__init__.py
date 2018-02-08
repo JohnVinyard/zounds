@@ -18,7 +18,7 @@ from spectral import \
     SpectralFlatness, AWeighting, LinearScale, LogScale, FrequencyBand, \
     FrequencyScale, FrequencyDimension, GeometricScale, HanningWindowingFunc, \
     FrequencyAdaptiveTransform, ExplicitScale, ExplicitFrequencyDimension, \
-    FrequencyAdaptive, FrequencyWeighting
+    FrequencyAdaptive, FrequencyWeighting, Hertz
 
 from loudness import \
     log_modulus, inverse_log_modulus, decibel, mu_law, MuLaw, LogModulus, \
