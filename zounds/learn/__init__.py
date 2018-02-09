@@ -40,6 +40,7 @@ try:
         FrequencyDecompositionAnalyzer, FrequencyDecompositionGenerator
     from gan_experiment import GanExperiment
     from sample_embedding import RawSampleEmbedding
+    from dct_transform import DctTransform
 except ImportError:
     pass
 
