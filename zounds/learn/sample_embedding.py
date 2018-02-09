@@ -10,15 +10,22 @@ class RawSampleEmbedding(nn.Module):
     softmax/categorical distribution
     """
 
-    def __init__(self, n_categories, embedding_dim):
+    def __init__(self, n_categories, embedding_dim, use_cuda=False):
         super(RawSampleEmbedding, self).__init__()
+        self.use_cuda = use_cuda
         self.n_categories = n_categories
         self.embedding_dim = embedding_dim
         self.linear = nn.Linear(
             self.n_categories, self.embedding_dim)
 
+    def _variable(self, x, *args, **kwargs):
+        v = Variable(x, *args, **kwargs)
+        if self.use_cuda:
+            v = v.cuda()
+        return v
+
     def _mu_law(self, x):
-        m = Variable(torch.FloatTensor(1))
+        m = self._variable(torch.FloatTensor(1))
         m[:] = self.n_categories + 1
         s = torch.sign(x)
         x = torch.abs(x)
@@ -31,7 +38,7 @@ class RawSampleEmbedding(nn.Module):
         return x
 
     def _one_hot(self, x):
-        y = Variable(torch.arange(0, self.n_categories + 1))
+        y = self._variable(torch.arange(0, self.n_categories + 1))
         x = -(((x[..., None] - y) ** 2) * 1e12)
         x = F.softmax(x, dim=-1)
         return x
