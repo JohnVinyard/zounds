@@ -38,8 +38,8 @@ try:
         Conv1d, ConvTranspose1d, Conv2d, ConvTranspose2d, to_var, from_var, \
         try_network, apply_network, feature_map_size, sample_norm, \
         FrequencyDecompositionAnalyzer, FrequencyDecompositionGenerator
-
     from gan_experiment import GanExperiment
+    from sample_embedding import RawSampleEmbedding
 except ImportError:
     pass
 
