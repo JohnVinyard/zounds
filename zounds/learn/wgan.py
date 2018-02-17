@@ -60,13 +60,12 @@ class WassersteinGanTrainer(Trainer):
 
         # computing the norm of the gradients is very expensive, so I'm only
         # taking a subset of the minibatch here
-        subset_size = min(10, real_samples.shape[0])
+        # subset_size = min(10, real_samples.shape[0])
+        subset_size = real_samples.shape[0]
 
         real_samples = real_samples[:subset_size]
         fake_samples = fake_samples[:subset_size]
 
-        # TODO: this should have the same number of dimensions as real and
-        # fake samples, and should not be hard-coded
         alpha = torch.rand(subset_size).cuda()
         alpha = alpha.view((-1,) + ((1,) * (real_samples.dim() - 1)))
 
@@ -190,6 +189,7 @@ class WassersteinGanTrainer(Trainer):
                     d_loss.backward()
                     critic_optim.step()
 
+
                 self.zero_discriminator_gradients()
                 self.zero_generator_gradients()
 
@@ -213,13 +213,14 @@ class WassersteinGanTrainer(Trainer):
 
                 gl = g_loss.data[0]
                 dl = d_loss.data[0]
+                rl = real_mean.data[0]
 
                 if self.on_batch_complete:
                     self.on_batch_complete(epoch, self.network, self.samples)
 
                 if i % 10 == 0:
                     print \
-                        'Epoch {epoch}, batch {i}, generator {gl}, critic {dl}' \
+                        'Epoch {epoch}, batch {i}, generator {gl}, real {rl}, critic {dl}' \
                             .format(**locals())
 
         return self.network

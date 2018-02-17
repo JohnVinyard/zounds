@@ -8,6 +8,7 @@ class DctTransform(object):
         super(DctTransform, self).__init__()
         self.use_cuda = use_cuda
         self._basis_cache = dict()
+        self._window_cache = dict()
 
     def _variable(self, x, *args, **kwargs):
         v = Variable(x, *args, **kwargs)
@@ -20,8 +21,20 @@ class DctTransform(object):
             return self._basis_cache[n]
         except KeyError:
             basis = torch.from_numpy(dct_basis(n)).float()
+            if self.use_cuda:
+                basis = basis.cuda()
             self._basis_cache[n] = basis
             return basis
+
+    def window(self, n, window):
+        try:
+            return self._window_cache[n]
+        except KeyError:
+            data = torch.from_numpy(window._wdata(n)).float()
+            if self.use_cuda:
+                data = data.cuda()
+            self._window_cache[n] = data
+            return data
 
     def _base_dct_transform(self, x, basis, axis=-1):
         n = torch.FloatTensor(1)
@@ -43,7 +56,7 @@ class DctTransform(object):
         # figure out how many samples our resampled signal will have
         n_samples = int(factor * x.shape[axis])
 
-        coeffs = self.dct_basis(x)
+        coeffs = self.dct(x)
 
         # create the shape of our new coefficients
         new_coeffs_shape = list(coeffs.shape)
@@ -64,9 +77,11 @@ class DctTransform(object):
 
         return self.idct(new_coeffs)
 
-    def short_time_dct(self, x, size, step):
+    def short_time_dct(self, x, size, step, window):
         original_shape = x.shape
         x = x.unfold(-1, size, step)
+        window = self._variable(self.window(x.shape[-1], window))
+        x = x * window
         x = self.dct(x, axis=-1)
         x = x.view((original_shape[0], size, x.shape[2]))
         return x

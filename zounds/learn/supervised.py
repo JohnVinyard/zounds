@@ -12,12 +12,14 @@ class SupervisedTrainer(Trainer):
             batch_size,
             holdout_percent=0.0,
             data_preprocessor=lambda x: x,
-            label_preprocessor=lambda x: x):
+            label_preprocessor=lambda x: x,
+            on_batch_complete=None):
 
         super(SupervisedTrainer, self).__init__(
             epochs,
             batch_size)
 
+        self.on_batch_complete = on_batch_complete
         self.label_preprocessor = label_preprocessor
         self.data_preprocessor = data_preprocessor
         self.holdout_percent = holdout_percent
@@ -55,6 +57,9 @@ class SupervisedTrainer(Trainer):
             if not test:
                 error.backward()
                 self.optimizer.step()
+
+            if self.on_batch_complete:
+                self.on_batch_complete(inp_v, output)
 
             return error.data[0]
 

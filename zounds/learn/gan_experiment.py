@@ -2,6 +2,7 @@ import featureflow as ff
 from util import from_var
 from random import choice
 from zounds.spectral import stft, rainbowgram
+from zounds.learn import try_network
 from zounds.timeseries import SR11025, SampleRate, Seconds, AudioSamples
 from wgan import WassersteinGanTrainer
 from pytorch_model import PyTorchGan
@@ -28,6 +29,7 @@ class GanExperiment(object):
             batch_size=32,
             n_samples=int(5e5),
             latent_dim=100,
+            real_sample_transformer=lambda x: x,
             debug_gradients=False,
             sample_size=8192,
             sample_hop=1024,
@@ -35,6 +37,7 @@ class GanExperiment(object):
             app_port=8888):
 
         super(GanExperiment, self).__init__()
+        self.real_sample_transformer = real_sample_transformer
         self.debug_gradients = debug_gradients
         self.n_samples = n_samples
         self.batch_size = batch_size
@@ -94,16 +97,34 @@ class GanExperiment(object):
 
     def fake_audio(self):
         sample = choice(self.fake_samples)
-        return AudioSamples(sample, self.samplerate)\
+        return AudioSamples(sample, self.samplerate) \
             .pad_with_silence(Seconds(1))
 
-    def fake_stft(self):
-        samples = self.fake_audio()
+    def _stft(self, samples):
+        samples = samples / np.abs(samples.max())
         wscheme = SampleRate(
             frequency=samples.samplerate.frequency * 128,
             duration=samples.samplerate.frequency * 256)
         coeffs = stft(samples, wscheme, HanningWindowingFunc())
         return rainbowgram(coeffs)
+
+    def fake_stft(self):
+        samples = self.fake_audio()
+        return self._stft(samples)
+
+    def real_stft(self):
+        snd = self.sound_cls.random()
+        windowed = choice(snd.windowed)
+        return self._stft(windowed)
+
+    def test(self):
+        z = np.random.normal(
+            0, 1, (self.batch_size, self.latent_dim)).astype(np.float32)
+        samples = try_network(self.gan_pair.generator, z)
+        samples = from_var(samples)
+        print samples.shape
+        wasserstein_estimate = try_network(self.gan_pair.discriminator, samples)
+        print wasserstein_estimate.shape
 
     def run(self):
         ingest(self.dataset, self.sound_cls, multi_threaded=True)
@@ -111,6 +132,8 @@ class GanExperiment(object):
         experiment = self
         fake_audio = self.fake_audio
         fake_stft = self.fake_stft
+        real_stft = self.real_stft
+        Sound = self.sound_cls
 
         self.app = ZoundsApp(
             model=self.sound_cls,
@@ -134,6 +157,10 @@ class GanExperiment(object):
                     batch_size=self.batch_size,
                     on_batch_complete=self.batch_complete,
                     debug_gradient=self.debug_gradients)
+
+                def gen():
+                    for snd in self.sound_cls:
+                        yield self.real_sample_transformer(snd.windowed)
 
                 self.gan_pipeline.process(
                     samples=(snd.windowed for snd in self.sound_cls),
