@@ -1,7 +1,7 @@
 from __future__ import division
 import numpy as np
 import unittest2
-from frequencyscale import LinearScale, LogScale, FrequencyBand, Hertz
+from frequencyscale import LinearScale, FrequencyBand, Hertz
 from weighting import AWeighting
 from zounds.timeseries import Seconds, TimeDimension, TimeSlice, SR11025
 from zounds.spectral import FrequencyDimension, GeometricScale
@@ -285,7 +285,7 @@ class TimeFrequencyRepresentationTests(unittest2.TestCase):
     def test_can_multiply_by_frequency_weighting_log_scale(self):
         frequency = Seconds(1)
         duration = Seconds(1)
-        scale = LogScale(FrequencyBand(20, 22050), 100)
+        scale = GeometricScale(20, 22050, 0.01, 100)
 
         td = TimeDimension(frequency, duration)
         fd = FrequencyDimension(scale)

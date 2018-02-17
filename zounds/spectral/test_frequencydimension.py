@@ -1,6 +1,6 @@
 import unittest2
 from tfrepresentation import FrequencyDimension, ExplicitFrequencyDimension
-from frequencyscale import FrequencyBand, LinearScale, LogScale, GeometricScale
+from frequencyscale import FrequencyBand, LinearScale, GeometricScale
 
 
 class FrequencyDimensionTests(unittest2.TestCase):
@@ -11,7 +11,7 @@ class FrequencyDimensionTests(unittest2.TestCase):
 
     def test_not_equal(self):
         fd1 = FrequencyDimension(LinearScale(FrequencyBand(20, 10000), 100))
-        fd2 = FrequencyDimension(LogScale(FrequencyBand(20, 10000), 100))
+        fd2 = FrequencyDimension(GeometricScale(20, 10000, 0.01, 100))
         self.assertNotEqual(fd1, fd2)
 
 

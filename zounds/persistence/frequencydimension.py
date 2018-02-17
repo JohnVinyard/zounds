@@ -1,7 +1,7 @@
 from basedimension import BaseDimensionEncoder, BaseDimensionDecoder
 from zounds.spectral import \
     FrequencyBand, FrequencyDimension, LinearScale, GeometricScale, \
-    ExplicitScale, ExplicitFrequencyDimension
+    ExplicitScale, ExplicitFrequencyDimension, BarkScale, MelScale, ChromaScale
 
 
 class ScaleEncoderDecoder(object):
@@ -19,6 +19,52 @@ class ScaleEncoderDecoder(object):
 
     def encode(self, scale):
         raise NotImplementedError()
+
+
+class GenericScaleEncoderDecoder(ScaleEncoderDecoder):
+    def __init__(self, cls):
+        super(GenericScaleEncoderDecoder, self).__init__()
+        self.cls = cls
+
+    def can_encode(self, scale):
+        return isinstance(scale, self.cls)
+
+    def can_decode(self, d):
+        return d['name'] == self.cls.__name__
+
+    def encode(self, scale):
+        return dict(
+            start_hz=scale.frequency_band.start_hz,
+            stop_hz=scale.frequency_band.stop_hz,
+            n_bands=scale.n_bands,
+            name=scale.__class__.__name__)
+
+    def _decode_frequency_band(self, d):
+        return FrequencyBand(d['start_hz'], d['stop_hz'])
+
+    def _decode_args(self, d):
+        return self._decode_frequency_band(d), d['n_bands']
+
+    def decode(self, d):
+        return self.cls(*self._decode_args(d))
+
+
+class BarkScaleEncoderDecoder(GenericScaleEncoderDecoder):
+    def __init__(self):
+        super(BarkScaleEncoderDecoder, self).__init__(BarkScale)
+
+
+class MelScaleEncoderDecoder(GenericScaleEncoderDecoder):
+    def __init__(self):
+        super(MelScaleEncoderDecoder, self).__init__(MelScale)
+
+
+class ChromaScaleEncoderDecoder(GenericScaleEncoderDecoder):
+    def __init__(self):
+        super(ChromaScaleEncoderDecoder, self).__init__(ChromaScale)
+
+    def _decode_args(self, d):
+        return self._decode_frequency_band(d),
 
 
 class LinearScaleEncoderDecoder(ScaleEncoderDecoder):
@@ -95,7 +141,10 @@ class CompositeScaleEncoderDecoder(object):
     strategies = [
         LinearScaleEncoderDecoder(),
         GeometricScaleEncoderDecoder(),
-        ExplicitScaleEncoderDecoder()
+        ExplicitScaleEncoderDecoder(),
+        BarkScaleEncoderDecoder(),
+        MelScaleEncoderDecoder(),
+        ChromaScaleEncoderDecoder()
     ]
 
     def __init__(self):

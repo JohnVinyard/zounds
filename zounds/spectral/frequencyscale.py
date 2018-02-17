@@ -390,20 +390,20 @@ class LinearScale(FrequencyScale):
         return tuple(FrequencyBand(f, f + bandwidth) for f in freqs)
 
 
-class LogScale(FrequencyScale):
-    def __init__(self, frequency_band, n_bands, always_even=False):
-        super(LogScale, self).__init__(
-            frequency_band, n_bands, always_even=always_even)
-
-    def _compute_bands(self):
-        center_freqs = np.logspace(
-            np.log10(self.start_hz),
-            np.log10(self.stop_hz),
-            self.n_bands + 1)
-        # variable bandwidth
-        bandwidths = np.diff(center_freqs)
-        return tuple(FrequencyBand.from_center(cf, bw)
-                     for (cf, bw) in zip(center_freqs[:-1], bandwidths))
+# class LogScale(FrequencyScale):
+#     def __init__(self, frequency_band, n_bands, always_even=False):
+#         super(LogScale, self).__init__(
+#             frequency_band, n_bands, always_even=always_even)
+#
+#     def _compute_bands(self):
+#         center_freqs = np.logspace(
+#             np.log10(self.start_hz),
+#             np.log10(self.stop_hz),
+#             self.n_bands + 1)
+#         # variable bandwidth
+#         bandwidths = np.diff(center_freqs)
+#         return tuple(FrequencyBand.from_center(cf, bw)
+#                      for (cf, bw) in zip(center_freqs[:-1], bandwidths))
 
 
 class GeometricScale(FrequencyScale):
@@ -497,19 +497,73 @@ class ExplicitScale(FrequencyScale):
         return all([a == b for (a, b) in zip(self, other)])
 
 
+class Bark(Hertz):
+    def __init__(self, bark):
+        self.bark = bark
+        super(Bark, self).__init__(Bark.to_hz(bark))
+
+    @staticmethod
+    def to_hz(bark):
+        return 300. * ((np.e ** (bark / 6.0)) - (np.e ** (-bark / 6.)))
+
+    @staticmethod
+    def to_bark(hz):
+        return 6. * np.log((hz / 600.) + np.sqrt((hz / 600.) ** 2 + 1))
+
+
+def equivalent_rectangular_bandwidth(hz):
+    return (0.108 * hz) + 24.7
+
+
 class BarkScale(FrequencyScale):
     def __init__(self, frequency_band, n_bands):
         super(BarkScale, self).__init__(frequency_band, n_bands)
+
+    def _compute_bands(self):
+        start = Bark.to_bark(self.frequency_band.start_hz)
+        stop = Bark.to_bark(self.frequency_band.stop_hz)
+        barks = np.linspace(start, stop, self.n_bands)
+        center_frequencies_hz = Bark.to_hz(barks)
+        bandwidths = equivalent_rectangular_bandwidth(center_frequencies_hz)
+        return [
+            FrequencyBand.from_center(c, b)
+            for c, b in zip(center_frequencies_hz, bandwidths)]
+
+
+class Mel(Hertz):
+    def __init__(self, mel):
+        self.mel = mel
+        super(Mel, self).__init__(Mel.to_hz(mel))
+
+    @staticmethod
+    def to_hz(mel):
+        return 700 * ((np.e ** (mel / 1127)) - 1)
+
+    @staticmethod
+    def to_mel(hz):
+        return 1127 * np.log(1 + (hz / 700))
 
 
 class MelScale(FrequencyScale):
     def __init__(self, frequency_band, n_bands):
         super(MelScale, self).__init__(frequency_band, n_bands)
 
+    def _compute_bands(self):
+        start = Mel.to_mel(self.frequency_band.start_hz)
+        stop = Mel.to_mel(self.frequency_band.stop_hz)
+        mels = np.linspace(start, stop, self.n_bands)
+        center_frequencies_hz = Mel.to_hz(mels)
+        bandwidths = equivalent_rectangular_bandwidth(center_frequencies_hz)
+        return [
+            FrequencyBand.from_center(c, b)
+            for c, b in zip(center_frequencies_hz, bandwidths)]
+
 
 class ChromaScale(FrequencyScale):
-    def __init__(self, frequency_band, n_bands):
-        super(ChromaScale, self).__init__(frequency_band, n_bands)
+    def __init__(self, frequency_band):
+        self._a440 = 440.
+        self._a = 2 ** (1 / 12.)
+        super(ChromaScale, self).__init__(frequency_band, n_bands=12)
 
     def _compute_bands(self):
         raise NotImplementedError()
@@ -517,5 +571,39 @@ class ChromaScale(FrequencyScale):
     def get_slice(self, frequency_band):
         raise NotImplementedError()
 
+    def _semitones_to_hz(self, semitone):
+        return self._a440 * (self._a ** semitone)
+
+    def _hz_to_semitones(self, hz):
+        """
+        Convert hertz into a number of semitones above or below some reference
+        value, in this case, A440
+        """
+        return np.log(hz / self._a440) / np.log(self._a)
+
     def _basis(self, other_scale, window):
-        raise NotImplementedError()
+        basis = np.zeros((self.n_bands, len(other_scale)))
+
+        # for each tone in the twelve-tone scale, generate narrow frequency
+        # bands for every octave of that note that falls within the frequency
+        # band.
+        start_semitones = \
+            int(np.round(self._hz_to_semitones(self.frequency_band.start_hz)))
+        stop_semitones = \
+            int(np.round(self._hz_to_semitones(self.frequency_band.stop_hz)))
+
+        semitones = np.arange(start_semitones - 1, stop_semitones)
+        hz = self._semitones_to_hz(semitones)
+
+        bands = []
+        for i in xrange(0, len(semitones) - 2):
+            fh, mh, lh = hz[i: i + 3]
+            bands.append(FrequencyBand(fh, lh))
+
+        for semitone, band in zip(semitones, bands):
+            slce = other_scale.get_slice(band)
+            chroma_index = semitone % self.n_bands
+            slce = basis[chroma_index, slce]
+            slce[:] += np.ones(len(slce)) * window
+
+        return basis

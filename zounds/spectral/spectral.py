@@ -6,13 +6,14 @@ from scipy.fftpack import dct
 from scipy.stats.mstats import gmean
 
 from functional import fft
-from frequencyscale import LinearScale
-from psychacoustics import Chroma as ChromaScale, Bark as BarkScale
+from frequencyscale import LinearScale, ChromaScale, BarkScale
+from weighting import AWeighting
 from tfrepresentation import FrequencyDimension
 from frequencyadaptive import FrequencyAdaptive
 from zounds.core import ArrayWithUnits, IdentityDimension
 from zounds.nputil import safe_log
-from zounds.timeseries import SR44100, audio_sample_rate
+from zounds.timeseries import audio_sample_rate
+from sliding_window import HanningWindowingFunc
 
 
 class FrequencyWeighting(Node):
@@ -26,6 +27,7 @@ class FrequencyWeighting(Node):
         needs (Node): a processing node on which this node depends whose last
             dimension is a :class:`~zounds.spectral.FrequencyDimension`
     """
+
     def __init__(self, weighting=None, needs=None):
         super(FrequencyWeighting, self).__init__(needs=needs)
         self.weighting = weighting
@@ -190,6 +192,7 @@ class FrequencyAdaptiveTransform(Node):
         :class:`~zounds.synthesize.FrequencyAdaptiveDCTSynthesizer`
         :class:`~zounds.synthesize.FrequencyAdaptiveFFTSynthesizer`
     """
+
     def __init__(
             self,
             transform=None,
@@ -226,65 +229,50 @@ class FrequencyAdaptiveTransform(Node):
             self._scale)
 
 
-# TODO: This constructor should not take a samplerate; that information should
-# be encapsulated in the data that's passed in
-class Chroma(Node):
-    def __init__(
-            self,
-            needs=None,
-            samplerate=SR44100(),
-            nbins=12,
-            a440=440.):
-        super(Chroma, self).__init__(needs=needs)
-        self._nbins = nbins
-        self._a440 = a440
-        self._samplerate = samplerate
-        self._chroma_scale = None
+class BaseScaleApplication(Node):
+    def __init__(self, scale, window, needs=None):
+        super(BaseScaleApplication, self).__init__(needs=needs)
+        self.window = window
+        self.scale = scale
+
+    def _new_dim(self):
+        return FrequencyDimension(self.scale)
+
+    def _preprocess(self, data):
+        return data
 
     def _process(self, data):
-        data = np.abs(data)
-        if self._chroma_scale is None:
-            self._chroma_scale = ChromaScale( \
-                self._samplerate.samples_per_second,
-                data.shape[1] * 2,
-                nbands=self._nbins)
-
+        x = self._preprocess(data)
+        x = self.scale.apply(x, self.window)
         yield ArrayWithUnits(
-            self._chroma_scale.transform(data),
-            [data.dimensions[0], IdentityDimension()])
+            x, data.dimensions[:-1] + (self._new_dim(),))
 
 
-# TODO: This constructor should not take a samplerate; that information should
-# be encapsulated in the data that's passed in
-class BarkBands(Node):
+class Chroma(BaseScaleApplication):
+    def __init__(
+            self, frequency_band, window=HanningWindowingFunc(), needs=None):
+        super(Chroma, self).__init__(
+            ChromaScale(frequency_band), window, needs=needs)
+
+    def _new_dim(self):
+        return IdentityDimension()
+
+    def _preprocess(self, data):
+        return np.abs(data) * AWeighting()
+
+
+class BarkBands(BaseScaleApplication):
     def __init__(
             self,
-            needs=None,
-            samplerate=SR44100(),
+            frequency_band,
             n_bands=100,
-            start_freq_hz=50,
-            stop_freq_hz=2e4):
-        super(BarkBands, self).__init__(needs=needs)
+            window=HanningWindowingFunc(),
+            needs=None):
+        super(BarkBands, self).__init__(
+            BarkScale(frequency_band, n_bands), window, needs=needs)
 
-        self._samplerate = samplerate
-        self._n_bands = n_bands
-        self._start_freq_hz = start_freq_hz
-        self._stop_freq_hz = stop_freq_hz
-        self._bark_scale = None
-
-    def _process(self, data):
-        data = np.abs(data)
-        if self._bark_scale is None:
-            self._bark_scale = BarkScale(
-                self._samplerate.samples_per_second,
-                data.shape[1] * 2,
-                self._n_bands,
-                self._start_freq_hz,
-                self._stop_freq_hz)
-
-        yield ArrayWithUnits(
-            self._bark_scale.transform(data),
-            [data.dimensions[0], IdentityDimension()])
+    def _preprocess(self, data):
+        return np.abs(data)
 
 
 class SpectralCentroid(Node):

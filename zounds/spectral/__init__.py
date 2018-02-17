@@ -15,8 +15,8 @@ from tfrepresentation import FrequencyDimension, ExplicitFrequencyDimension
 from weighting import AWeighting
 
 from frequencyscale import \
-    LinearScale, LogScale, FrequencyBand, FrequencyScale, GeometricScale, \
-    ExplicitScale, Hertz
+    LinearScale, FrequencyBand, FrequencyScale, GeometricScale, ExplicitScale, \
+    Hertz, BarkScale, MelScale, ChromaScale
 
 from frequencyadaptive import FrequencyAdaptive
 

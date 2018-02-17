@@ -10,7 +10,7 @@ from zounds.persistence import ArrayWithUnitsFeature, AudioSamplesFeature, \
 from zounds.timeseries import SR44100, HalfLapped, Stride, Seconds
 from zounds.spectral import \
     SlidingWindow, OggVorbisWindowingFunc, FFT, BarkBands, SpectralCentroid, \
-    Chroma, BFCC, DCT, FrequencyAdaptiveTransform
+    Chroma, BFCC, DCT, FrequencyAdaptiveTransform, FrequencyBand
 
 DEFAULT_CHUNK_SIZE = ChunkSizeBytes(
     samplerate=SR44100(),
@@ -157,7 +157,6 @@ def stft(
 def audio_graph(
         chunksize_bytes=DEFAULT_CHUNK_SIZE,
         resample_to=SR44100(),
-        freesound_api_key=None,
         store_fft=False):
     """
     Produce a base class suitable as a starting point for many audio processing
@@ -166,6 +165,8 @@ def audio_graph(
     transform frames.  It also compresses the audio into ogg vorbis format for
     compact storage.
     """
+
+    band = FrequencyBand(20, resample_to.nyquist)
 
     class AudioGraph(BaseModel):
         meta = JSONFeature(
@@ -215,7 +216,7 @@ def audio_graph(
         bark = ArrayWithUnitsFeature(
             BarkBands,
             needs=fft,
-            samplerate=resample_to,
+            frequency_band=band,
             store=True)
 
         centroid = ArrayWithUnitsFeature(
@@ -226,7 +227,7 @@ def audio_graph(
         chroma = ArrayWithUnitsFeature(
             Chroma,
             needs=fft,
-            samplerate=resample_to,
+            frequency_band=band,
             store=True)
 
         bfcc = ArrayWithUnitsFeature(

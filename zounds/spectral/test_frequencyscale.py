@@ -1,7 +1,7 @@
 from __future__ import division
 import unittest2
 from frequencyscale import \
-    FrequencyBand, LinearScale, LogScale, ExplicitScale, GeometricScale, Hertz
+    FrequencyBand, LinearScale, ExplicitScale, GeometricScale, Hertz
 from zounds.timeseries import SR44100
 import numpy as np
 
@@ -67,7 +67,7 @@ class FrequencyScaleTests(unittest2.TestCase):
         samplerate = SR44100()
         scale = LinearScale.from_sample_rate(
             samplerate, 44100, always_even=True)
-        log_scale = LogScale(FrequencyBand(20, 20000), 64)
+        log_scale = GeometricScale(20, 20000, 0.01, 64)
         slices = [scale.get_slice(band) for band in log_scale]
         sizes = [s.stop - s.start for s in slices]
         self.assertTrue(
@@ -102,7 +102,7 @@ class FrequencyScaleTests(unittest2.TestCase):
         scale1 = LinearScale(fb1, 100)
 
         fb2 = FrequencyBand(20, 20000)
-        scale2 = LogScale(fb2, 100)
+        scale2 = GeometricScale(20, 20000, 0.01, 100)
 
         self.assertNotEqual(scale1, scale2)
 
@@ -155,15 +155,6 @@ class LinearScaleTests(unittest2.TestCase):
         scale = LinearScale(FrequencyBand(100, 500), 4)
         start_hz = [b.start_hz for b in scale]
         self.assertEqual([100, 200, 300, 400], start_hz)
-
-
-class LogScaleTests(unittest2.TestCase):
-    def test_variable_bandwidth(self):
-        scale = LogScale(FrequencyBand(20, 22050), 100)
-        diff = np.diff(list(scale.bandwidths))
-        # All differences should be positive, as bandwidth should be
-        # monotonically increasing
-        self.assertTrue(np.all(diff > 0))
 
 
 class GeometricScaleTests(unittest2.TestCase):

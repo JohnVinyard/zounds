@@ -15,10 +15,11 @@ from soundfile import \
 from spectral import \
     SlidingWindow, OggVorbisWindowingFunc, WindowingFunc, \
     FFT, MDCT, DCT, DCTIV, BarkBands, Chroma, BFCC, SpectralCentroid, \
-    SpectralFlatness, AWeighting, LinearScale, LogScale, FrequencyBand, \
+    SpectralFlatness, AWeighting, LinearScale, FrequencyBand, \
     FrequencyScale, FrequencyDimension, GeometricScale, HanningWindowingFunc, \
     FrequencyAdaptiveTransform, ExplicitScale, ExplicitFrequencyDimension, \
-    FrequencyAdaptive, FrequencyWeighting, Hertz
+    FrequencyAdaptive, FrequencyWeighting, Hertz, BarkScale, MelScale, \
+    ChromaScale
 
 from loudness import \
     log_modulus, inverse_log_modulus, decibel, mu_law, MuLaw, LogModulus, \

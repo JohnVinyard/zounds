@@ -12,78 +12,80 @@ from zounds.persistence import ArrayWithUnitsFeature, AudioSamplesFeature
 from zounds.soundfile import \
     AudioStream, OggVorbis, OggVorbisFeature, Resampler
 from zounds.spectral import \
-    SlidingWindow, OggVorbisWindowingFunc, FFT, Chroma, BarkBands, BFCC
+    SlidingWindow, OggVorbisWindowingFunc, FFT, Chroma, BarkBands, BFCC, \
+    FrequencyBand
 from zounds.basic import Max
 from zounds.util import simple_in_memory_settings
 from featureflow import *
 
 windowing_scheme = HalfLapped()
 samplerate = SR44100()
+band = FrequencyBand(20, samplerate.nyquist)
 
 
 @simple_in_memory_settings
 class Document(BaseModel):
     raw = ByteStreamFeature(
-            ByteStream,
-            chunksize=2 * 44100 * 30 * 2,
-            store=True)
+        ByteStream,
+        chunksize=2 * 44100 * 30 * 2,
+        store=True)
 
     ogg = OggVorbisFeature(
-            OggVorbis,
-            needs=raw,
-            store=True)
+        OggVorbis,
+        needs=raw,
+        store=True)
 
     pcm = AudioSamplesFeature(
-            AudioStream,
-            needs=raw,
-            store=True)
+        AudioStream,
+        needs=raw,
+        store=True)
 
     resampled = AudioSamplesFeature(
-            Resampler,
-            needs=pcm,
-            samplerate=samplerate,
-            store=True)
+        Resampler,
+        needs=pcm,
+        samplerate=samplerate,
+        store=True)
 
     windowed = ArrayWithUnitsFeature(
-            SlidingWindow,
-            needs=resampled,
-            wscheme=windowing_scheme,
-            wfunc=OggVorbisWindowingFunc(),
-            store=False)
+        SlidingWindow,
+        needs=resampled,
+        wscheme=windowing_scheme,
+        wfunc=OggVorbisWindowingFunc(),
+        store=False)
 
     fft = ArrayWithUnitsFeature(
-            FFT,
-            needs=windowed,
-            store=True)
+        FFT,
+        needs=windowed,
+        store=True)
 
     chroma = ArrayWithUnitsFeature(
-            Chroma,
-            needs=fft,
-            samplerate=samplerate,
-            store=True)
+        Chroma,
+        needs=fft,
+        frequency_band=band,
+        store=True)
 
     bark = ArrayWithUnitsFeature(
-            BarkBands,
-            needs=fft,
-            samplerate=samplerate,
-            store=True)
+        BarkBands,
+        needs=fft,
+        frequency_band=band,
+        store=True)
 
     bfcc = ArrayWithUnitsFeature(
-            BFCC,
-            needs=bark,
-            store=True)
+        BFCC,
+        needs=bark,
+        store=True)
 
     bfcc_sliding_window = ArrayWithUnitsFeature(
-            SlidingWindow,
-            needs=bfcc,
-            wscheme=windowing_scheme * Stride(frequency=2, duration=4),
-            store=True)
+        SlidingWindow,
+        needs=bfcc,
+        wscheme=windowing_scheme * Stride(frequency=2, duration=4),
+        store=True)
 
     bfcc_pooled = ArrayWithUnitsFeature(
-            Max,
-            needs=bfcc_sliding_window,
-            axis=1,
-            store=True)
+        Max,
+        needs=bfcc_sliding_window,
+        axis=1,
+        store=True)
 
 
 class HasUri(object):
@@ -135,7 +137,7 @@ class IntegrationTests(unittest2.TestCase):
     def test_ogg_vorbis_iter_chunks_returns_audio_samples(self):
         chunks = list(self.doc.ogg.iter_chunks())
         self.assertTrue(
-                all(isinstance(chunk, AudioSamples) for chunk in chunks))
+            all(isinstance(chunk, AudioSamples) for chunk in chunks))
 
     def test_ogg_vorbis_wrapper_returns_audio_samples(self):
         self.assertIsInstance(self.doc.ogg[:], AudioSamples)
@@ -201,5 +203,5 @@ class IntegrationTests(unittest2.TestCase):
 
     def test_sliding_window_has_correct_relationship_to_bfcc(self):
         self.assertEqual(
-                2,
-                self.doc.bfcc.shape[0] // self.doc.bfcc_sliding_window.shape[0])
+            2,
+            self.doc.bfcc.shape[0] // self.doc.bfcc_sliding_window.shape[0])
