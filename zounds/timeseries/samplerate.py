@@ -88,6 +88,14 @@ class SampleRate(object):
         """
         return self.overlap / self.duration
 
+    @property
+    def samples_per_second(self):
+        return int(Picoseconds(int(1e12)) / self.frequency)
+
+    @property
+    def nyquist(self):
+        return self.samples_per_second // 2
+
     def __mul__(self, other):
         try:
             if len(other) == 1:
@@ -124,14 +132,6 @@ class AudioSampleRate(SampleRate):
 
     def __int__(self):
         return self.samples_per_second
-
-    @property
-    def samples_per_second(self):
-        return int(Picoseconds(int(1e12)) / self.frequency)
-
-    @property
-    def nyquist(self):
-        return self.samples_per_second // 2
 
     def half_lapped(self):
         return SampleRate(
@@ -235,6 +235,7 @@ class SR16000(AudioSampleRate):
             >>> sr.nyquist
             8000
         """
+
     def __init__(self):
         super(SR16000, self).__init__(16000, 512, 256)
 
