@@ -3,7 +3,8 @@ from util import from_var
 from random import choice
 from zounds.spectral import stft, rainbowgram
 from zounds.learn import try_network
-from zounds.timeseries import SR11025, SampleRate, Seconds, AudioSamples
+from zounds.timeseries import \
+    SR11025, SampleRate, Seconds, AudioSamples, audio_sample_rate
 from wgan import WassersteinGanTrainer
 from pytorch_model import PyTorchGan
 from graph import learning_pipeline
@@ -115,6 +116,9 @@ class GanExperiment(object):
     def real_stft(self):
         snd = self.sound_cls.random()
         windowed = choice(snd.windowed)
+        windowed = AudioSamples(
+            windowed,
+            audio_sample_rate(windowed.dimensions[0].samples_per_second))
         return self._stft(windowed)
 
     def test(self):
