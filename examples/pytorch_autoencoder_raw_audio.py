@@ -1,13 +1,15 @@
-import zounds
+import argparse
+from random import choice
+
 import featureflow as ff
 import numpy as np
 from torch import nn
 from torch.nn import functional as F
 from torch.optim import Adam
-from random import choice
-from zounds.learn import Conv1d, ConvTranspose1d
+
+import zounds
+from zounds.learn import Conv1d, ConvTranspose1d, to_var, from_var
 from zounds.timeseries import categorical, inverse_categorical
-import argparse
 
 samplerate = zounds.SR11025()
 BaseModel = zounds.resampled(resample_to=samplerate, store_resampled=True)
@@ -201,6 +203,18 @@ class CategoricalLoss(nn.NLLLoss):
         return super(CategoricalLoss, self).forward(input, indices)
 
 
+class FrequencyBandLoss(nn.MSELoss):
+    def __init__(self):
+        super(FrequencyBandLoss, self).__init__()
+
+    def forward(self, input, target):
+        target_samples = from_var(target).squeeze()
+        target_fft = np.fft.rfft(target_samples, axis=-1, norm='ortho')
+        target_fft[:, :50] = 0
+        recon = np.fft.irfft(target_fft, axis=-1, norm='ortho')
+        recon = to_var(recon)
+        return super(FrequencyBandLoss, self).forward(input, recon)
+
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
@@ -237,7 +251,7 @@ if __name__ == '__main__':
         batch_size = 16
     else:
         network = RawSamplesAutoEncoder()
-        loss = nn.MSELoss()
+        loss = FrequencyBandLoss()
         synthesize = raw_samples_synthesize
         pipeline_cls = AutoEncoderPipeline
         data_preprocessor = label_preprocessor = lambda x: x
