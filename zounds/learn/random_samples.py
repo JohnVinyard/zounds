@@ -1,6 +1,7 @@
-from featureflow import Node, NotEnoughData
+from featureflow import Node, NotEnoughData, IteratorNode
 from zounds.core import ArrayWithUnits, IdentityDimension
 import numpy as np
+from itertools import cycle
 
 
 class Reservoir(object):
@@ -17,6 +18,9 @@ class Reservoir(object):
         self.arr = None
         self.indices = set()
         self.dtype = dtype
+
+    def percent_full(self):
+        return float(len(self.indices)) / self.nsamples
 
     def _init_arr(self, samples):
         if self.arr is not None:
@@ -64,9 +68,9 @@ class Reservoir(object):
                 'Requested {batch_size} samples, but this instance only '
                 'currently has {n} samples, with a maximum of {nsamples}'
                     .format(
-                        batch_size=batch_size,
-                        n=len(self.indices),
-                        nsamples=self.nsamples))
+                    batch_size=batch_size,
+                    n=len(self.indices),
+                    nsamples=self.nsamples))
 
         # TODO: this would be much more efficient for repeated calls if I
         # instead maintained a sorted set
@@ -128,6 +132,46 @@ class ShuffledSamples(Node):
         if not self._finalized:
             raise NotEnoughData()
         return self.reservoir.get()
+
+
+class InfiniteIterator(IteratorNode):
+    def __init__(self, needs=None):
+        super(InfiniteIterator, self).__init__(needs=needs)
+
+    def _process(self, data):
+        for d in cycle(data):
+            yield d
+
+
+class InfiniteShuffledSamples(ShuffledSamples):
+    def __init__(
+            self,
+            nsamples=None,
+            multiplexed=None,
+            dtype=None,
+            needs=None,
+            mixture_threshold=0.9,
+            update_threshold=10):
+
+        super(InfiniteShuffledSamples, self).__init__(
+            nsamples=nsamples,
+            multiplexed=multiplexed,
+            dtype=dtype,
+            needs=needs)
+        self.update_threshold = update_threshold
+        self.mixture_threshold = mixture_threshold
+        self._updates = 0
+
+    def _enqueue(self, data, pusher):
+        self._updates += 1
+        self.reservoir.add(data)
+
+    def _dequeue(self):
+        print self._updates, self.reservoir.percent_full()
+        if self.reservoir.percent_full() >= self.mixture_threshold \
+                and self._updates >= self.update_threshold:
+            self._updates = 0
+            return self.reservoir.get()
 
 
 class ReservoirSampler(Node):

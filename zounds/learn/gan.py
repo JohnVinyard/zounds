@@ -31,9 +31,6 @@ class GanTrainer(Trainer):
 
         zdim = self.latent_dimension
 
-        # TODO: These dimensions work for vanilla GANs, but need to be
-        # reversed (batch_size, zdim, 1) for convolutional GANs
-
         noise_shape = (self.batch_size,) + self.latent_dimension
         noise = torch.FloatTensor(*noise_shape)
         fixed_noise = torch.FloatTensor(*noise_shape).normal_(0, 1)
@@ -43,6 +40,8 @@ class GanTrainer(Trainer):
 
         self.generator.cuda()
         self.discriminator.cuda()
+        self.generator.train()
+        self.discriminator.train()
         self.loss.cuda()
         label = label.cuda()
         noise, fixed_noise = noise.cuda(), fixed_noise.cuda()

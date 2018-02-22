@@ -95,13 +95,23 @@ class PyTorchNetwork(Preprocessor):
         return x
 
     def _enqueue(self, data, pusher):
+        if self._cache is None:
+            self._cache = dict()
         k = self._dependency_name(pusher)
         self._cache[k] = data
 
     def _dequeue(self):
-        if not self._finalized:
+
+        if self._cache is None:
             raise ff.NotEnoughData()
-        return self._cache
+
+        if isinstance(self._cache, dict) \
+                and len(self._cache) != len(self.needs):
+            raise ff.NotEnoughData()
+
+        data = self._cache
+        self._cache = None
+        return data
 
     def _train(self, data):
         trained_network = self.trainer.train(data)
@@ -121,7 +131,6 @@ class PyTorchNetwork(Preprocessor):
         try:
             forward_func = self._forward_func()
             x = self.post_training_func(data['data'])
-            print x.shape, x.dtype, self.chunksize
             processed_data = forward_func(
                 x, network=trained_network, chunk_size=chunksize)
         except RuntimeError as e:
@@ -214,8 +223,6 @@ class PyTorchGan(PyTorchNetwork):
             warnings.warn(e.message)
 
         op = self.transform(network=network, apply_network=self.apply_network)
-        print op.network
-        print op.apply_network
         inv_data = self.inversion_data()
         inv = self.inverse_transform()
 

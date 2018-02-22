@@ -236,41 +236,6 @@ class BasePreprocessor(Preprocessor):
             data, op, inversion_data=inv_data, inverse=inv, name=self.name)
 
 
-# class Log(Preprocessor):
-#     """
-#     Perform the log-modulus transform on data
-#     (http://blogs.sas.com/content/iml/2014/07/14/log-transformation-of-pos-neg.html)
-#
-#     This transform will tend to compress the overall range of values
-#     """
-#
-#     def __init__(self, needs=None):
-#         super(Log, self).__init__(needs=needs)
-#
-#     def _forward_func(self):
-#         def x(d):
-#             from zounds.loudness import log_modulus
-#             return log_modulus(d)
-#
-#         return x
-#
-#     def _backward_func(self):
-#         def x(d):
-#             from zounds.loudness import inverse_log_modulus
-#             return inverse_log_modulus(d)
-#
-#         return x
-#
-#     def _process(self, data):
-#         data = self._extract_data(data)
-#         op = self.transform()
-#         inv_data = self.inversion_data()
-#         inv = self.inverse_transform()
-#         data = op(data)
-#         yield PreprocessResult(
-#             data, op, inversion_data=inv_data, inverse=inv, name='Log')
-
-
 # TODO: what about functions with imports that aren't in the calling namespace?
 # TODO: what about functions that require inversion data?
 # TODO: what about functions that need to do some processing first (e.g. SimHash)
@@ -853,15 +818,21 @@ class PreprocessingPipeline(Node):
 
     def __init__(self, needs=None):
         super(PreprocessingPipeline, self).__init__(needs=needs)
-        self._pipeline = OrderedDict((id(n), None) for n in needs.values())
+        self._init_pipeline()
+
+    def _init_pipeline(self):
+        self._pipeline = OrderedDict((id(n), None) for n in self.needs.values())
 
     def _enqueue(self, data, pusher):
         self._pipeline[id(pusher)] = data
 
     def _dequeue(self):
-        if not self._finalized or not all(self._pipeline.itervalues()):
+        if not all(self._pipeline.itervalues()):
             raise NotEnoughData()
 
-        return Pipeline(map(
+        pipeline = Pipeline(map(
             lambda x: x.for_storage(),
             self._pipeline.itervalues()))
+
+        self._init_pipeline()
+        return pipeline

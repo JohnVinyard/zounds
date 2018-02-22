@@ -427,27 +427,23 @@ class PyTorchModelTests(unittest2.TestCase):
         @simple_in_memory_settings
         class Pipeline(ff.BaseModel):
             inp = ff.PickleFeature(
-                ff.IteratorNode,
-                store=False)
+                ff.IteratorNode)
 
             samples = ff.PickleFeature(
                 ShuffledSamples,
                 nsamples=500,
                 needs=inp,
-                dtype=np.float32,
-                store=False)
+                dtype=np.float32)
 
             scaled = ff.PickleFeature(
                 InstanceScaling,
-                needs=samples,
-                store=False)
+                needs=samples)
 
             network = ff.PickleFeature(
                 PyTorchGan,
                 apply_network='generator',
                 trainer=trainer,
-                needs=scaled,
-                store=False)
+                needs=scaled)
 
             pipeline = ff.PickleFeature(
                 PreprocessingPipeline,
