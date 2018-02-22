@@ -1,4 +1,4 @@
-__version__ = '0.38.12'
+__version__ = '0.39.12'
 
 from timeseries import \
     Hours, Minutes, Seconds, Milliseconds, Microseconds, Picoseconds, \
@@ -38,10 +38,10 @@ from learn import \
     KMeans, Learned, MeanStdNormalization, UnitNorm, Log, Multiply, \
     PreprocessingPipeline, Slicer, ReservoirSampler, simple_settings, \
     SklearnModel, WithComponents, InstanceScaling, Reshape, ShuffledSamples, \
-    PyTorchNetwork, PyTorchGan, PyTorchAutoEncoder, GanTrainer, \
-    WassersteinGanTrainer, SupervisedTrainer, TripletEmbeddingTrainer, \
-    Weighted, MuLawCompressed, SimHash, AbsoluteValue, Binarize, Sharpen, \
-    learning_pipeline
+    InfiniteShuffledSamples, InfiniteIterator, PyTorchNetwork, PyTorchGan, \
+    PyTorchAutoEncoder, GanTrainer, WassersteinGanTrainer, SupervisedTrainer, \
+    TripletEmbeddingTrainer, Weighted, MuLawCompressed, SimHash, \
+    AbsoluteValue, Binarize, Sharpen, learning_pipeline
 
 from ui import ZoundsApp, ZoundsSearch, RangeUnitUnsupportedException
 
