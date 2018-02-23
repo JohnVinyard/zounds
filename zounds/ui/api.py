@@ -93,21 +93,22 @@ class ZoundsApp(BaseZoundsApp):
                 output = dict()
 
                 try:
+                    orig_stdout = sys.stdout
+                    sys.stdout = sio = StringIO()
                     try:
                         value = eval(statement, globals, locals)
                         output['result'] = str(value)
                         self._add_url(statement, output, value)
                     except SyntaxError:
-                        orig_stdout = sys.stdout
-                        sys.stdout = sio = StringIO()
                         exec (statement, globals, locals)
                         sio.seek(0)
                         output['result'] = sio.read()
-                        sys.stdout = orig_stdout
                     self.set_status(httplib.OK)
                 except:
                     output['error'] = traceback.format_exc()
                     self.set_status(httplib.BAD_REQUEST)
+                finally:
+                    sys.stdout = orig_stdout
 
                 self.write(json.dumps(output))
                 self.finish()
