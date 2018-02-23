@@ -29,7 +29,7 @@ from random_samples import \
     Reservoir, ReservoirSampler, ShuffledSamples, InfiniteShuffledSamples, \
     InfiniteIterator
 
-from util import simple_settings
+from util import simple_settings, object_store_pipeline_settings
 
 from graph import learning_pipeline
 

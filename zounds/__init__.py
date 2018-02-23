@@ -41,7 +41,8 @@ from learn import \
     InfiniteShuffledSamples, InfiniteIterator, PyTorchNetwork, PyTorchGan, \
     PyTorchAutoEncoder, GanTrainer, WassersteinGanTrainer, SupervisedTrainer, \
     TripletEmbeddingTrainer, Weighted, MuLawCompressed, SimHash, \
-    AbsoluteValue, Binarize, Sharpen, learning_pipeline
+    AbsoluteValue, Binarize, Sharpen, learning_pipeline, \
+    object_store_pipeline_settings
 
 from ui import ZoundsApp, ZoundsSearch, RangeUnitUnsupportedException
 

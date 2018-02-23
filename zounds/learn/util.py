@@ -19,7 +19,29 @@ def simple_settings(cls):
     class Model(cls, Settings):
         pass
 
+    Model.__name__ = cls.__name__
+    Model.__module__ = cls.__module__
     return Model
+
+
+def object_store_pipeline_settings(container, region, username, api_key):
+
+    def decorator(cls):
+        class Settings(ff.PersistenceSettings):
+            _id = cls.__name__
+            id_provider = ff.StaticIdProvider(_id)
+            key_builder = ff.StringDelimitedKeyBuilder()
+            database = ff.ObjectStoreDatabase(
+                container, username, api_key, region, key_builder=key_builder)
+
+        class Model(cls, Settings):
+            pass
+
+        Model.__name__ = cls.__name__
+        Model.__module__ = cls.__module__
+        return Model
+
+    return decorator
 
 
 try:
@@ -59,6 +81,7 @@ try:
             [from_var(network(x[i: i + chunksize]))
              for i in xrange(0, len(x), chunksize)])
 
+
     def sample_norm(x):
         """
         pixel norm as described in section 4.2 here:
@@ -74,6 +97,7 @@ try:
         x += 10e-8
         x = torch.sqrt(x)
         return original / x.view(-1, 1, x.shape[-1])
+
 
     def feature_map_size(inp, kernel, stride=1, padding=0):
         return ((inp - kernel + (2 * padding)) / stride) + 1
@@ -115,7 +139,6 @@ try:
                     self.bn = nn.BatchNorm2d(out_channels)
 
             self.activation = activation
-
 
         @property
         def out_channels(self):
@@ -219,7 +242,7 @@ try:
                 batch_norm=True,
                 dilation=1,
                 sample_norm=False,
-                activation=lambda x: F.leaky_relu(x, 0.2),):
+                activation=lambda x: F.leaky_relu(x, 0.2), ):
             super(Conv2d, self).__init__(
                 nn.Conv2d,
                 in_channels,
