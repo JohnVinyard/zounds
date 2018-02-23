@@ -61,7 +61,8 @@ $(function() {
 
         this.render = function() {
             container.empty();
-            self.slice = new AudioSlice(data[position], container, context, client, bus);
+            self.slice = new AudioSlice(
+                data[position], container, context, client, bus);
         }
 
         this.next = function() {
@@ -129,7 +130,8 @@ $(function() {
                     dataType: 'json'
                 }).done(function(resp) {
                     console.log(resp);
-                    self.view = new SearchResults(resp.results, el, context, client, bus);
+                    self.view = new SearchResults(
+                        resp.results, el, context, client, bus);
                 });
             }
         });

@@ -21,14 +21,17 @@ class ZoundsApp(BaseZoundsApp):
             visualization_feature=None,
             audio_feature=None,
             globals={},
-            locals={}):
+            locals={},
+            html='index.html',
+            secret=None):
 
         super(ZoundsApp, self).__init__(
             base_path=base_path,
             model=model,
             visualization_feature=visualization_feature,
             audio_feature=audio_feature,
-            html='index.html')
+            html=html,
+            secret=secret)
 
         self.globals = globals
         self.locals = locals

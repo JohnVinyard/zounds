@@ -9,6 +9,7 @@ from serializer import DefaultSerializer, AudioSamplesSerializer, \
     NumpySerializer, OggVorbisSerializer, ConstantRateTimeSeriesSerializer, \
     OnsetsSerializer, SearchResultsSerializer
 import threading
+from uuid import uuid4
 
 
 class NoMatchingSerializerException(Exception):
@@ -45,9 +46,11 @@ class BaseZoundsApp(object):
             model=None,
             visualization_feature=None,
             audio_feature=None,
-            html=None):
+            html=None,
+            secret=None):
 
         super(BaseZoundsApp, self).__init__()
+        self.secret = secret
         self.locals = locals
         self.globals = globals
         self.model = model
@@ -153,10 +156,31 @@ class BaseZoundsApp(object):
 
         return UIHandler
 
+    def login_handler(self):
+        app = self
+
+        class LoginHandler(tornado.web.RequestHandler):
+            def get(self):
+                self.write(app._get_html('login.html'))
+                self.finish()
+
+            def post(self):
+                secret = self.get_body_argument('secret')
+                if secret == app.secret:
+                    self.set_secure_cookie('user', secret)
+                    self.redirect('/')
+                else:
+                    self.set_status(httplib.UNAUTHORIZED)
+                    self.write(app._get_html('login.html'))
+                    self.finish()
+
+        return LoginHandler
+
     def base_routes(self):
         return [
             (r'/', self.ui_handler()),
-            (r'/zounds/(.+?)/(.+?)/?', self.feature_handler())
+            (r'/zounds/(.+?)/(.+?)/?', self.feature_handler()),
+            (r'/zounds/login/?', self.login_handler())
         ]
 
     def custom_routes(self):
@@ -165,9 +189,59 @@ class BaseZoundsApp(object):
     def _start(self):
         tornado.ioloop.IOLoop.instance().start()
 
+    def _secure_route(self, route):
+
+        pattern, handler_cls = route
+
+        if 'login' in pattern:
+            return pattern, handler_cls
+
+        class Secured(handler_cls):
+            def __init__(self, *args, **kwargs):
+                super(Secured, self).__init__(*args, **kwargs)
+
+            def get_current_user(self):
+                return self.get_secure_cookie('user')
+
+            @tornado.web.authenticated
+            def get(self, *args, **kwargs):
+                super(Secured, self).get(*args, **kwargs)
+
+            @tornado.web.authenticated
+            def post(self, *args, **kwargs):
+                super(Secured, self).post(*args, **kwargs)
+
+            @tornado.web.authenticated
+            def put(self, *args, **kwargs):
+                super(Secured, self).put(*args, **kwargs)
+
+            @tornado.web.authenticated
+            def delete(self, *args, **kwargs):
+                super(Secured, self).delete(*args, **kwargs)
+
+            @tornado.web.authenticated
+            def head(self, *args, **kwargs):
+                super(Secured, self).head(*args, **kwargs)
+
+            @tornado.web.authenticated
+            def options(self, *args, **kwargs):
+                super(Secured, self).options(*args, **kwargs)
+
+        Secured.__name__ = handler_cls.__name__
+        Secured.__module__ = handler_cls.__module__
+
+        return pattern, Secured
+
     def _make_app(self):
+        routes = self.custom_routes() + self.base_routes()
+
+        if self.secret:
+            routes = map(self._secure_route, routes)
+
         return tornado.web.Application(
-            self.custom_routes() + self.base_routes())
+            routes,
+            cookie_secret=uuid4().hex,
+            login_url='/zounds/login')
 
     def start_in_thread(self, port=8888):
         app = self._make_app()
