@@ -13,19 +13,37 @@ class SupervisedTrainer(Trainer):
             holdout_percent=0.0,
             data_preprocessor=lambda x: x,
             label_preprocessor=lambda x: x,
-            on_batch_complete=None):
+            checkpoint_epochs=1):
 
         super(SupervisedTrainer, self).__init__(
             epochs,
-            batch_size)
+            batch_size,
+            checkpoint_epochs=checkpoint_epochs)
 
-        self.on_batch_complete = on_batch_complete
         self.label_preprocessor = label_preprocessor
         self.data_preprocessor = data_preprocessor
         self.holdout_percent = holdout_percent
         self.optimizer = optimizer(model)
         self.loss = loss
         self.model = model
+        self.register_batch_complete_callback(self._log)
+        self.samples = None
+
+    def _log(self, *args, **kwargs):
+        if kwargs['batch'] % 10:
+            return
+        msg = \
+            'Epoch {epoch}, batch {batch}, train error ' \
+            '{train_error}, test error {test_error}'
+        print msg.format(**kwargs)
+
+    def random_sample(self):
+        if self.samples is None:
+            raise RuntimeError(
+                'There are no samples yet.  Has training started?')
+        index = np.random.randint(0, len(self.samples))
+        inp, label = self.samples[index]
+        return inp, label
 
     def train(self, data):
         import torch
@@ -58,12 +76,17 @@ class SupervisedTrainer(Trainer):
                 error.backward()
                 self.optimizer.step()
 
-            if self.on_batch_complete:
-                self.on_batch_complete(inp_v, output)
+            self.samples = zip(inp_v, output)
+            return inp_v, output, error.data[0]
 
-            return error.data[0]
+        start = self._current_epoch
+        stop = self._current_epoch + self.checkpoint_epochs
 
-        for epoch in xrange(self.epochs):
+        for epoch in xrange(start, stop):
+
+            if epoch >= self.epochs:
+                break
+
             for i in xrange(0, len(data), self.batch_size):
 
                 model.zero_grad()
@@ -73,7 +96,7 @@ class SupervisedTrainer(Trainer):
                 minibatch_data = data[minibatch_slice]
                 minibatch_labels = labels[minibatch_slice]
 
-                e = training_error = batch(
+                inp, output, e = batch(
                     minibatch_data, minibatch_labels, test=False)
 
                 # test batch
@@ -82,13 +105,18 @@ class SupervisedTrainer(Trainer):
                     test_batch_data = test_data[indices, ...]
                     test_batch_labels = test_labels[indices, ...]
 
-                    te = test_error = batch(
+                    inp, output, te = batch(
                         test_batch_data, test_batch_labels, test=True)
                 else:
                     te = 'n/a'
 
-                if i % 10 == 0:
-                    print 'Epoch {epoch}, batch {i}, train error {e}, test error {te}'.format(
-                        **locals())
+                self.on_batch_complete(
+                    epoch=epoch,
+                    batch=i,
+                    train_error=te,
+                    test_error=e,
+                    samples=self.samples)
+
+            self._current_epoch += 1
 
         return model

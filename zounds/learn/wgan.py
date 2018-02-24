@@ -189,7 +189,6 @@ class WassersteinGanTrainer(Trainer):
                     d_loss.backward()
                     critic_optim.step()
 
-
                 self.zero_discriminator_gradients()
                 self.zero_generator_gradients()
 

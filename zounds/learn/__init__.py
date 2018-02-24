@@ -25,13 +25,11 @@ from wgan import WassersteinGanTrainer
 from supervised import SupervisedTrainer
 from embedding import TripletEmbeddingTrainer
 
-from random_samples import \
-    Reservoir, ReservoirSampler, ShuffledSamples, InfiniteShuffledSamples, \
-    InfiniteIterator
+from random_samples import Reservoir, ReservoirSampler, ShuffledSamples
 
 from util import simple_settings, object_store_pipeline_settings
 
-from graph import learning_pipeline
+from graph import learning_pipeline, infinite_streaming_learning_pipeline
 
 from functional import hyperplanes, simhash, example_wise_unit_norm
 

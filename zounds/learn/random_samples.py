@@ -1,7 +1,6 @@
-from featureflow import Node, NotEnoughData, IteratorNode
+from featureflow import Node, NotEnoughData
 from zounds.core import ArrayWithUnits, IdentityDimension
 import numpy as np
-from itertools import cycle
 
 
 class Reservoir(object):
@@ -108,6 +107,7 @@ class MultiplexedReservoir(object):
         for k, v in samples.iteritems():
             if indices is None:
                 indices = np.random.randint(0, self.nsamples, len(v))
+
             self.reservoir[k].add(v, indices=indices)
 
     def get(self):
@@ -134,44 +134,45 @@ class ShuffledSamples(Node):
         return self.reservoir.get()
 
 
-class InfiniteIterator(IteratorNode):
-    def __init__(self, needs=None):
-        super(InfiniteIterator, self).__init__(needs=needs)
+class InfiniteSampler(Node):
+    def __init__(self, nsamples=None, dtype=None, needs=None):
+        super(InfiniteSampler, self).__init__(needs=needs)
+        self.reservoir = Reservoir(nsamples, dtype)
 
     def _process(self, data):
-        for d in cycle(data):
-            yield d
+        cls, feature = data
 
+        # compute the total number of samples in our dataset
+        _ids = list(cls.database.iter_ids())
+        total_samples = sum(
+            len(feature(_id=_id, persistence=cls)) for _id in _ids)
+        print 'Total samples', total_samples
 
-class InfiniteShuffledSamples(ShuffledSamples):
-    def __init__(
-            self,
-            nsamples=None,
-            multiplexed=None,
-            dtype=None,
-            needs=None,
-            mixture_threshold=0.9,
-            update_threshold=10):
+        while True:
+            for _id in _ids:
+                # fetch the features from a single document
+                x = feature(_id=_id, persistence=cls)
 
-        super(InfiniteShuffledSamples, self).__init__(
-            nsamples=nsamples,
-            multiplexed=multiplexed,
-            dtype=dtype,
-            needs=needs)
-        self.update_threshold = update_threshold
-        self.mixture_threshold = mixture_threshold
-        self._updates = 0
+                # compute the contribution this sample makes to the dataset at
+                # large
+                feature_size = len(x)
+                ratio = float(feature_size) / total_samples
 
-    def _enqueue(self, data, pusher):
-        self._updates += 1
-        self.reservoir.add(data)
+                # determine the appropriate number of samples to contribute to
+                # the reservoir
+                nsamples = int(self.reservoir.nsamples * ratio)
 
-    def _dequeue(self):
-        print self._updates, self.reservoir.percent_full()
-        if self.reservoir.percent_full() >= self.mixture_threshold \
-                and self._updates >= self.update_threshold:
-            self._updates = 0
-            return self.reservoir.get()
+                print 'Contributing', feature_size, ratio, nsamples
+
+                # select an appropriately-sized and random subset of the feature.
+                # this will be shuffled again as it is added to the reservoir,
+                # but this ensures that samples are drawn evenly from the
+                # duration of the sound
+                indices = np.random.randint(0, feature_size, nsamples)
+
+                self.reservoir.add(x[indices, ...])
+
+            yield self.reservoir.get()
 
 
 class ReservoirSampler(Node):
