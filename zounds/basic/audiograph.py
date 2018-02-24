@@ -65,6 +65,30 @@ def resampled(
     return Resampled
 
 
+def windowed(
+        wscheme,
+        chunksize_bytes=DEFAULT_CHUNK_SIZE,
+        resample_to=SR44100(),
+        store_resampled=True,
+        store_windowed=False,
+        wfunc=None):
+
+    rs = resampled(
+        chunksize_bytes=chunksize_bytes,
+        resample_to=resample_to,
+        store_resampled=store_resampled)
+
+    class Sound(rs):
+        windowed = ArrayWithUnitsFeature(
+            SlidingWindow,
+            wscheme=wscheme,
+            wfunc=wfunc,
+            needs=rs.resampled,
+            store=store_windowed)
+
+    return Sound
+
+
 def frequency_adaptive(
         long_window_sample_rate,
         scale,
@@ -73,7 +97,6 @@ def frequency_adaptive(
         chunksize_bytes=DEFAULT_CHUNK_SIZE,
         resample_to=SR44100(),
         store_resampled=False):
-
     BaseModel = resampled(chunksize_bytes, resample_to, store_resampled)
 
     class FrequencyAdaptive(BaseModel):
@@ -109,7 +132,6 @@ def stft(
         fft_padding_samples=None,
         store_windowed=False,
         store_resampled=False):
-
     class ShortTimeFourierTransform(BaseModel):
         meta = JSONFeature(
             MetaData,

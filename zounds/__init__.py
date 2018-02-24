@@ -38,13 +38,14 @@ from learn import \
     KMeans, Learned, MeanStdNormalization, UnitNorm, Log, Multiply, \
     PreprocessingPipeline, Slicer, ReservoirSampler, simple_settings, \
     SklearnModel, WithComponents, InstanceScaling, Reshape, ShuffledSamples, \
-    InfiniteShuffledSamples, InfiniteIterator, PyTorchNetwork, PyTorchGan, \
-    PyTorchAutoEncoder, GanTrainer, WassersteinGanTrainer, SupervisedTrainer, \
-    TripletEmbeddingTrainer, Weighted, MuLawCompressed, SimHash, \
-    AbsoluteValue, Binarize, Sharpen, learning_pipeline, \
-    object_store_pipeline_settings
+    PyTorchNetwork, PyTorchGan, PyTorchAutoEncoder, GanTrainer, \
+    WassersteinGanTrainer, SupervisedTrainer, TripletEmbeddingTrainer, \
+    Weighted, MuLawCompressed, SimHash, AbsoluteValue, Binarize, Sharpen, \
+    learning_pipeline, object_store_pipeline_settings, \
+    infinite_streaming_learning_pipeline
 
-from ui import ZoundsApp, ZoundsSearch, RangeUnitUnsupportedException
+from ui import \
+    ZoundsApp, ZoundsSearch, TrainingMonitorApp, RangeUnitUnsupportedException
 
 from index import \
     SearchResults, HammingDb, HammingIndex, BruteForceSearch, \
@@ -52,7 +53,7 @@ from index import \
 
 from basic import \
     Slice, Sum, Max, Pooled, process_dir, stft, audio_graph, with_onsets, \
-    resampled, frequency_adaptive
+    resampled, frequency_adaptive, windowed
 
 from util import \
     simple_lmdb_settings, simple_in_memory_settings, \
