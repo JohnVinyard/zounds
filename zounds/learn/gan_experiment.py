@@ -2,20 +2,19 @@ import featureflow as ff
 from util import from_var
 from random import choice
 from zounds.spectral import stft, rainbowgram
-from zounds.learn import try_network
+from zounds.learn import \
+    try_network, infinite_streaming_learning_pipeline, \
+    object_store_pipeline_settings
 from zounds.timeseries import \
     SR11025, SampleRate, Seconds, AudioSamples, audio_sample_rate
 from wgan import WassersteinGanTrainer
 from pytorch_model import PyTorchGan
-from graph import learning_pipeline
-from util import simple_settings
-from preprocess import PreprocessingPipeline, InstanceScaling
-from zounds.ui import ZoundsApp
+from preprocess import InstanceScaling
+from zounds.ui import GanTrainingMonitorApp
 from zounds.util import simple_lmdb_settings
-from zounds.basic import resampled
-from zounds.spectral import HanningWindowingFunc, SlidingWindow
+from zounds.basic import windowed
+from zounds.spectral import HanningWindowingFunc
 from zounds.datasets import ingest
-from zounds.persistence import ArrayWithUnitsFeature
 import numpy as np
 
 
@@ -25,6 +24,8 @@ class GanExperiment(object):
             experiment_name,
             dataset,
             gan_pair,
+            object_storage_username,
+            object_storage_api_key,
             epochs=500,
             n_critic_iterations=10,
             batch_size=32,
@@ -35,7 +36,9 @@ class GanExperiment(object):
             sample_size=8192,
             sample_hop=1024,
             samplerate=SR11025(),
-            app_port=8888):
+            app_port=8888,
+            object_storage_region='DFW',
+            app_secret=None):
 
         super(GanExperiment, self).__init__()
         self.real_sample_transformer = real_sample_transformer
@@ -53,47 +56,41 @@ class GanExperiment(object):
         self.sample_size = sample_size
         self.latent_dim = latent_dim
         self.experiment_name = experiment_name
+        self.app_secret = app_secret
 
-        base_model = resampled(
-            resample_to=self.samplerate, store_resampled=True)
-
-        window_sample_rate = SampleRate(
-            frequency=self.samplerate.frequency * sample_hop,
-            duration=samplerate.frequency * sample_size)
+        base_model = windowed(
+            resample_to=self.samplerate,
+            store_resampled=True,
+            wscheme=self.samplerate * (sample_hop, sample_size))
 
         @simple_lmdb_settings(
             experiment_name, map_size=1e11, user_supplied_id=True)
         class Sound(base_model):
-            windowed = ArrayWithUnitsFeature(
-                SlidingWindow,
-                wscheme=window_sample_rate,
-                needs=base_model.resampled)
+            pass
 
         self.sound_cls = Sound
 
-        base_pipeline = learning_pipeline()
-
-        @simple_settings
-        class Gan(base_pipeline):
+        @object_store_pipeline_settings(
+            'Gan-{experiment_name}'.format(**locals()),
+            object_storage_region,
+            object_storage_username,
+            object_storage_api_key)
+        @infinite_streaming_learning_pipeline
+        class Gan(ff.BaseModel):
             scaled = ff.PickleFeature(
-                InstanceScaling,
-                needs=base_pipeline.shuffled)
+                InstanceScaling)
 
             wgan = ff.PickleFeature(
                 PyTorchGan,
                 trainer=ff.Var('trainer'),
                 needs=scaled)
 
-            pipeline = ff.PickleFeature(
-                PreprocessingPipeline,
-                needs=(scaled, wgan),
-                store=True)
-
         self.gan_pipeline = Gan()
         self.fake_samples = None
         self.app = None
 
-    def batch_complete(self, epoch, network, samples):
+    def batch_complete(self, *args, **kwargs):
+        samples = kwargs['samples']
         self.fake_samples = from_var(samples).squeeze()
 
     def fake_audio(self):
@@ -139,37 +136,38 @@ class GanExperiment(object):
         real_stft = self.real_stft
         Sound = self.sound_cls
 
-        self.app = ZoundsApp(
-            model=self.sound_cls,
-            audio_feature=self.sound_cls.ogg,
-            visualization_feature=self.sound_cls.windowed,
+        try:
+            network = self.gan_pipeline.load_network()
+            print 'initialized weights'
+        except RuntimeError as e:
+            print 'Error', e
+            network = self.gan_pair
+            for p in network.parameters():
+                p.data.normal_(0, 0.02)
+
+        trainer = WassersteinGanTrainer(
+            network,
+            latent_dimension=(self.latent_dim,),
+            n_critic_iterations=self.n_critic_iterations,
+            epochs=self.epochs,
+            batch_size=self.batch_size,
+            debug_gradient=self.debug_gradients)
+        trainer.register_batch_complete_callback(self.batch_complete)
+
+        self.app = GanTrainingMonitorApp(
+            trainer=trainer,
+            model=Sound,
+            visualization_feature=Sound.windowed,
+            audio_feature=Sound.ogg,
             globals=globals(),
-            locals=locals())
+            locals=locals(),
+            secret=self.app_secret)
 
         with self.app.start_in_thread(self.app_port):
-            if not self.gan_pipeline.exists():
-                network = self.gan_pair
-
-                for p in network.parameters():
-                    p.data.normal_(0, 0.02)
-
-                trainer = WassersteinGanTrainer(
-                    network,
-                    latent_dimension=(self.latent_dim,),
-                    n_critic_iterations=self.n_critic_iterations,
-                    epochs=self.epochs,
-                    batch_size=self.batch_size,
-                    on_batch_complete=self.batch_complete,
-                    debug_gradient=self.debug_gradients)
-
-                def gen():
-                    for snd in self.sound_cls:
-                        yield self.real_sample_transformer(snd.windowed)
-
-                self.gan_pipeline.process(
-                    samples=(snd.windowed for snd in self.sound_cls),
-                    trainer=trainer,
-                    nsamples=self.n_samples,
-                    dtype=np.float32)
+            self.gan_pipeline.process(
+                dataset=(Sound, Sound.windowed),
+                trainer=trainer,
+                nsamples=self.n_samples,
+                dtype=np.float32)
 
         self.app.start(self.app_port)

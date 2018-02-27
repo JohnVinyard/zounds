@@ -16,8 +16,6 @@ class WassersteinGanTrainer(Trainer):
             epoch, and a minibatch, and mutates the minibatch
         kwargs_factory (callable): function that takes the current epoch and
             outputs args to pass to the generator and discriminator
-        on_batch_complete (callable): callable invoked after each epoch,
-            accepting epoch and network being trained as arguments
     """
 
     def __init__(
@@ -29,12 +27,12 @@ class WassersteinGanTrainer(Trainer):
             batch_size,
             preprocess_minibatch=None,
             kwargs_factory=None,
-            on_batch_complete=None,
-            debug_gradient=False):
+            debug_gradient=False,
+            checkpoint_epochs=1):
 
         super(WassersteinGanTrainer, self).__init__(epochs, batch_size)
+        self.checkpoint_epochs = checkpoint_epochs
         self.debug_gradient = debug_gradient
-        self.on_batch_complete = on_batch_complete
         self.arg_maker = kwargs_factory
         self.preprocess = preprocess_minibatch
         self.n_critic_iterations = n_critic_iterations
@@ -43,6 +41,16 @@ class WassersteinGanTrainer(Trainer):
         self.critic = network.discriminator
         self.generator = network.generator
         self.samples = None
+        self.register_batch_complete_callback(self._log)
+        self.generator_optim = None
+        self.critic_optim = None
+
+    def _log(self, *args, **kwargs):
+        if kwargs['batch'] % 10:
+            return
+        msg = 'Epoch {epoch}, batch {batch}, generator {generator_score}, ' \
+              'real {real_score}, critic {critic_loss}'
+        print msg.format(**kwargs)
 
     def _minibatch(self, data):
         indices = np.random.randint(0, len(data), self.batch_size)
@@ -58,9 +66,6 @@ class WassersteinGanTrainer(Trainer):
 
         real_samples = real_samples.view(fake_samples.shape)
 
-        # computing the norm of the gradients is very expensive, so I'm only
-        # taking a subset of the minibatch here
-        # subset_size = min(10, real_samples.shape[0])
         subset_size = real_samples.shape[0]
 
         real_samples = real_samples[:subset_size]
@@ -116,15 +121,29 @@ class WassersteinGanTrainer(Trainer):
         self._debug_network_gradient(self.critic)
         self.critic.zero_grad()
 
+    def _init_optimizers(self):
+        if self.generator_optim is None or self.critic_optim is None:
+            from torch.optim import Adam
+            trainable_generator_params = (
+                p for p in self.generator.parameters() if p.requires_grad)
+            trainable_critic_params = (
+                p for p in self.critic.parameters() if p.requires_grad)
+
+            self.generator_optim = Adam(
+                trainable_generator_params, lr=0.0001, betas=(0, 0.9))
+            self.critic_optim = Adam(
+                trainable_critic_params, lr=0.0001, betas=(0, 0.9))
+
     def train(self, data):
 
         import torch
-        from torch.optim import Adam
         from torch.autograd import Variable
 
-        data = data.astype(np.float32)
+        self.network.train()
+        self.unfreeze_discriminator()
+        self.unfreeze_generator()
 
-        zdim = self.latent_dimension
+        data = data.astype(np.float32)
 
         noise_shape = (self.batch_size,) + self.latent_dimension
         noise = torch.FloatTensor(*noise_shape)
@@ -134,17 +153,15 @@ class WassersteinGanTrainer(Trainer):
         self.critic.cuda()
         noise, fixed_noise = noise.cuda(), fixed_noise.cuda()
 
-        trainable_generator_params = (
-            p for p in self.generator.parameters() if p.requires_grad)
-        trainable_critic_params = (
-            p for p in self.critic.parameters() if p.requires_grad)
+        self._init_optimizers()
 
-        generator_optim = Adam(
-            trainable_generator_params, lr=0.0001, betas=(0, 0.9))
-        critic_optim = Adam(
-            trainable_critic_params, lr=0.0001, betas=(0, 0.9))
+        start = self._current_epoch
+        stop = self._current_epoch + self.checkpoint_epochs
 
-        for epoch in xrange(self.epochs):
+        for epoch in xrange(start, stop):
+            if epoch >= self.epochs:
+                break
+
             if self.arg_maker:
                 kwargs = self.arg_maker(epoch)
             else:
@@ -187,7 +204,7 @@ class WassersteinGanTrainer(Trainer):
                     gp = self._gradient_penalty(input_v.data, fake.data, kwargs)
                     d_loss = (fake_mean - real_mean) + gp
                     d_loss.backward()
-                    critic_optim.step()
+                    self.critic_optim.step()
 
                 self.zero_discriminator_gradients()
                 self.zero_generator_gradients()
@@ -208,18 +225,21 @@ class WassersteinGanTrainer(Trainer):
                 d_fake = self.critic.forward(fake, **kwargs)
                 g_loss = -torch.mean(d_fake)
                 g_loss.backward()
-                generator_optim.step()
+                self.generator_optim.step()
 
                 gl = g_loss.data[0]
                 dl = d_loss.data[0]
                 rl = real_mean.data[0]
 
-                if self.on_batch_complete:
-                    self.on_batch_complete(epoch, self.network, self.samples)
+                self.on_batch_complete(
+                    epoch=epoch,
+                    batch=i,
+                    generator_score=gl,
+                    real_score=rl,
+                    critic_loss=dl,
+                    samples=self.samples,
+                    network=self.network)
 
-                if i % 10 == 0:
-                    print \
-                        'Epoch {epoch}, batch {i}, generator {gl}, real {rl}, critic {dl}' \
-                            .format(**locals())
+            self._current_epoch += 1
 
         return self.network

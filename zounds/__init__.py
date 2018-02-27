@@ -45,7 +45,8 @@ from learn import \
     infinite_streaming_learning_pipeline
 
 from ui import \
-    ZoundsApp, ZoundsSearch, TrainingMonitorApp, RangeUnitUnsupportedException
+    ZoundsApp, ZoundsSearch, TrainingMonitorApp, SupervisedTrainingMonitoApp, \
+    GanTrainingMonitorApp, RangeUnitUnsupportedException
 
 from index import \
     SearchResults, HammingDb, HammingIndex, BruteForceSearch, \
