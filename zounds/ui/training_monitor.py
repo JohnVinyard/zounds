@@ -126,7 +126,7 @@ class TrainingMonitorApp(ZoundsApp):
         return GraphHandler
 
 
-class SupervisedTrainingMonitoApp(TrainingMonitorApp):
+class SupervisedTrainingMonitorApp(TrainingMonitorApp):
     def __init__(
             self,
             trainer,
@@ -141,7 +141,7 @@ class SupervisedTrainingMonitoApp(TrainingMonitorApp):
             globals={},
             locals={},
             secret=None):
-        super(SupervisedTrainingMonitoApp, self).__init__(
+        super(SupervisedTrainingMonitorApp, self).__init__(
             trainer=trainer,
             keys_to_graph=('train_error', 'test_error'),
             model=model,
@@ -175,6 +175,37 @@ class GanTrainingMonitorApp(TrainingMonitorApp):
         super(GanTrainingMonitorApp, self).__init__(
             trainer=trainer,
             keys_to_graph=('generator_score', 'real_score', 'critic_loss'),
+            model=model,
+            batch_frequency=batch_frequency,
+            n_training_points=n_training_points,
+            epoch_key=epoch_key,
+            batch_key=batch_key,
+            base_path=base_path,
+            visualization_feature=visualization_feature,
+            audio_feature=audio_feature,
+            globals=globals,
+            locals=locals,
+            secret=secret)
+
+
+class TripletEmbeddingMonitorApp(TrainingMonitorApp):
+    def __init__(
+            self,
+            trainer,
+            batch_frequency=10,
+            n_training_points=100,
+            epoch_key='epoch',
+            batch_key='batch',
+            base_path=r'/zounds',
+            model=None,
+            visualization_feature=None,
+            audio_feature=None,
+            globals={},
+            locals={},
+            secret=None):
+        super(TripletEmbeddingMonitorApp, self).__init__(
+            trainer=trainer,
+            keys_to_graph=('error',),
             model=model,
             batch_frequency=batch_frequency,
             n_training_points=n_training_points,
