@@ -19,7 +19,7 @@ from spectral import \
     FrequencyScale, FrequencyDimension, GeometricScale, HanningWindowingFunc, \
     FrequencyAdaptiveTransform, ExplicitScale, ExplicitFrequencyDimension, \
     FrequencyAdaptive, FrequencyWeighting, Hertz, BarkScale, MelScale, \
-    ChromaScale
+    ChromaScale, fir_filter_bank
 
 from loudness import \
     log_modulus, inverse_log_modulus, decibel, mu_law, MuLaw, LogModulus, \

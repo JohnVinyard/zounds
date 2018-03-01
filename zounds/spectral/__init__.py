@@ -22,4 +22,4 @@ from frequencyadaptive import FrequencyAdaptive
 
 from functional import \
     fft, stft, apply_scale, frequency_decomposition, phase_shift, rainbowgram, \
-    dct_basis
+    dct_basis, fir_filter_bank

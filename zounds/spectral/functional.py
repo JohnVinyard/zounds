@@ -2,12 +2,13 @@ from __future__ import division
 from frequencyscale import LinearScale, FrequencyBand, ExplicitScale
 from tfrepresentation import FrequencyDimension
 from frequencyadaptive import FrequencyAdaptive
-from zounds.timeseries import audio_sample_rate, TimeSlice, Seconds
+from zounds.timeseries import \
+    audio_sample_rate, TimeSlice, Seconds, TimeDimension
 from zounds.core import ArrayWithUnits, IdentityDimension
 from sliding_window import IdentityWindowingFunc
 from zounds.loudness import log_modulus, unit_scale
 import numpy as np
-from scipy.signal import resample
+from scipy.signal import resample, firwin2
 from matplotlib import cm
 
 
@@ -102,6 +103,29 @@ def rainbowgram(time_frequency_repr, colormap=cm.rainbow):
     arr = ArrayWithUnits(
         colors, time_frequency_repr.dimensions + (IdentityDimension(),))
     return arr
+
+
+def fir_filter_bank(scale, taps, samplerate):
+    basis = np.zeros((len(scale), taps))
+    basis = ArrayWithUnits(basis, [
+        FrequencyDimension(scale),
+        TimeDimension(frequency=samplerate.frequency * taps)
+    ])
+
+    nyq = samplerate.nyquist
+
+    for i, band in enumerate(scale):
+        freqs = [
+            0,
+            band.start_hz / nyq,
+            band.center_frequency / nyq,
+            band.stop_hz / nyq,
+            1
+        ]
+        gains = [0, 0, 1, 0, 0]
+        basis[i] = firwin2(taps, freqs, gains)
+
+    return basis
 
 
 def dct_basis(size):
