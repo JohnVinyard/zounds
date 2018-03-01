@@ -1,7 +1,8 @@
 import numpy as np
 import unittest2
 from functional import \
-    fft, stft, apply_scale, frequency_decomposition, phase_shift, rainbowgram
+    fft, stft, apply_scale, frequency_decomposition, phase_shift, rainbowgram, \
+    fir_filter_bank
 from zounds.core import ArrayWithUnits, IdentityDimension
 from zounds.synthesize import \
     SilenceSynthesizer, TickSynthesizer, SineSynthesizer, FFTSynthesizer
@@ -11,6 +12,22 @@ from zounds.spectral import \
     HanningWindowingFunc, FrequencyDimension, LinearScale, GeometricScale, \
     ExplicitFrequencyDimension, FrequencyBand
 from matplotlib import cm
+
+
+class FIRFilterBankTests(unittest2.TestCase):
+    def test_has_correct_dimensions(self):
+        samplerate = SR22050()
+        scale = GeometricScale(
+            start_center_hz=20,
+            stop_center_hz=10000,
+            bandwidth_ratio=0.2,
+            n_bands=100)
+        scale.ensure_overlap_ratio(0.5)
+        taps = 256
+        filter_bank = fir_filter_bank(scale, taps, samplerate)
+        self.assertEqual((len(scale), taps), filter_bank.shape)
+        self.assertEqual(FrequencyDimension(scale), filter_bank.dimensions[0])
+        self.assertEqual(TimeDimension(*samplerate), filter_bank.dimensions[1])
 
 
 class FrequencyDecompositionTests(unittest2.TestCase):

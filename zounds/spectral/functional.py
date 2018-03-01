@@ -109,8 +109,7 @@ def fir_filter_bank(scale, taps, samplerate):
     basis = np.zeros((len(scale), taps))
     basis = ArrayWithUnits(basis, [
         FrequencyDimension(scale),
-        TimeDimension(frequency=samplerate.frequency * taps)
-    ])
+        TimeDimension(*samplerate)])
 
     nyq = samplerate.nyquist
 
