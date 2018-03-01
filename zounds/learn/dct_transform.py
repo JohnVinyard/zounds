@@ -77,6 +77,19 @@ class DctTransform(object):
 
         return self.idct(new_coeffs)
 
+    def frequency_decomposition(self, x, factors, axis=-1):
+        bands = []
+        factors = sorted(factors)
+        for f in factors:
+            if f == 1:
+                bands.append(x)
+            else:
+                rs = self.dct_resample(x, f, axis)
+                bands.append(rs)
+                us = self.dct_resample(rs, (1. / f), axis)
+                x = x - us
+        return bands
+
     def short_time_dct(self, x, size, step, window):
         original_shape = x.shape
         x = x.unfold(-1, size, step)
