@@ -1,6 +1,7 @@
 from __future__ import print_function, division
 import numpy as np
 import featureflow as ff
+import hashlib
 
 
 def simple_settings(cls):
@@ -25,7 +26,6 @@ def simple_settings(cls):
 
 
 def object_store_pipeline_settings(container, region, username, api_key):
-
     def decorator(cls):
         class Settings(ff.PersistenceSettings):
             _id = cls.__name__
@@ -42,6 +42,14 @@ def object_store_pipeline_settings(container, region, username, api_key):
         return Model
 
     return decorator
+
+
+def model_hash(model):
+    h = hashlib.md5()
+    h.update(str(model))
+    for p in model.parameters():
+        h.update(p.data.cpu().numpy())
+    return h.hexdigest()
 
 
 try:
