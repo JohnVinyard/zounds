@@ -1,6 +1,7 @@
 from featureflow import Node, NotEnoughData
 from zounds.core import ArrayWithUnits, IdentityDimension
 import numpy as np
+from multiprocessing.pool import ThreadPool, cpu_count
 
 
 class Reservoir(object):
@@ -139,38 +140,50 @@ class InfiniteSampler(Node):
         super(InfiniteSampler, self).__init__(needs=needs)
         self.reservoir = Reservoir(nsamples, dtype)
 
+    def _total_samples(self, cls, feature, _ids):
+        pool = ThreadPool(cpu_count())
+        total_samples = sum(pool.imap_unordered(
+            lambda _id: len(feature(_id=_id, persistence=cls)), _ids))
+        return total_samples
+
+    def _update_reservoir(self, _id, cls, feature, total_samples):
+        # fetch the features from a single document
+        x = feature(_id=_id, persistence=cls)
+
+        # compute the contribution this sample makes to the dataset at
+        # large
+        feature_size = len(x)
+        ratio = float(feature_size) / total_samples
+
+        # determine the appropriate number of samples to contribute to
+        # the reservoir
+        nsamples = max(1, int(self.reservoir.nsamples * ratio))
+
+        print 'Contributing', feature_size, ratio, nsamples
+
+        # select an appropriately-sized and random subset of the feature.
+        # this will be shuffled again as it is added to the reservoir,
+        # but this ensures that samples are drawn evenly from the
+        # duration of the sound
+        indices = np.random.randint(0, feature_size, nsamples)
+
+        self.reservoir.add(x[indices, ...])
+        return len(indices)
+
     def _process(self, data):
         cls, feature = data
 
         # compute the total number of samples in our dataset
         _ids = list(cls.database.iter_ids())
-        total_samples = sum(
-            len(feature(_id=_id, persistence=cls)) for _id in _ids)
+        total_samples = self._total_samples(cls, feature, _ids)
         print 'Total samples', total_samples
 
         while True:
-            for _id in _ids:
-                # fetch the features from a single document
-                x = feature(_id=_id, persistence=cls)
-
-                # compute the contribution this sample makes to the dataset at
-                # large
-                feature_size = len(x)
-                ratio = float(feature_size) / total_samples
-
-                # determine the appropriate number of samples to contribute to
-                # the reservoir
-                nsamples = int(self.reservoir.nsamples * ratio)
-
-                print 'Contributing', feature_size, ratio, nsamples
-
-                # select an appropriately-sized and random subset of the feature.
-                # this will be shuffled again as it is added to the reservoir,
-                # but this ensures that samples are drawn evenly from the
-                # duration of the sound
-                indices = np.random.randint(0, feature_size, nsamples)
-
-                self.reservoir.add(x[indices, ...])
+            pool = ThreadPool(cpu_count())
+            list(pool.imap_unordered(
+                lambda _id: self._update_reservoir(
+                    _id, cls, feature, total_samples),
+                _ids))
 
             yield self.reservoir.get()
 
