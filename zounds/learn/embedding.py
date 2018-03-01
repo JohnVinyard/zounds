@@ -33,9 +33,11 @@ class TripletEmbeddingTrainer(Trainer):
             epochs,
             batch_size,
             anchor_slice,
-            deformations=None):
+            deformations=None,
+            checkpoint_epochs=1):
 
-        super(TripletEmbeddingTrainer, self).__init__(epochs, batch_size)
+        super(TripletEmbeddingTrainer, self).__init__(
+            epochs, batch_size, checkpoint_epochs=checkpoint_epochs)
         self.anchor_slice = anchor_slice
         self.network = network
         self.deformations = deformations
@@ -43,12 +45,20 @@ class TripletEmbeddingTrainer(Trainer):
         # The margin hyperparameter is set to 0.1 in, according to section 4.2
         # of the paper https://arxiv.org/pdf/1711.02209.pdf
         self.margin = 0.1
+        self.register_batch_complete_callback(self._log)
 
     def _driver(self, data):
         batches_in_epoch = len(data) // self.batch_size
-        for epoch in xrange(self.epochs):
+        start = self._current_epoch
+        stop = self._current_epoch + self.checkpoint_epochs
+        for epoch in xrange(start, stop):
+            if epoch > self.epochs:
+                break
+
             for batch in xrange(batches_in_epoch):
                 yield epoch, batch
+
+            self._current_epoch += 1
 
     def _apply_network_and_normalize(self, x):
         """
@@ -103,6 +113,15 @@ class TripletEmbeddingTrainer(Trainer):
             error.backward()
             optimizer.step()
 
-            print epoch, batch, error.data.cpu().numpy().squeeze(), deformation
+            self.on_batch_complete(
+                epoch=epoch,
+                batch=batch,
+                error=float(error.data.cpu().numpy().squeeze()),
+                deformation=deformation.__name__)
 
         return self.network
+
+    def _log(self, *args, **kwargs):
+        print \
+            'epoch {epoch}, batch {batch}, ' \
+            'error {error}, deformation {deformation}'.format(**kwargs)
