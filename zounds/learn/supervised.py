@@ -1,5 +1,6 @@
 from trainer import Trainer
 import numpy as np
+import warnings
 
 
 class SupervisedTrainer(Trainer):
@@ -96,8 +97,12 @@ class SupervisedTrainer(Trainer):
                 minibatch_data = data[minibatch_slice]
                 minibatch_labels = labels[minibatch_slice]
 
-                inp, output, e = batch(
-                    minibatch_data, minibatch_labels, test=False)
+                try:
+                    inp, output, e = batch(
+                        minibatch_data, minibatch_labels, test=False)
+                except RuntimeError as e:
+                    warnings.warn(e.message)
+                    continue
 
                 # test batch
                 if test_size:
