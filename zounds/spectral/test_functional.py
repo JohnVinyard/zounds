@@ -24,7 +24,7 @@ class FIRFilterBankTests(unittest2.TestCase):
             n_bands=100)
         scale.ensure_overlap_ratio(0.5)
         taps = 256
-        filter_bank = fir_filter_bank(scale, taps, samplerate)
+        filter_bank = fir_filter_bank(scale, taps, samplerate, np.hanning(100))
         self.assertEqual((len(scale), taps), filter_bank.shape)
         self.assertEqual(FrequencyDimension(scale), filter_bank.dimensions[0])
         self.assertEqual(TimeDimension(*samplerate), filter_bank.dimensions[1])

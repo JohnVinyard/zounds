@@ -105,7 +105,7 @@ def rainbowgram(time_frequency_repr, colormap=cm.rainbow):
     return arr
 
 
-def fir_filter_bank(scale, taps, samplerate):
+def fir_filter_bank(scale, taps, samplerate, window):
     basis = np.zeros((len(scale), taps))
     basis = ArrayWithUnits(basis, [
         FrequencyDimension(scale),
@@ -114,14 +114,10 @@ def fir_filter_bank(scale, taps, samplerate):
     nyq = samplerate.nyquist
 
     for i, band in enumerate(scale):
-        freqs = [
-            0,
-            band.start_hz / nyq,
-            band.center_frequency / nyq,
-            band.stop_hz / nyq,
-            1
-        ]
-        gains = [0, 0, 1, 0, 0]
+        freqs = np.linspace(
+            band.start_hz / nyq, band.stop_hz / nyq, len(window))
+        freqs = [0] + list(freqs) + [1]
+        gains = [0] + list(window) + [0]
         basis[i] = firwin2(taps, freqs, gains)
 
     return basis
