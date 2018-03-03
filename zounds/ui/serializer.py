@@ -142,7 +142,7 @@ def generate_image(data, is_partial=False, content_range=None):
     if data.ndim == 1:
         plt.plot(data)
     elif data.ndim == 2:
-        data = np.abs(np.asarray(data))
+        data = np.asarray(data).real
         mat = plt.matshow(np.rot90(data), cmap=plt.cm.viridis)
         mat.axes.get_xaxis().set_visible(False)
         mat.axes.get_yaxis().set_visible(False)
