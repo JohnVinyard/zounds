@@ -165,9 +165,12 @@ class AudioSamples(ArrayWithUnits):
 
     def __getitem__(self, item):
         sliced = super(AudioSamples, self).__getitem__(item)
-        if sliced.shape == ():
-            return sliced
-        return AudioSamples(sliced, self.samplerate)
+        try:
+            if sliced.dimensions == self.dimensions:
+                return AudioSamples(sliced, self.samplerate)
+        except AttributeError:
+            pass
+        return sliced
 
     def sliding_window(self, samplerate, padding=True):
         ws = TimeSlice(duration=samplerate.duration)

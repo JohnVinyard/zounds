@@ -10,6 +10,14 @@ from zounds.synthesize import SineSynthesizer
 
 class AudioSamplesTest(unittest2.TestCase):
 
+    def test_expanding_first_dimension_should_create_identity_dimension(self):
+        silence = AudioSamples.silence(SR11025(), Seconds(10))
+        expanded = silence[None, ...]
+        print expanded.dimensions
+        self.assertEqual(2, len(expanded.dimensions))
+        self.assertIsInstance(expanded.dimensions[0], IdentityDimension)
+        self.assertEqual(silence.dimensions[0], expanded.dimensions[1])
+
     def test_time_slice_should_return_audio_samples(self):
         silence = AudioSamples.silence(SR11025(), Seconds(10))
         ts = TimeSlice(duration=Seconds(1))
