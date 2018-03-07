@@ -7,7 +7,7 @@ from zounds.core import ArrayWithUnits, IdentityDimension
 from zounds.synthesize import \
     SilenceSynthesizer, TickSynthesizer, SineSynthesizer, FFTSynthesizer
 from zounds.timeseries import SR22050, Seconds, Milliseconds, TimeDimension, \
-    TimeSlice
+    TimeSlice, AudioSamples
 from zounds.spectral import \
     HanningWindowingFunc, FrequencyDimension, LinearScale, GeometricScale, \
     ExplicitFrequencyDimension, FrequencyBand
@@ -31,6 +31,13 @@ class FIRFilterBankTests(unittest2.TestCase):
 
 
 class FrequencyDecompositionTests(unittest2.TestCase):
+    def test_can_decompose_audio_samples(self):
+        samples = AudioSamples.silence(SR22050(), Seconds(1))
+        bands = frequency_decomposition(samples, [64, 128, 256, 512, 1024])
+        expected_td = TimeDimension(samples.end, samples.end)
+        self.assertEqual(expected_td, bands.dimensions[0])
+        self.assertIsInstance(bands.dimensions[1], ExplicitFrequencyDimension)
+
     def test_can_decompose(self):
         sr = SR22050()
         samples = SilenceSynthesizer(sr).synthesize(Milliseconds(9999))

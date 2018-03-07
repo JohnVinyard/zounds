@@ -133,6 +133,11 @@ def dct_basis(size):
 def frequency_decomposition(x, sizes):
     sizes = sorted(sizes)
 
+    if x.ndim == 1:
+        end = x.dimensions[0].end
+        x = ArrayWithUnits(
+            x[None, ...], [TimeDimension(end, end), x.dimensions[0]])
+
     original_size = x.shape[-1]
     time_dimension = x.dimensions[-1]
     samplerate = audio_sample_rate(time_dimension.samples_per_second)
