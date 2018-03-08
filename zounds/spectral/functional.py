@@ -3,9 +3,9 @@ from frequencyscale import LinearScale, FrequencyBand, ExplicitScale
 from tfrepresentation import FrequencyDimension
 from frequencyadaptive import FrequencyAdaptive
 from zounds.timeseries import \
-    audio_sample_rate, TimeSlice, Seconds, TimeDimension
+    audio_sample_rate, TimeSlice, Seconds, TimeDimension, HalfLapped
 from zounds.core import ArrayWithUnits, IdentityDimension
-from sliding_window import IdentityWindowingFunc
+from sliding_window import IdentityWindowingFunc, HanningWindowingFunc
 from zounds.loudness import log_modulus, unit_scale
 import numpy as np
 from scipy.signal import resample, firwin2
@@ -40,7 +40,7 @@ def fft(x, axis=-1, padding_samples=0):
     return ArrayWithUnits(transformed, new_dimensions)
 
 
-def stft(x, window_sample_rate, window=None):
+def stft(x, window_sample_rate=HalfLapped(), window=HanningWindowingFunc()):
     duration = TimeSlice(window_sample_rate.duration)
     frequency = TimeSlice(window_sample_rate.frequency)
     _, arr = x.sliding_window_with_leftovers(
