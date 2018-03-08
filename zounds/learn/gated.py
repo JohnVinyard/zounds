@@ -1,4 +1,3 @@
-from util import sample_norm
 from torch import nn
 from torch.nn import functional as F
 
@@ -13,8 +12,11 @@ class GatedLayer(nn.Module):
             stride=1,
             padding=0,
             dilation=1,
-            attention_func=F.sigmoid):
+            attention_func=F.sigmoid,
+            norm=lambda x: x):
+
         super(GatedLayer, self).__init__()
+        self.norm = norm
         self.conv = layer_type(
             in_channels=in_channels,
             out_channels=out_channels,
@@ -35,9 +37,9 @@ class GatedLayer(nn.Module):
 
     def forward(self, x):
         c = self.conv(x)
-        c = sample_norm(c)
+        c = self.norm(c)
         g = self.gate(x)
-        g = sample_norm(g)
+        g = self.norm(g)
         out = F.tanh(c) * self.attention_func(g)
         return out
 
@@ -51,7 +53,8 @@ class GatedConvLayer(GatedLayer):
             stride=1,
             padding=0,
             dilation=1,
-            attention_func=F.sigmoid):
+            attention_func=F.sigmoid,
+            norm=lambda x: x):
         super(GatedConvLayer, self).__init__(
             nn.Conv1d,
             in_channels,
@@ -60,7 +63,8 @@ class GatedConvLayer(GatedLayer):
             stride,
             padding,
             dilation,
-            attention_func)
+            attention_func,
+            norm)
 
 
 class GatedConvTransposeLayer(GatedLayer):
@@ -72,7 +76,8 @@ class GatedConvTransposeLayer(GatedLayer):
             stride=1,
             padding=0,
             dilation=1,
-            attention_func=F.sigmoid):
+            attention_func=F.sigmoid,
+            norm=lambda x: x):
         super(GatedConvTransposeLayer, self).__init__(
             nn.ConvTranspose1d,
             in_channels,
@@ -81,4 +86,5 @@ class GatedConvTransposeLayer(GatedLayer):
             stride,
             padding,
             dilation,
-            attention_func)
+            attention_func,
+            norm)
