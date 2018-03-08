@@ -41,6 +41,7 @@ try:
     from gan_experiment import GanExperiment
     from sample_embedding import RawSampleEmbedding
     from dct_transform import DctTransform
+    from gated import GatedConvTransposeLayer, GatedConvLayer
 except ImportError:
     pass
 
