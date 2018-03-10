@@ -37,11 +37,12 @@ try:
     from util import \
         Conv1d, ConvTranspose1d, Conv2d, ConvTranspose2d, to_var, from_var, \
         try_network, apply_network, feature_map_size, sample_norm, \
-        FrequencyDecompositionAnalyzer, FrequencyDecompositionGenerator
+        FrequencyDecompositionAnalyzer, FrequencyDecompositionGenerator, gradients
     from gan_experiment import GanExperiment
     from sample_embedding import RawSampleEmbedding
     from dct_transform import DctTransform
     from gated import GatedConvTransposeLayer, GatedConvLayer
+    from loss import PerceptualLoss, BandLoss, CategoricalLoss
 except ImportError:
     pass
 

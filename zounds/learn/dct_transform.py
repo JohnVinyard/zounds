@@ -7,6 +7,9 @@ class DctTransform(object):
     def __init__(self, use_cuda=False):
         super(DctTransform, self).__init__()
         self.use_cuda = use_cuda
+        self._init_caches()
+
+    def _init_caches(self):
         self._basis_cache = dict()
         self._window_cache = dict()
 
@@ -15,6 +18,11 @@ class DctTransform(object):
         if self.use_cuda:
             v = v.cuda()
         return v
+
+    def cuda(self):
+        self._init_caches()
+        self.use_cuda = True
+        return self
 
     def dct_basis(self, n):
         try:
