@@ -52,6 +52,13 @@ def model_hash(model):
     return h.hexdigest()
 
 
+def gradients(network):
+    for n, p in network.named_parameters():
+        g = p.grad
+        if g is None:
+            continue
+        yield n, g.min().data[0], g.max().data[0], g.mean().data[0]
+
 try:
     import torch
     from torch import nn
