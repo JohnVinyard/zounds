@@ -23,7 +23,7 @@ from spectral import \
 
 from loudness import \
     log_modulus, inverse_log_modulus, decibel, mu_law, MuLaw, LogModulus, \
-    inverse_mu_law
+    inverse_mu_law, instance_scale, inverse_one_hot
 
 from segment import MeasureOfTransience, MovingAveragePeakPicker, \
     ComplexDomain, TimeSliceFeature

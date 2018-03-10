@@ -29,6 +29,18 @@ def inverse_mu_law(x, mu=255):
     return x * s
 
 
+def inverse_one_hot(x, axis=-1):
+    n_categories = x.shape[axis]
+    indices = np.argmax(x, axis=axis).astype(np.float32)
+    indices /= float(n_categories)
+    indices = (indices - 0.5) * 2
+    return indices
+
+
+def instance_scale(x, axis=-1, epsilon=1e-8):
+    return x / (x.max(axis=axis) + epsilon)
+
+
 def unit_scale(x, axis=None):
     scaled = x - x.min(axis=axis, keepdims=True)
     mx = scaled.max(axis=axis, keepdims=True)
