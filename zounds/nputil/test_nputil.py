@@ -1,6 +1,6 @@
 import unittest
 import numpy as np
-from npx import windowed, sliding_window, downsample, Growable
+from npx import windowed, sliding_window, Growable
 
 
 class GrowableTest(unittest.TestCase):
@@ -71,28 +71,6 @@ class GrowableTest(unittest.TestCase):
         self.assertEqual(20, g.physical_size)
         self.assertEqual(11, g.logical_size)
         self.assertEqual((20, 3), g._data.shape)
-
-
-class DownsampleTest(unittest.TestCase):
-    def test_downsample_single_example_1D(self):
-        a = np.ones(10)
-        ds = downsample(a, 2)
-        self.assertEqual((5,), ds.shape)
-
-    def test_downsample_single_example_2D(self):
-        a = np.ones((11, 11))
-        ds = downsample(a, 2)
-        self.assertEqual((5, 5), ds.shape)
-
-    def test_downsample_multi_example_1D(self):
-        a = np.ones((31, 10))
-        ds = downsample(a, (2,))
-        self.assertEqual((31, 5), ds.shape)
-
-    def test_downsample_multi_example_2D(self):
-        a = np.ones((31, 11, 11))
-        ds = downsample(a, (2, 2))
-        self.assertEqual((31, 5, 5), ds.shape)
 
 
 class SlidingWindowTest(unittest.TestCase):

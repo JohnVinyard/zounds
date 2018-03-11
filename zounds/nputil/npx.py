@@ -33,64 +33,6 @@ def norm_shape(shape):
     raise TypeError('shape must be an int, or a tuple of ints')
 
 
-def flatten2d(arr):
-    ls = len(arr.shape)
-    if 1 == ls:
-        raise ValueError('Cannot turn 1d array into 2d array')
-    elif 2 == ls:
-        return arr
-    else:
-        return arr.reshape((arr.shape[0], np.product(arr.shape[1:])))
-
-
-def downsampled_shape(shape, factor):
-    """
-    Return the new shape of an array with shape, once downsampled
-    by factor.
-    """
-    return tuple((np.array(shape) / factor).astype(np.int32))
-
-
-def downsample(arr, factor, method=np.max):
-    """
-    Downsample an n-dimensional array
-
-    Parameters
-        arr    - the array to be downsampled
-        factor - the downsampling factor. If factor is an integer, it is assumed
-                 that the array will be downsampled by a constant factor in every
-                 dimension. If factor is a tuple, the array will be downsampled
-                 by different factors in each dimension. If factor is a tuple
-                 whose size is less than the number of dimensions in arr, it
-                 is assumed that the downsampling will only be applied to the
-                 last len(factor) dimensions of arr.
-        method - the method used to combine chunks into single values, e.g.
-                 mean, or max.
-    """
-    if isinstance(factor, int):
-        # factor is an integer, so we'll downsample by a constant factor over
-        # all dimensions of the input array
-        factor = (factor,) * arr.ndim
-        lf = arr.ndim
-    else:
-        # factor is a tuple, so we'll downsample over the last n dimensions of
-        # arr by the factors specified
-        factor = norm_shape(factor)
-        lf = len(factor)
-        if lf > arr.ndim:
-            raise ValueError( \
-                'The number of factors must be less than or equal to the number of dimensions in arr')
-
-    # the axes over which to apply the reduction
-    axes = -np.arange(1, lf + 1)
-    # the window size in each dimension of arr
-    window_size = ((1,) * (arr.ndim - lf)) + factor
-    # get non-overlapping windows whose dimensions are specified by factor
-    windowed = sliding_window(arr, window_size, flatten=False)
-    # apply the reduction and remove any extraneous dimensions
-    return np.apply_over_axes(method, windowed, axes).squeeze()
-
-
 def safe_log(a):
     """
     Return the element-wise log of an array, checking for negative
@@ -100,16 +42,6 @@ def safe_log(a):
         raise ValueError('array contains negative components')
 
     return np.log(a + 1e-12)
-
-
-def euclidean_norm(a):
-    """
-    Return the euclidean norm of each data example
-    """
-    if 1 == len(a.shape):
-        return np.linalg.norm(a)
-
-    return np.sum(np.abs(a) ** 2, axis=-1) ** (1. / 2)
 
 
 def safe_unit_norm(a):
@@ -129,12 +61,6 @@ def safe_unit_norm(a):
     # a vector of zeros by the number, and 0 / N always equals 0.
     norm[norm == 0] = -1e12
     return a / norm[:, np.newaxis]
-
-
-def binarize(arr, thresh=0.5):
-    arr[arr < thresh] = 0
-    arr[arr >= thresh] = 1
-    return arr
 
 
 def pad(a, desiredlength):
@@ -328,55 +254,6 @@ def sliding_window(a, ws, ss=None, flatten=True):
     return strided.reshape(dim)
 
 
-class TypeCodes(object):
-    _bits = [8, 16, 32, 64]
-    _np_types = [np.uint8, np.uint16, np.uint32, np.uint64]
-    _type_codes = ['B', 'H', 'L', 'Q']
-
-    @classmethod
-    def _fromto(cls, f, t, v):
-        return t[f.index(v)]
-
-    @classmethod
-    def _whichlist(cls, v):
-
-        if isinstance(v, int):
-            return cls._bits
-
-        if isinstance(v, str):
-            return cls._type_codes
-
-        if isinstance(v, type) or isinstance(v, np.dtype):
-            return cls._np_types
-
-        raise ValueError('%s is not a valid key' % v)
-
-    @classmethod
-    def bits(cls, v):
-        """
-        Get the number of bits from a numpy dtype or typecode
-        """
-        return cls._fromto(cls._whichlist(v), cls._bits, v)
-
-    @classmethod
-    def bytes(cls, v):
-        return cls.bits(v) // 8
-
-    @classmethod
-    def np_dtype(cls, v):
-        """
-        Get a numpy dtype from a typecode or number of bits
-        """
-        return cls._fromto(cls._whichlist(v), cls._np_types, v)
-
-    @classmethod
-    def type_code(cls, v):
-        """
-        Get a typecode from a numpy dtype or a number of bits
-        """
-        return cls._fromto(cls._whichlist(v), cls._type_codes, v)
-
-
 class Growable(object):
     """
     A thin wrapper around a numpy array that allows it to be treated like a
@@ -443,7 +320,7 @@ class Growable(object):
 
     def _tmp(self, amt=None):
         n_items = self._tmp_size() if None is amt else amt
-        return np.ndarray( \
+        return np.ndarray(
             (n_items,) + self._data.shape[1:], dtype=self._data.dtype)
 
     def _grow(self, amt=None):
@@ -506,51 +383,3 @@ def packed_hamming_distance(a, b):
     """
     xored = a ^ b
     return count_packed_bits(xored)
-
-
-# TODO: Write tests
-class BKTree(object):
-    """
-    Take advantage of the triangle inequality.  Build a depth-one tree
-    where each branch contains the indices of all hashes which are distance n
-    from a seed value.
-
-    When querying, take the distance between the query and seed values.  Begin
-    with the branch for that distance, and proceed outward.
-    """
-
-    def __init__(self, hashes=None, distance=hamming_distance):
-        object.__init__(self)
-        self.hashes = hashes
-        self.distance = distance
-        self.seed = self.hashes[np.random.randint(0, len(hashes))]
-        self._build()
-
-    def _build(self):
-        d = self.distance(self.seed, self.hashes)
-        self.tree = dict((dist, np.where(d == dist)[0]) for dist in set(d))
-
-    def append(self, hashes):
-        d = self.distance(self.seed, self.hashes)
-        tree = dict((dist, np.where(d == dist)[0]) for dist in set(d))
-        for k, v in tree.iteritems():
-            try:
-                self.tree[k] = np.concatenate([v, self.tree[k]])
-            except KeyError:
-                self.tree[k] = v
-
-    def query(self, query, nresults):
-        d = self.distance(query, [self.seed])[0]
-        results = np.zeros(nresults, dtype=np.uint32)
-        resultspos = 0
-        keys = np.array(self.tree.keys())
-        ordered = list(keys[np.argsort(np.abs(keys - d))])
-        while ordered and resultspos < nresults:
-            dist = ordered.pop(0)
-            r = self.tree[dist]
-            lr = len(r)
-            stop = min(nresults, resultspos + lr)
-            results[resultspos: stop] = r[:stop - resultspos]
-            resultspos += (stop - resultspos)
-
-        return results
