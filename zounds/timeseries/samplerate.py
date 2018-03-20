@@ -106,7 +106,6 @@ class SampleRate(object):
         freq = self.frequency * other[0]
         duration = (self.frequency * other[1]) + self.overlap
         new = SampleRate(freq, duration)
-        print self, new
         return new
 
     def discrete_samples(self, ts):

@@ -1,7 +1,7 @@
 import unittest2
 import numpy as np
 from duration import Seconds
-from samplerate import SR44100, SR11025, SampleRate
+from samplerate import SR44100, SR11025, SampleRate, Stride
 from zounds.timeseries import TimeDimension, TimeSlice
 from zounds.core import IdentityDimension
 from audiosamples import AudioSamples
@@ -9,6 +9,20 @@ from zounds.synthesize import SineSynthesizer
 
 
 class AudioSamplesTest(unittest2.TestCase):
+
+    def test_sliding_window(self):
+        samples = AudioSamples.silence(SR11025(), Seconds(30))
+        sr = samples.samplerate * Stride(frequency=16, duration=512)
+        windowed = samples.sliding_window(sr)
+        self.assertEqual((512,), windowed.shape[1:])
+        long_sr = SampleRate(
+            frequency=sr.frequency * 2, duration=sr.frequency * 32)
+        frequency = TimeSlice(duration=long_sr.frequency)
+        duration = TimeSlice(duration=long_sr.duration)
+        _, long_windowed = windowed.sliding_window_with_leftovers(
+            windowsize=duration, stepsize=frequency, dopad=True)
+        self.assertEqual((32, 512), long_windowed.shape[1:])
+        self.assertEqual(3, long_windowed.ndim)
 
     def test_expanding_first_dimension_should_create_identity_dimension(self):
         silence = AudioSamples.silence(SR11025(), Seconds(10))

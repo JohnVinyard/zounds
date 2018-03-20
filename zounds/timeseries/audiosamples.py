@@ -3,7 +3,7 @@ from soundfile import SoundFile
 from io import BytesIO
 from zounds.core import IdentityDimension, ArrayWithUnits
 from timeseries import TimeDimension, TimeSlice
-from duration import Picoseconds
+from duration import Picoseconds, Seconds
 from samplerate import SampleRate
 import numpy as np
 
@@ -94,7 +94,7 @@ class AudioSamples(ArrayWithUnits):
         x[:] = 1
         return x
 
-    def pad_with_silence(self, silence_duration):
+    def pad_with_silence(self, silence_duration=Seconds(1)):
         silence = self.__class__.silence(
             self.samplerate, silence_duration, self.dtype)
         return AudioSamples(np.concatenate([self, silence]), self.samplerate)

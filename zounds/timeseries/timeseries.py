@@ -220,9 +220,15 @@ class TimeDimension(Dimension):
 
     def modified_dimension(self, size, windowsize, stepsize=None):
         stepsize = stepsize or windowsize
-        yield TimeDimension(
-            self.frequency * stepsize,
-            (self.frequency * windowsize) + self.overlap)
+
+        try:
+            yield TimeDimension(
+                self.frequency * stepsize,
+                (self.frequency * windowsize) + self.overlap)
+        except TypeError:
+            # windowsize and or stepsize were likely slice(None)
+            pass
+
         yield self
 
     def integer_based_slice(self, ts):
