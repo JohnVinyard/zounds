@@ -17,3 +17,16 @@ def decode_timedelta(t):
         return np.timedelta64(long(v), s)
     except IndexError:
         return t
+
+
+def extract_init_args(instance):
+    """
+    Given an instance, and under the assumption that member variables have the
+    same name as the __init__ arguments, extract the arguments so they can
+    be used to reconstruct the instance when deserializing
+    """
+    cls = instance.__class__
+    args = filter(
+        lambda x: x != 'self',
+        cls.__init__.im_func.func_code.co_varnames)
+    return [instance.__dict__[key] for key in args]
