@@ -2,6 +2,7 @@
 import warnings
 import featureflow as ff
 from preprocess import Preprocessor, PreprocessResult, Op
+from zounds.persistence.util import extract_init_args
 
 
 class PyTorchPreprocessResult(PreprocessResult):
@@ -10,6 +11,9 @@ class PyTorchPreprocessResult(PreprocessResult):
             data, op, inversion_data, inverse, name)
 
     def __getstate__(self):
+        """
+        Extract serializable state from an instance
+        """
         forward_func = self.op._func
         inv_data_func = self.inversion_data._func
         backward_func = self.inverse._func
@@ -18,6 +22,7 @@ class PyTorchPreprocessResult(PreprocessResult):
             ((k, v.cpu().numpy()) for k, v in network_params.iteritems()))
         cls = self.op.network.__class__
         name = self.name
+        init_args = extract_init_args(self.op.network)
 
         kwargs = dict(self.op.kwargs)
         del kwargs['network']
@@ -29,15 +34,20 @@ class PyTorchPreprocessResult(PreprocessResult):
             backward_func=backward_func,
             weights=weights,
             name=name,
-            cls=cls)
+            cls=cls,
+            init_args=init_args)
 
     def __setstate__(self, state):
+        """
+        Re-hydrate an instance from serialized state
+        """
         import torch
 
         restored_weights = dict(
             ((k, torch.from_numpy(v).cuda())
              for k, v in state['weights'].iteritems()))
-        network = state['cls']()
+        init_args = state['init_args']
+        network = state['cls'](*init_args)
         network.load_state_dict(restored_weights)
         network.cuda()
         network.eval()

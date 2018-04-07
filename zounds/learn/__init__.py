@@ -41,8 +41,12 @@ try:
     from gan_experiment import GanExperiment
     from sample_embedding import RawSampleEmbedding
     from dct_transform import DctTransform
-    from gated import GatedConvTransposeLayer, GatedConvLayer
-    from loss import PerceptualLoss, BandLoss, CategoricalLoss
+    from gated import GatedConvTransposeLayer, GatedConvLayer, GatedLinearLayer
+    from multiresolution import \
+        MultiResolutionConvLayer, MultiResolutionConvTransposeLayer
+    from loss import PerceptualLoss, BandLoss, CategoricalLoss, \
+        WassersteinCriticLoss, WassersteinGradientPenaltyLoss, \
+        LearnedWassersteinLoss
 except ImportError:
     pass
 

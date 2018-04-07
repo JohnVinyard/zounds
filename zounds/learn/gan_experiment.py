@@ -26,12 +26,15 @@ class GanExperiment(object):
             gan_pair,
             object_storage_username,
             object_storage_api_key,
+            sound_cls=None,
+            sound_feature=None,
             epochs=500,
             n_critic_iterations=10,
             batch_size=32,
             n_samples=int(5e5),
             latent_dim=100,
             real_sample_transformer=lambda x: x,
+            preprocess_minibatch=lambda x: x,
             debug_gradients=False,
             sample_size=8192,
             sample_hop=1024,
@@ -50,6 +53,7 @@ class GanExperiment(object):
         self.gan_pair = gan_pair
         self.app_port = app_port
         self.dataset = dataset
+        self.preprocess_minibatch = preprocess_minibatch
 
         self.samplerate = samplerate
         self.sample_hop = sample_hop
@@ -58,17 +62,22 @@ class GanExperiment(object):
         self.experiment_name = experiment_name
         self.app_secret = app_secret
 
-        base_model = windowed(
-            resample_to=self.samplerate,
-            store_resampled=True,
-            wscheme=self.samplerate * (sample_hop, sample_size))
+        if sound_cls:
+            self.sound_cls = sound_cls
+        else:
+            base_model = windowed(
+                resample_to=self.samplerate,
+                store_resampled=True,
+                wscheme=self.samplerate * (sample_hop, sample_size))
 
-        @simple_lmdb_settings(
-            experiment_name, map_size=1e11, user_supplied_id=True)
-        class Sound(base_model):
-            pass
+            @simple_lmdb_settings(
+                experiment_name, map_size=1e11, user_supplied_id=True)
+            class Sound(base_model):
+                pass
 
-        self.sound_cls = Sound
+            self.sound_cls = Sound
+
+        self.sound_feature = sound_feature or self.sound_cls.windowed
 
         @object_store_pipeline_settings(
             'Gan-{experiment_name}'.format(**locals()),
@@ -95,6 +104,7 @@ class GanExperiment(object):
 
     def fake_audio(self):
         sample = choice(self.fake_samples)
+        sample = self.real_sample_transformer(sample)
         return AudioSamples(sample, self.samplerate) \
             .pad_with_silence(Seconds(1))
 
@@ -151,7 +161,8 @@ class GanExperiment(object):
             n_critic_iterations=self.n_critic_iterations,
             epochs=self.epochs,
             batch_size=self.batch_size,
-            debug_gradient=self.debug_gradients)
+            debug_gradient=self.debug_gradients,
+            preprocess_minibatch=self.preprocess_minibatch)
         trainer.register_batch_complete_callback(self.batch_complete)
 
         self.app = GanTrainingMonitorApp(
@@ -165,7 +176,7 @@ class GanExperiment(object):
 
         with self.app.start_in_thread(self.app_port):
             self.gan_pipeline.process(
-                dataset=(Sound, Sound.windowed),
+                dataset=(Sound, self.sound_feature),
                 trainer=trainer,
                 nsamples=self.n_samples,
                 dtype=np.float32)

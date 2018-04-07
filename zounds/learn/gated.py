@@ -2,6 +2,16 @@ from torch import nn
 from torch.nn import functional as F
 
 
+class GatedLinearLayer(nn.Module):
+    def __init__(self, in_channels, out_channels):
+        super(GatedLinearLayer, self).__init__()
+        self.l1 = nn.Linear(in_channels, out_channels)
+        self.gate = nn.Linear(in_channels, out_channels)
+
+    def forward(self, x):
+        return F.tanh(self.l1(x)) * F.sigmoid(self.gate(x))
+
+
 class GatedLayer(nn.Module):
     def __init__(
             self,
@@ -13,9 +23,10 @@ class GatedLayer(nn.Module):
             padding=0,
             dilation=1,
             attention_func=F.sigmoid,
+            activation_func=F.tanh,
             norm=lambda x: x):
-
         super(GatedLayer, self).__init__()
+        self.activation_func = activation_func
         self.norm = norm
         self.conv = layer_type(
             in_channels=in_channels,
@@ -40,7 +51,7 @@ class GatedLayer(nn.Module):
         c = self.norm(c)
         g = self.gate(x)
         g = self.norm(g)
-        out = F.tanh(c) * self.attention_func(g)
+        out = self.activation_func(c) * self.attention_func(g)
         return out
 
 
@@ -54,6 +65,7 @@ class GatedConvLayer(GatedLayer):
             padding=0,
             dilation=1,
             attention_func=F.sigmoid,
+            activation_func=F.tanh,
             norm=lambda x: x):
         super(GatedConvLayer, self).__init__(
             nn.Conv1d,
@@ -64,6 +76,7 @@ class GatedConvLayer(GatedLayer):
             padding,
             dilation,
             attention_func,
+            activation_func,
             norm)
 
 
@@ -77,6 +90,7 @@ class GatedConvTransposeLayer(GatedLayer):
             padding=0,
             dilation=1,
             attention_func=F.sigmoid,
+            activation_func=F.tanh,
             norm=lambda x: x):
         super(GatedConvTransposeLayer, self).__init__(
             nn.ConvTranspose1d,
@@ -87,4 +101,5 @@ class GatedConvTransposeLayer(GatedLayer):
             padding,
             dilation,
             attention_func,
+            activation_func,
             norm)

@@ -88,6 +88,18 @@ try:
         def forward(self, x):
             raise NotImplementedError()
 
+
+    class GanPairWithArgs(nn.Module):
+        def __init__(self, must_pass):
+            super(GanPairWithArgs, self).__init__()
+            self.must_pass = must_pass
+            self.generator = GanGenerator()
+            self.discriminator = GanDiscriminator()
+
+        def forward(self, x):
+            raise NotImplementedError()
+
+
 except ImportError:
     torch = None
 
@@ -415,6 +427,53 @@ class PyTorchModelTests(unittest2.TestCase):
         inverted = result.inverse_transform()
         self.assertEqual((10, 3), inverted.shape)
 
+    def test_can_train_gan_with_init_args(self):
+        trainer = WassersteinGanTrainer(
+            GanPairWithArgs(10),
+            latent_dimension=(2,),
+            n_critic_iterations=5,
+            epochs=10,
+            batch_size=64)
+
+        @simple_in_memory_settings
+        class Pipeline(ff.BaseModel):
+            inp = ff.PickleFeature(
+                ff.IteratorNode)
+
+            samples = ff.PickleFeature(
+                ShuffledSamples,
+                nsamples=500,
+                needs=inp,
+                dtype=np.float32)
+
+            scaled = ff.PickleFeature(
+                InstanceScaling,
+                needs=samples)
+
+            network = ff.PickleFeature(
+                PyTorchGan,
+                apply_network='generator',
+                trainer=trainer,
+                needs=scaled)
+
+            pipeline = ff.PickleFeature(
+                PreprocessingPipeline,
+                needs=(scaled, network),
+                store=True)
+
+        training_data = np.random.normal(0, 1, (1000, 4))
+
+        def gen(chunksize, s):
+            for i in xrange(0, len(s), chunksize):
+                yield s[i: i + chunksize]
+
+        _id = Pipeline.process(inp=gen(100, training_data))
+        pipe = Pipeline(_id)
+
+        noise = np.random.normal(0, 1, (10, 2))
+        result = pipe.pipeline.transform(noise)
+        self.assertEqual((10, 4), result.data.shape)
+
     def test_can_train_gan(self):
 
         trainer = WassersteinGanTrainer(
@@ -462,3 +521,9 @@ class PyTorchModelTests(unittest2.TestCase):
         noise = np.random.normal(0, 1, (10, 2))
         result = pipe.pipeline.transform(noise)
         self.assertEqual((10, 4), result.data.shape)
+
+if __name__ == '__main__':
+    print GanPairWithArgs.__init__.im_func.func_code.co_varnames
+    print GanPairWithArgs.__init__.im_func.func_code.co_code
+    import dis
+    dis.dis(GanPairWithArgs.__init__.im_func.func_code)

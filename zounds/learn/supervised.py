@@ -101,7 +101,7 @@ class SupervisedTrainer(Trainer):
                     inp, output, e = batch(
                         minibatch_data, minibatch_labels, test=False)
                 except RuntimeError as e:
-                    if 'assert' in e.message:
+                    if 'Assert' in e.message:
                         warnings.warn(e.message)
                         continue
                     else:
