@@ -136,6 +136,7 @@ def windowed(a, windowsize, stepsize=None, dopad=False):
                      If true, the input array is padded with zeros so that all
                      samples are used.
     """
+
     if windowsize < 1:
         raise ValueError('windowsize must be greater than or equal to one')
 

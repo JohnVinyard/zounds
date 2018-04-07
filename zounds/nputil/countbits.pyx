@@ -15,9 +15,9 @@ ctypedef unsigned long ULong
 
 cimport cython
 
-cdef extern int __builtin_popcount(unsigned int) nogil
+#cdef extern int __builtin_popcount(unsigned int) nogil
 cdef extern int __builtin_popcountl(unsigned long) nogil
-cdef extern int __builtin_popcountll(unsigned long long) nogil
+#cdef extern int __builtin_popcountll(unsigned long long) nogil
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
@@ -48,18 +48,10 @@ def count_packed_bits(np.ndarray[UINT64_DTYPE_t,ndim = 2] n):
         np.ndarray(ns,dtype = INT_DTYPE)
     cdef int i = 0
     cdef int j = 0
-    cdef UINT64_DTYPE_t q = 0
-    cdef UINT64_DTYPE_t a = 0x5555555555555555
-    cdef UINT64_DTYPE_t b = 0x3333333333333333
-    cdef UINT64_DTYPE_t c = 0xF0F0F0F0F0F0F0F
-    cdef UINT64_DTYPE_t d = 0x101010101010101
     cdef UINT64_DTYPE_t z = 0
     for i in range(ns):
         z = 0
         for j in range(ns2):
-            q = n[i, j]
-            q = q - ((q >> 1) & a)
-            q = (q & b) + ((q >> 2) & b)
-            z += ((q + (q >> 4)) & c) * d >> 56
+            z += __builtin_popcountl(n[i, j]);
         out[i] = z
     return out

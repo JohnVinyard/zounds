@@ -32,6 +32,8 @@ if not on_rtd:
             sources=['zounds/nputil/countbits.pyx'],
             include_dirs=[np.get_include()],
             extra_compile_args=[
+                '-c',
+                '-mpopcnt',
                 '-shared',
                 '-pthread',
                 '-fPIC',
