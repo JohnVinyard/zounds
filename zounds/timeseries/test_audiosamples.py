@@ -29,15 +29,13 @@ class AudioSamplesTest(unittest2.TestCase):
         samples = AudioSamples.silence(SR11025(), Seconds(10))
         window_sr = SampleRate(
             duration=samplerate.frequency * 512,
-            frequency=samplerate.frequency * 512 - 25)
-        print window_sr
+            frequency=samplerate.frequency * (512 - 25))
         windowed = samples.sliding_window(window_sr)
         self.assertEqual(window_sr, windowed.dimensions[0].samplerate)
 
     def test_expanding_first_dimension_should_create_identity_dimension(self):
         silence = AudioSamples.silence(SR11025(), Seconds(10))
         expanded = silence[None, ...]
-        print expanded.dimensions
         self.assertEqual(2, len(expanded.dimensions))
         self.assertIsInstance(expanded.dimensions[0], IdentityDimension)
         self.assertEqual(silence.dimensions[0], expanded.dimensions[1])
