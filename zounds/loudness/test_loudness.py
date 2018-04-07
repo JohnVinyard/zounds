@@ -41,6 +41,6 @@ class TestInstanceScale(unittest2.TestCase):
         np.testing.assert_allclose(maxes, scaled.max(axis=-1))
 
     def test_handles_negative_numbers_correctly(self):
-        x = np.random.random_sample((100, 3))
+        x = np.random.normal(0, 1, (10, 300))
         scaled = instance_scale(x, axis=-1)
-        np.testing.assert_allclose(1, scaled.max(axis=-1))
+        np.testing.assert_allclose(1, np.abs(scaled).max(axis=-1))
