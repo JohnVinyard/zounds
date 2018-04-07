@@ -1,5 +1,5 @@
 import unittest2
-from loudness import mu_law, inverse_mu_law, inverse_one_hot
+from loudness import mu_law, inverse_mu_law, inverse_one_hot, instance_scale
 import numpy as np
 
 
@@ -29,3 +29,18 @@ class TestInverseOneHot(unittest2.TestCase):
         arr = np.random.random_sample((3, 128, 256))
         x = inverse_one_hot(arr, axis=1)
         self.assertEqual((3, 256), x.shape)
+
+
+class TestInstanceScale(unittest2.TestCase):
+    def test_handles_zeros(self):
+        x = np.random.random_sample((10, 3))
+        x[4, :] = 0
+        scaled = instance_scale(x, axis=-1)
+        maxes = np.ones(10)
+        maxes[4] = 0
+        np.testing.assert_allclose(maxes, scaled.max(axis=-1))
+
+    def test_handles_negative_numbers_correctly(self):
+        x = np.random.random_sample((100, 3))
+        scaled = instance_scale(x, axis=-1)
+        np.testing.assert_allclose(1, scaled.max(axis=-1))

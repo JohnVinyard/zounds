@@ -37,8 +37,13 @@ def inverse_one_hot(x, axis=-1):
     return indices
 
 
-def instance_scale(x, axis=-1, epsilon=1e-8):
-    return x / (x.max(axis=axis) + epsilon)
+def instance_scale(x, axis=-1, epsilon=1e-8, return_maxes=False):
+    mx = np.abs(x).max(axis=axis, keepdims=True)
+    scaled = x / (mx + epsilon)
+    if return_maxes:
+        return mx, scaled
+    else:
+        return scaled
 
 
 def unit_scale(x, axis=None):
