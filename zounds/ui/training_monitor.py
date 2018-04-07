@@ -68,7 +68,11 @@ class TrainingMonitorApp(ZoundsApp):
             self.training_history[k] = \
                 self.training_history[k][-self.n_training_points:]
             # append the new data
-            self.training_history[k].append(kwargs[k])
+            try:
+                self.training_history[k].append(kwargs[k])
+            except KeyError:
+                # no data has been added for this key
+                pass
 
     def training_handler(self):
         app = self
@@ -83,7 +87,11 @@ class TrainingMonitorApp(ZoundsApp):
 
                     data = dict(epoch=kwargs['epoch'], batch=batch)
                     for key in app.keys_to_graph:
-                        data[key] = kwargs[key]
+                        try:
+                            data[key] = kwargs[key]
+                        except KeyError:
+                            # there's no data to report for this key
+                            pass
                     self.write_message(json.dumps(data))
 
                 return x
