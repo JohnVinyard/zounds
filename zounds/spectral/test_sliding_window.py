@@ -72,6 +72,33 @@ class SlidingWindowTests(unittest2.TestCase):
     def test_correct_window_and_step_size_at_11025(self):
         self._check(SR11025(), 512, 256)
 
+    def test_can_apply_sliding_windows_in_succession(self):
+        samplerate = SR11025()
+        short_window = samplerate * (16, 512)
+        long_window = SampleRate(
+            frequency=short_window.frequency * 1,
+            duration=short_window.frequency * 64)
+        rs = resampled(resample_to=samplerate, store_resampled=True)
+
+        samples = AudioSamples.silence(samplerate, Seconds(10))
+
+        @simple_in_memory_settings
+        class Sound(rs):
+            short_windowed = ArrayWithUnitsFeature(
+                SlidingWindow,
+                wscheme=short_window,
+                needs=rs.resampled)
+
+            long_windowed = ArrayWithUnitsFeature(
+                SlidingWindow,
+                wscheme=long_window,
+                needs=short_windowed)
+
+        _id = Sound.process(meta=samples.encode())
+        snd = Sound(_id)
+        self.assertEqual((512,), snd.short_windowed.shape[1:])
+        self.assertEqual((64, 512), snd.long_windowed.shape[1:])
+
     def test_can_persist_and_retrieve_with_second_long_windowing_scheme(self):
         samplerate = SR22050()
         rs = resampled(resample_to=samplerate)
