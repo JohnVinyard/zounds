@@ -20,7 +20,6 @@ from sklearn_preprocessor import SklearnModel, WithComponents
 
 from pytorch_model import PyTorchAutoEncoder, PyTorchGan, PyTorchNetwork
 
-from gan import GanTrainer
 from wgan import WassersteinGanTrainer
 from supervised import SupervisedTrainer
 from embedding import TripletEmbeddingTrainer
@@ -42,8 +41,7 @@ try:
     from sample_embedding import RawSampleEmbedding
     from dct_transform import DctTransform
     from gated import GatedConvTransposeLayer, GatedConvLayer, GatedLinearLayer
-    from multiresolution import \
-        MultiResolutionConvLayer, MultiResolutionConvTransposeLayer
+    from multiresolution import MultiResolutionConvLayer
     from loss import PerceptualLoss, BandLoss, CategoricalLoss, \
         WassersteinCriticLoss, WassersteinGradientPenaltyLoss, \
         LearnedWassersteinLoss

@@ -521,9 +521,3 @@ class PyTorchModelTests(unittest2.TestCase):
         noise = np.random.normal(0, 1, (10, 2))
         result = pipe.pipeline.transform(noise)
         self.assertEqual((10, 4), result.data.shape)
-
-if __name__ == '__main__':
-    print GanPairWithArgs.__init__.im_func.func_code.co_varnames
-    print GanPairWithArgs.__init__.im_func.func_code.co_code
-    import dis
-    dis.dis(GanPairWithArgs.__init__.im_func.func_code)
