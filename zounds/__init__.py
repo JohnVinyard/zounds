@@ -38,11 +38,10 @@ from learn import \
     KMeans, Learned, MeanStdNormalization, UnitNorm, Log, Multiply, \
     PreprocessingPipeline, Slicer, ReservoirSampler, simple_settings, \
     SklearnModel, WithComponents, InstanceScaling, Reshape, ShuffledSamples, \
-    PyTorchNetwork, PyTorchGan, PyTorchAutoEncoder, GanTrainer, \
-    WassersteinGanTrainer, SupervisedTrainer, TripletEmbeddingTrainer, \
-    Weighted, MuLawCompressed, SimHash, AbsoluteValue, Binarize, Sharpen, \
-    learning_pipeline, object_store_pipeline_settings, \
-    infinite_streaming_learning_pipeline
+    PyTorchNetwork, PyTorchGan, PyTorchAutoEncoder,WassersteinGanTrainer, \
+    SupervisedTrainer, TripletEmbeddingTrainer, Weighted, MuLawCompressed, \
+    SimHash, AbsoluteValue, Binarize, Sharpen, learning_pipeline, \
+    object_store_pipeline_settings, infinite_streaming_learning_pipeline
 
 from ui import \
     ZoundsApp, ZoundsSearch, TrainingMonitorApp, SupervisedTrainingMonitorApp, \
