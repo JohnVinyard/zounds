@@ -1,5 +1,5 @@
 from torch import nn
-from gated import GatedConvLayer, GatedConvTransposeLayer
+from gated import GatedConvLayer
 
 
 class MultiResolutionBlock(nn.Module):
@@ -59,21 +59,3 @@ class MultiResolutionConvLayer(MultiResolutionBlock):
             stride,
             padding,
             **kwargs)
-
-
-class MultiResolutionConvTransposeLayer(MultiResolutionBlock):
-    def __init__(
-            self,
-            in_channels,
-            out_channels,
-            kernel_sizes,
-            stride=1,
-            padding=None):
-
-        super(MultiResolutionConvTransposeLayer, self).__init__(
-            GatedConvTransposeLayer,
-            in_channels,
-            out_channels,
-            kernel_sizes,
-            stride,
-            padding)
