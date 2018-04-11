@@ -79,7 +79,7 @@ setup(
         'unittest2',
         'certifi==2017.7.27.1',
         'requests',
-        'tornado',
+        'tornado==4.5.3',
         'pysoundfile',
         'matplotlib',
         'argparse',
