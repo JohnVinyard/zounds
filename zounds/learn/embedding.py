@@ -1,6 +1,9 @@
 from trainer import Trainer
 from random import choice
 import numpy as np
+from torch import nn
+from torch.optim import Adam
+import torch
 
 
 class TripletEmbeddingTrainer(Trainer):
@@ -46,6 +49,11 @@ class TripletEmbeddingTrainer(Trainer):
         # of the paper https://arxiv.org/pdf/1711.02209.pdf
         self.margin = 0.1
         self.register_batch_complete_callback(self._log)
+        self.loss = nn.TripletMarginLoss(margin=self.margin)
+
+    def _cuda(self, device=None):
+        self.loss = self.loss.cuda()
+        self.network = self.network.cuda()
 
     def _driver(self, data):
         batches_in_epoch = len(data) // self.batch_size
@@ -65,8 +73,6 @@ class TripletEmbeddingTrainer(Trainer):
         Pass x through the network, and give the output unit norm, as specified
         by section 4.2 of https://arxiv.org/pdf/1711.02209.pdf
         """
-
-        import torch
         x = self.network(x)
         return x / torch.norm(x, dim=1).view(-1, 1)
 
@@ -76,29 +82,24 @@ class TripletEmbeddingTrainer(Trainer):
         return indices, batch.astype(np.float32)
 
     def train(self, data):
-        from torch import nn
-        from torch.optim import Adam
-        from util import to_var
 
         data = data['data']
 
-        self.network.cuda()
         self.network.train()
 
         optimizer = Adam(self.network.parameters(), lr=1e-5)
-        loss = nn.TripletMarginLoss(margin=self.margin).cuda()
 
         for epoch, batch in self._driver(data):
             self.network.zero_grad()
 
             # choose a batch of anchors
             indices, anchor = self._select_batch(data)
-            anchor_v = to_var(anchor)
+            anchor_v = self._variable(anchor)
             a = self._apply_network_and_normalize(anchor_v)
 
             # choose negative examples
             negative_indices, negative = self._select_batch(data)
-            negative_v = to_var(negative)
+            negative_v = self._variable(negative)
             n = self._apply_network_and_normalize(negative_v)
 
             # choose a deformation for this batch and apply it to produce the
@@ -106,10 +107,10 @@ class TripletEmbeddingTrainer(Trainer):
             deformation = choice(self.deformations)
             positive = deformation(anchor, data[indices, ...]) \
                 .astype(np.float32)
-            positive_v = to_var(positive)
+            positive_v = self._variable(positive)
             p = self._apply_network_and_normalize(positive_v)
 
-            error = loss.forward(a, p, n)
+            error = self.loss.forward(a, p, n)
             error.backward()
             optimizer.step()
 

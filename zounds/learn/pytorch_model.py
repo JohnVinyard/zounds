@@ -1,8 +1,8 @@
-
 import warnings
 import featureflow as ff
 from preprocess import Preprocessor, PreprocessResult, Op
 from zounds.persistence.util import extract_init_args
+import torch
 
 
 class PyTorchPreprocessResult(PreprocessResult):
@@ -41,21 +41,28 @@ class PyTorchPreprocessResult(PreprocessResult):
         """
         Re-hydrate an instance from serialized state
         """
-        import torch
 
         restored_weights = dict(
-            ((k, torch.from_numpy(v).cuda())
+            ((k, torch.from_numpy(v))
              for k, v in state['weights'].iteritems()))
         init_args = state['init_args']
         network = state['cls'](*init_args)
         network.load_state_dict(restored_weights)
-        network.cuda()
+
+        # KLUDGE: Should we *ever* implicitly move things to the GPU?  If not,
+        # this would need to be done explicitly by the user when re-hydrating
+        # the learning pipeline
+        if torch.cuda.is_available():
+            network = network.cuda()
+
         network.eval()
 
         self.op = Op(
-            state['forward_func'], network=network, **state['op_kwargs'])
-        self.inversion_data = Op(state['inv_data_func'],
-                                 network=network)
+            state['forward_func'],
+            network=network,
+            **state['op_kwargs'])
+
+        self.inversion_data = Op(state['inv_data_func'], network=network)
         self.inverse = Op(state['backward_func'])
         self.name = state['name']
 
@@ -102,6 +109,7 @@ class PyTorchNetwork(Preprocessor):
     def _backward_func(self):
         def x(_):
             raise NotImplementedError()
+
         return x
 
     def _enqueue(self, data, pusher):
@@ -174,27 +182,16 @@ class PyTorchGan(PyTorchNetwork):
 
     def _forward_func(self):
         def x(d, network=None, apply_network=None):
-            import torch
-            from torch.autograd import Variable
-            import numpy as np
             from zounds.core import ArrayWithUnits, IdentityDimension
+            from zounds.learn import apply_network as apply
+            import numpy as np
 
             if apply_network == 'generator':
                 n = network.generator
             else:
                 n = network.discriminator
 
-            chunks = []
-            batch_size = 128
-
-            for i in xrange(0, len(d), batch_size):
-                tensor = torch.from_numpy(
-                    d[i:i + batch_size].astype(np.float32))
-                gpu = tensor.cuda()
-                v = Variable(gpu)
-                chunks.append(n(v).data.cpu().numpy())
-
-            result = np.concatenate(chunks)
+            result = apply(n, d.astype(np.float32), chunksize=128)
 
             try:
                 return ArrayWithUnits(
@@ -251,21 +248,12 @@ class PyTorchAutoEncoder(PyTorchNetwork):
 
     def _forward_func(self):
         def x(d, network=None):
-            import torch
-            from torch.autograd import Variable
-            import numpy as np
             from zounds.core import ArrayWithUnits, IdentityDimension
+            from zounds.learn import apply_network
+            import numpy as np
 
-            chunks = []
-            batch_size = 128
-
-            for i in xrange(0, len(d), batch_size):
-                tensor = torch.from_numpy(d[i:i + batch_size])
-                gpu = tensor.cuda()
-                v = Variable(gpu)
-                chunks.append(network.encoder(v).data.cpu().numpy())
-
-            encoded = np.concatenate(chunks)
+            encoded = apply_network(
+                network.encoder, d.astype(np.float32), chunksize=128)
 
             try:
                 extra_dims = (IdentityDimension(),) * (encoded.ndim - 1)
@@ -278,21 +266,10 @@ class PyTorchAutoEncoder(PyTorchNetwork):
 
     def _backward_func(self):
         def x(d, network=None):
-            import torch
-            from torch.autograd import Variable
+            from zounds.learn import apply_network
             import numpy as np
-
-            chunks = []
-            batch_size = 128
-
-            for i in xrange(0, len(d), batch_size):
-                tensor = torch.from_numpy(d.astype(np.float32))
-                gpu = tensor.cuda()
-                v = Variable(gpu)
-                chunks.append(network.decoder(v).data.cpu().numpy())
-
-            decoded = np.concatenate(chunks)
-            return decoded
+            return apply_network(
+                network.decoder, d.astype(np.float32), chunksize=128)
 
         return x
 

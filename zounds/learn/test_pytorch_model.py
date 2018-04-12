@@ -14,100 +14,91 @@ from zounds.core import ArrayWithUnits, IdentityDimension
 from zounds.spectral import LinearScale, FrequencyBand, FrequencyDimension
 from zounds.timeseries import Seconds, TimeDimension
 from zounds.util import simple_in_memory_settings
-
-try:
-    import torch
-    from torch import nn
-    from torch.optim import SGD, Adam
+import torch
+from torch import nn
+from torch.optim import SGD, Adam
 
 
-    class SupervisedNetwork(nn.Module):
-        def __init__(self):
-            super(SupervisedNetwork, self).__init__()
-            self.visible = nn.Linear(2, 64, bias=False)
-            self.t1 = nn.Sigmoid()
-            self.hidden = nn.Linear(64, 1, bias=False)
-            self.t2 = nn.Sigmoid()
+class SupervisedNetwork(nn.Module):
+    def __init__(self):
+        super(SupervisedNetwork, self).__init__()
+        self.visible = nn.Linear(2, 64, bias=False)
+        self.t1 = nn.Sigmoid()
+        self.hidden = nn.Linear(64, 1, bias=False)
+        self.t2 = nn.Sigmoid()
 
-        def forward(self, inp):
-            x = self.visible(inp)
-            x = self.t1(x)
-            x = self.hidden(x)
-            x = self.t2(x)
-            return x
-
-
-    class AutoEncoder(nn.Module):
-        def __init__(self):
-            super(AutoEncoder, self).__init__()
-
-            self.encoder = nn.Sequential(
-                nn.Linear(3, 2, bias=False),
-                nn.Sigmoid())
-
-            self.decoder = nn.Sequential(
-                nn.Linear(2, 3, bias=False),
-                nn.Sigmoid())
-
-        def forward(self, inp):
-            x = self.encoder(inp)
-            x = self.decoder(x)
-            return x
+    def forward(self, inp):
+        x = self.visible(inp)
+        x = self.t1(x)
+        x = self.hidden(x)
+        x = self.t2(x)
+        return x
 
 
-    class GanGenerator(nn.Module):
-        def __init__(self):
-            super(GanGenerator, self).__init__()
-            self.linear = nn.Linear(2, 4)
-            self.tanh = nn.Tanh()
+class AutoEncoder(nn.Module):
+    def __init__(self):
+        super(AutoEncoder, self).__init__()
 
-        def forward(self, inp):
-            x = self.linear(inp)
-            x = self.tanh(x)
-            return x
+        self.encoder = nn.Sequential(
+            nn.Linear(3, 2, bias=False),
+            nn.Sigmoid())
 
+        self.decoder = nn.Sequential(
+            nn.Linear(2, 3, bias=False),
+            nn.Sigmoid())
 
-    class GanDiscriminator(nn.Module):
-        def __init__(self):
-            super(GanDiscriminator, self).__init__()
-            self.linear = nn.Linear(4, 1)
-            self.sigmoid = nn.Sigmoid()
-
-        def forward(self, inp):
-            x = self.linear(inp)
-            x = self.sigmoid(x)
-            return x
+    def forward(self, inp):
+        x = self.encoder(inp)
+        x = self.decoder(x)
+        return x
 
 
-    class GanPair(nn.Module):
-        def __init__(self):
-            super(GanPair, self).__init__()
-            self.generator = GanGenerator()
-            self.discriminator = GanDiscriminator()
+class GanGenerator(nn.Module):
+    def __init__(self):
+        super(GanGenerator, self).__init__()
+        self.linear = nn.Linear(2, 4)
+        self.tanh = nn.Tanh()
 
-        def forward(self, x):
-            raise NotImplementedError()
-
-
-    class GanPairWithArgs(nn.Module):
-        def __init__(self, must_pass):
-            super(GanPairWithArgs, self).__init__()
-            self.must_pass = must_pass
-            self.generator = GanGenerator()
-            self.discriminator = GanDiscriminator()
-
-        def forward(self, x):
-            raise NotImplementedError()
+    def forward(self, inp):
+        x = self.linear(inp)
+        x = self.tanh(x)
+        return x
 
 
-except ImportError:
-    torch = None
+class GanDiscriminator(nn.Module):
+    def __init__(self):
+        super(GanDiscriminator, self).__init__()
+        self.linear = nn.Linear(4, 1)
+        self.sigmoid = nn.Sigmoid()
+
+    def forward(self, inp):
+        x = self.linear(inp)
+        x = self.sigmoid(x)
+        return x
+
+
+class GanPair(nn.Module):
+    def __init__(self):
+        super(GanPair, self).__init__()
+        self.generator = GanGenerator()
+        self.discriminator = GanDiscriminator()
+
+    def forward(self, x):
+        raise NotImplementedError()
+
+
+class GanPairWithArgs(nn.Module):
+    def __init__(self, must_pass):
+        super(GanPairWithArgs, self).__init__()
+        self.must_pass = must_pass
+        self.generator = GanGenerator()
+        self.discriminator = GanDiscriminator()
+
+    def forward(self, x):
+        raise NotImplementedError()
 
 
 class PyTorchModelTests(unittest2.TestCase):
-    def setUp(self):
-        if torch is None:
-            self.skipTest('pytorch is not available')
 
     def test_can_maintain_array_dimensions_with_supervised_learning(self):
         trainer = SupervisedTrainer(
@@ -206,7 +197,7 @@ class PyTorchModelTests(unittest2.TestCase):
 
     def test_can_perform_supervised_learning(self):
         """
-        Create and exercise a learning pipeline that learn to classify
+        Create and exercise a learning pipeline that learns to classify
         2d points as being on one side or the other of a plane from (0, 0) to
         (1, 1)
         """
@@ -218,7 +209,8 @@ class PyTorchModelTests(unittest2.TestCase):
             epochs=100,
             batch_size=64,
             data_preprocessor=lambda x: x.astype(np.float32),
-            label_preprocessor=lambda x: x.astype(np.float32))
+            label_preprocessor=lambda x: x.astype(np.float32),
+            checkpoint_epochs=100)
 
         @simple_in_memory_settings
         class Pipeline(ff.BaseModel):
@@ -315,7 +307,8 @@ class PyTorchModelTests(unittest2.TestCase):
             loss=nn.MSELoss(),
             optimizer=lambda model: SGD(model.parameters(), lr=0.1),
             epochs=2,
-            batch_size=64)
+            batch_size=64,
+            checkpoint_epochs=2)
 
         @simple_in_memory_settings
         class Pipeline(ff.BaseModel):
@@ -380,7 +373,8 @@ class PyTorchModelTests(unittest2.TestCase):
             loss=nn.MSELoss(),
             optimizer=lambda model: SGD(model.parameters(), lr=0.1),
             epochs=10,
-            batch_size=64)
+            batch_size=64,
+            checkpoint_epochs=10)
 
         @simple_in_memory_settings
         class Pipeline(ff.BaseModel):

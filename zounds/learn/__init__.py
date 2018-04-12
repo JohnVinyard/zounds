@@ -32,20 +32,18 @@ from graph import learning_pipeline, infinite_streaming_learning_pipeline
 
 from functional import hyperplanes, simhash, example_wise_unit_norm
 
-try:
-    from util import \
-        Conv1d, ConvTranspose1d, Conv2d, ConvTranspose2d, to_var, from_var, \
-        try_network, apply_network, feature_map_size, sample_norm, \
-        FrequencyDecompositionAnalyzer, FrequencyDecompositionGenerator, gradients
-    from gan_experiment import GanExperiment
-    from sample_embedding import RawSampleEmbedding
-    from dct_transform import DctTransform
-    from gated import GatedConvTransposeLayer, GatedConvLayer, GatedLinearLayer
-    from multiresolution import MultiResolutionConvLayer
-    from loss import PerceptualLoss, BandLoss, CategoricalLoss, \
-        WassersteinCriticLoss, WassersteinGradientPenaltyLoss, \
-        LearnedWassersteinLoss
-except ImportError:
-    pass
+
+from util import \
+    Conv1d, ConvTranspose1d, Conv2d, ConvTranspose2d, to_var, from_var, \
+    try_network, apply_network, feature_map_size, sample_norm, gradients
+from gan_experiment import GanExperiment
+from sample_embedding import RawSampleEmbedding
+from dct_transform import DctTransform
+from gated import GatedConvTransposeLayer, GatedConvLayer, GatedLinearLayer
+from multiresolution import MultiResolutionConvLayer
+from loss import PerceptualLoss, BandLoss, CategoricalLoss, \
+    WassersteinCriticLoss, WassersteinGradientPenaltyLoss, \
+    LearnedWassersteinLoss
+
 
 

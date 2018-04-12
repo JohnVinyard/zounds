@@ -1,4 +1,6 @@
 import numpy as np
+from torch.autograd import Variable
+import torch
 
 
 class Trainer(object):
@@ -10,6 +12,7 @@ class Trainer(object):
         self._batch_complete_callbacks = dict()
         self._current_epoch = 0
         self.use_cuda = False
+        self.network = None
 
     def _cuda(self, device=None):
         pass
@@ -21,14 +24,18 @@ class Trainer(object):
         return self
 
     def _variable(self, x, *args, **kwargs):
-        from torch.autograd import Variable
+
+        if isinstance(x, np.ndarray):
+            x = torch.from_numpy(x)
+
         v = Variable(x, *args, **kwargs)
+
         if self.use_cuda:
             v = v.cuda()
+
         return v
 
     def _tensor(self, shape):
-        import torch
         ft = torch.cuda.FloatTensor if self.use_cuda else torch.FloatTensor
         return ft(*shape)
 

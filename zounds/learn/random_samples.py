@@ -136,9 +136,11 @@ class ShuffledSamples(Node):
 
 
 class InfiniteSampler(Node):
-    def __init__(self, nsamples=None, dtype=None, needs=None):
+    def __init__(self, nsamples=None, multiplexed=True, dtype=None, needs=None):
         super(InfiniteSampler, self).__init__(needs=needs)
-        self.reservoir = Reservoir(nsamples, dtype)
+        self.multiplexed = multiplexed
+        self.reservoir = MultiplexedReservoir(nsamples, dtype=dtype) \
+            if multiplexed else Reservoir(nsamples, dtype=dtype)
 
     def _total_samples(self, cls, feature, _ids):
         pool = ThreadPool(cpu_count())

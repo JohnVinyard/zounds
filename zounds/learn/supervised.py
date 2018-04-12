@@ -1,6 +1,8 @@
 from trainer import Trainer
 import numpy as np
 import warnings
+import torch
+from torch.autograd import Variable
 
 
 class SupervisedTrainer(Trainer):
@@ -26,7 +28,7 @@ class SupervisedTrainer(Trainer):
         self.holdout_percent = holdout_percent
         self.optimizer = optimizer(model)
         self.loss = loss
-        self.model = model
+        self.network = model
         self.register_batch_complete_callback(self._log)
         self.samples = None
 
@@ -46,13 +48,11 @@ class SupervisedTrainer(Trainer):
         inp, label = self.samples[index]
         return inp, label
 
+    def _cuda(self, device=None):
+        self.network = self.network.cuda()
+        self.loss = self.loss.cuda()
+
     def train(self, data):
-        import torch
-        from torch.autograd import Variable
-
-        model = self.model.cuda()
-        loss = self.loss.cuda()
-
         data, labels = data['data'], data['labels']
 
         test_size = int(self.holdout_percent * len(data))
@@ -62,16 +62,12 @@ class SupervisedTrainer(Trainer):
         def batch(d, l, test=False):
             d = self.data_preprocessor(d)
             l = self.label_preprocessor(l)
-            inp = torch.from_numpy(d)
-            inp = inp.cuda()
-            inp_v = Variable(inp, volatile=test)
-            output = model(inp_v)
+            inp_v = self._variable(d, volatile=test)
+            output = self.network(inp_v)
 
-            labels_t = torch.from_numpy(l)
-            labels_t = labels_t.cuda()
-            labels_v = Variable(labels_t)
+            labels_v = self._variable(l)
 
-            error = loss(output, labels_v)
+            error = self.loss(output, labels_v)
 
             if not test:
                 error.backward()
@@ -90,7 +86,7 @@ class SupervisedTrainer(Trainer):
 
             for i in xrange(0, len(data), self.batch_size):
 
-                model.zero_grad()
+                self.network.zero_grad()
 
                 # training batch
                 minibatch_slice = slice(i, i + self.batch_size)
@@ -127,4 +123,4 @@ class SupervisedTrainer(Trainer):
 
             self._current_epoch += 1
 
-        return model
+        return self.network

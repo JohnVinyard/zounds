@@ -56,6 +56,7 @@ class PerceptualLoss(nn.MSELoss):
         return super(PerceptualLoss, self).cuda(device=device)
 
     def _transform(self, x):
+        x = x.view(x.shape[0], 1, -1)
         features = F.conv1d(
             x, self.weights, stride=self.lap, padding=self.basis_size)
 

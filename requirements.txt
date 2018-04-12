@@ -7,3 +7,6 @@ tornado==4.5.3
 pysoundfile
 matplotlib
 intervaltree
+numpy==1.12.1
+scipy==0.19
+torch==0.3.1
