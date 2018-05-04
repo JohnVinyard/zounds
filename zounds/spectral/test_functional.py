@@ -2,7 +2,7 @@ import numpy as np
 import unittest2
 from functional import \
     fft, stft, apply_scale, frequency_decomposition, phase_shift, rainbowgram, \
-    fir_filter_bank
+    fir_filter_bank, auto_correlogram, time_stretch, pitch_shift
 from zounds.core import ArrayWithUnits, IdentityDimension
 from zounds.synthesize import \
     SilenceSynthesizer, TickSynthesizer, SineSynthesizer, FFTSynthesizer
@@ -28,6 +28,23 @@ class FIRFilterBankTests(unittest2.TestCase):
         self.assertEqual((len(scale), taps), filter_bank.shape)
         self.assertEqual(FrequencyDimension(scale), filter_bank.dimensions[0])
         self.assertEqual(TimeDimension(*samplerate), filter_bank.dimensions[1])
+
+
+class AutoCorrelogramTests(unittest2.TestCase):
+    @unittest2.skip
+    def test_smoke(self):
+        samples = AudioSamples.silence(SR22050(), Seconds(1))
+        samplerate = SR22050()
+        scale = GeometricScale(
+            start_center_hz=20,
+            stop_center_hz=5000,
+            bandwidth_ratio=1.2,
+            n_bands=8)
+        scale.ensure_overlap_ratio(0.5)
+        taps = 16
+        filter_bank = fir_filter_bank(scale, taps, samplerate, np.hanning(3))
+        correlogram = auto_correlogram(samples, filter_bank)
+        self.assertEqual(3, correlogram.ndim)
 
 
 class FrequencyDecompositionTests(unittest2.TestCase):
@@ -204,6 +221,77 @@ class STFTTests(unittest2.TestCase):
         self.assertEqual(tf.dimensions[0].samplerate, wscheme)
         self.assertIsInstance(tf.dimensions[1], FrequencyDimension)
         self.assertIsInstance(tf.dimensions[1].scale, LinearScale)
+
+    def test_can_take_stft_of_batch(self):
+        sr = SR22050()
+        samples = SilenceSynthesizer(sr).synthesize(Milliseconds(6666))
+        stacked = ArrayWithUnits(
+            np.zeros((10,) + samples.shape, dtype=samples.dtype),
+            (IdentityDimension(),) + samples.dimensions)
+        stacked[:] = samples
+        wscheme = sr.windowing_scheme(512, 256)
+        tf = stft(stacked, wscheme, HanningWindowingFunc())
+
+        self.assertEqual(10, len(tf))
+        self.assertIsInstance(tf, ArrayWithUnits)
+        self.assertEqual(3, len(tf.dimensions))
+        self.assertIsInstance(tf.dimensions[0], IdentityDimension)
+        self.assertIsInstance(tf.dimensions[1], TimeDimension)
+        self.assertEqual(tf.dimensions[1].samplerate, wscheme)
+        self.assertIsInstance(tf.dimensions[2], FrequencyDimension)
+        self.assertIsInstance(tf.dimensions[2].scale, LinearScale)
+
+    def test_stft_raises_for_invalid_dimensions(self):
+        sr = SR22050()
+        samples = SilenceSynthesizer(sr).synthesize(Milliseconds(6666))
+        wscheme = sr.windowing_scheme(512, 256)
+        tf = stft(samples, wscheme, HanningWindowingFunc())
+        self.assertRaises(
+            ValueError, lambda: stft(tf, wscheme, HanningWindowingFunc()))
+
+
+class PhaseStretchTests(unittest2.TestCase):
+    def test_can_pitch_shift_audio_samples(self):
+        sr = SR22050()
+        samples = SineSynthesizer(sr).synthesize(Milliseconds(6666), [440])
+        shifted = pitch_shift(samples, 1.0).squeeze()
+        self.assertEqual(len(samples), len(shifted))
+
+    def test_can_pitch_shift_batch(self):
+        sr = SR22050()
+        samples = SilenceSynthesizer(sr).synthesize(Milliseconds(6666))
+        stacked = ArrayWithUnits(
+            np.zeros((10,) + samples.shape, dtype=samples.dtype),
+            (IdentityDimension(),) + samples.dimensions)
+        stacked[:] = samples
+        stretched = pitch_shift(stacked, -2.0)
+        self.assertEqual(10, stretched.shape[0])
+        self.assertEqual(len(samples), stretched.shape[1])
+
+
+class TimeStretchTests(unittest2.TestCase):
+    def test_can_stretch_audio_samples(self):
+        sr = SR22050()
+        samples = SilenceSynthesizer(sr).synthesize(Milliseconds(1000))
+        stretched = time_stretch(samples, 0.5).squeeze()
+        self.assertEqual(int(2 * len(samples)), len(stretched))
+
+    def test_can_contract_audio_samples(self):
+        sr = SR22050()
+        samples = SilenceSynthesizer(sr).synthesize(Milliseconds(1000))
+        stretched = time_stretch(samples, 2.0).squeeze()
+        self.assertEqual(len(samples) // 2, len(stretched))
+
+    def test_can_stretch_audio_batch(self):
+        sr = SR22050()
+        samples = SilenceSynthesizer(sr).synthesize(Milliseconds(6666))
+        stacked = ArrayWithUnits(
+            np.zeros((10,) + samples.shape, dtype=samples.dtype),
+            (IdentityDimension(),) + samples.dimensions)
+        stacked[:] = samples
+        stretched = time_stretch(stacked, 2.0)
+        self.assertEqual(10, stretched.shape[0])
+        self.assertEqual(int(len(samples) // 2), stretched.shape[1])
 
 
 class RainbowgramTests(unittest2.TestCase):
