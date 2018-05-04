@@ -109,7 +109,7 @@ class SampleRate(object):
         return new
 
     def discrete_samples(self, ts):
-        td = ts.dimensions[0]
+        td = next(dim for dim in ts.dimensions if hasattr(dim, 'frequency'))
         windowsize = np.round((self.duration - td.overlap) / td.frequency)
         stepsize = np.round(self.frequency / td.frequency)
         return int(stepsize), int(windowsize)

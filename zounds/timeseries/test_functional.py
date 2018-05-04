@@ -31,3 +31,4 @@ class CategoricalTests(unittest2.TestCase):
         self.assertIsInstance(inverted, ArrayWithUnits)
         self.assertSequenceEqual(windowed.dimensions, inverted.dimensions)
 
+

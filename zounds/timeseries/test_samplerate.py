@@ -2,15 +2,15 @@ from __future__ import division
 import unittest2
 import numpy as np
 from duration import Seconds, Milliseconds
-from zounds.core import ArrayWithUnits
+from zounds.core import ArrayWithUnits, IdentityDimension
 from timeseries import TimeDimension
 from samplerate import \
     SampleRate, SR96000, SR48000, SR44100, SR22050, SR11025, \
     audio_sample_rate, HalfLapped
+from zounds.synthesize import SilenceSynthesizer
 
 
 class SampleRateTests(unittest2.TestCase):
-
     def test_raises_value_error_for_zero_frequency(self):
         self.assertRaises(
             ValueError, lambda: SampleRate(Seconds(0), Seconds(1)))
@@ -39,10 +39,19 @@ class SampleRateTests(unittest2.TestCase):
         self.assertEqual(sr.frequency, frequency)
         self.assertEqual(sr.duration, duration)
 
+    def test_discrete_samples_multiple_dimensions(self):
+        sr = SR22050()
+        samples = SilenceSynthesizer(sr).synthesize(Milliseconds(6666))
+        stacked = ArrayWithUnits(
+            np.zeros((10,) + samples.shape, dtype=samples.dtype),
+            (IdentityDimension(),) + samples.dimensions)
+        stacked[:] = samples
+        self.assertEqual((512, 1024), HalfLapped().discrete_samples(stacked))
+
     def test_discrete_samples_11025(self):
         sr = SR11025()
         ts = ArrayWithUnits(
-                np.zeros(sr.samples_per_second), [TimeDimension(*sr)])
+            np.zeros(sr.samples_per_second), [TimeDimension(*sr)])
         hl = HalfLapped()
         freq, duration = hl.discrete_samples(ts)
         self.assertEqual(256, freq)
@@ -51,7 +60,7 @@ class SampleRateTests(unittest2.TestCase):
     def test_discrete_samples_22050(self):
         sr = SR22050()
         ts = ArrayWithUnits(
-                np.zeros(sr.samples_per_second), [TimeDimension(*sr)])
+            np.zeros(sr.samples_per_second), [TimeDimension(*sr)])
         hl = HalfLapped()
         freq, duration = hl.discrete_samples(ts)
         self.assertEqual(512, freq)
@@ -60,7 +69,7 @@ class SampleRateTests(unittest2.TestCase):
     def test_discrete_samples_44100(self):
         sr = SR44100()
         ts = ArrayWithUnits(
-                np.zeros(sr.samples_per_second), [TimeDimension(*sr)])
+            np.zeros(sr.samples_per_second), [TimeDimension(*sr)])
         hl = HalfLapped()
         freq, duration = hl.discrete_samples(ts)
         self.assertEqual(1024, freq)
@@ -164,5 +173,3 @@ class SampleRateTests(unittest2.TestCase):
     def test_overlap_ratio_type(self):
         sr = SampleRate(frequency=Milliseconds(500), duration=Seconds(1))
         self.assertIsInstance(sr.overlap_ratio, float)
-
-
