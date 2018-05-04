@@ -136,21 +136,37 @@ class ShuffledSamples(Node):
 
 
 class InfiniteSampler(Node):
-    def __init__(self, nsamples=None, multiplexed=True, dtype=None, needs=None):
+    def __init__(
+            self,
+            nsamples=None,
+            multiplexed=False,
+            dtype=None,
+            needs=None,
+            feature_filter=lambda x: x):
+
         super(InfiniteSampler, self).__init__(needs=needs)
+        self.feature_filter = feature_filter
         self.multiplexed = multiplexed
         self.reservoir = MultiplexedReservoir(nsamples, dtype=dtype) \
             if multiplexed else Reservoir(nsamples, dtype=dtype)
 
     def _total_samples(self, cls, feature, _ids):
         pool = ThreadPool(cpu_count())
-        total_samples = sum(pool.imap_unordered(
-            lambda _id: len(feature(_id=_id, persistence=cls)), _ids))
+
+        feature_filter = self.feature_filter
+
+        def x(_id):
+            f = feature(_id=_id, persistence=cls)
+            filtered = feature_filter(f)
+            return len(filtered)
+
+        total_samples = sum(pool.imap_unordered(x, _ids))
         return total_samples
 
     def _update_reservoir(self, _id, cls, feature, total_samples):
         # fetch the features from a single document
         x = feature(_id=_id, persistence=cls)
+        x = self.feature_filter(x)
 
         # compute the contribution this sample makes to the dataset at
         # large
