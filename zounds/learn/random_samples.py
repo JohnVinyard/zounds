@@ -54,7 +54,8 @@ class Reservoir(object):
         if len(self.indices) == self.nsamples:
             return self.arr
 
-        return self.arr[sorted(self.indices), ...]
+        x = self.arr[sorted(self.indices), ...]
+        return x
 
     def get_batch(self, batch_size):
         if batch_size > self.nsamples:
@@ -142,9 +143,11 @@ class InfiniteSampler(Node):
             multiplexed=False,
             dtype=None,
             needs=None,
-            feature_filter=lambda x: x):
+            feature_filter=lambda x: x,
+            parallel=True):
 
         super(InfiniteSampler, self).__init__(needs=needs)
+        self.parallel = parallel
         self.feature_filter = feature_filter
         self.multiplexed = multiplexed
         self.reservoir = MultiplexedReservoir(nsamples, dtype=dtype) \
@@ -160,7 +163,10 @@ class InfiniteSampler(Node):
             filtered = feature_filter(f)
             return len(filtered)
 
-        total_samples = sum(pool.imap_unordered(x, _ids))
+        if self.parallel:
+            total_samples = sum(pool.imap_unordered(x, _ids))
+        else:
+            total_samples = sum(map(x, _ids))
         return total_samples
 
     def _update_reservoir(self, _id, cls, feature, total_samples):
@@ -197,11 +203,15 @@ class InfiniteSampler(Node):
         print 'Total samples', total_samples
 
         while True:
-            pool = ThreadPool(cpu_count())
-            list(pool.imap_unordered(
-                lambda _id: self._update_reservoir(
-                    _id, cls, feature, total_samples),
-                _ids))
+            if self.parallel:
+                pool = ThreadPool(cpu_count())
+                list(pool.imap_unordered(
+                    lambda _id: self._update_reservoir(
+                        _id, cls, feature, total_samples),
+                    _ids))
+            else:
+                for _id in _ids:
+                    self._update_reservoir(_id, cls, feature, total_samples)
 
             yield self.reservoir.get()
 
