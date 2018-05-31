@@ -80,7 +80,7 @@ class WindowingFunc(object):
         wdata = self._wdata(size)
         if wdata is None:
             return other
-        return wdata * other
+        return (wdata * other).astype(other.dtype)
 
     def __rmul__(self, other):
         return self.__mul__(other)

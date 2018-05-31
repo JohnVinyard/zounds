@@ -46,6 +46,12 @@ class OggVorbisWindowingFunctionTests(unittest2.TestCase):
         result = wf * samples
         self.assertEqual(samples.shape, result.shape)
 
+    def test_maintains_dtype(self):
+        samples = np.random.random_sample(10).astype(np.float32)
+        wf = OggVorbisWindowingFunc()
+        result = wf * samples
+        self.assertEqual(np.float32, result.dtype)
+
 
 class SlidingWindowTests(unittest2.TestCase):
     def _check(self, samplerate, expected_window_size, expected_step_size):
