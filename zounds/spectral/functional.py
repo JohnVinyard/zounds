@@ -14,6 +14,7 @@ from scipy.signal import resample, firwin2
 from matplotlib import cm
 from zounds.nputil import sliding_window
 from scipy.signal import hann
+from itertools import repeat
 
 
 def fft(x, axis=-1, padding_samples=0):
@@ -210,11 +211,16 @@ def fir_filter_bank(scale, taps, samplerate, window):
 
     nyq = samplerate.nyquist
 
-    for i, band in enumerate(scale):
+    if window.ndim == 1:
+        window = repeat(window, len(scale))
+
+    for i, band, win in zip(xrange(len(scale)), scale, window):
+        start_hz = max(0, band.start_hz)
+        stop_hz = min(nyq, band.stop_hz)
         freqs = np.linspace(
-            band.start_hz / nyq, band.stop_hz / nyq, len(window))
+            start_hz / nyq, stop_hz / nyq, len(win))
         freqs = [0] + list(freqs) + [1]
-        gains = [0] + list(window) + [0]
+        gains = [0] + list(win) + [0]
         basis[i] = firwin2(taps, freqs, gains)
 
     return basis
