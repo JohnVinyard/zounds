@@ -91,16 +91,18 @@ def apply_network(network, x, chunksize=None):
     """
     network_is_cuda = next(network.parameters()).is_cuda
 
-    x = Variable(torch.from_numpy(x), volatile=True)
-    if network_is_cuda:
-        x = x.cuda()
+    x = torch.from_numpy(x)
 
-    if chunksize is None:
-        return from_var(network(x))
+    with torch.no_grad():
+        if network_is_cuda:
+            x = x.cuda()
 
-    return np.concatenate(
-        [from_var(network(x[i: i + chunksize]))
-         for i in xrange(0, len(x), chunksize)])
+        if chunksize is None:
+            return from_var(network(x))
+
+        return np.concatenate(
+            [from_var(network(x[i: i + chunksize]))
+             for i in xrange(0, len(x), chunksize)])
 
 
 def sample_norm(x):
