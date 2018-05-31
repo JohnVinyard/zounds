@@ -36,7 +36,8 @@ class FrequencyWeighting(object):
         raise ValueError('arr must have a frequency dimension')
 
     def __mul__(self, other):
-        return self._get_factors(other) * other
+        factors = self._get_factors(other)
+        return factors * other
 
     def __rmul__(self, other):
         return self.__mul__(other)

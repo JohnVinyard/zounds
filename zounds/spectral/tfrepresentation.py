@@ -41,7 +41,9 @@ class FrequencyDimension(Dimension):
         return FrequencyDimension(self.scale)
 
     def weights(self, weights, arr, i):
-        return weights
+        shape = [1] * arr.ndim
+        shape[i] = weights.size
+        return weights.reshape(shape)
 
     def modified_dimension(self, size, windowsize, stepsize=None):
         raise NotImplementedError()

@@ -1,11 +1,12 @@
 import unittest2
 import numpy as np
 from weighting import AWeighting
-from frequencyscale import LinearScale, FrequencyBand, GeometricScale
+from frequencyscale import LinearScale, FrequencyBand, GeometricScale, MelScale
 from tfrepresentation import FrequencyDimension
 from frequencyadaptive import FrequencyAdaptive
-from zounds.timeseries import Seconds, TimeDimension, Milliseconds
+from zounds.timeseries import Seconds, TimeDimension, Milliseconds, SR11025
 from zounds.core import ArrayWithUnits, IdentityDimension
+from functional import fir_filter_bank
 
 
 class WeightingTests(unittest2.TestCase):
@@ -94,3 +95,12 @@ class WeightingTests(unittest2.TestCase):
         result = fa2 * weighting
         inverted = result / AWeighting()
         np.testing.assert_allclose(fa, inverted)
+
+    def test_can_apply_weighting_to_filter_bank(self):
+        sr = SR11025()
+        band = FrequencyBand(20, sr.nyquist)
+        scale = MelScale(band, 100)
+        bank = fir_filter_bank(scale, 256, sr, np.hanning(25))
+        weighted = bank * AWeighting()
+        self.assertSequenceEqual(bank.dimensions, weighted.dimensions)
+
