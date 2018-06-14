@@ -1,6 +1,7 @@
 import base64
 import re
 import numpy as np
+import inspect
 
 TIMEDELTA_DTYPE_RE = re.compile(r'\[(?P<dtype>[^\]]+)\]')
 
@@ -28,5 +29,5 @@ def extract_init_args(instance):
     cls = instance.__class__
     args = filter(
         lambda x: x != 'self',
-        cls.__init__.im_func.func_code.co_varnames)
+        inspect.getargspec(cls.__init__).args)
     return [instance.__dict__[key] for key in args]
