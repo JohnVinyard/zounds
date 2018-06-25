@@ -230,9 +230,9 @@ class WassersteinGanTrainer(Trainer):
                 g_loss.backward()
                 self.generator_optim.step()
 
-                gl = g_loss.data[0]
-                dl = d_loss.data[0]
-                rl = real_mean.data[0]
+                gl = g_loss.data.item()
+                dl = d_loss.data.item()
+                rl = real_mean.data.item()
 
                 self.on_batch_complete(
                     epoch=epoch,
