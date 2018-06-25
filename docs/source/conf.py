@@ -326,11 +326,6 @@ MOCK_MODULES = [
     'matplotlib',
 
     'zounds.nputil.countbits',
-
-    'torch',
-    'torch.nn',
-    'torch.optim',
-    'torch.autograd'
 ]
 
 
