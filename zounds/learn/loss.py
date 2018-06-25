@@ -1,12 +1,13 @@
-from torch import nn
-from zounds.spectral import fir_filter_bank
-from scipy.signal import gaussian
-from torch.autograd import Variable
-import torch
-from torch.nn import functional as F
-from dct_transform import DctTransform
-from zounds.timeseries import Picoseconds, SampleRate
 import numpy as np
+import torch
+from scipy.signal import gaussian
+from torch import nn
+from torch.autograd import Variable
+from torch.nn import functional as F
+
+from dct_transform import DctTransform
+from zounds.spectral import fir_filter_bank
+from zounds.timeseries import Picoseconds, SampleRate
 
 
 class PerceptualLoss(nn.MSELoss):
@@ -19,10 +20,14 @@ class PerceptualLoss(nn.MSELoss):
             lap=2,
             log_factor=100,
             frequency_weighting=None,
-            phase_locking_cutoff_hz=None):
+            phase_locking_cutoff_hz=None,
+            phase_locking_taps=64,
+            cosine_similarity=True):
 
         super(PerceptualLoss, self).__init__()
 
+        self.phase_locking_taps = phase_locking_taps
+        self.cosine_similarity = cosine_similarity
         self.log_factor = log_factor
         self.scale = scale
         basis_size = basis_size
@@ -40,8 +45,11 @@ class PerceptualLoss(nn.MSELoss):
         if frequency_weighting:
             fw = frequency_weighting._wdata(self.scale)
             self.frequency_weights = Variable(torch.from_numpy(fw).float())
+            self.frequency_weights = self.frequency_weights.view(
+                1, len(self.scale), 1)
 
         self.pool_amount = None
+
         if phase_locking_cutoff_hz is not None:
             sr = SampleRate(
                 frequency=samplerate.frequency / lap,
@@ -57,19 +65,20 @@ class PerceptualLoss(nn.MSELoss):
 
     def _transform(self, x):
         x = x.view(x.shape[0], 1, -1)
+
+        # frequency decomposition
         features = F.conv1d(
             x, self.weights, stride=self.lap, padding=self.basis_size)
-
-        # perceptual frequency weighting
-        if self.frequency_weights is not None:
-            features = \
-                features * self.frequency_weights.view(1, len(self.scale), 1)
 
         # half-wave rectification
         features = F.relu(features)
 
         # log magnitude
         features = torch.log(1 + features * self.log_factor)
+
+        # perceptual frequency weighting
+        if self.frequency_weights is not None:
+            features = features * self.frequency_weights
 
         # loss of phase locking
         if self.pool_amount is not None:
@@ -86,7 +95,12 @@ class PerceptualLoss(nn.MSELoss):
         input_features = self._transform(input).view(input.shape[0], -1)
         target_features = self._transform(target).view(input.shape[0], -1)
 
-        return -(F.cosine_similarity(input_features, target_features).mean())
+        if self.cosine_similarity:
+            spectral_error = \
+                -(F.cosine_similarity(input_features, target_features).mean())
+            return spectral_error
+        else:
+            return ((input_features - target_features) ** 2).mean()
 
 
 class BandLoss(nn.MSELoss):
@@ -103,12 +117,15 @@ class BandLoss(nn.MSELoss):
     def _transform(self, x):
         bands = self.dct_transform.frequency_decomposition(
             x, self.factors, axis=-1)
-        maxes = [torch.max(b, dim=-1, keepdim=True)[0] for b in bands]
-        bands = [b / n for (b, n) in zip(bands, maxes)]
+
+        norms = [torch.norm(b, dim=-1, keepdim=True) for b in bands]
+        bands = [b / (n + 1e-8) for (b, n) in zip(bands, norms)]
         fine = torch.cat(bands, dim=-1)
-        coarse = torch.cat(maxes, dim=-1)
+
+        coarse = torch.cat(norms, dim=-1)
         coarse_norms = torch.norm(coarse, dim=-1, keepdim=True)
-        coarse = coarse / coarse_norms
+        coarse = coarse / (coarse_norms + 1e-8)
+
         return fine, coarse
 
     def forward(self, input, target):
@@ -158,6 +175,7 @@ class CategoricalLoss(object):
 
     def _discretized(self, x):
         x = x.view(-1)
+        x = x / torch.abs(x).max()
         x = self._mu_law(x)
         x = self._shift_and_scale(x)
         return x
@@ -213,8 +231,8 @@ class LearnedWassersteinLoss(BaseLoss):
     def _cuda(self, device=None):
         self.critic.cuda(device=device)
 
-    def forward(self, x):
-        w = self.critic(x)
+    def forward(self, x, **critic_kwargs):
+        w = self.critic(x, **critic_kwargs)
         return -torch.mean(w)
 
 
@@ -226,9 +244,9 @@ class WassersteinCriticLoss(BaseLoss):
     def _cuda(self, device=None):
         self.critic.cuda(device=device)
 
-    def forward(self, real, fake):
-        d_real = self.critic(real)
-        d_fake = self.critic(fake)
+    def forward(self, real, fake, **critic_kwargs):
+        d_real = self.critic(real, **critic_kwargs)
+        d_fake = self.critic(fake, **critic_kwargs)
         real_mean = torch.mean(d_real)
         fake_mean = torch.mean(d_fake)
         return fake_mean - real_mean
@@ -243,7 +261,7 @@ class WassersteinGradientPenaltyLoss(BaseLoss):
     def _cuda(self, device=None):
         self.critic.cuda(device=device)
 
-    def forward(self, real_samples, fake_samples):
+    def forward(self, real_samples, fake_samples, **critic_kwargs):
         from torch.autograd import grad
 
         real_samples = real_samples.view(fake_samples.shape)
@@ -263,7 +281,7 @@ class WassersteinGradientPenaltyLoss(BaseLoss):
             interpolates = interpolates.cuda()
         interpolates = Variable(interpolates, requires_grad=True)
 
-        d_output = self.critic(interpolates)
+        d_output = self.critic(interpolates, **critic_kwargs)
 
         output = torch.ones(d_output.size())
         if self.use_cuda:
