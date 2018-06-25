@@ -87,7 +87,7 @@ setup(
         'ujson',
         'numpy==1.12.1',
         'scipy==0.19',
-        'torch==0.4'
+        'torch==0.4.0'
     ],
     package_data={
         'nputil': ['*.pyx', '*.pyxbld'],
