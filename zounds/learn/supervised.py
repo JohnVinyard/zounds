@@ -1,8 +1,6 @@
 from trainer import Trainer
 import numpy as np
 import warnings
-import torch
-from torch.autograd import Variable
 
 
 class SupervisedTrainer(Trainer):
@@ -74,7 +72,7 @@ class SupervisedTrainer(Trainer):
                 self.optimizer.step()
 
             self.samples = zip(inp_v, output)
-            return inp_v, output, error.data[0]
+            return inp_v, output, error.data.item()
 
         start = self._current_epoch
         stop = self._current_epoch + self.checkpoint_epochs
