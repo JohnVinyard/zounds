@@ -14,7 +14,8 @@ from learn import KMeans, Learned
 from preprocess import \
     MeanStdNormalization, UnitNorm, Log, PreprocessingPipeline, Multiply, \
     Slicer, InstanceScaling, Reshape, Weighted, MuLawCompressed, SimHash, \
-    AbsoluteValue, Binarize, Sharpen
+    AbsoluteValue, Binarize, Sharpen, Pipeline, PreprocessResult, Preprocessor, \
+    PipelineResult
 
 from sklearn_preprocessor import SklearnModel, WithComponents
 

@@ -27,13 +27,12 @@ Sampling
 Machine Learning Models
 -----------------------
 .. autoclass:: KMeans
-.. autoclass:: SkLearnModel
+.. autoclass:: SklearnModel
 .. autoclass:: PyTorchNetwork
 .. autoclass:: PyTorchGan
 .. autoclass:: PyTorchAutoEncoder
 .. autoclass:: SupervisedTrainer
 .. autoclass:: TripletEmbeddingTrainer
-.. autoclass:: GanTrainer
 .. autoclass:: WassersteinGanTrainer
 
 Hashing
