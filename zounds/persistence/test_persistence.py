@@ -33,7 +33,6 @@ class ArrayWithUnitsFeatureTests(unittest2.TestCase):
             duration=Seconds(1),
             frequency=Milliseconds(500))
         scale = GeometricScale(20, 5000, 0.05, 120)
-        print 'SCALE SLICE BEFORE DECODE', scale.get_slice(scale[0])
         arrs = [np.zeros((10, x)) for x in xrange(1, 121)]
         fa = FrequencyAdaptive(arrs, td, scale)
         decoded = self._roundtrip(fa, decoder=FrequencyAdaptiveDecoder())
