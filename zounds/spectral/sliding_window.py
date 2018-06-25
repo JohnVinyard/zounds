@@ -1,8 +1,6 @@
 import numpy as np
 from featureflow import Node, NotEnoughData
-
 from zounds.core import ArrayWithUnits
-from zounds.nputil import sliding_window
 from zounds.timeseries import TimeSlice
 
 
@@ -80,7 +78,7 @@ class WindowingFunc(object):
         wdata = self._wdata(size)
         if wdata is None:
             return other
-        return (wdata * other).astype(other.dtype)
+        return wdata.astype(other.dtype) * other
 
     def __rmul__(self, other):
         return self.__mul__(other)
@@ -188,7 +186,6 @@ class SlidingWindow(Node):
             self._cache = self._cache.concatenate(data)
 
     def _dequeue(self):
-
         duration = TimeSlice(duration=self._scheme.duration)
         frequency = TimeSlice(duration=self._scheme.frequency)
         leftover, arr = self._cache.sliding_window_with_leftovers(
