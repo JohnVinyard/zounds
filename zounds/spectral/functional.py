@@ -12,9 +12,9 @@ from zounds.loudness import log_modulus, unit_scale
 import numpy as np
 from scipy.signal import resample, firwin2
 from matplotlib import cm
-from zounds.nputil import sliding_window
 from scipy.signal import hann
 from itertools import repeat
+from zounds.nputil import sliding_window
 
 
 def fft(x, axis=-1, padding_samples=0):
@@ -142,10 +142,36 @@ def time_stretch(x, factor):
 
 def pitch_shift(x, semitones):
     original_shape = x.shape[1] if x.ndim == 2 else x.shape[0]
+
+    # first, perform a time stretch so that the audio will have the desired
+    # pitch
     factor = 2.0 ** (-float(semitones) / 12.0)
     stretched = time_stretch(x, factor)
-    rs = resample(stretched, original_shape, axis=1)
-    return ArrayWithUnits(rs, stretched.dimensions)
+
+    # hang on to original dimensions
+    dimensions = stretched.dimensions
+
+    # window the audio using a power-of-2 frame size for more efficient FFT
+    # computations
+    batch_size = stretched.shape[0]
+    window_size = 1024
+    step = (1, window_size)
+    new_window_shape = int(window_size * factor)
+    padding = window_size - int(stretched.shape[-1] % window_size)
+    stretched = np.pad(stretched, ((0, 0), (0, padding)), mode='constant')
+    windowed = sliding_window(stretched, step, step, flatten=False).squeeze()
+
+    # resample the audio so that it has the correct duration
+    rs = resample(windowed, new_window_shape, axis=-1)
+
+    # flatten out the windowed, resampled audio
+    rs = rs.reshape(batch_size, -1)
+
+    # slice the audio to remove residual zeros resulting from our power-of-2
+    # zero padding above
+    rs = rs[:, :original_shape]
+
+    return ArrayWithUnits(rs, dimensions)
 
 
 def phase_shift(coeffs, samplerate, time_shift, axis=-1, frequency_band=None):

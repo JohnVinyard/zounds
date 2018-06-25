@@ -28,10 +28,27 @@ if __name__ == '__main__':
     slow = zounds.AudioSamples(time_stretch(original, 0.75).squeeze(), sr)
     fast = zounds.AudioSamples(time_stretch(original, 1.25).squeeze(), sr)
 
-    higher = zounds.AudioSamples(
-        pitch_shift(original[:zounds.Seconds(10)], 1.0).squeeze(), sr)
-    lower = zounds.AudioSamples(
-        pitch_shift(original[:zounds.Seconds(10)], -1.0).squeeze(), sr)
+    higher = zounds.AudioSamples(pitch_shift(original, 1.0).squeeze(), sr)
+    lower = zounds.AudioSamples(pitch_shift(original, -1.0).squeeze(), sr)
+
+    # apply a sliding window to demonstrate time stretch and pitch shift in
+    # batch mode
+    windowing_sr = zounds.SampleRate(
+        frequency=zounds.Seconds(5),
+        duration=zounds.Seconds(10))
+
+    windowed = snd.resampled.sliding_window(windowing_sr)
+    windowed = zounds.ArrayWithUnits(
+        windowed, [zounds.IdentityDimension(), windowed.dimensions[1]])
+
+    def samples(x):
+        return zounds.AudioSamples(x, sr)
+
+    batch_slow = map(samples, time_stretch(windowed, 0.75))
+    batch_fast = map(samples, time_stretch(windowed, 1.25))
+
+    batch_higher = map(samples, pitch_shift(windowed, 1.0))
+    batch_lower = map(samples, pitch_shift(windowed, -1.0))
 
     app = zounds.ZoundsApp(
         model=Sound,
