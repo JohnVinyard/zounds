@@ -306,6 +306,7 @@ import mock
 
 MOCK_MODULES = [
     'soundfile',
+    'featureflow',
 
     'numpy',
     'numpy.lib',
