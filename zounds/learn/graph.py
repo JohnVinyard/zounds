@@ -29,7 +29,9 @@ def infinite_streaming_learning_pipeline(cls):
         dataset = ff.Feature(
             InfiniteSampler,
             nsamples=ff.Var('nsamples'),
-            dtype=ff.Var('dtype'))
+            dtype=ff.Var('dtype'),
+            feature_filter=ff.Var('feature_filter'),
+            parallel=ff.Var('parallel'))
 
         pipeline = ff.ClobberPickleFeature(
             PreprocessingPipeline,
