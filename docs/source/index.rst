@@ -22,7 +22,6 @@ API documentation
     core
     synthesize
     datasets
-    learn
 
 Indices and tables
 ------------------
