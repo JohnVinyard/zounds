@@ -38,6 +38,7 @@ def fft(x, axis=-1, padding_samples=0):
         padded = x
 
     transformed = np.fft.rfft(padded, axis=axis, norm='ortho')
+
     sr = audio_sample_rate(int(Seconds(1) / x.dimensions[axis].frequency))
     scale = LinearScale.from_sample_rate(sr, transformed.shape[-1])
     new_dimensions = list(x.dimensions)
@@ -63,13 +64,18 @@ def stft(x, window_sample_rate=HalfLapped(), window=HanningWindowingFunc()):
             '(IdentityDimension, TimeDimension)')
 
     window = window or IdentityWindowingFunc()
-    windowed = arr * window
+    windowed = arr * window._wdata(arr.shape[-1])
     return fft(windowed)
 
 
-def time_stretch(x, factor):
-    sr = HalfLapped()
-    sr = SampleRate(frequency=sr.frequency / 2, duration=sr.duration)
+def time_stretch(x, factor, frame_sample_rate=None):
+
+    if frame_sample_rate is None:
+        sr = HalfLapped()
+        sr = SampleRate(frequency=sr.frequency / 2, duration=sr.duration)
+    else:
+        sr = frame_sample_rate
+
     hop_length, window_length = sr.discrete_samples(x)
 
     win = WindowingFunc(windowing_func=hann)
@@ -96,13 +102,13 @@ def time_stretch(x, factor):
     # pad in the time dimension, so no edge/end frames are left out
     coeffs = np.pad(D, [(0, 0), (0, 2), (0, 0)], mode='constant')
 
+    coeffs_mags = np.abs(coeffs)
+    coeffs_phases = np.angle(coeffs)
+
     sliding_indices = np.vstack([time_steps, time_steps + 1]).T.astype(np.int32)
 
-    # now, we've got a (batch_size x n_frame_pairs x 2 x n_coeffs) array
-    windowed = coeffs[:, sliding_indices, :]
-
-    windowed_mags = np.abs(windowed)
-    windowed_phases = np.angle(windowed)
+    windowed_mags = coeffs_mags[:, sliding_indices, :]
+    windowed_phases = coeffs_phases[:, sliding_indices, :]
 
     first_mags = windowed_mags[:, :, 0, :]
     second_mags = windowed_mags[:, :, 1, :]
@@ -111,11 +117,12 @@ def time_stretch(x, factor):
     second_phases = windowed_phases[:, :, 1, :]
 
     # compute all the phase stuff
-    dphase = second_phases - first_phases - exp_phase_advance
+    dphase = (second_phases - first_phases - exp_phase_advance)
     dphase -= 2.0 * np.pi * np.round(dphase / (2.0 * np.pi))
     dphase += exp_phase_advance
+
     all_phases = np.concatenate([phase_accum, dphase], axis=1)
-    dphase = np.cumsum(all_phases, axis=1)
+    dphase = np.cumsum(all_phases, axis=1, out=all_phases)
     dphase = dphase[:, :-1, :]
 
     # linear interpolation of FFT coefficient magnitudes
@@ -127,26 +134,29 @@ def time_stretch(x, factor):
 
     # synthesize the new frames
     new_frames = np.fft.irfft(new_coeffs, axis=-1, norm='ortho')
+    # new_frames = new_frames * win._wdata(new_frames.shape[-1])
+    new_frames = np.multiply(
+        new_frames, win._wdata(new_frames.shape[-1]), out=new_frames)
 
     # overlap add the new audio samples
     new_n_samples = int(x.shape[-1] / factor)
-    output = np.zeros((n_batches, new_n_samples))
+    output = np.zeros((n_batches, new_n_samples), dtype=x.dtype)
     for i in xrange(new_frames.shape[1]):
         start = i * hop_length
         stop = start + new_frames.shape[-1]
         l = output[:, start: stop].shape[1]
-        output[:, start: stop] += new_frames[:, i, :l] * win
+        output[:, start: stop] += new_frames[:, i, :l]
 
     return ArrayWithUnits(output, [IdentityDimension(), x.dimensions[-1]])
 
 
-def pitch_shift(x, semitones):
+def pitch_shift(x, semitones, frame_sample_rate=None):
     original_shape = x.shape[1] if x.ndim == 2 else x.shape[0]
 
     # first, perform a time stretch so that the audio will have the desired
     # pitch
     factor = 2.0 ** (-float(semitones) / 12.0)
-    stretched = time_stretch(x, factor)
+    stretched = time_stretch(x, factor, frame_sample_rate=frame_sample_rate)
 
     # hang on to original dimensions
     dimensions = stretched.dimensions
