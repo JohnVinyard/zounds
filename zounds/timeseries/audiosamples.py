@@ -212,3 +212,7 @@ class AudioSamples(ArrayWithUnits):
             f.write(self)
         flo.seek(0)
         return flo
+
+    def save(self, filename, fmt='WAV', subtype='PCM_16'):
+        with open(filename, 'wb') as f:
+            self.encode(f, fmt=fmt, subtype=subtype)
