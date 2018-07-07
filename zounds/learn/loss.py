@@ -1,4 +1,3 @@
-import numpy as np
 import torch
 from scipy.signal import gaussian
 from torch import nn
@@ -7,10 +6,36 @@ from torch.nn import functional as F
 
 from dct_transform import DctTransform
 from zounds.spectral import fir_filter_bank
-from zounds.timeseries import Picoseconds, SampleRate
+from zounds.timeseries import SampleRate
 
 
-class PerceptualLoss(nn.MSELoss):
+class PerceptualLoss(object):
+    """
+    `PerceptualLoss` computes loss/distance in a feature space that roughly
+    approximates early stages of the human audio processing pipeline, instead
+    of computing raw sample loss.  It decomposes a 1D (audio) signal into
+    frequency bands using an FIR filter bank whose frequencies are centered
+    according to a user-defined scale, performs half-wave rectification, puts
+    amplitudes on a log scale, and finally optionally applies a re-weighting
+    of frequency bands.
+
+    Args:
+        scale (FrequencyScale): a scale defining frequencies at which the FIR
+            filters will be centered
+        samplerate (SampleRate): samplerate needed to construct the FIR filter
+            bank
+        frequency_window (ndarray): window determining how narrow or wide filter
+            responses should be
+        basis_size (int): The kernel size, or number of "taps" for each filter
+        lap (int): The filter stride
+        log_factor (int): How much compression should be applied in the log
+            amplitude stage
+        frequency_weighting (FrequencyWeighting): an optional frequency
+            weighting to be applied after log amplitude scaling
+        cosine_similarity (bool): If `True`, compute the cosine similarity
+            between spectrograms, otherwise, compute the mean squared error
+    """
+
     def __init__(
             self,
             scale,
@@ -20,13 +45,10 @@ class PerceptualLoss(nn.MSELoss):
             lap=2,
             log_factor=100,
             frequency_weighting=None,
-            phase_locking_cutoff_hz=None,
-            phase_locking_taps=64,
             cosine_similarity=True):
 
         super(PerceptualLoss, self).__init__()
 
-        self.phase_locking_taps = phase_locking_taps
         self.cosine_similarity = cosine_similarity
         self.log_factor = log_factor
         self.scale = scale
@@ -37,25 +59,15 @@ class PerceptualLoss(nn.MSELoss):
         basis = fir_filter_bank(
             scale, basis_size, samplerate, frequency_window)
 
-        weights = Variable(torch.from_numpy(basis).float())
+        weights = torch.from_numpy(basis).float()
         # out channels x in channels x kernel width
         self.weights = weights.view(len(scale), 1, basis_size).contiguous()
 
         self.frequency_weights = None
         if frequency_weighting:
             fw = frequency_weighting._wdata(self.scale)
-            self.frequency_weights = Variable(torch.from_numpy(fw).float())
-            self.frequency_weights = self.frequency_weights.view(
-                1, len(self.scale), 1)
-
-        self.pool_amount = None
-
-        if phase_locking_cutoff_hz is not None:
-            sr = SampleRate(
-                frequency=samplerate.frequency / lap,
-                duration=samplerate.duration / lap)
-            one_cycle = Picoseconds(int(1e12)) / phase_locking_cutoff_hz
-            self.pool_amount = int(np.ceil(one_cycle / sr.frequency))
+            self.frequency_weights = torch.from_numpy(fw)\
+                .float().view(1, len(self.scale), 1)
 
     def cuda(self, device=None):
         self.weights = self.weights.cuda()
@@ -79,12 +91,6 @@ class PerceptualLoss(nn.MSELoss):
         # perceptual frequency weighting
         if self.frequency_weights is not None:
             features = features * self.frequency_weights
-
-        # loss of phase locking
-        if self.pool_amount is not None:
-            features = features.view(x.shape[0], 1, len(self.scale), -1)
-            features = F.max_pool2d(
-                features, (1, self.pool_amount), stride=(1, 1))
 
         return features
 

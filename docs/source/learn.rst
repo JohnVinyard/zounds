@@ -12,6 +12,11 @@ The Basics
 .. autoclass:: PreprocessResult
 .. autoclass:: PipelineResult
 
+Custom Losses
+-------------
+.. autoclass:: PerceptualLoss
+    :members:
+
 Data Preparation
 ----------------
 .. autoclass:: UnitNorm
@@ -42,3 +47,6 @@ Hashing
 Learned Models in Audio Processing Graphs
 -----------------------------------------
 .. autoclass:: Learned
+    :members:
+
+
