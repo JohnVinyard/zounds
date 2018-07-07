@@ -84,6 +84,7 @@ setup(
         'matplotlib',
         'argparse',
         'intervaltree',
+        'ujson',
         'numpy==1.12.1',
         'scipy==0.19',
         'torch==0.4.0'
