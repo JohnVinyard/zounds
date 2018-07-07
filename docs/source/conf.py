@@ -334,7 +334,10 @@ MOCK_MODULES = [
     'torch.nn',
     'torch.nn.functional',
     'torch.optim',
-    'torch.autograd'
+    'torch.autograd',
+
+    'tornado',
+    'tornado.ioloop'
 ]
 
 
