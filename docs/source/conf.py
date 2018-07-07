@@ -337,7 +337,8 @@ MOCK_MODULES = [
     'torch.autograd',
 
     'tornado',
-    'tornado.ioloop'
+    'tornado.ioloop',
+    'tornado.web'
 ]
 
 
