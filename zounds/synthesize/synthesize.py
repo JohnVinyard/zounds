@@ -31,11 +31,13 @@ class ShortTimeTransformSynthesizer(object):
 
         # create an empty array of audio samples
         arr = np.zeros(int(time_dim.end / sample_freq))
-        for i, f in enumerate(frames):
+        windowed_frames = self._windowing_function() * frames
+
+        for i, f in enumerate(windowed_frames):
             start = i * hopsize
             stop = start + windowsize
             l = len(arr[start:stop])
-            arr[start:stop] += (self._windowing_function() * f[:l])
+            arr[start:stop] += f[:l]
 
         sr = nearest_audio_sample_rate(Seconds(1) / sample_freq)
         return AudioSamples(arr, sr)
