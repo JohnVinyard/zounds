@@ -15,7 +15,6 @@ The Basics
 Custom Losses
 -------------
 .. autoclass:: PerceptualLoss
-    :members:
 
 Data Preparation
 ----------------
