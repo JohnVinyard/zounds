@@ -1,4 +1,4 @@
-__version__ = '0.47.0'
+__version__ = '0.48.0'
 
 from timeseries import \
     Hours, Minutes, Seconds, Milliseconds, Microseconds, Picoseconds, \
