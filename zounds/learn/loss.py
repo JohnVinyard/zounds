@@ -9,7 +9,7 @@ from zounds.spectral import fir_filter_bank
 from zounds.timeseries import SampleRate
 
 
-class PerceptualLoss(object):
+class PerceptualLoss(nn.Module):
     """
     `PerceptualLoss` computes loss/distance in a feature space that roughly
     approximates early stages of the human audio processing pipeline, instead
@@ -70,10 +70,16 @@ class PerceptualLoss(object):
                 .float().view(1, len(self.scale), 1)
 
     def cuda(self, device=None):
-        self.weights = self.weights.cuda()
+        self.weights = self.weights.cuda(device=device)
         if self.frequency_weights is not None:
-            self.frequency_weights = self.frequency_weights.cuda()
+            self.frequency_weights = self.frequency_weights.cuda(device=device)
         return super(PerceptualLoss, self).cuda(device=device)
+
+    def to(self, device=None):
+        self.weights = self.weights.to(device)
+        if self.frequency_weights is not None:
+            self.frequency_weights = self.frequency_weights.to(device=device)
+        return super(PerceptualLoss, self).to(device=device)
 
     def _transform(self, x):
         x = x.view(x.shape[0], 1, -1)
