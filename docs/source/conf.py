@@ -339,7 +339,7 @@ MOCK_MODULES = [
     'tornado',
     'tornado.ioloop',
     'tornado.web',
-    'tornado.websocket'
+    'tornado.websocket',
 
     'ujson',
     'lmdb'
