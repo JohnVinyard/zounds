@@ -96,14 +96,18 @@ def time_stretch(x, factor, frame_sample_rate=None):
 
     exp_phase_advance = np.linspace(0, np.pi * hop_length, n_fft_coeffs)
 
-    # we need a phase accumulator for every item in the batch
-    phase_accum = np.angle(D[:, :1, :])
-
     # pad in the time dimension, so no edge/end frames are left out
-    coeffs = np.pad(D, [(0, 0), (0, 2), (0, 0)], mode='constant')
+    # coeffs = np.pad(D, [(0, 0), (0, 2), (0, 0)], mode='constant')
+    shape = list(D.shape)
+    shape[1] += 2
+    coeffs = np.zeros(shape, dtype=D.dtype)
+    coeffs[:, :-2, :] = D
 
     coeffs_mags = np.abs(coeffs)
     coeffs_phases = np.angle(coeffs)
+
+    # we need a phase accumulator for every item in the batch
+    phase_accum = coeffs_phases[:, :1, :]
 
     sliding_indices = np.vstack([time_steps, time_steps + 1]).T.astype(np.int32)
 
@@ -117,8 +121,9 @@ def time_stretch(x, factor, frame_sample_rate=None):
     second_phases = windowed_phases[:, :, 1, :]
 
     # compute all the phase stuff
+    two_pi = 2.0 * np.pi
     dphase = (second_phases - first_phases - exp_phase_advance)
-    dphase -= 2.0 * np.pi * np.round(dphase / (2.0 * np.pi))
+    dphase -= two_pi * np.round(dphase / two_pi)
     dphase += exp_phase_advance
 
     all_phases = np.concatenate([phase_accum, dphase], axis=1)
@@ -148,6 +153,8 @@ def time_stretch(x, factor, frame_sample_rate=None):
         output[:, start: stop] += new_frames[:, i, :l]
 
     return ArrayWithUnits(output, [IdentityDimension(), x.dimensions[-1]])
+
+
 
 
 def pitch_shift(x, semitones, frame_sample_rate=None):
