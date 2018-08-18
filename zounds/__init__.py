@@ -41,7 +41,8 @@ from learn import \
     PyTorchNetwork, PyTorchGan, PyTorchAutoEncoder,WassersteinGanTrainer, \
     SupervisedTrainer, TripletEmbeddingTrainer, Weighted, MuLawCompressed, \
     SimHash, AbsoluteValue, Binarize, Sharpen, learning_pipeline, \
-    object_store_pipeline_settings, infinite_streaming_learning_pipeline
+    object_store_pipeline_settings, infinite_streaming_learning_pipeline, \
+    SincLayer
 
 from ui import \
     ZoundsApp, ZoundsSearch, TrainingMonitorApp, SupervisedTrainingMonitorApp, \

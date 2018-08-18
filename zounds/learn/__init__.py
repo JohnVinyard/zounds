@@ -33,6 +33,7 @@ from graph import learning_pipeline, infinite_streaming_learning_pipeline
 
 from functional import hyperplanes, simhash, example_wise_unit_norm
 
+from sinclayer import SincLayer
 
 from util import \
     Conv1d, ConvTranspose1d, Conv2d, ConvTranspose2d, to_var, from_var, \

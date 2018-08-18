@@ -16,6 +16,10 @@ Custom Losses
 -------------
 .. autoclass:: PerceptualLoss
 
+Custom Layers
+-------------
+.. autoclass:: SincLayer
+
 Data Preparation
 ----------------
 .. autoclass:: UnitNorm
