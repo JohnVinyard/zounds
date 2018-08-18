@@ -4,6 +4,7 @@ import numpy as np
 from torch import nn
 from torch.optim import Adam
 import torch
+from util import trainable_parameters
 
 
 class TripletEmbeddingTrainer(Trainer):
@@ -87,7 +88,7 @@ class TripletEmbeddingTrainer(Trainer):
 
         self.network.train()
 
-        optimizer = Adam(self.network.parameters(), lr=1e-5)
+        optimizer = Adam(trainable_parameters(self.network), lr=1e-5)
 
         for epoch, batch in self._driver(data):
             self.network.zero_grad()
