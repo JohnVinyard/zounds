@@ -6,3 +6,4 @@ Datasets
 .. autoclass:: FreeSoundSearch
 .. autoclass:: InternetArchive
 .. autoclass:: PhatDrumLoops
+.. autoclass:: CompositeDataset

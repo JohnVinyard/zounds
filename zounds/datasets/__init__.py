@@ -14,3 +14,4 @@ from cache import DataSetCache
 from ingest import ingest
 from predownload import PreDownload
 from nsynth import NSynth
+from composite import CompositeDataset

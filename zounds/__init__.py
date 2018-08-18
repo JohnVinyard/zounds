@@ -70,4 +70,4 @@ from persistence import \
 
 from datasets import \
     PhatDrumLoops, InternetArchive, FreeSoundSearch, DataSetCache, Directory, \
-    ingest, MusicNet, NSynth
+    ingest, MusicNet, NSynth, CompositeDataset
