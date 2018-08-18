@@ -48,6 +48,10 @@ def object_store_pipeline_settings(container, region, username, api_key):
     return decorator
 
 
+def trainable_parameters(model):
+    return filter(lambda x: x.requires_grad, model.parameters())
+
+
 def model_hash(model):
     h = hashlib.md5()
     h.update(str(model))
