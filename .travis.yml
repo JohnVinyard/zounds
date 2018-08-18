@@ -22,7 +22,7 @@ install:
   # Useful for debugging any issues with conda
   - conda info -a
   - conda create -q -n test-environment -c pytorch -c hcc -c conda-forge python=$TRAVIS_PYTHON_VERSION numpy=1.12 scipy=0.19 cython pytorch=0.4 torchvision libsndfile=1.0.28 libsamplerate=0.1.8 libflac=1.3.1 libogg=1.3.2
-  - ldconfig /opt/conda/lib
+  - sudo ldconfig /opt/conda/lib
   - source activate test-environment
   - python setup.py install
   - pip install coveralls
