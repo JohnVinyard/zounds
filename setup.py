@@ -83,7 +83,7 @@ setup(
         'requests',
         'tornado==4.5.3',
         'pysoundfile',
-        'matplotlib',
+        'matplotlib==1.5.0',
         'argparse',
         'intervaltree',
         'ujson',
