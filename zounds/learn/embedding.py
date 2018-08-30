@@ -4,7 +4,7 @@ import numpy as np
 from torch import nn
 from torch.optim import Adam
 import torch
-from util import trainable_parameters
+from util import trainable_parameters, batchwise_unit_norm
 
 
 class TripletEmbeddingTrainer(Trainer):
@@ -75,7 +75,7 @@ class TripletEmbeddingTrainer(Trainer):
         by section 4.2 of https://arxiv.org/pdf/1711.02209.pdf
         """
         x = self.network(x)
-        return x / torch.norm(x, dim=1).view(-1, 1)
+        return batchwise_unit_norm(x)
 
     def _select_batch(self, training_set):
         indices = np.random.randint(0, len(training_set), self.batch_size)

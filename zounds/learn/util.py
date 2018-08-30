@@ -126,6 +126,15 @@ def sample_norm(x):
     return original / x.view(-1, 1, x.shape[-1])
 
 
+def batchwise_unit_norm(x, epsilon=1e-8):
+    batch_size = x.shape[0]
+    flattened = x.view(batch_size, -1)
+    norm = torch.norm(flattened, dim=1, keepdim=True)
+    expanded = norm.view(batch_size, *((1,) * (x.dim() - 1)))
+    normed = x / (expanded + epsilon)
+    return normed
+
+
 def feature_map_size(inp, kernel, stride=1, padding=0):
     return ((inp - kernel + (2 * padding)) / stride) + 1
 
