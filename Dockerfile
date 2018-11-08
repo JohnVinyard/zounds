@@ -51,7 +51,7 @@ RUN echo 'export PATH=/opt/conda/bin:$PATH' > /etc/profile.d/conda.sh \
 
 ENV PATH /opt/conda/bin:$PATH
 
-RUN conda install -y -c pytorch numpy=1.12 scipy=0.19 pytorch=0.4
+RUN conda install -y -c pytorch numpy=1.15.3 scipy=1.1.0 pytorch=0.4
 
 RUN pip install zounds
 

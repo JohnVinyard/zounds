@@ -65,23 +65,26 @@ class WindowingFunc(object):
             self._cache[size] = window
             return window
 
-    def __numpy_ufunc__(self, *args, **kwargs):
-        # KLUDGE: This seems really odd, but the mere presence of this
-        # numpy-specific magic method seems to serve as a hint to to call
-        # this instances __rmul__ implementation, instead of doing element-wise
-        # multiplication, as per:
-        # http://docs.scipy.org/doc/numpy/reference/arrays.classes.html#numpy.class.__numpy_ufunc__
-        raise NotImplementedError()
+    def __array_ufunc__(self, ufunc, method, *args, **kwargs):
 
-    def __mul__(self, other):
-        size = other.shape[-1]
-        wdata = self._wdata(size)
-        if wdata is None:
-            return other
-        return wdata.astype(other.dtype) * other
+        if args[0] is self:
+            second_arg = args[1]
+            size = second_arg.shape[-1]
+            dtype = second_arg.dtype
+            wdata = self._wdata(size)
+            if wdata is None:
+                return second_arg
+            first_arg = wdata.astype(dtype)
+        else:
+            first_arg = args[0]
+            size = first_arg.shape[-1]
+            dtype = first_arg.dtype
+            wdata = self._wdata(size)
+            if wdata is None:
+                return first_arg
+            second_arg = wdata.astype(dtype)
 
-    def __rmul__(self, other):
-        return self.__mul__(other)
+        return getattr(ufunc, method)(first_arg, second_arg, **kwargs)
 
 
 class IdentityWindowingFunc(WindowingFunc):

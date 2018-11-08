@@ -35,18 +35,17 @@ class FrequencyWeighting(object):
 
         raise ValueError('arr must have a frequency dimension')
 
-    def __mul__(self, other):
-        factors = self._get_factors(other)
-        return factors * other
-
-    def __rmul__(self, other):
-        return self.__mul__(other)
-
-    def __div__(self, other):
-        return other / self._get_factors(other)
-
-    def __rdiv__(self, other):
-        return self.__div__(other)
+    def __array_ufunc__(self, ufunc, method, *args, **kwargs):
+        if ufunc == np.multiply or ufunc == np.divide:
+            if args[0] is self:
+                first_arg = self._get_factors(args[1])
+                second_arg = args[1]
+            else:
+                first_arg = args[0]
+                second_arg = self._get_factors(args[0])
+            return getattr(ufunc, method)(first_arg, second_arg, **kwargs)
+        else:
+            return NotImplemented
 
 
 class AWeighting(FrequencyWeighting):

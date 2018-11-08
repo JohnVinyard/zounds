@@ -299,24 +299,6 @@ class ArrayWithUnits(np.ndarray):
         for dim in self.dimensions[dims_pos:]:
             yield dim
 
-    def _wrap(self, other):
-        return self.__class__(other, self.dimensions)
-
-    def __gt__(self, other):
-        return self._wrap(np.asarray(self).__gt__(other))
-
-    def __ge__(self, other):
-        return self._wrap(np.asarray(self).__ge__(other))
-
-    def __lt__(self, other):
-        return self._wrap(np.asarray(self).__lt__(other))
-
-    def __le__(self, other):
-        return self._wrap(np.asarray(self).__le__(other))
-
-    def __eq__(self, other):
-        return self._wrap(np.asarray(self).__eq__(other))
-
     def _tuplify(self, a):
         if isinstance(a, list):
             t = set(map(lambda x: x.__class__, a))

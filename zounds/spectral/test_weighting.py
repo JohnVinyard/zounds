@@ -104,3 +104,9 @@ class WeightingTests(unittest2.TestCase):
         weighted = bank * AWeighting()
         self.assertSequenceEqual(bank.dimensions, weighted.dimensions)
 
+    def test_multiplication_by_weighting_is_commutative(self):
+        sr = SR11025()
+        band = FrequencyBand(20, sr.nyquist)
+        scale = MelScale(band, 100)
+        bank = fir_filter_bank(scale, 256, sr, np.hanning(25))
+        np.testing.assert_allclose(bank * AWeighting(), AWeighting() * bank)
