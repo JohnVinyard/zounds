@@ -1,15 +1,13 @@
 from setuptools import setup
 import re
 import os
-import warnings
+import subprocess
 
 try:
-    import pypandoc
-    long_description = pypandoc.convert('README.md', 'rst')
-except(IOError, ImportError, RuntimeError):
+    long_description = subprocess.check_output(
+        'pandoc --to rst README.md', shell=True)
+except(IOError, ImportError, subprocess.CalledProcessError):
     long_description = open('README.md').read()
-    warnings.warn('pypandoc is not working correctly')
-
 
 with open('zounds/__init__.py', 'r') as fd:
     version = re.search(
