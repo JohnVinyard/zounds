@@ -209,7 +209,22 @@ class AudioSamples(ArrayWithUnits):
                 format=fmt,
                 subtype=subtype,
                 samplerate=self.samples_per_second) as f:
-            f.write(self)
+
+            if fmt == 'OGG':
+                # KLUDGE: Trying to write too-large chunks to an ogg file seems
+                # to cause a segfault in libsndfile
+                # KLUDGE: This logic is very similar to logic in the OggVorbis
+                # processing node, and should probably be factored into a common
+                # location
+                factor = 20
+                chunksize = self.samples_per_second * factor
+                for i in xrange(0, len(self), chunksize):
+                    chunk = self[i: i + chunksize]
+                    f.write(chunk)
+            else:
+                # write everything in one chunk
+                f.write(self)
+
         flo.seek(0)
         return flo
 

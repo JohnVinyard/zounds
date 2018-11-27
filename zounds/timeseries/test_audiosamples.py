@@ -5,7 +5,7 @@ from samplerate import SR44100, SR11025, SampleRate, Stride
 from zounds.timeseries import TimeDimension, TimeSlice
 from zounds.core import IdentityDimension
 from audiosamples import AudioSamples
-from zounds.synthesize import SineSynthesizer
+from zounds.synthesize import SineSynthesizer, SilenceSynthesizer
 
 
 class AudioSamplesTest(unittest2.TestCase):
@@ -188,3 +188,12 @@ class AudioSamplesTest(unittest2.TestCase):
         self.assertIsInstance(result, AudioSamples)
         self.assertEqual(1, len(result.dimensions))
         self.assertIsInstance(result.dimensions[0], TimeDimension)
+
+    def test_encode_large_ogg(self):
+        sr = SR11025()
+        synth = SilenceSynthesizer(sr)
+        samples = synth.synthesize(Seconds(190))
+        raw = samples.encode(fmt='OGG', subtype='VORBIS')
+        # prior to this test, the line above caused a segfault, so the assertion
+        # below is fairly worthless, and mostly a formality
+        self.assertIsNotNone(raw)
