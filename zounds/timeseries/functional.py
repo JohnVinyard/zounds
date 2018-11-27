@@ -4,14 +4,16 @@ from zounds.core import ArrayWithUnits, IdentityDimension
 
 
 # TODO: decompose this into the quantization, and then a one-hot function
-def categorical(x, mu=255):
+def categorical(x, mu=255, normalize=True):
     """
     Mu-law compress a block of audio samples, and convert them into a
     categorical distribution
     """
-    # normalize the signal
-    mx = x.max()
-    x = np.divide(x, mx, where=mx != 0)
+
+    if normalize:
+        # normalize the signal
+        mx = x.max()
+        x = np.divide(x, mx, where=mx != 0)
 
     # mu law compression
     x = mu_law(x)
