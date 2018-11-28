@@ -83,7 +83,6 @@ setup(
         'pysoundfile',
         'matplotlib==1.5.0',
         'argparse',
-        'intervaltree',
         'ujson',
         'numpy==1.15.3',
         'scipy==1.1.0',
