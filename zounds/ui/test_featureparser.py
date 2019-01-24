@@ -6,6 +6,11 @@ from zounds.synthesize import NoiseSynthesizer
 from zounds.timeseries import SR44100, Seconds
 
 
+class SomethingElse(object):
+    def __init__(self, fft):
+        super(SomethingElse, self).__init__()
+        self.fft = fft
+
 class FeatureParserTests(unittest2.TestCase):
 
     def setUp(self):
@@ -18,11 +23,6 @@ class FeatureParserTests(unittest2.TestCase):
 
         _id = Document.process(meta=audio.encode())
         doc = Document(_id)
-
-        class SomethingElse(object):
-            def __init__(self, fft):
-                super(SomethingElse, self).__init__()
-                self.fft = fft
 
         non_doc = SomethingElse(11)
 
@@ -59,5 +59,12 @@ class FeatureParserTests(unittest2.TestCase):
 
     def test_can_ignore_non_document_with_matching_attribute_name(self):
         parsed_doc, feature = self.parser.parse_feature('non_doc.fft')
+        self.assertIsNone(parsed_doc)
+        self.assertIsNone(feature)
+
+    def test_can_ignore_when_document_is_not_supplied(self):
+        non_doc = SomethingElse(11)
+        parser = FeatureParser(None, locals())
+        parsed_doc, feature = parser.parse_feature('non_doc.fft')
         self.assertIsNone(parsed_doc)
         self.assertIsNone(feature)

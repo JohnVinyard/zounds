@@ -18,6 +18,9 @@ class ExpressionVisitor(ast.NodeVisitor):
         return self.doc, feature
 
     def visit_Expr(self, node):
+        if self.document is None:
+            raise ValueError()
+
         children = list(ast.iter_child_nodes(node))
         if len(children) != 1:
             raise ValueError()
