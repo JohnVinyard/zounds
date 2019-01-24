@@ -1,6 +1,7 @@
 import requests
 import urlparse
 from zounds.soundfile.audio_metadata import AudioMetaData
+from simplejson.decoder import JSONDecodeError
 
 
 class InternetArchive(object):
@@ -51,7 +52,11 @@ class InternetArchive(object):
             base_url, '/details/{archive_id}&output=json'.format(**locals()))
         resp = requests.get(url)
 
-        all_files = resp.json()['files']
+        try:
+            all_files = resp.json()['files']
+        except JSONDecodeError as e:
+            all_files = dict()
+
         for k, v in all_files.iteritems():
             if self.format_filter(v):
                 sound_url = urlparse.urljoin(
