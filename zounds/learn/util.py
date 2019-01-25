@@ -135,6 +135,15 @@ def batchwise_unit_norm(x, epsilon=1e-8):
     return normed
 
 
+def batchwise_mean_std_normalization(x, epsilon=1e-8):
+    orig_shape = x.shape
+    x = x.view(x.shape[0], -1)
+    x = x - x.mean(dim=1, keepdim=True)
+    x = x / (x.std(dim=1, keepdim=True) + epsilon)
+    x = x.view(orig_shape)
+    return x
+
+
 def feature_map_size(inp, kernel, stride=1, padding=0):
     return ((inp - kernel + (2 * padding)) / stride) + 1
 

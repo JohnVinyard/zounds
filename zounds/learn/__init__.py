@@ -27,7 +27,8 @@ from embedding import TripletEmbeddingTrainer
 
 from random_samples import Reservoir, ReservoirSampler, ShuffledSamples
 
-from util import simple_settings, object_store_pipeline_settings, model_hash
+from util import simple_settings, object_store_pipeline_settings, model_hash, \
+    batchwise_mean_std_normalization, batchwise_unit_norm
 
 from graph import learning_pipeline, infinite_streaming_learning_pipeline
 
