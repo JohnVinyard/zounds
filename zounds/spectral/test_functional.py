@@ -2,7 +2,8 @@ import numpy as np
 import unittest2
 from functional import \
     fft, stft, apply_scale, frequency_decomposition, phase_shift, rainbowgram, \
-    fir_filter_bank, auto_correlogram, time_stretch, pitch_shift
+    fir_filter_bank, auto_correlogram, time_stretch, pitch_shift, \
+    morlet_filter_bank
 from zounds.core import ArrayWithUnits, IdentityDimension
 from zounds.synthesize import \
     SilenceSynthesizer, TickSynthesizer, SineSynthesizer, FFTSynthesizer
@@ -10,7 +11,7 @@ from zounds.timeseries import SR22050, Seconds, Milliseconds, TimeDimension, \
     TimeSlice, AudioSamples
 from zounds.spectral import \
     HanningWindowingFunc, FrequencyDimension, LinearScale, GeometricScale, \
-    ExplicitFrequencyDimension, FrequencyBand
+    ExplicitFrequencyDimension, FrequencyBand, MelScale
 from matplotlib import cm
 
 
@@ -29,6 +30,48 @@ class FIRFilterBankTests(unittest2.TestCase):
         self.assertEqual(FrequencyDimension(scale), filter_bank.dimensions[0])
         self.assertEqual(TimeDimension(*samplerate), filter_bank.dimensions[1])
 
+
+class MorletFilterBankTests(unittest2.TestCase):
+
+    def test_raises_when_scale_factors_length_does_not_match_scale(self):
+        sr = SR22050()
+        band = FrequencyBand(1, sr.nyquist)
+        scale = MelScale(band, 512)
+        scale_factors = np.linspace(0.1, 1.0, len(scale) // 2)
+        self.assertRaises(
+            ValueError,
+            lambda: morlet_filter_bank(sr, 512, scale, scale_factors))
+
+    def test_raises_when_scale_factors_is_not_a_collection_or_float(self):
+        sr = SR22050()
+        band = FrequencyBand(1, sr.nyquist)
+        scale = MelScale(band, 512)
+        scale_factors = object()
+        self.assertRaises(
+            TypeError,
+            lambda: morlet_filter_bank(sr, 512, scale, scale_factors))
+
+    def test_dimensions_are_correct(self):
+        sr = SR22050()
+        band = FrequencyBand(1, sr.nyquist)
+        scale = MelScale(band, 128)
+        scale_factors = np.linspace(0.1, 1.0, len(scale))
+        filter_bank = morlet_filter_bank(sr, 512, scale, scale_factors)
+        self.assertEqual((128, 512), filter_bank.shape)
+        expected_freq_dimension = FrequencyDimension(scale)
+        expected_time_dimension = TimeDimension(*sr)
+        self.assertEqual(expected_freq_dimension, filter_bank.dimensions[0])
+        self.assertEqual(expected_time_dimension, filter_bank.dimensions[1])
+
+    def test_filters_are_normalized(self):
+        sr = SR22050()
+        band = FrequencyBand(1, sr.nyquist)
+        scale = MelScale(band, 128)
+        scale_factors = np.linspace(0.1, 1.0, len(scale))
+        filter_bank = morlet_filter_bank(
+            sr, 512, scale, scale_factors, normalize=True)
+        norms = np.linalg.norm(filter_bank, axis=-1)
+        np.testing.assert_allclose(norms, 1.0, rtol=1e-6)
 
 class AutoCorrelogramTests(unittest2.TestCase):
     @unittest2.skip

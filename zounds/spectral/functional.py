@@ -12,7 +12,7 @@ from zounds.loudness import log_modulus, unit_scale
 import numpy as np
 from scipy.signal import resample, firwin2
 from matplotlib import cm
-from scipy.signal import hann
+from scipy.signal import hann, morlet
 from itertools import repeat
 from zounds.nputil import sliding_window
 
@@ -69,7 +69,6 @@ def stft(x, window_sample_rate=HalfLapped(), window=HanningWindowingFunc()):
 
 
 def time_stretch(x, factor, frame_sample_rate=None):
-
     if frame_sample_rate is None:
         sr = HalfLapped()
         sr = SampleRate(frequency=sr.frequency / 2, duration=sr.duration)
@@ -153,8 +152,6 @@ def time_stretch(x, factor, frame_sample_rate=None):
         output[:, start: stop] += new_frames[:, i, :l]
 
     return ArrayWithUnits(output, [IdentityDimension(), x.dimensions[-1]])
-
-
 
 
 def pitch_shift(x, semitones, frame_sample_rate=None):
@@ -265,6 +262,45 @@ def fir_filter_bank(scale, taps, samplerate, window):
         freqs = [0] + list(freqs) + [1]
         gains = [0] + list(win) + [0]
         basis[i] = firwin2(taps, freqs, gains)
+
+    return basis
+
+
+def morlet_filter_bank(
+        samplerate,
+        kernel_size,
+        scale,
+        scaling_factor,
+        normalize=True):
+    """
+    Create a bank of finite impulse response filters, with
+    frequencies centered on the sub-bands of scale
+    """
+    basis_size = len(scale)
+    basis = np.zeros((basis_size, kernel_size), dtype=np.complex128)
+
+    try:
+        if len(scaling_factor) != len(scale):
+            raise ValueError('scaling factor must have same length as scale')
+    except TypeError:
+        scaling_factor = np.repeat(float(scaling_factor), len(scale))
+
+    sr = int(samplerate)
+
+    for i, band in enumerate(scale):
+        scaling = scaling_factor[i]
+        w = band.center_frequency / (scaling * 2 * sr / kernel_size)
+        basis[i] = morlet(
+            M=kernel_size,
+            w=w,
+            s=scaling)
+    basis = basis.real
+
+    if normalize:
+        basis /= np.linalg.norm(basis, axis=-1, keepdims=True) + 1e-8
+
+    basis = ArrayWithUnits(
+        basis, [FrequencyDimension(scale), TimeDimension(*samplerate)])
 
     return basis
 
