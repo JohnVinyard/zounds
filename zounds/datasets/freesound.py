@@ -83,6 +83,7 @@ class FreeSoundSearch(object):
                     'query': self.query,
                     'token': self.api_key
                 })
+        time.sleep(self.delay)
 
         results.raise_for_status()
         results = results.json()
@@ -91,7 +92,7 @@ class FreeSoundSearch(object):
             yield self._get_metadata_by_id(r['id'])
 
             # prevent 429 "Too Many Requests" responses
-            time.sleep(0.2)
+            time.sleep(self.delay)
 
         for r in self._iter_results(results['next']):
             yield r
