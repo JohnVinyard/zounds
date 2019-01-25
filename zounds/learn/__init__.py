@@ -46,6 +46,6 @@ from multiresolution import MultiResolutionConvLayer
 from loss import PerceptualLoss, BandLoss, CategoricalLoss, \
     WassersteinCriticLoss, WassersteinGradientPenaltyLoss, \
     LearnedWassersteinLoss
-
+from spectral import FilterBank
 
 
