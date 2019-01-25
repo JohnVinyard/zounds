@@ -92,6 +92,9 @@ class SampleRate(object):
     def samples_per_second(self):
         return int(Picoseconds(int(1e12)) / self.frequency)
 
+    def __int__(self):
+        return self.samples_per_second
+
     @property
     def nyquist(self):
         return self.samples_per_second // 2
@@ -128,9 +131,6 @@ class AudioSampleRate(SampleRate):
         self.suggested_window = suggested_window
         self.one_sample = Picoseconds(int(1e12)) // samples_per_second
         super(AudioSampleRate, self).__init__(self.one_sample, self.one_sample)
-
-    def __int__(self):
-        return self.samples_per_second
 
     def half_lapped(self):
         return SampleRate(
