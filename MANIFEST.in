@@ -4,3 +4,4 @@ include zounds/nputil/countbits.pyx
 include zounds/nputil/countbits.pyxbld
 include README.md
 include MANIFEST.in
+include LICENSE.txt
