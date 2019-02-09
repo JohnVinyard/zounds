@@ -1,7 +1,7 @@
 from __future__ import division
 import unittest2
 from frequencyscale import \
-    FrequencyBand, LinearScale, ExplicitScale, GeometricScale, Hertz
+    FrequencyBand, LinearScale, ExplicitScale, GeometricScale, Hertz, Hz
 from zounds.timeseries import SR44100
 import numpy as np
 
@@ -10,6 +10,14 @@ class HertzTests(unittest2.TestCase):
     def test_can_negate_hertz(self):
         hz = -Hertz(10)
         self.assertIsInstance(hz, Hertz)
+
+    def test_can_add_hertz(self):
+        hz = Hertz(20) + Hertz(30)
+        self.assertEqual(Hertz(50), hz)
+
+    def test_can_subtract_hertz(self):
+        hz = Hz(100) - Hz(20)
+        self.assertEqual(Hz(80), hz)
 
 
 class FrequencyBandTests(unittest2.TestCase):
@@ -45,6 +53,15 @@ class FrequencyBandTests(unittest2.TestCase):
         fb2 = FrequencyBand(50, 150)
         ratio = fb1.intersection_ratio(fb2)
         self.assertEqual(0.5, ratio)
+
+    def test_audible_range_lower_bound(self):
+        band = FrequencyBand.audible_range(SR44100())
+        self.assertEqual(20, band.start_hz)
+
+    def test_audible_range_upper_bound(self):
+        sr = SR44100()
+        band = FrequencyBand.audible_range(sr)
+        self.assertEqual(int(sr) // 2, band.stop_hz)
 
 
 class FrequencyScaleTests(unittest2.TestCase):

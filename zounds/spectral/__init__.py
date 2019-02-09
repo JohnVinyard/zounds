@@ -17,7 +17,7 @@ from weighting import AWeighting
 
 from frequencyscale import \
     LinearScale, FrequencyBand, FrequencyScale, GeometricScale, ExplicitScale, \
-    Hertz, BarkScale, MelScale, ChromaScale
+    Hertz, Hz, BarkScale, MelScale, ChromaScale
 
 from frequencyadaptive import FrequencyAdaptive
 

@@ -12,11 +12,14 @@ class Hertz(float):
         return Hertz(-self.hz)
 
     def __add__(self, other):
-        return Hertz(self + other)
+        return Hertz(self.hz + other.hz)
+
+    
+class Hz(Hertz):
+    pass
 
 
 # TODO: What commonalities can be factored out of this class and TimeSlice?
-# TODO: Deprecate stuff in psychoacoustics.py in favor of these classes
 class FrequencyBand(object):
     """
     Represents an interval, or band of frequencies in hertz (cycles per second)
@@ -70,6 +73,10 @@ class FrequencyBand(object):
         lowest_stop = min(self.stop_hz, other.stop_hz)
         highest_start = max(self.start_hz, other.start_hz)
         return FrequencyBand(highest_start, lowest_stop)
+
+    @classmethod
+    def audible_range(cls, samplerate):
+        return FrequencyBand(Hz(20), Hz(samplerate.nyquist))
 
     def bandwidth_ratio(self, other):
         return other.bandwidth / self.bandwidth

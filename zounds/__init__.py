@@ -18,7 +18,7 @@ from spectral import \
     SpectralFlatness, AWeighting, LinearScale, FrequencyBand, \
     FrequencyScale, FrequencyDimension, GeometricScale, HanningWindowingFunc, \
     FrequencyAdaptiveTransform, ExplicitScale, ExplicitFrequencyDimension, \
-    FrequencyAdaptive, FrequencyWeighting, Hertz, BarkScale, MelScale, \
+    FrequencyAdaptive, FrequencyWeighting, Hertz, Hz, BarkScale, MelScale, \
     ChromaScale, fir_filter_bank
 
 from loudness import \
