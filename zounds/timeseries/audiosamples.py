@@ -185,7 +185,7 @@ class AudioSamples(ArrayWithUnits):
         Args:
             flo (file-like): A file-like object to write the bytes to.  If flo
                 is not supplied, a new :class:`io.BytesIO` instance will be
-                 created and returned
+                created and returned
             fmt (str): A libsndfile-friendly identifier for an audio encoding
                 (detailed here: http://www.mega-nerd.com/libsndfile/api.html)
             subtype (str): A libsndfile-friendly identifier for an audio

@@ -29,7 +29,7 @@ class FilterBank(nn.Module):
 
     See Also:
         :class:`~zounds.spectral.AWeighting`
-        :function:`~zounds.spectral.morlet_filter_bank`
+        :func:`~zounds.spectral.morlet_filter_bank`
     """
 
     def __init__(

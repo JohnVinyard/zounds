@@ -14,6 +14,12 @@ Representations
 .. autoclass:: FrequencyAdaptive
     :members:
 
+Functions
+---------
+.. autofunction:: fft
+
+.. autofunction:: morlet_filter_bank
+
 Processing Nodes
 ----------------
 .. autoclass:: SlidingWindow

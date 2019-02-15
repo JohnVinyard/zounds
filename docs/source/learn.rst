@@ -3,22 +3,27 @@ Learn
 .. automodule:: zounds.learn
 .. currentmodule:: zounds.learn
 
+PyTorch Modules
+---------------
+.. autoclass:: FilterBank
+.. autoclass:: SincLayer
+
 The Basics
 ----------
 .. autoclass:: PreprocessingPipeline
+
 .. autoclass:: Pipeline
+
 .. autoclass:: Preprocessor
     :members:
+
 .. autoclass:: PreprocessResult
+
 .. autoclass:: PipelineResult
 
 Custom Losses
 -------------
 .. autoclass:: PerceptualLoss
-
-Custom Layers
--------------
-.. autoclass:: SincLayer
 
 Data Preparation
 ----------------

@@ -350,6 +350,8 @@ class ZoundsDocsMock(mock.Mock):
     __version__ = 1.0
 
     ndarray = object
+    Module = object
+    Node = object
 
     def __init__(self, *args, **kwargs):
         super(ZoundsDocsMock, self).__init__(side_effect=None)
@@ -380,6 +382,7 @@ class ZoundsDocsMock(mock.Mock):
 
 
 ZoundsDocsMock.timedelta64 = ZoundsDocsMock
+
 
 for mod_name in MOCK_MODULES:
     sys.modules[mod_name] = ZoundsDocsMock()

@@ -273,8 +273,27 @@ def morlet_filter_bank(
         scaling_factor,
         normalize=True):
     """
-    Create a bank of finite impulse response filters, with
-    frequencies centered on the sub-bands of scale
+    Create a :class:`~zounds.core.ArrayWithUnits` instance with a
+    :class:`~zounds.timeseries.TimeDimension` and a
+    :class:`~zounds.spectral.FrequencyDimension` representing a bank of morlet
+    wavelets centered on the sub-bands of the scale.
+
+    Args:
+        samplerate (SampleRate): the samplerate of the input signal
+        kernel_size (int): the length in samples of each filter
+        scale (FrequencyScale): a scale whose center frequencies determine the
+            fundamental frequency of each filer
+        scaling_factor (int or list of int): Scaling factors for each band,
+            which determine the time-frequency resolution tradeoff.
+            The number(s) should fall between 0 and 1, with smaller numbers
+            achieving better frequency resolution, and larget numbers better
+            time resolution
+        normalize (bool): When true, ensure that each filter in the bank
+            has unit norm
+
+    See Also:
+        :class:`~zounds.spectral.FrequencyScale`
+        :class:`~zounds.timeseries.SampleRate`
     """
     basis_size = len(scale)
     basis = np.zeros((basis_size, kernel_size), dtype=np.complex128)
