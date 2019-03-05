@@ -1,5 +1,5 @@
 import unittest2
-from timedimension import TimeDimensionEncoder, TimeDimensionDecoder
+from .timedimension import TimeDimensionEncoder, TimeDimensionDecoder
 from zounds.timeseries import TimeDimension, Seconds, Milliseconds
 
 

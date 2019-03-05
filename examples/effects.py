@@ -44,11 +44,11 @@ if __name__ == '__main__':
     def samples(x):
         return zounds.AudioSamples(x, sr)
 
-    batch_slow = map(samples, time_stretch(windowed, 0.75))
-    batch_fast = map(samples, time_stretch(windowed, 1.25))
+    batch_slow = list(map(samples, time_stretch(windowed, 0.75)))
+    batch_fast = list(map(samples, time_stretch(windowed, 1.25)))
 
-    batch_higher = map(samples, pitch_shift(windowed, 1.0))
-    batch_lower = map(samples, pitch_shift(windowed, -1.0))
+    batch_higher = list(map(samples, pitch_shift(windowed, 1.0)))
+    batch_lower = list(map(samples, pitch_shift(windowed, -1.0)))
 
     app = zounds.ZoundsApp(
         model=Sound,

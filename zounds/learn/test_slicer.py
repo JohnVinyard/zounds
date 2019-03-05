@@ -3,7 +3,7 @@ import featureflow as ff
 import numpy as np
 
 from zounds.util import simple_in_memory_settings
-from preprocess import Slicer, PreprocessingPipeline
+from .preprocess import Slicer, PreprocessingPipeline
 
 from zounds.core import IdentityDimension, ArrayWithUnits
 from zounds.spectral import FrequencyBand, LinearScale, FrequencyDimension

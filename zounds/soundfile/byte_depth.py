@@ -1,4 +1,4 @@
-from __future__ import division
+
 
 _lookup = {
     # https://support.microsoft.com/en-us/kb/89879

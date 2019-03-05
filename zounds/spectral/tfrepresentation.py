@@ -1,6 +1,6 @@
 import numpy as np
-import frequencyscale
-from frequencyscale import Hertz
+from . import frequencyscale
+from .frequencyscale import Hertz
 from zounds.core import Dimension
 from zounds.spectral.frequencyscale import ExplicitScale
 
@@ -101,7 +101,7 @@ class ExplicitFrequencyDimension(Dimension):
 
         self.scale = scale
         self.slices = slices
-        self._lookup = dict(zip(self.scale, self.slices))
+        self._lookup = dict(list(zip(self.scale, self.slices)))
 
     def copy(self):
         return ExplicitFrequencyDimension(self.scale, self.slices)
@@ -126,7 +126,7 @@ class ExplicitFrequencyDimension(Dimension):
         else:
             slce = index
 
-        print slce
+        print(slce)
         return ExplicitFrequencyDimension(self.scale[slce], self.slices[slce])
 
     def integer_based_slice(self, index):

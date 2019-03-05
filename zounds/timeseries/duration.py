@@ -15,7 +15,7 @@ class Hours(np.timedelta64):
         numpy.timedelta(3, 'h')
     """
     def __new__(cls, hours):
-        return np.timedelta64(hours, 'h')
+        return np.timedelta64(int(hours), 'h')
 
 
 class Minutes(np.timedelta64):
@@ -32,7 +32,7 @@ class Minutes(np.timedelta64):
         numpy.timedelta(3, 'm')
     """
     def __new__(cls, minutes):
-        return np.timedelta64(minutes, 'm')
+        return np.timedelta64(int(minutes), 'm')
 
 
 class Seconds(np.timedelta64):
@@ -49,7 +49,7 @@ class Seconds(np.timedelta64):
         numpy.timedelta(3, 's')
     """
     def __new__(cls, seconds):
-        return np.timedelta64(seconds, 's')
+        return np.timedelta64(int(seconds), 's')
 
 
 class Milliseconds(np.timedelta64):
@@ -66,7 +66,7 @@ class Milliseconds(np.timedelta64):
         numpy.timedelta(3, 'ms')
     """
     def __new__(cls, milliseconds):
-        return np.timedelta64(milliseconds, 'ms')
+        return np.timedelta64(int(milliseconds), 'ms')
 
 
 class Microseconds(np.timedelta64):
@@ -83,7 +83,7 @@ class Microseconds(np.timedelta64):
         numpy.timedelta(3, 'us')
     """
     def __new__(cls, microseconds):
-        return np.timedelta64(microseconds, 'us')
+        return np.timedelta64(int(microseconds), 'us')
 
 
 class Nanoseconds(np.timedelta64):
@@ -100,7 +100,7 @@ class Nanoseconds(np.timedelta64):
         numpy.timedelta(3, 'ns')
     """
     def __new__(cls, nanoseconds):
-        return np.timedelta64(nanoseconds, 'ns')
+        return np.timedelta64(int(nanoseconds), 'ns')
 
 
 class Picoseconds(np.timedelta64):
@@ -117,4 +117,4 @@ class Picoseconds(np.timedelta64):
         numpy.timedelta(3, 'ps')
     """
     def __new__(cls, picoseconds):
-        return np.timedelta64(picoseconds, 'ps')
+        return np.timedelta64(int(picoseconds), 'ps')

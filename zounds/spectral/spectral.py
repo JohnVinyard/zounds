@@ -1,19 +1,19 @@
-from __future__ import division
+
 
 import numpy as np
 from featureflow import Node
 from scipy.fftpack import dct
 from scipy.stats.mstats import gmean
 
-from functional import fft
-from frequencyscale import LinearScale, ChromaScale, BarkScale
-from weighting import AWeighting
-from tfrepresentation import FrequencyDimension
-from frequencyadaptive import FrequencyAdaptive
+from .functional import fft
+from .frequencyscale import LinearScale, ChromaScale, BarkScale
+from .weighting import AWeighting
+from .tfrepresentation import FrequencyDimension
+from .frequencyadaptive import FrequencyAdaptive
 from zounds.core import ArrayWithUnits, IdentityDimension
 from zounds.nputil import safe_log
 from zounds.timeseries import audio_sample_rate
-from sliding_window import HanningWindowingFunc
+from .sliding_window import HanningWindowingFunc
 
 
 class FrequencyWeighting(Node):

@@ -1,4 +1,4 @@
-from basedimension import BaseDimensionEncoder, BaseDimensionDecoder
+from .basedimension import BaseDimensionEncoder, BaseDimensionDecoder
 from zounds.spectral import \
     FrequencyBand, FrequencyDimension, LinearScale, GeometricScale, \
     ExplicitScale, ExplicitFrequencyDimension, BarkScale, MelScale, ChromaScale
@@ -195,7 +195,7 @@ class ExplicitFrequencyDimensionEncoder(BaseDimensionEncoder):
 
     def dict(self, freq_dim):
         d = self.scale_encoder.encode(freq_dim.scale)
-        slices = [(s.start, s.stop) for s in freq_dim.slices]
+        slices = [(int(s.start), int(s.stop)) for s in freq_dim.slices]
         d.update(slices=slices)
         return d
 

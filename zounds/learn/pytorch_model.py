@@ -1,6 +1,6 @@
 import warnings
 import featureflow as ff
-from preprocess import Preprocessor, PreprocessResult, Op
+from .preprocess import Preprocessor, PreprocessResult, Op
 from zounds.persistence.util import extract_init_args
 import torch
 
@@ -19,7 +19,7 @@ class PyTorchPreprocessResult(PreprocessResult):
         backward_func = self.inverse._func
         network_params = self.op.network.state_dict()
         weights = dict(
-            ((k, v.cpu().numpy()) for k, v in network_params.iteritems()))
+            ((k, v.cpu().numpy()) for k, v in network_params.items()))
         cls = self.op.network.__class__
         name = self.name
         init_args = extract_init_args(self.op.network)
@@ -44,7 +44,7 @@ class PyTorchPreprocessResult(PreprocessResult):
 
         restored_weights = dict(
             ((k, torch.from_numpy(v))
-             for k, v in state['weights'].iteritems()))
+             for k, v in state['weights'].items()))
         init_args = state['init_args']
         network = state['cls'](*init_args)
         network.load_state_dict(restored_weights)

@@ -1,5 +1,5 @@
 from zounds.timeseries import AudioSamples
-from resample import Resampler
+from .resample import Resampler
 import numpy as np
 
 

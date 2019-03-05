@@ -1,6 +1,6 @@
 import unittest2
 import numpy as np
-from preprocess import Multiply, PreprocessingPipeline
+from .preprocess import Multiply, PreprocessingPipeline
 from zounds.util import simple_in_memory_settings
 import featureflow as ff
 

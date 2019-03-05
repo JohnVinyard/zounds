@@ -277,7 +277,7 @@ if __name__ == '__main__':
     # instantiate the trained pipeline
     pipeline = pipeline_cls()
 
-    snds = filter(lambda snd: args.internet_archive_id in snd._id, Sound)
+    snds = [snd for snd in Sound if args.internet_archive_id in snd._id]
     snd = choice(snds)
     time_slice = zounds.TimeSlice(duration=zounds.Seconds(10))
     encoded = pipeline.pipeline.transform(

@@ -1,8 +1,8 @@
 import numpy as np
 import unittest2
-from duration import \
+from .duration import \
     Picoseconds, Milliseconds, Seconds, Microseconds, Nanoseconds, Hours
-from timeseries import TimeSlice, TimeDimension
+from .timeseries import TimeSlice, TimeDimension
 from zounds.core import IdentityDimension, ArrayWithUnits
 
 

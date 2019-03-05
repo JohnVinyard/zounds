@@ -5,9 +5,9 @@ from zounds.timeseries import \
 from zounds.spectral import \
     FrequencyDimension, LinearScale, FrequencyBand, FrequencyAdaptive, \
     GeometricScale
-from arraywithunits import \
+from .arraywithunits import \
     ArrayWithUnitsEncoder, ArrayWithUnitsDecoder, PackedArrayWithUnitsEncoder
-from frequencyadaptive import FrequencyAdaptiveDecoder
+from .frequencyadaptive import FrequencyAdaptiveDecoder
 import numpy as np
 from io import BytesIO
 
@@ -16,7 +16,13 @@ class ArrayWithUnitsFeatureTests(unittest2.TestCase):
     def _roundtrip(self, arr, encoder=None, decoder=None):
         encoder = encoder or ArrayWithUnitsEncoder()
         decoder = decoder or ArrayWithUnitsDecoder()
-        encoded = BytesIO(''.join(encoder._process(arr)))
+        items = []
+        for item in encoder._process(arr):
+            try:
+                items.append(item.encode())
+            except AttributeError:
+                items.append(item)
+        encoded = BytesIO(b''.join(items))
         return decoder(encoded)
 
     def test_can_pack_bits(self):
@@ -33,7 +39,7 @@ class ArrayWithUnitsFeatureTests(unittest2.TestCase):
             duration=Seconds(1),
             frequency=Milliseconds(500))
         scale = GeometricScale(20, 5000, 0.05, 120)
-        arrs = [np.zeros((10, x)) for x in xrange(1, 121)]
+        arrs = [np.zeros((10, x)) for x in range(1, 121)]
         fa = FrequencyAdaptive(arrs, td, scale)
         decoded = self._roundtrip(fa, decoder=FrequencyAdaptiveDecoder())
         self.assertIsInstance(decoded, FrequencyAdaptive)

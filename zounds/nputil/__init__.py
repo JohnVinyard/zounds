@@ -1,1 +1,1 @@
-from npx import *
+from .npx import *

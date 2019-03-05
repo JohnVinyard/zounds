@@ -1,5 +1,5 @@
 import unittest2
-from ogg_vorbis import OggVorbisWrapper
+from .ogg_vorbis import OggVorbisWrapper
 from zounds.timeseries import TimeSlice, Seconds, SR11025
 from zounds.synthesize import SineSynthesizer
 

@@ -1,10 +1,10 @@
 import requests
-import urlparse
+import urllib.parse
 import os
 
 
 def ensure_local_file(remote_url, local_path, chunksize=4096):
-    parsed = urlparse.urlparse(remote_url)
+    parsed = urllib.parse.urlparse(remote_url)
     filename = os.path.split(parsed.path)[-1]
     local = os.path.join(local_path, filename)
 
@@ -15,6 +15,6 @@ def ensure_local_file(remote_url, local_path, chunksize=4096):
             for i, chunk in enumerate(resp.iter_content(chunk_size=chunksize)):
                 f.write(chunk)
                 progress = ((i * chunksize) / float(total_bytes)) * 100
-                print '{remote_url} {progress:.2f}% complete'.format(**locals())
+                print('{remote_url} {progress:.2f}% complete'.format(**locals()))
 
     return local

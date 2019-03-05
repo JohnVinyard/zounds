@@ -1,4 +1,4 @@
-from basedimension import BaseDimensionEncoder, BaseDimensionDecoder
+from .basedimension import BaseDimensionEncoder, BaseDimensionDecoder
 from zounds.core import IdentityDimension
 
 

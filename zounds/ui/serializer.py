@@ -5,7 +5,7 @@ from zounds.segment import TimeSliceFeature
 from zounds.index import SearchResults
 from zounds.soundfile import OggVorbisFeature
 from soundfile import SoundFile
-from contentrange import ContentRange
+from .contentrange import ContentRange
 import numpy as np
 from featureflow import Decoder
 import matplotlib
@@ -87,7 +87,7 @@ class AudioSamplesSerializer(object):
                 channels=samples.channels,
                 format='OGG',
                 subtype='VORBIS') as sf:
-            for i in xrange(0, len(samples), samples.samples_per_second):
+            for i in range(0, len(samples), samples.samples_per_second):
                 sf.write(samples[i: i + samples.samples_per_second])
         bio.seek(0)
         return TempResult(bio.read(), 'audio/ogg')
@@ -253,7 +253,7 @@ class AudioSliceSerializer(object):
         return dict()
 
     def serialize(self, context):
-        results = map(lambda x: self._result(*x), self.iter_results(context))
+        results = [self._result(*x) for x in self.iter_results(context)]
         output = {'results': results}
         output.update(self.additional_data(context))
         return TempResult(json.dumps(output), self.content_type)

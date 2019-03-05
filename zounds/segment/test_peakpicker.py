@@ -1,7 +1,7 @@
 import unittest2
 from zounds.core import ArrayWithUnits
 from zounds.timeseries import TimeDimension, Seconds, VariableRateTimeSeries
-from onset import BasePeakPicker
+from .onset import BasePeakPicker
 import numpy as np
 
 
@@ -18,6 +18,6 @@ class BasePeakPickerTests(unittest2.TestCase):
             np.zeros(100),
             dimensions=[TimeDimension(frequency=Seconds(1))])
         picker = BasePeakPickerTests.PeakPicker()
-        results = picker._process(data).next()
+        results = next(picker._process(data))
         self.assertEqual(3, len(results))
         self.assertIsInstance(results, VariableRateTimeSeries)

@@ -176,7 +176,7 @@ if __name__ == '__main__':
         snds = list(Sound)
 
         # get all sounds where Nixon is the speaker
-        nixon = filter(lambda snd: 'Nixon' in snd.meta['artist'], snds)
+        nixon = [snd for snd in snds if 'Nixon' in snd.meta['artist']]
 
         # get an equal number of speeches by anyone besides Nixon
         not_nixon = filter(

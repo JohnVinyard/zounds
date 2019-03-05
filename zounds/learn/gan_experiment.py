@@ -1,5 +1,5 @@
 import featureflow as ff
-from util import from_var
+from .util import from_var
 from random import choice
 from zounds.spectral import stft, rainbowgram
 from zounds.learn import \
@@ -7,9 +7,9 @@ from zounds.learn import \
     object_store_pipeline_settings
 from zounds.timeseries import \
     SR11025, SampleRate, Seconds, AudioSamples, audio_sample_rate
-from wgan import WassersteinGanTrainer
-from pytorch_model import PyTorchGan
-from preprocess import InstanceScaling
+from .wgan import WassersteinGanTrainer
+from .pytorch_model import PyTorchGan
+from .preprocess import InstanceScaling
 from zounds.ui import GanTrainingMonitorApp
 from zounds.util import simple_lmdb_settings
 from zounds.basic import windowed
@@ -133,9 +133,9 @@ class GanExperiment(object):
             0, 1, (self.batch_size, self.latent_dim)).astype(np.float32)
         samples = try_network(self.gan_pair.generator, z)
         samples = from_var(samples)
-        print samples.shape
+        print(samples.shape)
         wasserstein_estimate = try_network(self.gan_pair.discriminator, samples)
-        print wasserstein_estimate.shape
+        print(wasserstein_estimate.shape)
 
     def run(self):
         ingest(self.dataset, self.sound_cls, multi_threaded=True)
@@ -148,9 +148,9 @@ class GanExperiment(object):
 
         try:
             network = self.gan_pipeline.load_network()
-            print 'initialized weights'
+            print('initialized weights')
         except RuntimeError as e:
-            print 'Error', e
+            print('Error', e)
             network = self.gan_pair
             for p in network.parameters():
                 p.data.normal_(0, 0.02)

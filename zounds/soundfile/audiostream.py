@@ -2,7 +2,7 @@ from io import BytesIO
 from os import SEEK_END
 from soundfile import SoundFile
 from zounds.timeseries import audio_sample_rate, AudioSamples
-from byte_depth import chunk_size_samples
+from .byte_depth import chunk_size_samples
 from featureflow import Node
 
 
@@ -70,14 +70,14 @@ class AudioStream(Node):
         self._buf = None
         self._sf = None
         self._chunk_size_samples = None
-        self._cache = ''
+        self._cache = b''
 
     def _enqueue(self, data, pusher):
         self._cache += data
 
     def _dequeue(self):
         v = self._cache
-        self._cache = ''
+        self._cache = b''
         return v
 
     def _get_samples(self):

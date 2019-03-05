@@ -104,14 +104,14 @@ if __name__ == '__main__':
 
     # learn K-Means centroids from the drum hits
     if not BarkKmeans.exists():
-        print 'learning K-Means clusters'
+        print('learning K-Means clusters')
         BarkKmeans.process(docs=(wo.bark for wo in WithOnsets))
 
     # bark_kmeans = BarkKmeans()
 
     # force the new pooled feature to be computed
     for doc in WithCodes:
-        print doc.pooled.slicedata.shape
+        print(doc.pooled.slicedata.shape)
 
     results = index.random_search(n_results=5)
 

@@ -1,5 +1,5 @@
 from featureflow import BaseModel
-from sliding_window import \
+from .sliding_window import \
     SlidingWindow, IdentityWindowingFunc, OggVorbisWindowingFunc
 from zounds.timeseries import \
     AudioSamples, SR22050, SR44100, SR11025, SR48000, SR96000, SampleRate, \

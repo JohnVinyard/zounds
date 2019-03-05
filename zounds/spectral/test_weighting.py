@@ -1,12 +1,12 @@
 import unittest2
 import numpy as np
-from weighting import AWeighting
-from frequencyscale import LinearScale, FrequencyBand, GeometricScale, MelScale
-from tfrepresentation import FrequencyDimension
-from frequencyadaptive import FrequencyAdaptive
+from .weighting import AWeighting
+from .frequencyscale import LinearScale, FrequencyBand, GeometricScale, MelScale
+from .tfrepresentation import FrequencyDimension
+from .frequencyadaptive import FrequencyAdaptive
 from zounds.timeseries import Seconds, TimeDimension, Milliseconds, SR11025
 from zounds.core import ArrayWithUnits, IdentityDimension
-from functional import fir_filter_bank
+from .functional import fir_filter_bank
 
 
 class WeightingTests(unittest2.TestCase):
@@ -43,7 +43,7 @@ class WeightingTests(unittest2.TestCase):
             duration=Seconds(1),
             frequency=Milliseconds(500))
         scale = GeometricScale(20, 5000, 0.05, 120)
-        arrs = [np.ones((10, x)) for x in xrange(1, 121)]
+        arrs = [np.ones((10, x)) for x in range(1, 121)]
         fa = FrequencyAdaptive(arrs, td, scale)
         weighting = AWeighting()
         result = fa * weighting
@@ -63,7 +63,7 @@ class WeightingTests(unittest2.TestCase):
             duration=Seconds(1),
             frequency=Milliseconds(500))
         scale = GeometricScale(20, 5000, 0.05, 120)
-        arrs = [np.random.random_sample((10, x)) for x in xrange(1, 121)]
+        arrs = [np.random.random_sample((10, x)) for x in range(1, 121)]
         fa = FrequencyAdaptive(arrs, td, scale)
         weighting = AWeighting()
         result = fa * weighting
@@ -75,7 +75,7 @@ class WeightingTests(unittest2.TestCase):
             duration=Seconds(1),
             frequency=Milliseconds(500))
         scale = GeometricScale(20, 5000, 0.05, 120)
-        arrs = [np.ones((10, x)) for x in xrange(1, 121)]
+        arrs = [np.ones((10, x)) for x in range(1, 121)]
         fa = FrequencyAdaptive(arrs, td, scale)
         fa2 = ArrayWithUnits(fa, fa.dimensions)
         weighting = AWeighting()
@@ -88,7 +88,7 @@ class WeightingTests(unittest2.TestCase):
             duration=Seconds(1),
             frequency=Milliseconds(500))
         scale = GeometricScale(20, 5000, 0.05, 120)
-        arrs = [np.ones((10, x)) for x in xrange(1, 121)]
+        arrs = [np.ones((10, x)) for x in range(1, 121)]
         fa = FrequencyAdaptive(arrs, td, scale)
         fa2 = ArrayWithUnits(fa, fa.dimensions)
         weighting = AWeighting()

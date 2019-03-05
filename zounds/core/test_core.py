@@ -1,7 +1,7 @@
 import unittest2
 import numpy as np
-from dimensions import Dimension, IdentityDimension
-from axis import ArrayWithUnits, CustomSlice
+from .dimensions import Dimension, IdentityDimension
+from .axis import ArrayWithUnits, CustomSlice
 from string import ascii_lowercase
 
 
@@ -199,7 +199,7 @@ class CoreTests(unittest2.TestCase):
         arr = ArrayWithUnits(np.zeros((3,)), [ContrivedDimension(10)])
         rs = arr.reshape((-1, 1, arr.size))
         self.assertIsInstance(rs, ArrayWithUnits)
-        print rs.dimensions
+        print(rs.dimensions)
         self.assertIsInstance(rs.dimensions[0], IdentityDimension)
         self.assertIsInstance(rs.dimensions[1], IdentityDimension)
         self.assertIsInstance(rs.dimensions[2], ContrivedDimension)
@@ -370,7 +370,7 @@ class CoreTests(unittest2.TestCase):
         self.assertEqual((10, 1, 1, 7), result.shape)
         self.assertIsInstance(result, ArrayWithUnits)
         self.assertEqual(4, len(result.dimensions))
-        print result.dimensions
+        print(result.dimensions)
         self.assertIsInstance(result.dimensions[0], ContrivedDimension)
         self.assertIsInstance(result.dimensions[1], IdentityDimension)
         self.assertIsInstance(result.dimensions[2], IdentityDimension)

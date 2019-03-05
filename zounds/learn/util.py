@@ -1,4 +1,4 @@
-from __future__ import print_function, division
+
 import numpy as np
 import featureflow as ff
 import torch
@@ -49,7 +49,7 @@ def object_store_pipeline_settings(container, region, username, api_key):
 
 
 def trainable_parameters(model):
-    return filter(lambda x: x.requires_grad, model.parameters())
+    return [x for x in model.parameters() if x.requires_grad]
 
 
 def model_hash(model):
@@ -106,7 +106,7 @@ def apply_network(network, x, chunksize=None):
 
         return np.concatenate(
             [from_var(network(x[i: i + chunksize]))
-             for i in xrange(0, len(x), chunksize)])
+             for i in range(0, len(x), chunksize)])
 
 
 def sample_norm(x):

@@ -1,7 +1,7 @@
 import numpy as np
 from zounds.nputil import sliding_window, windowed
 from zounds.util import tuplify
-from dimensions import IdentityDimension
+from .dimensions import IdentityDimension
 
 
 class CustomSlice(object):
@@ -48,9 +48,7 @@ class ArrayWithUnits(np.ndarray):
                 'They were {arr.shape} and {dimensions}'.format(**locals()))
 
         obj = np.asarray(arr).view(cls)
-        obj.dimensions = tuple(map(
-            lambda d: IdentityDimension() if d is None else d.copy(),
-            dimensions))
+        obj.dimensions = tuple([IdentityDimension() if d is None else d.copy() for d in dimensions])
 
         for dim, size in zip(obj.dimensions, obj.shape):
             try:
@@ -81,14 +79,15 @@ class ArrayWithUnits(np.ndarray):
     def reshape(self, shape, order='C'):
         non_one = lambda x: abs(x) != 1
 
-        if shape == filter(non_one, self.shape):
+        print('IN RESHAPE', self.shape, shape)
+        if tuple(shape) == tuple(filter(non_one, self.shape)):
             # the new shape is this array's shape will all ones removed
             return self.squeeze()
-        elif self.shape == filter(non_one, shape):
+        elif tuple(self.shape) == tuple(filter(non_one, shape)):
             # the new shape just adds some single dimension axes
             dims = iter(self.dimensions)
             new_dims = [
-                IdentityDimension() if abs(size) == 1 else dims.next()
+                IdentityDimension() if abs(size) == 1 else next(dims)
                 for size in shape
             ]
             raw = np.asarray(self)
@@ -101,9 +100,10 @@ class ArrayWithUnits(np.ndarray):
             [IdentityDimension() for _ in shape])
 
     def squeeze(self):
-        zipped = filter(lambda x: x[0] > 1, zip(self.shape, self.dimensions))
+        zipped = [x for x in zip(self.shape, self.dimensions) if x[0] > 1]
+        print(self.shape, self.dimensions, zipped)
         return ArrayWithUnits(
-            np.reshape(self, [s for s, _ in zipped]),
+            super().reshape([s for s, _ in zipped]),
             [d for _, d in zipped])
 
     @classmethod
@@ -266,8 +266,7 @@ class ArrayWithUnits(np.ndarray):
     def _new_dims(self, index, new_arr):
         dims_pos = 0
         shape_pos = 0
-        not_ellipsis_or_none = len(filter(
-            lambda x: x is not Ellipsis and x is not None, index))
+        not_ellipsis_or_none = len([x for x in index if x is not Ellipsis and x is not None])
         for sl in index:
             if sl is None:
                 # additional dimension via np.newaxis
@@ -281,7 +280,7 @@ class ArrayWithUnits(np.ndarray):
                 yield IdentityDimension()
             elif sl is Ellipsis:
                 ellipsis_size = len(self.dimensions) - not_ellipsis_or_none
-                for i in xrange(ellipsis_size):
+                for i in range(ellipsis_size):
                     yield self.dimensions[dims_pos]
                     dims_pos += 1
                     shape_pos += 1
@@ -301,7 +300,7 @@ class ArrayWithUnits(np.ndarray):
 
     def _tuplify(self, a):
         if isinstance(a, list):
-            t = set(map(lambda x: x.__class__, a))
+            t = set([x.__class__ for x in a])
             if len(t) > 1:
                 raise ValueError('a must be homogeneous')
             t = list(t)[0]

@@ -129,7 +129,7 @@ def stft(
         resample_to=SR44100(),
         wscheme=HalfLapped(),
         store_fft=False,
-        fft_padding_samples=None,
+        fft_padding_samples=0,
         store_windowed=False,
         store_resampled=False):
     class ShortTimeFourierTransform(BaseModel):

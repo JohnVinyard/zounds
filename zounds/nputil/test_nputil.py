@@ -1,6 +1,6 @@
 import unittest
 import numpy as np
-from npx import windowed, sliding_window, Growable
+from .npx import windowed, sliding_window, Growable
 
 
 class GrowableTest(unittest.TestCase):

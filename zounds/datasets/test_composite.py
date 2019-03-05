@@ -1,6 +1,6 @@
 import unittest2
-from predownload import PreDownload
-from composite import CompositeDataset
+from .predownload import PreDownload
+from .composite import CompositeDataset
 from zounds.soundfile import AudioMetaData
 
 
@@ -9,8 +9,8 @@ class DatasetA(object):
         super(DatasetA, self).__init__()
 
     def __iter__(self):
-        yield AudioMetaData(uri=PreDownload('', 'http://example.com/1'))
-        yield AudioMetaData(uri=PreDownload('', 'http://example.com/2'))
+        yield AudioMetaData(uri=PreDownload(b'', 'http://example.com/1'))
+        yield AudioMetaData(uri=PreDownload(b'', 'http://example.com/2'))
 
 
 class DatasetB(object):
@@ -18,8 +18,8 @@ class DatasetB(object):
         super(DatasetB, self).__init__()
 
     def __iter__(self):
-        yield AudioMetaData(uri=PreDownload('', 'http://example.com/3'))
-        yield AudioMetaData(uri=PreDownload('', 'http://example.com/4'))
+        yield AudioMetaData(uri=PreDownload(b'', 'http://example.com/3'))
+        yield AudioMetaData(uri=PreDownload(b'', 'http://example.com/4'))
 
 
 class CompositeDatasetTests(unittest2.TestCase):

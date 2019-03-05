@@ -1,9 +1,9 @@
-from __future__ import division
+
 from featureflow import IdentityEncoder, Node, Decoder, Feature
-from audiostream import MemoryBuffer
+from .audiostream import MemoryBuffer
 from zounds.timeseries import audio_sample_rate, TimeSlice, AudioSamples
 from soundfile import *
-from byte_depth import chunk_size_samples
+from .byte_depth import chunk_size_samples
 from zounds.timeseries import Picoseconds, Seconds
 
 
@@ -185,7 +185,7 @@ class OggVorbis(Node):
         while samples.size:
             # KLUDGE: Trying to write too-large chunks to an ogg file seems to
             # cause a segfault in libsndfile
-            for i in xrange(0, len(samples), self._in_sf.samplerate * factor):
+            for i in range(0, len(samples), self._in_sf.samplerate * factor):
                 self._out_sf.write(
                         samples[i: i + self._in_sf.samplerate * factor])
             samples = self._in_sf.read(self._chunk_size_samples)

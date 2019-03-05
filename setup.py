@@ -5,7 +5,7 @@ import subprocess
 
 try:
     long_description = subprocess.check_output(
-        'pandoc --to rst README.md', shell=True)
+        'pandoc --to rst README.md', shell=True).decode()
 except(IOError, ImportError, subprocess.CalledProcessError):
     long_description = open('README.md').read()
 
@@ -74,7 +74,7 @@ setup(
         'zounds.util'
     ],
     install_requires=[
-        'featureflow',
+        'featureflow==3.0.0',
         'nose',
         'unittest2',
         'certifi==2017.7.27.1',

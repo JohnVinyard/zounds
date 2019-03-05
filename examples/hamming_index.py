@@ -57,7 +57,7 @@ if __name__ == '__main__':
     if not len(index):
         index.add_all()
 
-    for i in xrange(1000):
+    for i in range(1000):
         list(index.random_search(n_results=50, sort=True))
 
 

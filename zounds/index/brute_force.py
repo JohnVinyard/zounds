@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.spatial.distance import cdist
-from index import SearchResults
+from .index import SearchResults
 from random import choice
 from zounds.timeseries import ConstantRateTimeSeries
 from zounds.nputil import packed_hamming_distance

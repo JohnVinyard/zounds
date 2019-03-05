@@ -1,5 +1,5 @@
 import unittest2
-from handy import tuplify
+from .handy import tuplify
 
 
 class TuplifyTests(unittest2.TestCase):

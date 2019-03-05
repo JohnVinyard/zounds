@@ -2,7 +2,7 @@ import numpy as np
 import scipy
 import unittest2
 
-from frequencyscale import GeometricScale
+from .frequencyscale import GeometricScale
 from zounds.basic import resampled, stft
 from zounds.core import ArrayWithUnits
 from zounds.persistence import ArrayWithUnitsFeature, FrequencyAdaptiveFeature
@@ -220,10 +220,9 @@ class SpectralCentroidTests(unittest2.TestCase):
 
         ss = SineSynthesizer(self.samplerate)
         chunks = \
-            [ss.synthesize(Seconds(1), [440 * i]) for i in xrange(1, 6)]
+            [ss.synthesize(Seconds(1), [440 * i]) for i in range(1, 6)]
         self.audio = \
             AudioSamples(ArrayWithUnits.concat(chunks), self.samplerate)
-
         _id = Document.process(meta=self.audio.encode())
         self.doc = Document(_id)
 

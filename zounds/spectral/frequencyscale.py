@@ -1,11 +1,10 @@
-from __future__ import division
+
 import numpy as np
 import bisect
 
 
 class Hertz(float):
     def __init__(self, hz):
-        super(Hertz, self).__init__(hz)
         self.hz = hz
 
     def __neg__(self):
@@ -217,7 +216,7 @@ class FrequencyScale(object):
         msg = \
             'band {i}: ratio must be at least {required_ratio} but was {ratio}'
 
-        for i in xrange(0, len(self) - 1):
+        for i in range(0, len(self) - 1):
             b1 = self[i]
             b2 = self[i + 1]
 
@@ -603,7 +602,7 @@ class ChromaScale(FrequencyScale):
         hz = self._semitones_to_hz(semitones)
 
         bands = []
-        for i in xrange(0, len(semitones) - 2):
+        for i in range(0, len(semitones) - 2):
             fh, mh, lh = hz[i: i + 3]
             bands.append(FrequencyBand(fh, lh))
 

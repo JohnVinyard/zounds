@@ -1,5 +1,5 @@
 import requests
-import urlparse
+import urllib.parse
 from zounds.soundfile.audio_metadata import AudioMetaData
 
 
@@ -47,7 +47,7 @@ class InternetArchive(object):
     def __iter__(self):
         base_url = 'https://archive.org/'
         archive_id = self.archive_id
-        url = urlparse.urljoin(
+        url = urllib.parse.urljoin(
             base_url, '/details/{archive_id}&output=json'.format(**locals()))
         resp = requests.get(url)
 
@@ -56,9 +56,9 @@ class InternetArchive(object):
         except ValueError as e:
             all_files = dict()
 
-        for k, v in all_files.iteritems():
+        for k, v in all_files.items():
             if self.format_filter(v):
-                sound_url = urlparse.urljoin(
+                sound_url = urllib.parse.urljoin(
                     base_url, '/download/{archive_id}{k}'.format(**locals()))
                 request = requests.Request(method='GET', url=sound_url)
                 metadata = self._get_metadata(v, all_files)

@@ -1,7 +1,7 @@
 from zounds.soundfile import AudioMetaData
 import requests
 import re
-import urlparse
+import urllib.parse
 
 
 class PhatDrumLoops(object):
@@ -33,7 +33,7 @@ class PhatDrumLoops(object):
         resp = requests.get('http://phatdrumloops.com/beats.php')
         pattern = re.compile('href="(?P<uri>/audio/wav/[^\.]+\.wav)"')
         for m in pattern.finditer(resp.content):
-            url = urlparse.urljoin('http://phatdrumloops.com',
+            url = urllib.parse.urljoin('http://phatdrumloops.com',
                                    m.groupdict()['uri'])
             request = requests.Request(
                 method='GET',

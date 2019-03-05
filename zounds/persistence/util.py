@@ -7,15 +7,18 @@ TIMEDELTA_DTYPE_RE = re.compile(r'\[(?P<dtype>[^\]]+)\]')
 
 
 def encode_timedelta(td):
+    print(td)
     dtype = TIMEDELTA_DTYPE_RE.search(str(td.dtype)).groupdict()['dtype']
-    return base64.b64encode(td.astype(np.uint64).tostring()), dtype
+    # base64 encoded value, encoded as a utf-8
+    encoded = base64.b64encode(td.astype(np.uint64).tostring()).decode()
+    return encoded, dtype
 
 
 def decode_timedelta(t):
     try:
         v = np.frombuffer(base64.b64decode(t[0]), dtype=np.uint64)[0]
         s = t[1]
-        return np.timedelta64(long(v), s)
+        return np.timedelta64(int(v), s)
     except IndexError:
         return t
 
@@ -27,7 +30,5 @@ def extract_init_args(instance):
     be used to reconstruct the instance when deserializing
     """
     cls = instance.__class__
-    args = filter(
-        lambda x: x != 'self',
-        inspect.getargspec(cls.__init__).args)
+    args = [x for x in inspect.getargspec(cls.__init__).args if x != 'self']
     return [instance.__dict__[key] for key in args]

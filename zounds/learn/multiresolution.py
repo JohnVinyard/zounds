@@ -1,5 +1,5 @@
 from torch import nn
-from gated import GatedConvLayer
+from .gated import GatedConvLayer
 
 
 class MultiResolutionBlock(nn.Module):

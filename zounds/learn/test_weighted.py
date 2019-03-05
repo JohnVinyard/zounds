@@ -1,6 +1,6 @@
 import unittest2
 import featureflow as ff
-from preprocess import Weighted, InstanceScaling, PreprocessingPipeline
+from .preprocess import Weighted, InstanceScaling, PreprocessingPipeline
 from zounds.spectral import \
     AWeighting, GeometricScale, FrequencyDimension, FrequencyAdaptive
 from zounds.core import ArrayWithUnits
@@ -75,7 +75,7 @@ class WeightedTests(unittest2.TestCase):
         scale = GeometricScale(100, 1000, 0.1, 15)
 
         training = FrequencyAdaptive(
-            [np.ones((100, x)) for x in xrange(1, len(scale) + 1)],
+            [np.ones((100, x)) for x in range(1, len(scale) + 1)],
             time_dimension=TimeDimension(Seconds(1)),
             scale=scale)
 
@@ -83,7 +83,7 @@ class WeightedTests(unittest2.TestCase):
         model = Model(_id)
 
         test = FrequencyAdaptive(
-            [np.ones((10, x)) for x in xrange(1, len(scale) + 1)],
+            [np.ones((10, x)) for x in range(1, len(scale) + 1)],
             time_dimension=TimeDimension(Seconds(1)),
             scale=scale)
 

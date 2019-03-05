@@ -1,5 +1,5 @@
-from index import SearchResults, HammingIndex
+from .index import SearchResults, HammingIndex
 
-from hammingdb import HammingDb
+from .hammingdb import HammingDb
 
-from brute_force import BruteForceSearch, HammingDistanceBruteForceSearch
+from .brute_force import BruteForceSearch, HammingDistanceBruteForceSearch

@@ -1,9 +1,9 @@
-from __future__ import division
+
 
 import numpy as np
 from scipy.signal import resample
 
-from tfrepresentation import ExplicitFrequencyDimension, FrequencyDimension
+from .tfrepresentation import ExplicitFrequencyDimension, FrequencyDimension
 from zounds.core import ArrayWithUnits
 from zounds.timeseries import ConstantRateTimeSeries
 from zounds.timeseries import Picoseconds, TimeDimension

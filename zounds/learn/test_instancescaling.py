@@ -1,7 +1,7 @@
 import unittest2
 from zounds.util import simple_in_memory_settings
 import featureflow as ff
-from preprocess import InstanceScaling, PreprocessingPipeline
+from .preprocess import InstanceScaling, PreprocessingPipeline
 import numpy as np
 
 

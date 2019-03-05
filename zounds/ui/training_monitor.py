@@ -1,6 +1,6 @@
 from io import BytesIO
 
-from api import ZoundsApp
+from .api import ZoundsApp
 import tornado.websocket
 import tornado.web
 import json

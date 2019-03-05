@@ -1,6 +1,6 @@
 import numpy as np
 import unittest2
-from functional import \
+from .functional import \
     fft, stft, apply_scale, frequency_decomposition, phase_shift, rainbowgram, \
     fir_filter_bank, auto_correlogram, time_stretch, pitch_shift, \
     morlet_filter_bank
@@ -322,7 +322,9 @@ class TimeStretchTests(unittest2.TestCase):
     def test_can_contract_audio_samples(self):
         sr = SR22050()
         samples = SilenceSynthesizer(sr).synthesize(Milliseconds(1000))
+        print('First',samples.shape, samples.dimensions)
         stretched = time_stretch(samples, 2.0).squeeze()
+        print('Second',stretched.shape, stretched.dimensions)
         self.assertEqual(len(samples) // 2, len(stretched))
 
     def test_can_stretch_audio_batch(self):

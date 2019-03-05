@@ -1,5 +1,5 @@
 import numpy as np
-from frequencyadaptive import FrequencyAdaptive
+from .frequencyadaptive import FrequencyAdaptive
 
 
 class FrequencyWeighting(object):

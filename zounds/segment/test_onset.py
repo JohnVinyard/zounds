@@ -1,4 +1,4 @@
-from __future__ import division
+
 import unittest2
 import featureflow as ff
 import numpy as np
@@ -9,7 +9,7 @@ from zounds.timeseries import \
     HalfLapped, Stride, SR44100, Seconds, VariableRateTimeSeriesFeature
 from zounds.spectral import SlidingWindow
 from zounds.synthesize import TickSynthesizer
-from onset import \
+from .onset import \
     MeasureOfTransience, MovingAveragePeakPicker, TimeSliceFeature, \
     ComplexDomain
 from zounds.persistence import ArrayWithUnitsFeature
@@ -27,7 +27,7 @@ class OnsetTests(unittest2.TestCase):
     def ticks(self, samplerate, duration, tick_frequency):
         synth = TickSynthesizer(samplerate)
         samples = synth.synthesize(duration, tick_frequency)
-        print 'DURATION IN SECONDS', samples.span, samples.shape
+        print('DURATION IN SECONDS', samples.span, samples.shape)
         return samples.encode()
 
     def do_assertions(self, onset_class, feature_func):

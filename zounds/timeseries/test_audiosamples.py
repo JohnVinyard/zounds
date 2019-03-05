@@ -1,10 +1,10 @@
 import unittest2
 import numpy as np
-from duration import Seconds
-from samplerate import SR44100, SR11025, SampleRate, Stride
+from .duration import Seconds
+from .samplerate import SR44100, SR11025, SampleRate, Stride
 from zounds.timeseries import TimeDimension, TimeSlice
 from zounds.core import IdentityDimension
-from audiosamples import AudioSamples
+from .audiosamples import AudioSamples
 from zounds.synthesize import SineSynthesizer, SilenceSynthesizer
 
 

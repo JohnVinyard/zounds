@@ -1,5 +1,5 @@
 import unittest2
-from hammingdb import HammingDb
+from .hammingdb import HammingDb
 from uuid import uuid4
 import shutil
 import numpy as np
@@ -14,7 +14,7 @@ class HammingDbTests(unittest2.TestCase):
         def extract_code_from_text(text, n_chunks=1):
             n_bits = n_chunks * 64
             code = np.zeros(n_bits, dtype=np.bool)
-            for i in xrange(len(text)):
+            for i in range(len(text)):
                 trigram = text[i: i + 3]
                 hashed = hash(trigram)
                 code[hashed % n_bits] = 1
@@ -44,17 +44,17 @@ class HammingDbTests(unittest2.TestCase):
 
     def test_metadata_fetch_does_not_raise_when_unitialized(self):
         db = HammingDb(self._path, code_size=16)
-        v = db.get_metadata('cat')
+        v = db.get_metadata(b'cat')
         self.assertEqual(None, v)
 
     def test_can_set_and_get_metadata(self):
         db = HammingDb(self._path, code_size=16)
-        db.set_metadata('cat', 'dog')
-        self.assertEqual('dog', db.get_metadata('cat'))
+        db.set_metadata(b'cat', b'dog')
+        self.assertEqual(b'dog', db.get_metadata(b'cat'))
 
     def test_can_get_random_entry(self):
         db = HammingDb(self._path, code_size=16)
-        for i in xrange(100):
+        for i in range(100):
             db.append(os.urandom(16), str(i))
         code, results = db.random_search(10)
         results = list(results)
@@ -71,10 +71,10 @@ class HammingDbTests(unittest2.TestCase):
 
     def test_can_search_with_128_bits(self):
         db = HammingDb(self._path, code_size=16)
-        t1 = 'Mary had a little lamb'
-        t2 = 'Mary had a little dog'
-        t3 = 'Permanent Midnight'
-        t4 = 'Mary sad a little cog'
+        t1 = b'Mary had a little lamb'
+        t2 = b'Mary had a little dog'
+        t3 = b'Permanent Midnight'
+        t4 = b'Mary sad a little cog'
         extract_code = lambda x: self.extract_code_from_text(x, n_chunks=2)
         db.append(extract_code(t1), t1)
         db.append(extract_code(t2), t2)
@@ -134,10 +134,10 @@ class HammingDbTests(unittest2.TestCase):
 
     def test_can_search_over_text_documents(self):
         db = HammingDb(self._path, code_size=8)
-        t1 = 'Mary had a little lamb'
-        t2 = 'Mary had a little dog'
-        t3 = 'Permanent Midnight'
-        t4 = 'Mary sad a little cog'
+        t1 = b'Mary had a little lamb'
+        t2 = b'Mary had a little dog'
+        t3 = b'Permanent Midnight'
+        t4 = b'Mary sad a little cog'
         db.append(self.extract_code_from_text(t1), t1)
         db.append(self.extract_code_from_text(t2), t2)
         db.append(self.extract_code_from_text(t3), t3)
@@ -151,10 +151,10 @@ class HammingDbTests(unittest2.TestCase):
     def test_can_search_over_data_added_from_another_instance(self):
         db = HammingDb(self._path, code_size=8)
         db2 = HammingDb(self._path, code_size=8)
-        t1 = 'Mary had a little lamb'
-        t2 = 'Mary had a little dog'
-        t3 = 'Permanent Midnight'
-        t4 = 'Mary sad a little cog'
+        t1 = b'Mary had a little lamb'
+        t2 = b'Mary had a little dog'
+        t3 = b'Permanent Midnight'
+        t4 = b'Mary sad a little cog'
         db.append(self.extract_code_from_text(t1), t1)
         db.append(self.extract_code_from_text(t2), t2)
         db.append(self.extract_code_from_text(t3), t3)
@@ -196,10 +196,10 @@ class HammingDbTests(unittest2.TestCase):
 
     def test_can_retrieve_data_from_search(self):
         db = HammingDb(self._path, code_size=8)
-        t1 = 'Mary had a little lamb'
-        t2 = 'Mary had a little dog'
-        t3 = 'Permanent Midnight'
-        t4 = 'Mary sad a little cog'
+        t1 = b'Mary had a little lamb'
+        t2 = b'Mary had a little dog'
+        t3 = b'Permanent Midnight'
+        t4 = b'Mary sad a little cog'
         db.append(self.extract_code_from_text(t1), t1)
         db.append(self.extract_code_from_text(t2), t2)
         db.append(self.extract_code_from_text(t3), t3)

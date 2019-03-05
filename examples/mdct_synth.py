@@ -124,7 +124,7 @@ if __name__ == '__main__':
     # https://archive.org/details/FlavioGaete
     # - https://archive.org/download/FlavioGaete/FlavioGaete22.zip
     filename = 'FlavioGaete22.zip'
-    print 'Processing Audio...'
+    print('Processing Audio...')
     for zf in ff.iter_zip(filename):
         if '._' in zf.filename:
             continue
@@ -132,13 +132,13 @@ if __name__ == '__main__':
             # check if the feature already exists
             Document(zf.filename).mdct.shape
         except KeyError:
-            print 'processing {filename}'.format(filename=zf.filename)
+            print('processing {filename}'.format(filename=zf.filename))
             Document.process(meta=zf, _id=zf.filename)
 
-    print 'learn k-means clusters'
+    print('learn k-means clusters')
     DctKmeans.process(docs=(doc.mdct for doc in Document))
 
-    print 'learn k-means clusters with log amplitude'
+    print('learn k-means clusters with log amplitude')
     DctKmeansWithLogAmplitude.process(docs=(doc.mdct for doc in Document))
 
     synth = zounds.MDCTSynthesizer()
@@ -167,7 +167,7 @@ if __name__ == '__main__':
             doc = Document(_id)
         else:
             doc = choice(docs)
-        print doc._id
+        print(doc._id)
         recon_audio = full_pass(doc.mdct, kmeans.pipeline)
         recon_audio_log_amp = full_pass(doc.mdct, kmeans_log_amplitude.pipeline)
         return doc.ogg[:], recon_audio, recon_audio_log_amp

@@ -1,5 +1,5 @@
 import unittest2
-from loudness import mu_law, inverse_mu_law, inverse_one_hot, instance_scale
+from .loudness import mu_law, inverse_mu_law, inverse_one_hot, instance_scale
 import numpy as np
 
 

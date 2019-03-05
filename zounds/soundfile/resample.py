@@ -1,4 +1,4 @@
-from __future__ import division
+
 
 from ctypes import *
 
@@ -9,7 +9,7 @@ from zounds.core import ArrayWithUnits
 
 try:
     libsamplerate = CDLL('libsamplerate.so')
-except OSError, e:
+except OSError as e:
     # KLUDGE: This is here to support building documentation on readthedocs
     pass
 

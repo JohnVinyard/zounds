@@ -1,8 +1,8 @@
-from frequencydimension import \
+from .frequencydimension import \
     FrequencyDimensionEncoder, FrequencyDimensionDecoder, \
     ExplicitFrequencyDimensionEncoder, ExplicitFrequencyDimensionDecoder
-from identitydimension import IdentityDimensionEncoder, IdentityDimensionDecoder
-from timedimension import TimeDimensionEncoder, TimeDimensionDecoder
+from .identitydimension import IdentityDimensionEncoder, IdentityDimensionDecoder
+from .timedimension import TimeDimensionEncoder, TimeDimensionDecoder
 
 
 class DimensionEncoder(object):
