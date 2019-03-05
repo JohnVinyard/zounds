@@ -206,7 +206,7 @@ class FrequencyAdaptiveTransform(Node):
             try:
                 scale.ensure_overlap_ratio(0.5)
             except AssertionError as e:
-                raise ValueError(e.message)
+                raise ValueError(*e.args)
 
         self._window_func = window_func or np.ones
         self._scale = scale
