@@ -18,7 +18,7 @@ def soundfile(flo=None):
 class AudioMetaDataTests(unittest2.TestCase):
 
     def test_can_handle_local_file_path(self):
-        with tempfile.NamedTemporaryFile(mode='w+') as tf:
+        with tempfile.NamedTemporaryFile(mode='wb+') as tf:
             signal, f = soundfile(flo=tf)
             result = next(MetaData()._process(f.name))
             self.assertEqual(44100, result.samplerate)
