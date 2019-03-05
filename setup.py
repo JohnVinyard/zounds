@@ -85,7 +85,7 @@ setup(
         'argparse',
         'ujson',
         'numpy==1.15.3',
-        'scipy==1.1.0',
+        'scipy==1.2.1',
         'torch==0.4.0'
     ],
     package_data={
