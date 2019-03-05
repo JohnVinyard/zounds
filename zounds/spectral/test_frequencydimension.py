@@ -43,7 +43,7 @@ class ExplicitFrequencyDimensionTests(unittest2.TestCase):
         slices1 = [slice(0, 10), slice(10, 100), slice(100, 1000)]
         dim1 = ExplicitFrequencyDimension(scale1, slices1)
 
-        scale2 = GeometricScale(20, 5000, 0.02, 3)
+        scale2 = GeometricScale(20, 4500, 0.02, 3)
         slices2 = [slice(0, 10), slice(10, 100), slice(100, 1000)]
         dim2 = ExplicitFrequencyDimension(scale2, slices2)
 
