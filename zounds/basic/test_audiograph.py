@@ -97,7 +97,7 @@ class StftTests(unittest2.TestCase):
             zf.writestr(filename, signal.encode().read())
         bio.seek(0)
 
-        zip_wrapper = next(featureflow.iter_zip(bio))
-        _id = Document.process(meta=zip_wrapper)
-        doc = Document(_id)
-        self.assertEqual(2, doc.ogg.duration_seconds)
+        with list(featureflow.iter_zip(bio))[0] as zip_wrapper:
+            _id = Document.process(meta=zip_wrapper)
+            doc = Document(_id)
+            self.assertEqual(2, doc.ogg.duration_seconds)
