@@ -1,5 +1,6 @@
 [![Build Status](https://travis-ci.org/JohnVinyard/zounds.svg?branch=master)](https://travis-ci.org/JohnVinyard/zounds)
 [![Coverage Status](https://coveralls.io/repos/github/JohnVinyard/zounds/badge.svg?branch=master)](https://coveralls.io/github/JohnVinyard/zounds?branch=master)
+![Python 3](https://img.shields.io/pypi/pyversions/zounds.svg)
 [![PyPI](https://img.shields.io/pypi/v/zounds.svg)](https://pypi.python.org/pypi/zounds)
 [![Docs](https://img.shields.io/badge/docs-latest-brightgreen.svg?style=flat&maxAge=86400)](http://zounds.readthedocs.io/en/latest/?badge=latest)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
