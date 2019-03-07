@@ -1,15 +1,15 @@
-from __future__ import division
+
 
 import featureflow as ff
 import numpy as np
 import unittest2
 
-from preprocess import \
+from .preprocess import \
     UnitNorm, Binarize, PreprocessingPipeline, InstanceScaling
-from pytorch_model import PyTorchNetwork, PyTorchAutoEncoder, PyTorchGan
-from supervised import SupervisedTrainer
-from wgan import WassersteinGanTrainer
-from random_samples import ShuffledSamples
+from .pytorch_model import PyTorchNetwork, PyTorchAutoEncoder, PyTorchGan
+from .supervised import SupervisedTrainer
+from .wgan import WassersteinGanTrainer
+from .random_samples import ShuffledSamples
 from zounds.core import ArrayWithUnits, IdentityDimension
 from zounds.spectral import LinearScale, FrequencyBand, FrequencyDimension
 from zounds.timeseries import Seconds, TimeDimension
@@ -168,7 +168,7 @@ class PyTorchModelTests(unittest2.TestCase):
         fuzzed_labels = fuzzed_labels[..., None]
 
         def gen(chunksize, s, l):
-            for i in xrange(0, len(s), chunksize):
+            for i in range(0, len(s), chunksize):
                 sl = slice(i, i + chunksize)
                 yield dict(data=s[sl], labels=l[sl])
 
@@ -270,7 +270,7 @@ class PyTorchModelTests(unittest2.TestCase):
         fuzzed_labels = fuzzed_labels[..., None]
 
         def gen(chunksize, s, l):
-            for i in xrange(0, len(s), chunksize):
+            for i in range(0, len(s), chunksize):
                 sl = slice(i, i + chunksize)
                 yield dict(data=s[sl], labels=l[sl])
 
@@ -342,7 +342,7 @@ class PyTorchModelTests(unittest2.TestCase):
         training = np.random.random_sample((1000, 3))
 
         def gen(chunksize, s):
-            for i in xrange(0, len(s), chunksize):
+            for i in range(0, len(s), chunksize):
                 yield s[i: i + chunksize]
 
         _id = Pipeline.process(inp=gen(100, training))
@@ -408,7 +408,7 @@ class PyTorchModelTests(unittest2.TestCase):
         training = np.random.random_sample((1000, 3))
 
         def gen(chunksize, s):
-            for i in xrange(0, len(s), chunksize):
+            for i in range(0, len(s), chunksize):
                 yield s[i: i + chunksize]
 
         _id = Pipeline.process(inp=gen(100, training))
@@ -458,7 +458,7 @@ class PyTorchModelTests(unittest2.TestCase):
         training_data = np.random.normal(0, 1, (1000, 4))
 
         def gen(chunksize, s):
-            for i in xrange(0, len(s), chunksize):
+            for i in range(0, len(s), chunksize):
                 yield s[i: i + chunksize]
 
         _id = Pipeline.process(inp=gen(100, training_data))
@@ -506,7 +506,7 @@ class PyTorchModelTests(unittest2.TestCase):
         training_data = np.random.normal(0, 1, (1000, 4))
 
         def gen(chunksize, s):
-            for i in xrange(0, len(s), chunksize):
+            for i in range(0, len(s), chunksize):
                 yield s[i: i + chunksize]
 
         _id = Pipeline.process(inp=gen(100, training_data))

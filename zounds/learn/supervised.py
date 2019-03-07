@@ -1,4 +1,4 @@
-from trainer import Trainer
+from .trainer import Trainer
 import numpy as np
 import warnings
 
@@ -36,7 +36,7 @@ class SupervisedTrainer(Trainer):
         msg = \
             'Epoch {epoch}, batch {batch}, train error ' \
             '{train_error}, test error {test_error}'
-        print msg.format(**kwargs)
+        print(msg.format(**kwargs))
 
     def random_sample(self):
         if self.samples is None:
@@ -71,18 +71,18 @@ class SupervisedTrainer(Trainer):
                 error.backward()
                 self.optimizer.step()
 
-            self.samples = zip(inp_v, output)
+            self.samples = list(zip(inp_v, output))
             return inp_v, output, error.data.item()
 
         start = self._current_epoch
         stop = self._current_epoch + self.checkpoint_epochs
 
-        for epoch in xrange(start, stop):
+        for epoch in range(start, stop):
 
             if epoch >= self.epochs:
                 break
 
-            for i in xrange(0, len(data), self.batch_size):
+            for i in range(0, len(data), self.batch_size):
 
                 self.network.zero_grad()
 

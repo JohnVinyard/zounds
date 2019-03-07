@@ -3,8 +3,8 @@ import json
 import os
 import tarfile
 
-from predownload import PreDownload
-from util import ensure_local_file
+from .predownload import PreDownload
+from .util import ensure_local_file
 from zounds.soundfile import AudioMetaData
 
 

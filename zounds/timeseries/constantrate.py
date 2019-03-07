@@ -1,4 +1,4 @@
-from timeseries import TimeDimension, TimeSlice
+from .timeseries import TimeDimension, TimeSlice
 from zounds.core import ArrayWithUnits
 
 

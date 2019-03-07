@@ -1,6 +1,6 @@
 import unittest2
-from tfrepresentation import FrequencyDimension, ExplicitFrequencyDimension
-from frequencyscale import FrequencyBand, LinearScale, GeometricScale
+from .tfrepresentation import FrequencyDimension, ExplicitFrequencyDimension
+from .frequencyscale import FrequencyBand, LinearScale, GeometricScale
 
 
 class FrequencyDimensionTests(unittest2.TestCase):
@@ -43,7 +43,7 @@ class ExplicitFrequencyDimensionTests(unittest2.TestCase):
         slices1 = [slice(0, 10), slice(10, 100), slice(100, 1000)]
         dim1 = ExplicitFrequencyDimension(scale1, slices1)
 
-        scale2 = GeometricScale(20, 5000, 0.02, 3)
+        scale2 = GeometricScale(20, 4500, 0.02, 3)
         slices2 = [slice(0, 10), slice(10, 100), slice(100, 1000)]
         dim2 = ExplicitFrequencyDimension(scale2, slices2)
 
@@ -67,7 +67,7 @@ class ExplicitFrequencyDimensionTests(unittest2.TestCase):
     def test_metaslice_exact_matching_band(self):
         scale = GeometricScale(20, 5000, 0.05, 120)
         # the values of the slices don't matter for this test
-        slices = [slice(0, 10) for _ in xrange(len(scale))]
+        slices = [slice(0, 10) for _ in range(len(scale))]
         dim = ExplicitFrequencyDimension(scale, slices)
         dim2 = dim.metaslice(scale[0], 1)
         self.assertEqual(1, len(dim2.scale))
@@ -78,7 +78,7 @@ class ExplicitFrequencyDimensionTests(unittest2.TestCase):
     def test_metaslice_fuzzy_matching_band(self):
         scale = GeometricScale(20, 5000, 0.05, 120)
         # the values of the slices don't matter for this test
-        slices = [slice(0, 10) for _ in xrange(len(scale))]
+        slices = [slice(0, 10) for _ in range(len(scale))]
         dim = ExplicitFrequencyDimension(scale, slices)
         first_band = scale[0]
         band = FrequencyBand(first_band.start_hz, first_band.stop_hz + 1)

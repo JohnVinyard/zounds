@@ -16,7 +16,7 @@ glossing over in this implementation.  We instead use the DCT2 transform, which
 makes inversion easier, at the cost of more redundancy.
 """
 
-from __future__ import division
+
 import zounds
 import scipy
 

@@ -4,7 +4,7 @@ from torch.nn import functional as F
 from zounds.spectral import morlet_filter_bank, AWeighting, FrequencyDimension
 from zounds.core import ArrayWithUnits
 from zounds.timeseries import TimeDimension
-from util import batchwise_mean_std_normalization
+from .util import batchwise_mean_std_normalization
 
 
 class FilterBank(nn.Module):

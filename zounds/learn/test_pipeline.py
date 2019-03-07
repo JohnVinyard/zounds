@@ -2,7 +2,7 @@ import featureflow
 import numpy as np
 import unittest2
 
-from preprocess import \
+from .preprocess import \
     UnitNorm, MeanStdNormalization, Binarize, PreprocessingPipeline, Log
 from zounds.spectral import \
     GeometricScale, FrequencyAdaptive
@@ -103,7 +103,7 @@ class TestPipeline(unittest2.TestCase):
     def test_can_invert_pipeline_that_takes_frequency_adaptive_transform(self):
         td = TimeDimension(frequency=Seconds(1))
         scale = GeometricScale(20, 5000, 0.05, 10)
-        arrs = [np.zeros((10, x)) for x in xrange(1, 11)]
+        arrs = [np.zeros((10, x)) for x in range(1, 11)]
         fa = FrequencyAdaptive(arrs, td, scale)
 
         @simple_in_memory_settings

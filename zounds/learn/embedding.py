@@ -1,10 +1,10 @@
-from trainer import Trainer
+from .trainer import Trainer
 from random import choice
 import numpy as np
 from torch import nn
 from torch.optim import Adam
 import torch
-from util import trainable_parameters, batchwise_unit_norm
+from .util import trainable_parameters, batchwise_unit_norm
 
 
 class TripletEmbeddingTrainer(Trainer):
@@ -60,11 +60,11 @@ class TripletEmbeddingTrainer(Trainer):
         batches_in_epoch = len(data) // self.batch_size
         start = self._current_epoch
         stop = self._current_epoch + self.checkpoint_epochs
-        for epoch in xrange(start, stop):
+        for epoch in range(start, stop):
             if epoch > self.epochs:
                 break
 
-            for batch in xrange(batches_in_epoch):
+            for batch in range(batches_in_epoch):
                 yield epoch, batch
 
             self._current_epoch += 1
@@ -124,6 +124,5 @@ class TripletEmbeddingTrainer(Trainer):
         return self.network
 
     def _log(self, *args, **kwargs):
-        print \
-            'epoch {epoch}, batch {batch}, ' \
-            'error {error}, deformation {deformation}'.format(**kwargs)
+        print('epoch {epoch}, batch {batch}, ' \
+            'error {error}, deformation {deformation}'.format(**kwargs))

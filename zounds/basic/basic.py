@@ -18,7 +18,7 @@ class Merge(Node):
         if len(needs) < 2:
             raise ValueError(exc_msg)
 
-        self._cache = OrderedDict((id(n), None) for n in needs.values())
+        self._cache = OrderedDict((id(n), None) for n in list(needs.values()))
 
     def _enqueue(self, data, pusher):
         key = id(pusher)
@@ -28,17 +28,17 @@ class Merge(Node):
             self._cache[key] = self._cache[key].concatenate(data)
 
     def _dequeue(self):
-        if any(v is None or len(v) == 0 for v in self._cache.itervalues()):
+        if any(v is None or len(v) == 0 for v in self._cache.values()):
             raise NotEnoughData()
-        shortest = min(len(v) for v in self._cache.itervalues())
+        shortest = min(len(v) for v in self._cache.values())
         output = OrderedDict(
-            (k, v[:shortest]) for k, v in self._cache.iteritems())
+            (k, v[:shortest]) for k, v in self._cache.items())
         self._cache = OrderedDict(
-            (k, v[shortest:]) for k, v in self._cache.iteritems())
+            (k, v[shortest:]) for k, v in self._cache.items())
         return output
 
     def _process(self, data):
-        yield ArrayWithUnits.concat(data.values(), axis=1)
+        yield ArrayWithUnits.concat(list(data.values()), axis=1)
 
 
 class Pooled(Node):
@@ -77,7 +77,7 @@ class Slice(Node):
         self._sl = sl
 
     def _process(self, data):
-        print np.array(data), self._sl
+        print(np.array(data), self._sl)
         yield data[:, self._sl]
 
 
@@ -92,7 +92,7 @@ class Sum(Node):
             # data = np.sum(data, axis=self._axis)
             data = np.sum(axis=self._axis)
         except ValueError:
-            print 'ERROR'
+            print('ERROR')
             data = data
         if data.shape[0]:
             yield data
@@ -109,7 +109,7 @@ class Max(Node):
             # data = np.max(data, axis=self._axis)
             data = data.max(axis=self._axis)
         except ValueError:
-            print 'ERROR'
+            print('ERROR')
             data = data
         if data.shape[0]:
             yield data

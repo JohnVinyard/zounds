@@ -4,21 +4,21 @@ from zounds.timeseries import TimeDimension, Seconds, Milliseconds, SR11025
 from zounds.spectral import \
     FrequencyBand, ExplicitFrequencyDimension, GeometricScale, ExplicitScale, \
     FrequencyDimension, LinearScale
-from frequencyadaptive import FrequencyAdaptive
+from .frequencyadaptive import FrequencyAdaptive
 import numpy as np
 
 
 class FrequencyAdaptiveTests(unittest2.TestCase):
     def test_raises_when_time_dimension_is_none(self):
         scale = GeometricScale(20, 5000, 0.05, 10)
-        arrs = [np.zeros((10, x)) for x in xrange(1, 11)]
+        arrs = [np.zeros((10, x)) for x in range(1, 11)]
         self.assertRaises(
             ValueError, lambda: FrequencyAdaptive(arrs, None, scale))
 
     def test_raises_when_explicit_freq_dimension_and_non_contiguous_array(self):
         td = TimeDimension(frequency=Seconds(1))
         scale = GeometricScale(20, 5000, 0.05, 10)
-        arrs = [np.zeros((10, x)) for x in xrange(1, 11)]
+        arrs = [np.zeros((10, x)) for x in range(1, 11)]
         fa1 = FrequencyAdaptive(arrs, td, scale)
         arr = np.asarray(fa1)
         self.assertRaises(ValueError, lambda: FrequencyAdaptive(
@@ -30,7 +30,7 @@ class FrequencyAdaptiveTests(unittest2.TestCase):
     def test_can_construct_from_contiguous_array(self):
         td = TimeDimension(frequency=Seconds(1))
         scale = GeometricScale(20, 5000, 0.05, 10)
-        arrs = [np.zeros((10, x)) for x in xrange(1, 11)]
+        arrs = [np.zeros((10, x)) for x in range(1, 11)]
         fa1 = FrequencyAdaptive(arrs, td, scale)
         arr = np.asarray(fa1)
         fa2 = FrequencyAdaptive(
@@ -43,7 +43,7 @@ class FrequencyAdaptiveTests(unittest2.TestCase):
     def test_can_construct_instance(self):
         td = TimeDimension(frequency=Seconds(1))
         scale = GeometricScale(20, 5000, 0.05, 10)
-        arrs = [np.zeros((10, x)) for x in xrange(1, 11)]
+        arrs = [np.zeros((10, x)) for x in range(1, 11)]
         fa = FrequencyAdaptive(arrs, td, scale)
         self.assertEqual((10, 55), fa.shape)
         self.assertIsInstance(fa.dimensions[0], TimeDimension)
@@ -52,10 +52,10 @@ class FrequencyAdaptiveTests(unittest2.TestCase):
     def test_can_concatenate_instances(self):
         td = TimeDimension(frequency=Seconds(1))
         scale = GeometricScale(20, 5000, 0.05, 10)
-        arrs = [np.zeros((10, x)) for x in xrange(1, 11)]
+        arrs = [np.zeros((10, x)) for x in range(1, 11)]
         fa = FrequencyAdaptive(arrs, td, scale)
 
-        arrs2 = [np.zeros((20, x)) for x in xrange(1, 11)]
+        arrs2 = [np.zeros((20, x)) for x in range(1, 11)]
         fa2 = FrequencyAdaptive(arrs2, td, scale)
 
         result = fa.concatenate(fa2)
@@ -65,7 +65,7 @@ class FrequencyAdaptiveTests(unittest2.TestCase):
     def test_can_get_single_frequency_band_over_entire_duration(self):
         td = TimeDimension(frequency=Seconds(1))
         scale = GeometricScale(20, 5000, 0.05, 10)
-        arrs = [np.zeros((10, x)) for x in xrange(1, 11)]
+        arrs = [np.zeros((10, x)) for x in range(1, 11)]
         fa = FrequencyAdaptive(arrs, td, scale)
 
         single_band = fa[:, scale[5]]
@@ -80,7 +80,7 @@ class FrequencyAdaptiveTests(unittest2.TestCase):
     def test_can_apply_frequency_slice_across_multiple_bands(self):
         td = TimeDimension(frequency=Seconds(1))
         scale = GeometricScale(20, 5000, 0.05, 10)
-        arrs = [np.zeros((10, x)) for x in xrange(1, 11)]
+        arrs = [np.zeros((10, x)) for x in range(1, 11)]
         fa = FrequencyAdaptive(arrs, td, scale)
         band = FrequencyBand(300, 3030)
 
@@ -94,7 +94,7 @@ class FrequencyAdaptiveTests(unittest2.TestCase):
     def test_can_assign_to_multi_band_frequency_slice(self):
         td = TimeDimension(frequency=Seconds(1))
         scale = GeometricScale(20, 5000, 0.05, 10)
-        arrs = [np.zeros((10, x)) for x in xrange(1, 11)]
+        arrs = [np.zeros((10, x)) for x in range(1, 11)]
         fa = FrequencyAdaptive(arrs, td, scale)
         band = FrequencyBand(300, 3030)
         fa[:, band] = 1
@@ -106,7 +106,7 @@ class FrequencyAdaptiveTests(unittest2.TestCase):
             duration=Seconds(1),
             frequency=Milliseconds(500))
         scale = GeometricScale(20, 5000, 0.05, 120)
-        arrs = [np.zeros((10, x)) for x in xrange(1, 121)]
+        arrs = [np.zeros((10, x)) for x in range(1, 121)]
         fa = FrequencyAdaptive(arrs, td, scale)
         sliced = fa[:, scale[0]]
         self.assertEqual((10, 1), sliced.shape)
@@ -123,7 +123,7 @@ class FrequencyAdaptiveTests(unittest2.TestCase):
             bandwidth_ratio=0.07123,
             n_bands=n_bands)
         arrs = [np.random.normal(0, 1, (10, 2 ** (i + 1))) for i in
-                xrange(n_bands)]
+                range(n_bands)]
         maxes = [arr.max() for arr in arrs]
         fa = FrequencyAdaptive(arrs, td, scale)
         rasterized = fa.rasterize(n_coeffs=32)
@@ -140,7 +140,7 @@ class FrequencyAdaptiveTests(unittest2.TestCase):
             bandwidth_ratio=0.07123,
             n_bands=n_bands)
         arrs = [np.random.normal(0, 1, (10, 2 ** (i + 1))) for i in
-                xrange(n_bands)]
+                range(n_bands)]
         arrs[0][:] = 0
         fa = FrequencyAdaptive(arrs, td, scale)
         rasterized = fa.rasterize(n_coeffs=32)
@@ -151,7 +151,7 @@ class FrequencyAdaptiveTests(unittest2.TestCase):
             duration=Seconds(1),
             frequency=Milliseconds(500))
         scale = GeometricScale(20, 5000, 0.05, 120)
-        arrs = [np.zeros((10, x)) for x in xrange(1, 121)]
+        arrs = [np.zeros((10, x)) for x in range(1, 121)]
         fa = FrequencyAdaptive(arrs, td, scale)
         square = fa.square(50)
 
@@ -177,7 +177,7 @@ class FrequencyAdaptiveTests(unittest2.TestCase):
             duration=Seconds(1),
             frequency=Milliseconds(500))
         scale = GeometricScale(20, 5000, 0.05, 120)
-        arrs = [np.zeros((10, x)) for x in xrange(1, 121)]
+        arrs = [np.zeros((10, x)) for x in range(1, 121)]
         fa = FrequencyAdaptive(arrs, td, scale)
         square = fa.square(50, do_overlap_add=True)
 
@@ -200,7 +200,7 @@ class FrequencyAdaptiveTests(unittest2.TestCase):
             duration=Seconds(1),
             frequency=Seconds(1))
         scale = GeometricScale(20, 5000, 0.05, 120)
-        arrs = [np.zeros((10, x)) for x in xrange(1, 121)]
+        arrs = [np.zeros((10, x)) for x in range(1, 121)]
         fa = FrequencyAdaptive(arrs, td, scale)
         square = fa.square(50)
 
@@ -227,7 +227,7 @@ class FrequencyAdaptiveTests(unittest2.TestCase):
             duration=Seconds(1),
             frequency=Seconds(1))
         scale = GeometricScale(20, 5000, 0.05, 120)
-        arrs = [np.zeros((10, x)) for x in xrange(1, 121)]
+        arrs = [np.zeros((10, x)) for x in range(1, 121)]
         fa = FrequencyAdaptive(arrs, td, scale)
         square = fa.square(50, do_overlap_add=True)
 
@@ -248,7 +248,7 @@ class FrequencyAdaptiveTests(unittest2.TestCase):
     def test_from_arr_with_units(self):
         td = TimeDimension(frequency=Seconds(1))
         scale = GeometricScale(20, 5000, 0.05, 10)
-        arrs = [np.zeros((10, x)) for x in xrange(1, 11)]
+        arrs = [np.zeros((10, x)) for x in range(1, 11)]
         fa = FrequencyAdaptive(arrs, td, scale)
 
         raw_arr = ArrayWithUnits(np.array(fa), fa.dimensions)

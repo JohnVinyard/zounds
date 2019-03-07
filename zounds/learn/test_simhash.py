@@ -1,7 +1,7 @@
 import unittest2
 from zounds.util import simple_in_memory_settings
 import featureflow as ff
-from preprocess import SimHash, PreprocessingPipeline
+from .preprocess import SimHash, PreprocessingPipeline
 import numpy as np
 from zounds.timeseries import TimeDimension, Seconds
 from zounds.spectral import GeometricScale, FrequencyDimension

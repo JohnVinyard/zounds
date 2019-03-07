@@ -4,9 +4,9 @@ import featureflow as ff
 import numpy as np
 import unittest2
 
-from duration import Milliseconds
-from timeseries import TimeSlice
-from variablerate import VariableRateTimeSeries, VariableRateTimeSeriesFeature
+from .duration import Milliseconds
+from .timeseries import TimeSlice
+from .variablerate import VariableRateTimeSeries, VariableRateTimeSeriesFeature
 from zounds.basic import Pooled, stft
 from zounds.segment import TimeSliceFeature
 from zounds.synthesize import NoiseSynthesizer

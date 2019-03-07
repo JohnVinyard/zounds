@@ -2,12 +2,12 @@ import sys
 import json
 import tornado.ioloop
 import tornado.web
-import httplib
+import http.client
 import traceback
-from cStringIO import StringIO
+from io import StringIO
 import uuid
-from baseapp import BaseZoundsApp, NoMatchingSerializerException, RequestContext
-from featureparser import FeatureParser
+from .baseapp import BaseZoundsApp, NoMatchingSerializerException, RequestContext
+from .featureparser import FeatureParser
 
 
 class ZoundsApp(BaseZoundsApp):
@@ -53,13 +53,13 @@ class ZoundsApp(BaseZoundsApp):
                 try:
                     result = app.temp[_id]
                 except KeyError:
-                    self.set_status(httplib.NOT_FOUND)
+                    self.set_status(http.client.NOT_FOUND)
                     self.finish()
                     return
                 self.set_header('Content-Type', result.content_type)
                 self.set_header('Accept-Ranges', 'bytes')
                 self.write(result.data)
-                self.set_status(httplib.OK)
+                self.set_status(http.client.OK)
                 self.finish()
 
         return TempHandler
@@ -106,10 +106,10 @@ class ZoundsApp(BaseZoundsApp):
                         exec (statement, globals, locals)
                         sio.seek(0)
                         output['result'] = sio.read()
-                    self.set_status(httplib.OK)
+                    self.set_status(http.client.OK)
                 except:
                     output['error'] = traceback.format_exc()
-                    self.set_status(httplib.BAD_REQUEST)
+                    self.set_status(http.client.BAD_REQUEST)
                 finally:
                     sys.stdout = orig_stdout
 

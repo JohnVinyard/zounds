@@ -1,5 +1,5 @@
 import unittest2
-from random_samples import \
+from .random_samples import \
     ReservoirSampler, Reservoir, MultiplexedReservoir
 from zounds.timeseries import TimeDimension, Seconds
 from zounds.spectral import FrequencyDimension, FrequencyBand, LinearScale
@@ -62,7 +62,7 @@ class TestReservoir(unittest2.TestCase):
     def test_reservoir_is_well_mixed(self):
         r = Reservoir(100)
         samples = np.arange(100)[..., None]
-        for i in xrange(0, 100, 10):
+        for i in range(0, 100, 10):
             r.add(samples[i: i + 10])
         mixed = r.get().squeeze()
         diff = np.diff(mixed)
@@ -84,7 +84,7 @@ class TestReservoir(unittest2.TestCase):
     def test_can_get_batch(self):
         r = Reservoir(100)
         samples = np.arange(100)[..., None]
-        for i in xrange(0, 100, 10):
+        for i in range(0, 100, 10):
             r.add(samples[i: i + 10])
         samples = r.get_batch(15)
         self.assertEqual(15, samples.shape[0])
@@ -92,14 +92,14 @@ class TestReservoir(unittest2.TestCase):
     def test_raises_if_get_batch_is_larger_than_total_sample_size(self):
         r = Reservoir(100)
         samples = np.arange(100)[..., None]
-        for i in xrange(0, 100, 10):
+        for i in range(0, 100, 10):
             r.add(samples[i: i + 10])
         self.assertRaises(ValueError, lambda: r.get_batch(1000))
 
     def test_raises_if_get_batch_is_larger_than_available_sample_size(self):
         r = Reservoir(100)
         samples = np.arange(100)[..., None]
-        for i in xrange(0, 50, 10):
+        for i in range(0, 50, 10):
             r.add(samples[i: i + 10])
         self.assertRaises(ValueError, lambda: r.get_batch(64))
 

@@ -1,7 +1,7 @@
 import tornado
-from baseapp import BaseZoundsApp, RequestContext
+from .baseapp import BaseZoundsApp, RequestContext
 import base64
-import urllib
+import urllib.request, urllib.parse, urllib.error
 
 
 class ZoundsSearch(BaseZoundsApp):
@@ -32,7 +32,7 @@ class ZoundsSearch(BaseZoundsApp):
 
         class SearchHandler(tornado.web.RequestHandler):
             def get(self):
-                b64_encoded_query = urllib.unquote(
+                b64_encoded_query = urllib.parse.unquote(
                         self.get_argument('query', default=''))
                 if b64_encoded_query:
                     binary_query = base64.b64decode(b64_encoded_query)

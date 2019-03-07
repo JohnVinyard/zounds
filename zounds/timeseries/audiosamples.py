@@ -1,10 +1,10 @@
-from samplerate import AudioSampleRate, audio_sample_rate
+from .samplerate import AudioSampleRate, audio_sample_rate
 from soundfile import SoundFile
 from io import BytesIO
 from zounds.core import IdentityDimension, ArrayWithUnits
-from timeseries import TimeDimension, TimeSlice
-from duration import Picoseconds, Seconds
-from samplerate import SampleRate
+from .timeseries import TimeDimension, TimeSlice
+from .duration import Picoseconds, Seconds
+from .samplerate import SampleRate
 import numpy as np
 
 
@@ -218,7 +218,7 @@ class AudioSamples(ArrayWithUnits):
                 # location
                 factor = 20
                 chunksize = self.samples_per_second * factor
-                for i in xrange(0, len(self), chunksize):
+                for i in range(0, len(self), chunksize):
                     chunk = self[i: i + chunksize]
                     f.write(chunk)
             else:

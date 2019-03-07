@@ -3,8 +3,8 @@ import unittest2
 import numpy as np
 
 from zounds.util import simple_in_memory_settings
-from preprocess import UnitNorm, PreprocessingPipeline
-from learn import KMeans
+from .preprocess import UnitNorm, PreprocessingPipeline
+from .learn import KMeans
 from zounds.timeseries import Seconds, TimeDimension
 from zounds.spectral import FrequencyBand, LinearScale, FrequencyDimension
 from zounds.core import ArrayWithUnits, IdentityDimension

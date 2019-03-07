@@ -1,7 +1,7 @@
 import unittest2
 import numpy as np
 from featureflow import BaseModel, Node, PersistenceSettings
-from basic import Merge
+from .basic import Merge
 from zounds.timeseries import  Milliseconds, TimeDimension
 from zounds.persistence import ArrayWithUnitsFeature
 from zounds.core import ArrayWithUnits, IdentityDimension
@@ -20,7 +20,7 @@ class MergeTester(Node):
         self.total_frames = total_frames
 
     def _process(self, data):
-        for i in xrange(0, self.total_frames, self.increments_of):
+        for i in range(0, self.total_frames, self.increments_of):
             size = min(self.increments_of, self.total_frames - i)
             td = TimeDimension(frequency=Milliseconds(500))
             yield ArrayWithUnits(

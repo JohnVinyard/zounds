@@ -1,12 +1,12 @@
-from __future__ import division
-from frequencyscale import LinearScale, FrequencyBand, ExplicitScale
-from tfrepresentation import FrequencyDimension
-from frequencyadaptive import FrequencyAdaptive
+
+from .frequencyscale import LinearScale, FrequencyBand, ExplicitScale
+from .tfrepresentation import FrequencyDimension
+from .frequencyadaptive import FrequencyAdaptive
 from zounds.timeseries import \
     audio_sample_rate, TimeSlice, Seconds, TimeDimension, HalfLapped, \
     Milliseconds, SampleRate
 from zounds.core import ArrayWithUnits, IdentityDimension
-from sliding_window import \
+from .sliding_window import \
     IdentityWindowingFunc, HanningWindowingFunc, WindowingFunc
 from zounds.loudness import log_modulus, unit_scale
 import numpy as np
@@ -47,6 +47,7 @@ def fft(x, axis=-1, padding_samples=0):
 
 
 def stft(x, window_sample_rate=HalfLapped(), window=HanningWindowingFunc()):
+    print(x.shape, x.ndim)
     duration = TimeSlice(window_sample_rate.duration)
     frequency = TimeSlice(window_sample_rate.frequency)
 
@@ -82,6 +83,7 @@ def time_stretch(x, factor, frame_sample_rate=None):
     # to simplify, let's always compute the stft in "batch" mode
     if x.ndim == 1:
         x = x.reshape((1,) + x.shape)
+    print('In time_stretch', x.shape, x.dimensions)
 
     D = stft(x, sr, win)
 
@@ -145,7 +147,7 @@ def time_stretch(x, factor, frame_sample_rate=None):
     # overlap add the new audio samples
     new_n_samples = int(x.shape[-1] / factor)
     output = np.zeros((n_batches, new_n_samples), dtype=x.dtype)
-    for i in xrange(new_frames.shape[1]):
+    for i in range(new_frames.shape[1]):
         start = i * hop_length
         stop = start + new_frames.shape[-1]
         l = output[:, start: stop].shape[1]
@@ -208,7 +210,7 @@ def phase_shift(coeffs, samplerate, time_shift, axis=-1, frequency_band=None):
         new_coeffs[frequency_band] *= shift[frequency_band]
         return new_coeffs
 
-    slices = [slice(None) for _ in xrange(coeffs.ndim)]
+    slices = [slice(None) for _ in range(coeffs.ndim)]
     slices[axis] = frequency_band
     new_coeffs[tuple(slices)] *= shift[frequency_band]
     return new_coeffs
@@ -254,7 +256,7 @@ def fir_filter_bank(scale, taps, samplerate, window):
     if window.ndim == 1:
         window = repeat(window, len(scale))
 
-    for i, band, win in zip(xrange(len(scale)), scale, window):
+    for i, band, win in zip(range(len(scale)), scale, window):
         start_hz = max(0, band.start_hz)
         stop_hz = min(nyq, band.stop_hz)
         freqs = np.linspace(
@@ -330,21 +332,21 @@ def auto_correlogram(x, filter_bank, correlation_window=Milliseconds(30)):
 
     corr_win_samples = int(correlation_window / x.samplerate.frequency)
     windowed = sliding_window(x, filter_size, 1, flatten=False)
-    print windowed.shape
+    print(windowed.shape)
     filtered = np.dot(windowed, filter_bank.T)
-    print filtered.shape
+    print(filtered.shape)
     corr = sliding_window(
         filtered,
         ws=(corr_win_samples, n_filters),
         ss=(1, n_filters),
         flatten=False)
-    print corr.shape
+    print(corr.shape)
 
     padded_shape = list(corr.shape)
     padded_shape[2] = corr_win_samples * 2
     padded = np.zeros(padded_shape, dtype=np.float32)
     padded[:, :, :corr_win_samples, :] = corr
-    print padded.shape
+    print(padded.shape)
 
     coeffs = np.fft.fft(padded, axis=2, norm='ortho')
     correlated = np.fft.ifft(np.abs(coeffs) ** 2, axis=2, norm='ortho')

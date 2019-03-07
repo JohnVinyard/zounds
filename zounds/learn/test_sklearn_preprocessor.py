@@ -1,6 +1,6 @@
 import unittest2
-from sklearn_preprocessor import SklearnModel
-from preprocess import PreprocessingPipeline
+from .sklearn_preprocessor import SklearnModel
+from .preprocess import PreprocessingPipeline
 import featureflow as ff
 import numpy as np
 from zounds.util import simple_in_memory_settings

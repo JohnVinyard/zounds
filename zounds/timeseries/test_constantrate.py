@@ -1,5 +1,5 @@
 import unittest2
-from constantrate import ConstantRateTimeSeries
+from .constantrate import ConstantRateTimeSeries
 from zounds.core import ArrayWithUnits, IdentityDimension
 from zounds.timeseries import TimeDimension, Seconds, Milliseconds, TimeSlice
 import numpy as np

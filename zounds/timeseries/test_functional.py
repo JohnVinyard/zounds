@@ -1,5 +1,5 @@
 import unittest2
-from functional import categorical, inverse_categorical
+from .functional import categorical, inverse_categorical
 from zounds.core import ArrayWithUnits
 from zounds.synthesize import SineSynthesizer
 from zounds.timeseries import Seconds, SR11025, TimeSlice

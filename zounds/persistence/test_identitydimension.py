@@ -1,5 +1,5 @@
 import unittest2
-from identitydimension import IdentityDimensionEncoder, IdentityDimensionDecoder
+from .identitydimension import IdentityDimensionEncoder, IdentityDimensionDecoder
 from zounds.core import IdentityDimension, Dimension
 
 

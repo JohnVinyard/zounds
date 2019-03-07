@@ -1,6 +1,6 @@
 import numpy as np
-from duration import Picoseconds, Seconds
-from samplerate import SampleRate
+from .duration import Picoseconds, Seconds
+from .samplerate import SampleRate
 from zounds.core import Dimension
 
 
@@ -72,7 +72,7 @@ class TimeSlice(object):
         try:
             return self.start.__gt__(other.start)
         except AttributeError:
-            return self.start.__get__(other)
+            return self.start.__gt__(other)
 
     def __le__(self, other):
         try:

@@ -1,5 +1,5 @@
 import unittest2
-from featureparser import FeatureParser
+from .featureparser import FeatureParser
 from zounds.basic import stft
 from zounds.util import simple_in_memory_settings
 from zounds.synthesize import NoiseSynthesizer

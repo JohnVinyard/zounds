@@ -5,7 +5,7 @@ useful for test-cases, while others are able to invert common frequency-domain
 transforms, like the :class:`MDCTSynthesizer`
 """
 
-from synthesize import \
+from .synthesize import \
     FFTSynthesizer, DCTSynthesizer, TickSynthesizer, NoiseSynthesizer, \
     SineSynthesizer, DCTIVSynthesizer, MDCTSynthesizer, \
     FrequencyAdaptiveFFTSynthesizer, FrequencyAdaptiveDCTSynthesizer, \

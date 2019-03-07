@@ -1,7 +1,7 @@
 import featureflow as ff
-from random_samples import ShuffledSamples
-from random_samples import InfiniteSampler
-from preprocess import PreprocessingPipeline
+from .random_samples import ShuffledSamples
+from .random_samples import InfiniteSampler
+from .preprocess import PreprocessingPipeline
 
 
 def learning_pipeline():
@@ -18,7 +18,7 @@ def learning_pipeline():
 
 
 def infinite_streaming_learning_pipeline(cls):
-    roots = filter(lambda feature: feature.is_root, cls.features.itervalues())
+    roots = [feature for feature in iter(cls.features.values()) if feature.is_root]
 
     if len(roots) != 1:
         raise ValueError('cls must have a single root feature')

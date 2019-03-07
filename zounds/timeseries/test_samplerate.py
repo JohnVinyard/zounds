@@ -1,10 +1,10 @@
-from __future__ import division
+
 import unittest2
 import numpy as np
-from duration import Seconds, Milliseconds
+from .duration import Seconds, Milliseconds
 from zounds.core import ArrayWithUnits, IdentityDimension
-from timeseries import TimeDimension
-from samplerate import \
+from .timeseries import TimeDimension
+from .samplerate import \
     SampleRate, SR96000, SR48000, SR44100, SR22050, SR11025, \
     audio_sample_rate, HalfLapped
 from zounds.synthesize import SilenceSynthesizer

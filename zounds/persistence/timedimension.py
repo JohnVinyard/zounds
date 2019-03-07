@@ -1,6 +1,6 @@
 from zounds.timeseries import TimeDimension
-from basedimension import BaseDimensionEncoder, BaseDimensionDecoder
-from util import encode_timedelta, decode_timedelta
+from .basedimension import BaseDimensionEncoder, BaseDimensionDecoder
+from .util import encode_timedelta, decode_timedelta
 
 
 class TimeDimensionEncoder(BaseDimensionEncoder):

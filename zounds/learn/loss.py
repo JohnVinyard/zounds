@@ -4,7 +4,7 @@ from torch import nn
 from torch.autograd import Variable
 from torch.nn import functional as F
 
-from dct_transform import DctTransform
+from .dct_transform import DctTransform
 from zounds.spectral import fir_filter_bank
 from zounds.timeseries import SampleRate
 

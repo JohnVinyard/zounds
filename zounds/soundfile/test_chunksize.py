@@ -1,5 +1,5 @@
 import unittest2
-from chunksize import ChunkSizeBytes
+from .chunksize import ChunkSizeBytes
 from zounds.timeseries import SR44100, Seconds
 
 

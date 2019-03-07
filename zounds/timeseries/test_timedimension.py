@@ -1,7 +1,7 @@
 import unittest2
-from timeseries import TimeDimension, TimeSlice
-from duration import Seconds, Milliseconds
-from samplerate import SR44100
+from .timeseries import TimeDimension, TimeSlice
+from .duration import Seconds, Milliseconds
+from .samplerate import SR44100
 
 
 class TimeDimensionTests(unittest2.TestCase):

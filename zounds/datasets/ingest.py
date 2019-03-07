@@ -1,5 +1,6 @@
-from multiprocessing.pool import ThreadPool, Pool, cpu_count
-from itertools import repeat, izip, imap
+from multiprocessing.pool import ThreadPool, Pool
+from itertools import repeat
+from os import cpu_count
 
 
 def ingest_one(arg):
@@ -7,14 +8,14 @@ def ingest_one(arg):
     request = metadata.request
     url = request.url
     if skip_if_exists and cls.exists(request.url):
-        print 'already processed {request.url}'.format(**locals())
+        print('already processed {request.url}'.format(**locals()))
         return
 
     try:
-        print 'processing {request.url}'.format(**locals())
+        print('processing {request.url}'.format(**locals()))
         cls.process(meta=metadata, _id=url)
     except Exception as e:
-        print e
+        print(e)
 
 
 def ingest(
@@ -39,7 +40,7 @@ def ingest(
     cls_args = repeat(cls)
     skip_args = repeat(skip_if_exists)
 
-    map_func(ingest_one, izip(dataset, cls_args, skip_args))
+    map_func(ingest_one, zip(dataset, cls_args, skip_args))
 
     if pool is not None:
         # if we're ingesting using multiple processes or threads, the processing

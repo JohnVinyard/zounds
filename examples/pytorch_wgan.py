@@ -1,4 +1,4 @@
-from __future__ import division
+
 import numpy as np
 import featureflow as ff
 import zounds
@@ -14,6 +14,7 @@ from scipy.signal import resample, tukey
 from random import choice
 import torch.nn.functional as F
 from uuid import uuid4
+from functools import reduce
 
 samplerate = zounds.SR11025()
 BaseModel = zounds.resampled(resample_to=samplerate, store_resampled=True)
@@ -146,11 +147,11 @@ class FDDiscriminator(nn.Module):
 
         self.feature_map_sizes = reduce(
             lambda x, y: x + [int(x[-1] * FACTOR)],
-            xrange(len(bands) - 1),
+            range(len(bands) - 1),
             [FIRST_FEATURE_MAP_SIZE])
 
         for i, band in enumerate(bands):
-            for j in xrange(i + 1):
+            for j in range(i + 1):
                 fms = self.feature_map_sizes[j]
                 first_layer = j == 0
                 in_channels = 1 if first_layer else self.feature_map_sizes[
@@ -194,11 +195,11 @@ class FDGenerator(nn.Module):
         self.factor = FACTOR
         self.feature_map_sizes = reduce(
             lambda x, y: x + [int(x[-1] * FACTOR)],
-            xrange(len(bands) - 1),
+            range(len(bands) - 1),
             [FIRST_FEATURE_MAP_SIZE])
 
         for i, band in enumerate(bands):
-            for j in xrange(i + 1):
+            for j in range(i + 1):
                 fms = self.feature_map_sizes[j]
                 first_layer = j == 0
                 out_channels = 1 if first_layer else self.feature_map_sizes[
@@ -309,10 +310,10 @@ def try_network():
     c = network.discriminator
 
     result = g(v, debug=True)
-    print result.size()
+    print(result.size())
 
     labels = c(result, debug=True)
-    print labels.size()
+    print(labels.size())
 
 
 @zounds.simple_settings
@@ -395,7 +396,7 @@ def load_and_play():
         glob.glob('*.npy'),
         cmp=lambda x, y: int(os.stat(x).st_ctime - os.stat(y).st_ctime))
     most_recent = files[-1]
-    print 'loading generated examples from', most_recent
+    print('loading generated examples from', most_recent)
     results = np.load(most_recent)
 
     # synthesized = FrequencyDecomposition.synthesize_block(results)
@@ -410,11 +411,11 @@ def load_and_play():
 
 
 def synthetic():
-    for i in xrange(100):
+    for i in range(100):
         duration = zounds.Seconds(np.random.randint(2, 20))
         root = np.random.randint(50, 400)
         hz = [root]
-        for _ in xrange(0):
+        for _ in range(0):
             hz.append(hz[-1] * 2)
         synth = zounds.SineSynthesizer(samplerate)
         s = synth.synthesize(duration, hz)
@@ -453,7 +454,7 @@ def ingest_and_train(epochs):
         v = Variable(t).cuda()
         samples = network.generator(v).data.cpu().numpy().squeeze()
         np.save('epoch' + str(epoch), samples)
-        print 'saved samples for epoch', epoch
+        print('saved samples for epoch', epoch)
         return dict()
 
     # out_channels = 128
@@ -500,7 +501,7 @@ def ingest_and_train(epochs):
     p = Gan()
 
     def walk2(steps):
-        for i in xrange(steps):
+        for i in range(steps):
             yield np.random.normal(0, 1, LATENT_DIM)
 
     def listen():
@@ -529,7 +530,7 @@ def test_frequency_decomposition():
     inp = Variable(inp).cuda()
     x = gen(inp)
 
-    print x.size()
+    print(x.size())
 
     disc = FDDiscriminator().cuda()
 
@@ -540,10 +541,10 @@ def test_frequency_decomposition():
     # inp = Variable(inp).cuda()
 
     x = disc(x)
-    print x.size()
+    print(x.size())
 
-    print gen.layers
-    print disc.layers
+    print(gen.layers)
+    print(disc.layers)
 
 
 def tweak():
@@ -578,8 +579,8 @@ def get_magnitudes():
         m = np.abs(b).mean()
         magnitudes.append(m)
         scaled.append(np.abs(b / m).mean())
-    print magnitudes
-    print scaled
+    print(magnitudes)
+    print(scaled)
 
 
 if __name__ == '__main__':

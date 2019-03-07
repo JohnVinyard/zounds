@@ -1,5 +1,5 @@
 import unittest2
-from dimensions import IdentityDimension, Dimension
+from .dimensions import IdentityDimension, Dimension
 
 
 class IdentityDimensionTests(unittest2.TestCase):

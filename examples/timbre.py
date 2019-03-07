@@ -1,5 +1,5 @@
 import os
-from urlparse import urlparse
+from urllib.parse import urlparse
 import featureflow as ff
 import requests
 import zounds
@@ -85,7 +85,7 @@ def download_zip_archive():
     if not os.path.exists(filename):
         resp = requests.get(url, stream=True)
 
-        print 'Downloading {url} -> {filename}...'.format(**locals())
+        print('Downloading {url} -> {filename}...'.format(**locals()))
 
         with open(filename, 'wb') as f:
             for chunk in resp.iter_content(chunk_size=1000000):
@@ -99,22 +99,22 @@ if __name__ == '__main__':
 
     zip_filename = download_zip_archive()
 
-    print 'Processing Audio...'
+    print('Processing Audio...')
     for zf in ff.iter_zip(zip_filename):
 
         if '._' in zf.filename:
             continue
 
         try:
-            print 'processing {zf.filename}'.format(**locals())
+            print('processing {zf.filename}'.format(**locals()))
             WithTimbre.process(
                 _id=zf.filename, meta=zf, raise_if_exists=True)
         except ff.ModelExistsError as e:
-            print e
+            print(e)
 
     # learn K-Means centroids
     try:
-        print 'learning K-Means centroids'
+        print('learning K-Means centroids')
         BfccKmeans.process(
             docs=(wt.bfcc for wt in WithTimbre), raise_if_exists=True)
     except ff.ModelExistsError:
@@ -122,7 +122,7 @@ if __name__ == '__main__':
 
     # force the new features to be computed, so they're pushed into the index
     for wc in WithCodes:
-        print wc.bfcc_kmeans_pooled
+        print(wc.bfcc_kmeans_pooled)
 
     app = zounds.ZoundsSearch(
         model=WithTimbre,

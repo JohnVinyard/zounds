@@ -1,4 +1,4 @@
-from preprocess import Preprocessor, PreprocessResult
+from .preprocess import Preprocessor, PreprocessResult
 
 
 class SklearnModel(Preprocessor):

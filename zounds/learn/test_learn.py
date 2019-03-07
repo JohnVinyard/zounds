@@ -1,9 +1,9 @@
 import unittest2
 import featureflow
-from random_samples import ReservoirSampler
-from preprocess import \
+from .random_samples import ReservoirSampler
+from .preprocess import \
     UnitNorm, MeanStdNormalization, PreprocessingPipeline, Pipeline
-from learn import Learned, KMeans
+from .learn import Learned, KMeans
 import numpy as np
 
 
@@ -59,7 +59,7 @@ def build_classes():
 
 
 def data():
-    for i in xrange(100):
+    for i in range(100):
         yield np.random.random_sample((np.random.randint(10, 100), 9))
 
 

@@ -1,4 +1,4 @@
-from util import encode_timedelta, decode_timedelta
+from .util import encode_timedelta, decode_timedelta
 
 
 class TimeSliceEncoder(object):

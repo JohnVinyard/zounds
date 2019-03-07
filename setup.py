@@ -5,7 +5,7 @@ import subprocess
 
 try:
     long_description = subprocess.check_output(
-        'pandoc --to rst README.md', shell=True)
+        'pandoc --to rst README.md', shell=True).decode()
 except(IOError, ImportError, subprocess.CalledProcessError):
     long_description = open('README.md').read()
 
@@ -85,7 +85,7 @@ setup(
         'argparse',
         'ujson',
         'numpy==1.15.3',
-        'scipy==1.1.0',
+        'scipy==1.2.1',
         'torch==0.4.0'
     ],
     package_data={
@@ -93,5 +93,8 @@ setup(
         'ui': ['*.html', '*.js']
     },
     scripts=['bin/zounds-quickstart'],
-    include_package_data=True
+    include_package_data=True,
+    classifiers=[
+        "Programming Language :: Python :: 3",
+    ],
 )

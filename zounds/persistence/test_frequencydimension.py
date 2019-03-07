@@ -1,5 +1,5 @@
 import unittest2
-from frequencydimension import \
+from .frequencydimension import \
     FrequencyDimensionEncoder, FrequencyDimensionDecoder, \
     LinearScaleEncoderDecoder, GeometricScaleEncoderDecoder, \
     ExplicitScaleEncoderDecoder, ExplicitFrequencyDimensionEncoder, \

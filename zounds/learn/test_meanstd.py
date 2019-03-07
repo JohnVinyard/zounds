@@ -1,6 +1,6 @@
 import unittest2
 from zounds.util import simple_in_memory_settings
-from preprocess import MeanStdNormalization, PreprocessingPipeline
+from .preprocess import MeanStdNormalization, PreprocessingPipeline
 import featureflow as ff
 import numpy as np
 

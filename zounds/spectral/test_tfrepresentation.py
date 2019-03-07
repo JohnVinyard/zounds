@@ -1,8 +1,8 @@
-from __future__ import division
+
 import numpy as np
 import unittest2
-from frequencyscale import LinearScale, FrequencyBand, Hertz
-from weighting import AWeighting
+from .frequencyscale import LinearScale, FrequencyBand, Hertz
+from .weighting import AWeighting
 from zounds.timeseries import Seconds, TimeDimension, TimeSlice, SR11025
 from zounds.spectral import FrequencyDimension, GeometricScale
 from zounds.core import ArrayWithUnits, IdentityDimension
@@ -263,7 +263,7 @@ class TimeFrequencyRepresentationTests(unittest2.TestCase):
         tf = ArrayWithUnits(np.ones((30, 100)), [td, fd])
         from_example = ArrayWithUnits.from_example(np.ones((30, 100)), tf)
         self.assertEqual(tf.shape, from_example.shape)
-        self.assertItemsEqual(tf.dimensions, from_example.dimensions)
+        self.assertSequenceEqual(tf.dimensions, from_example.dimensions)
 
     def test_can_multiply_by_frequency_weighting_linear_scale(self):
         frequency = Seconds(1)

@@ -1,9 +1,9 @@
-from __future__ import division
+
 
 import numpy as np
 from scipy.signal import resample
 
-from tfrepresentation import ExplicitFrequencyDimension, FrequencyDimension
+from .tfrepresentation import ExplicitFrequencyDimension, FrequencyDimension
 from zounds.core import ArrayWithUnits
 from zounds.timeseries import ConstantRateTimeSeries
 from zounds.timeseries import Picoseconds, TimeDimension
@@ -78,17 +78,17 @@ class FrequencyAdaptive(ArrayWithUnits):
     def rasterize(self, n_coeffs):
         return self.square(n_coeffs)
 
-    def _resample(self, band, n_coeffs):
+    def _resample(self, band, n_coeffs, epsilon=1e-8):
         rs = resample(band, n_coeffs, axis=1)
 
         # resample doesn't necessarily maintain the correct scale/magnitude, as
         # it isn't using the norm="ortho" argument when calling fft, so ensure
         # that the original scale/magnitude is maintained after calling
         # resample
-        m = band.max(axis=-1, keepdims=True)
-        ratio = np.divide(
-            rs.max(axis=-1, keepdims=True), m, where=m != 0)
-        normalized = np.divide(rs, ratio, where=ratio != 0)
+        band_max = band.max(axis=-1, keepdims=True)
+        rs_max = rs.max(axis=-1, keepdims=True)
+        ratio = rs_max / (band_max + epsilon)
+        normalized = rs / (ratio + epsilon)
         return np.asarray(normalized.flatten())
 
     def square(self, n_coeffs, do_overlap_add=False):

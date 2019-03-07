@@ -1,5 +1,5 @@
 import unittest2
-from audiograph import resampled, stft, frequency_adaptive
+from .audiograph import resampled, stft, frequency_adaptive
 from zounds.timeseries.samplerate import \
     SR11025, SR22050, SampleRate, nearest_audio_sample_rate, HalfLapped
 from zounds.timeseries.duration import Seconds, Milliseconds
@@ -97,7 +97,7 @@ class StftTests(unittest2.TestCase):
             zf.writestr(filename, signal.encode().read())
         bio.seek(0)
 
-        zip_wrapper = featureflow.iter_zip(bio).next()
-        _id = Document.process(meta=zip_wrapper)
-        doc = Document(_id)
-        self.assertEqual(2, doc.ogg.duration_seconds)
+        with list(featureflow.iter_zip(bio))[0] as zip_wrapper:
+            _id = Document.process(meta=zip_wrapper)
+            doc = Document(_id)
+            self.assertEqual(2, doc.ogg.duration_seconds)

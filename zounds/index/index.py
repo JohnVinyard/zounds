@@ -2,7 +2,7 @@ import ujson as json
 import os
 import threading
 import numpy as np
-from hammingdb import HammingDb
+from .hammingdb import HammingDb
 from zounds.persistence import TimeSliceEncoder, TimeSliceDecoder
 from zounds.timeseries import ConstantRateTimeSeries
 from zounds.timeseries import TimeSlice
@@ -116,9 +116,9 @@ class HammingIndex(object):
 
         doc = self.document(_id)
         return dict(
-            ((key, func(doc, ts)) for key, func in self.extra_data.iteritems()))
+            ((key, func(doc, ts)) for key, func in self.extra_data.items()))
 
-    def add(self, _id, timestamp=''):
+    def add(self, _id, timestamp=b''):
         # load the feature from the feature database
         feature = self.feature(_id=_id, persistence=self.document)
 
@@ -138,7 +138,7 @@ class HammingIndex(object):
                 encoded_ts['extra_data'] = extra_data
             self._init_hamming_db(code)
             self.hamming_db.append(code, json.dumps(encoded_ts))
-            self.hamming_db.set_metadata('timestamp', bytes(timestamp))
+            self.hamming_db.set_metadata(b'timestamp', timestamp)
 
     def _listen(self, raise_when_empty=False):
 
@@ -181,7 +181,7 @@ class HammingIndex(object):
         return np.unpackbits(packed)
 
     def encode_query(self, feature):
-        if isinstance(feature, str):
+        if isinstance(feature, bytes):
             return feature
         elif feature.dtype == np.uint64:
             return feature.tostring()

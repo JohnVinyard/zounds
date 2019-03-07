@@ -2,8 +2,8 @@ import csv
 
 import numpy as np
 
-from predownload import PreDownload
-from util import ensure_local_file
+from .predownload import PreDownload
+from .util import ensure_local_file
 from zounds.soundfile import AudioMetaData
 from zounds.timeseries import SR44100, AudioSamples
 import os

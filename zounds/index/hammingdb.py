@@ -26,9 +26,9 @@ class HammingDb(object):
             metasync=True)
         self.env.reader_check()
 
-        self.metadata = self.env.open_db('metadata')
+        self.metadata = self.env.open_db(b'metadata')
         try:
-            self.code_size = int(self.get_metadata('codesize'))
+            self.code_size = int(self.get_metadata(b'codesize'))
             if code_size and code_size != self.code_size:
                 raise ValueError(
                     'Database is already initialized with code size {code_size}'
@@ -40,12 +40,12 @@ class HammingDb(object):
                     'You must supply a code size for an uninitialized database')
             if code_size % 8:
                 raise ValueError('code_size must be a multiple of 8')
-            self.set_metadata('codesize', str(code_size))
+            self.set_metadata(b'codesize', str(code_size).encode())
             self.code_size = code_size
 
-        self.index = self.env.open_db('index')
+        self.index = self.env.open_db(b'index')
         self._append_buffer = self._recarray(1)
-        self._code_bytearray = bytearray('a' * self.code_size)
+        self._code_bytearray = bytearray(b'a' * self.code_size)
         self._code_buffer = np.frombuffer(self._code_bytearray, dtype=np.uint64)
         self._codes = None
         self._ids = set()
@@ -144,6 +144,14 @@ class HammingDb(object):
 
         with self.env.begin(write=True) as txn:
             _id = self._new_id()
+            try:
+                code = code.encode()
+            except AttributeError:
+                pass
+            try:
+                data = data.encode()
+            except AttributeError:
+                pass
             txn.put(_id, code + data, db=self.index)
             self._add_code(_id, code)
 
@@ -184,7 +192,7 @@ class HammingDb(object):
             scores = np.concatenate(self._pool.map(
                 lambda x: packed_hamming_distance(query, x),
                 (codes[i: i + chunksize] for i in
-                 xrange(0, n_codes, chunksize))))
+                 range(0, n_codes, chunksize))))
 
         # argpartition will ensure that the lowest scores will all be
         # withing the first n_results elements, but makes no guarantees

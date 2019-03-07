@@ -1,5 +1,5 @@
 import unittest2
-from util import decode_timedelta, extract_init_args
+from .util import decode_timedelta, extract_init_args
 from zounds.timeseries import Seconds
 
 

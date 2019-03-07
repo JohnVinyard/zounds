@@ -1,5 +1,5 @@
 import unittest2
-from persistence import simple_in_memory_settings
+from .persistence import simple_in_memory_settings
 
 
 @simple_in_memory_settings

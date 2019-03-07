@@ -1,5 +1,5 @@
 import unittest2
-from dimension import DimensionEncoder, DimensionDecoder
+from .dimension import DimensionEncoder, DimensionDecoder
 from zounds.timeseries import TimeDimension, Seconds, Milliseconds
 from zounds.spectral import FrequencyBand, LinearScale, FrequencyDimension
 from zounds.core import IdentityDimension

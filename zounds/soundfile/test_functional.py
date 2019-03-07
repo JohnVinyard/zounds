@@ -1,5 +1,5 @@
 import unittest2
-from functional import resample
+from .functional import resample
 from zounds import AudioSamples
 from zounds import SR11025
 from zounds import SR44100

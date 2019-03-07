@@ -1,5 +1,5 @@
 from featureflow import Feature
-from arraywithunits import ArrayWithUnitsDecoder, ArrayWithUnitsEncoder
+from .arraywithunits import ArrayWithUnitsDecoder, ArrayWithUnitsEncoder
 from zounds.spectral import FrequencyAdaptive
 
 

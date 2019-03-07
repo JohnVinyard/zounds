@@ -1,5 +1,5 @@
 import unittest2
-from index import HammingIndex
+from .index import HammingIndex
 from featureflow import \
     PersistenceSettings, UuidProvider, StringDelimitedKeyBuilder, \
     InMemoryDatabase, InMemoryChannel, EventLog

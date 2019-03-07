@@ -1,7 +1,7 @@
 import unittest2
-from contentrange import \
+from .contentrange import \
     ContentRange, RangeUnitUnsupportedException, RangeRequest
-from baseapp import BaseZoundsApp
+from .baseapp import BaseZoundsApp
 from zounds.timeseries import TimeSlice, Seconds, Picoseconds, Milliseconds
 
 

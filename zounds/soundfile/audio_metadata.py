@@ -4,7 +4,7 @@ from soundfile import SoundFile
 import requests
 import json
 import io
-from urlparse import urlparse
+from urllib.parse import urlparse
 import featureflow as ff
 
 
@@ -55,7 +55,7 @@ class AudioMetaData(object):
         self.description = description
         self.tags = tags
 
-        for k, v in kwargs.iteritems():
+        for k, v in kwargs.items():
             setattr(self, k, v)
 
     @property

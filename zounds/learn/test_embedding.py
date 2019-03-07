@@ -1,6 +1,6 @@
 import torch
 import unittest2
-from embedding import TripletEmbeddingTrainer
+from .embedding import TripletEmbeddingTrainer
 from torch import nn
 import numpy as np
 

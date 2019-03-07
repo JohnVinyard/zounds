@@ -1,6 +1,6 @@
 from scipy.cluster.vq import kmeans
 from featureflow import Node
-from preprocess import PreprocessResult, Preprocessor
+from .preprocess import PreprocessResult, Preprocessor
 
 
 class KMeans(Preprocessor):

@@ -4,7 +4,7 @@ import types
 from collections import OrderedDict
 import hashlib
 import numpy as np
-from functional import hyperplanes
+from .functional import hyperplanes
 from zounds.loudness import log_modulus, inverse_log_modulus
 
 
@@ -13,7 +13,7 @@ class Op(object):
         super(Op, self).__init__()
         self._kwargs = kwargs
         try:
-            self._func = marshal.dumps(func.func_code)
+            self._func = marshal.dumps(func.__code__)
         except AttributeError:
             # func is already a marshalled function
             self._func = func
@@ -29,7 +29,7 @@ class Op(object):
 
     def _compute_version(self):
         h = hashlib.md5(self._func)
-        for v in self._kwargs.itervalues():
+        for v in self._kwargs.values():
             try:
                 h.update(v.version)
             except AttributeError:
@@ -164,7 +164,7 @@ class Preprocessor(Node):
         if isinstance(data, PreprocessResult):
             return data.data
         elif isinstance(data, dict):
-            return dict((k, self._extract_data(v)) for k, v in data.iteritems())
+            return dict((k, self._extract_data(v)) for k, v in data.items())
         else:
             return data
 
@@ -176,7 +176,7 @@ class UnitNorm(Preprocessor):
     def _forward_func(self):
         def x(d):
             from zounds.core import ArrayWithUnits
-            from functional import example_wise_unit_norm
+            from .functional import example_wise_unit_norm
             normed, norms = example_wise_unit_norm(d, return_norms=True)
             try:
                 normed = ArrayWithUnits(normed, d.dimensions)
@@ -668,8 +668,8 @@ class Pipeline(object):
 
     def __init__(self, preprocess_results):
         self.processors = list(preprocess_results)
-        self.version = hashlib.md5(
-            ''.join([p.op.version for p in self.processors])).hexdigest()
+        versions = ''.join([p.op.version for p in self.processors])
+        self.version = hashlib.md5(versions.encode()).hexdigest()
 
     def __getitem__(self, index):
         if isinstance(index, int):
@@ -821,18 +821,16 @@ class PreprocessingPipeline(Node):
         self._init_pipeline()
 
     def _init_pipeline(self):
-        self._pipeline = OrderedDict((id(n), None) for n in self.needs.values())
+        self._pipeline = OrderedDict((id(n), None) for n in list(self.needs.values()))
 
     def _enqueue(self, data, pusher):
         self._pipeline[id(pusher)] = data
 
     def _dequeue(self):
-        if not all(self._pipeline.itervalues()):
+        if not all(self._pipeline.values()):
             raise NotEnoughData()
 
-        pipeline = Pipeline(map(
-            lambda x: x.for_storage(),
-            self._pipeline.itervalues()))
+        pipeline = Pipeline([x.for_storage() for x in iter(self._pipeline.values())])
 
         self._init_pipeline()
         return pipeline

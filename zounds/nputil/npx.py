@@ -1,4 +1,4 @@
-from __future__ import division
+
 
 import numpy as np
 from numpy.lib.stride_tricks import as_strided as ast
@@ -228,6 +228,7 @@ def sliding_window(a, ws, ss=None, flatten=True):
                 ls))
 
     # ensure that ws is smaller than a in every dimension
+    print(ws, shape)
     if np.any(ws > shape):
         raise ValueError( \
             'ws cannot be larger than a in any dimension.\

@@ -1,7 +1,7 @@
 import numpy as np
 import unittest2
 
-from synthesize import \
+from .synthesize import \
     SineSynthesizer, DCTSynthesizer, FFTSynthesizer, NoiseSynthesizer, \
     SilenceSynthesizer, FrequencyDecompositionSynthesizer
 from zounds.basic import stft, resampled

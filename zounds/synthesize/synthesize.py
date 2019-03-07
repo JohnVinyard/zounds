@@ -1,4 +1,4 @@
-from __future__ import division
+
 
 import numpy as np
 from scipy.fftpack import dct, idct
@@ -609,7 +609,7 @@ class TickSynthesizer(object):
         ticks_per_second = Seconds(1) / tick_frequency
         # introduce periodic ticking sound
         step = int(sr // ticks_per_second)
-        for i in xrange(0, len(samples), step):
+        for i in range(0, len(samples), step):
             size = len(samples[i:i + len(tick)])
             samples[i:i + len(tick)] += tick[:size]
         return AudioSamples(samples, self.samplerate)

@@ -1,7 +1,8 @@
 from featureflow import Node, NotEnoughData
 from zounds.core import ArrayWithUnits, IdentityDimension
 import numpy as np
-from multiprocessing.pool import ThreadPool, cpu_count
+from multiprocessing.pool import ThreadPool
+from os import cpu_count
 
 
 class Reservoir(object):
@@ -93,27 +94,27 @@ class MultiplexedReservoir(object):
         if self.reservoir is None:
             self.reservoir = dict(
                 (k, Reservoir(self.nsamples, dtype=self.dtype))
-                for k in samples.iterkeys())
+                for k in samples.keys())
 
     def _check_sample_keys(self, samples):
         if set(self.reservoir.keys()) != set(samples.keys()):
             raise ValueError(
                 'samples should have keys {keys}'
-                    .format(keys=self.reservoir.keys()))
+                    .format(keys=list(self.reservoir.keys())))
 
     def add(self, samples):
         self._init_dict(samples)
         self._check_sample_keys(samples)
 
         indices = None
-        for k, v in samples.iteritems():
+        for k, v in samples.items():
             if indices is None:
                 indices = np.random.randint(0, self.nsamples, len(v))
 
             self.reservoir[k].add(v, indices=indices)
 
     def get(self):
-        return dict((k, v.get()) for k, v in self.reservoir.iteritems())
+        return dict((k, v.get()) for k, v in self.reservoir.items())
 
 
 class ShuffledSamples(Node):
@@ -183,7 +184,7 @@ class InfiniteSampler(Node):
         # the reservoir
         nsamples = max(1, int(self.reservoir.nsamples * ratio))
 
-        print 'Contributing', feature_size, ratio, nsamples
+        print('Contributing', feature_size, ratio, nsamples)
 
         # select an appropriately-sized and random subset of the feature.
         # this will be shuffled again as it is added to the reservoir,
@@ -200,7 +201,7 @@ class InfiniteSampler(Node):
         # compute the total number of samples in our dataset
         _ids = list(cls.database.iter_ids())
         total_samples = self._total_samples(cls, feature, _ids)
-        print 'Total samples', total_samples
+        print('Total samples', total_samples)
 
         while True:
             if self.parallel:
@@ -258,7 +259,7 @@ class ReservoirSampler(Node):
             return
         indices = np.random.random_integers(0, self._index, size=remaining)
         indices = indices[indices < self._nsamples]
-        self._r[indices, ...] = data[diff:][range(len(indices))]
+        self._r[indices, ...] = data[diff:][list(range(len(indices)))]
         self._index += remaining
 
     def _dequeue(self):

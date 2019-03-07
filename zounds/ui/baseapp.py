@@ -2,10 +2,10 @@ import os
 import re
 import tornado.ioloop
 import tornado.web
-import httplib
-import urllib
-from contentrange import RangeRequest, UnsatisfiableRangeRequestException
-from serializer import DefaultSerializer, AudioSamplesSerializer, \
+import http.client
+import urllib.request, urllib.parse, urllib.error
+from .contentrange import RangeRequest, UnsatisfiableRangeRequestException
+from .serializer import DefaultSerializer, AudioSamplesSerializer, \
     NumpySerializer, OggVorbisSerializer, ConstantRateTimeSeriesSerializer, \
     OnsetsSerializer, SearchResultsSerializer
 import threading
@@ -95,7 +95,7 @@ class BaseZoundsApp(object):
         return html
 
     def feature_path(self, _id, feature):
-        _id = urllib.quote(_id, safe='')
+        _id = urllib.parse.quote(_id, safe='')
         return '{base_path}{_id}/{feature}'.format(
             base_path=self.base_path, _id=_id, feature=feature)
 
@@ -129,15 +129,15 @@ class BaseZoundsApp(object):
                 try:
                     result = app.serialize(context)
                 except UnsatisfiableRangeRequestException:
-                    self.set_status(httplib.REQUESTED_RANGE_NOT_SATISFIABLE)
+                    self.set_status(http.client.REQUESTED_RANGE_NOT_SATISFIABLE)
                     self.finish()
                 self.set_header('Content-Type', result.content_type)
                 self.set_header('Accept-Ranges', 'bytes')
                 self.write(result.data)
                 self.set_header('ETag', self.compute_etag())
                 self.set_status(
-                    httplib.PARTIAL_CONTENT if result.is_partial
-                    else httplib.OK)
+                    http.client.PARTIAL_CONTENT if result.is_partial
+                    else http.client.OK)
                 if result.content_range:
                     self.set_header('Content-Range', str(result.content_range))
                 self.finish()
@@ -151,7 +151,7 @@ class BaseZoundsApp(object):
             def get(self):
                 self.set_header('Content-Type', 'text/html')
                 self.write(app._html_content)
-                self.set_status(httplib.OK)
+                self.set_status(http.client.OK)
                 self.finish()
 
         return UIHandler
@@ -170,7 +170,7 @@ class BaseZoundsApp(object):
                     self.set_secure_cookie('user', secret)
                     self.redirect('/')
                 else:
-                    self.set_status(httplib.UNAUTHORIZED)
+                    self.set_status(http.client.UNAUTHORIZED)
                     self.write(app._get_html('login.html'))
                     self.finish()
 
@@ -236,7 +236,7 @@ class BaseZoundsApp(object):
         routes = self.custom_routes() + self.base_routes()
 
         if self.secret:
-            routes = map(self._secure_route, routes)
+            routes = list(map(self._secure_route, routes))
 
         return tornado.web.Application(
             routes,
@@ -249,7 +249,7 @@ class BaseZoundsApp(object):
         self.thread = threading.Thread(target=self._start)
         self.thread.daemon = True
         self.thread.start()
-        print 'Interactive REPL at http://localhost:{port}'.format(port=port)
+        print('Interactive REPL at http://localhost:{port}'.format(port=port))
         return self
 
     def __enter__(self):
@@ -264,5 +264,5 @@ class BaseZoundsApp(object):
     def start(self, port=8888):
         app = self._make_app()
         self.server = app.listen(port)
-        print 'Interactive REPL at http://localhost:{port}'.format(**locals())
+        print('Interactive REPL at http://localhost:{port}'.format(**locals()))
         self._start()

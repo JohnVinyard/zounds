@@ -1,8 +1,8 @@
-from __future__ import division
-from duration import Picoseconds
+
+from .duration import Picoseconds
 from collections import namedtuple
 import numpy as np
-from duration import Seconds
+from .duration import Seconds
 
 Stride = namedtuple('Stride', ['frequency', 'duration'])
 

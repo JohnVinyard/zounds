@@ -1,4 +1,4 @@
-from resample import Resample
+from .resample import Resample
 from zounds.timeseries import SR44100, SR11025, Seconds
 from zounds.synthesize import SilenceSynthesizer
 from multiprocessing.pool import ThreadPool
@@ -9,7 +9,7 @@ class ResampleTests(unittest2.TestCase):
 
     def test_can_do_multithreaded_resampling(self):
         synth = SilenceSynthesizer(SR44100())
-        audio = [synth.synthesize(Seconds(5)) for _ in xrange(10)]
+        audio = [synth.synthesize(Seconds(5)) for _ in range(10)]
         pool = ThreadPool(4)
 
         def x(samples):

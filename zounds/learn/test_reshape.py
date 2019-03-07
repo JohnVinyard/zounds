@@ -3,7 +3,7 @@ import featureflow as ff
 import numpy as np
 
 from zounds.util import simple_in_memory_settings
-from preprocess import Reshape, PreprocessingPipeline
+from .preprocess import Reshape, PreprocessingPipeline
 
 
 class ReshapeTests(unittest2.TestCase):

@@ -5,7 +5,7 @@ supports semantically meaningful indexing, and :class:`Dimension`, a common
 base class for custom, user-defined dimensions.
 """
 
-from dimensions import Dimension, IdentityDimension
-from axis import ArrayWithUnits
+from .dimensions import Dimension, IdentityDimension
+from .axis import ArrayWithUnits
 
 __all__ = [Dimension, IdentityDimension, ArrayWithUnits]

@@ -1,6 +1,6 @@
 import unittest2
 import torch
-from util import batchwise_unit_norm
+from .util import batchwise_unit_norm
 import numpy as np
 
 

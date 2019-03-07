@@ -1,5 +1,5 @@
 import unittest2
-from dct_transform import DctTransform
+from .dct_transform import DctTransform
 import torch
 from torch.autograd import Variable
 from zounds.spectral import HanningWindowingFunc

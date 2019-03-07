@@ -1,4 +1,4 @@
-from trainer import Trainer
+from .trainer import Trainer
 import numpy as np
 import torch
 from torch.autograd import Variable
@@ -52,7 +52,7 @@ class WassersteinGanTrainer(Trainer):
             return
         msg = 'Epoch {epoch}, batch {batch}, generator {generator_score}, ' \
               'real {real_score}, critic {critic_loss}'
-        print msg.format(**kwargs)
+        print(msg.format(**kwargs))
 
     def _minibatch(self, data):
         indices = np.random.randint(0, len(data), self.batch_size)
@@ -121,7 +121,7 @@ class WassersteinGanTrainer(Trainer):
         for n, p in network.named_parameters():
             g = p.grad
             if g is not None:
-                print(n, g.min().data[0], g.max().data[0], g.mean().data[0])
+                print((n, g.min().data[0], g.max().data[0], g.mean().data[0]))
 
     def zero_generator_gradients(self):
         self._debug_network_gradient(self.generator)
@@ -164,7 +164,7 @@ class WassersteinGanTrainer(Trainer):
         start = self._current_epoch
         stop = self._current_epoch + self.checkpoint_epochs
 
-        for epoch in xrange(start, stop):
+        for epoch in range(start, stop):
             if epoch >= self.epochs:
                 break
 
@@ -173,14 +173,14 @@ class WassersteinGanTrainer(Trainer):
             else:
                 kwargs = dict()
 
-            for i in xrange(0, len(data), self.batch_size):
+            for i in range(0, len(data), self.batch_size):
                 self.zero_generator_gradients()
                 self.zero_discriminator_gradients()
 
                 self.freeze_generator()
                 self.unfreeze_discriminator()
 
-                for c in xrange(self.n_critic_iterations):
+                for c in range(self.n_critic_iterations):
 
                     self.zero_discriminator_gradients()
 

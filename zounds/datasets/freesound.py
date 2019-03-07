@@ -70,7 +70,7 @@ class FreeSoundSearch(object):
 
     def get_by_id(self, freesound_id):
         data = self._get_metadata_by_id(freesound_id)
-        print data
+        print(data)
         return self._freesound_to_audio_metadata(data)
 
     def _iter_results(self, link=None):

@@ -42,9 +42,9 @@ if __name__ == '__main__':
         url = request.url
         if not Sound.exists(url):
             Sound.process(meta=metadata, _id=url)
-            print 'processed {url}'.format(**locals())
+            print('processed {url}'.format(**locals()))
         else:
-            print 'already processed {url}'.format(**locals())
+            print('already processed {url}'.format(**locals()))
 
     snds = list(Sound)
 

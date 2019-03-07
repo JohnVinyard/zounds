@@ -45,13 +45,13 @@ RUN wget http://www.mega-nerd.com/tmp/libsndfile-1.0.26pre5.tar.gz \
     && cd ..
 
 RUN echo 'export PATH=/opt/conda/bin:$PATH' > /etc/profile.d/conda.sh \
-    && wget https://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh \
-    && /bin/bash /Miniconda-latest-Linux-x86_64.sh -b -p /opt/conda \
-    && rm /Miniconda-latest-Linux-x86_64.sh
+    && wget https://repo.continuum.io/miniconda/Miniconda3-4.3.21-Linux-x86_64.sh \
+    && /bin/bash /Miniconda3-4.3.21-Linux-x86_64.sh -b -p /opt/conda \
+    && rm /Miniconda3-4.3.21-Linux-x86_64.sh
 
 ENV PATH /opt/conda/bin:$PATH
 
-RUN conda install -y -c pytorch numpy=1.15.3 scipy=1.1.0 pytorch=0.4
+RUN conda install -y -c pytorch numpy=1.15.3 scipy=1.2.1 pytorch=0.4
 
 RUN pip install zounds
 

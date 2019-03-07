@@ -42,7 +42,7 @@ class Trainer(object):
     def _log(self, *args, **kwargs):
         if kwargs['batch'] % 10:
             return
-        print kwargs
+        print(kwargs)
 
     def _zero_grad(self):
         self.network.zero_grad()
@@ -60,11 +60,11 @@ class Trainer(object):
         start = self._current_epoch
         stop = self._current_epoch + self.checkpoint_epochs
 
-        for epoch in xrange(start, stop):
+        for epoch in range(start, stop):
             if epoch > self.epochs:
                 break
 
-            for batch in xrange(0, len(data), self.batch_size):
+            for batch in range(0, len(data), self.batch_size):
                 results = self._training_step(epoch, batch, data)
                 results.update(epoch=epoch, batch=batch, network=self.network)
                 self.on_batch_complete(**results)
@@ -84,5 +84,5 @@ class Trainer(object):
             pass
 
     def on_batch_complete(self, *args, **kwargs):
-        for callback in self._batch_complete_callbacks.itervalues():
+        for callback in self._batch_complete_callbacks.values():
             callback(*args, **kwargs)

@@ -1,5 +1,5 @@
 import unittest2
-from timeslice import TimeSliceEncoder, TimeSliceDecoder
+from .timeslice import TimeSliceEncoder, TimeSliceDecoder
 from zounds.timeseries import TimeSlice, Seconds, Milliseconds
 
 

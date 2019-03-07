@@ -1,6 +1,6 @@
-from __future__ import division
+
 import unittest2
-from frequencyscale import \
+from .frequencyscale import \
     FrequencyBand, LinearScale, ExplicitScale, GeometricScale, Hertz, Hz
 from zounds.timeseries import SR44100
 import numpy as np

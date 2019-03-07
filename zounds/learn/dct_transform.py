@@ -98,7 +98,7 @@ class DctTransform(object):
         coeffs = self.dct(x, axis=axis)
 
         bands = []
-        for i in xrange(0, len(factors) - 1):
+        for i in range(0, len(factors) - 1):
             start_index = int(factors[i] * full_size)
             stop_index = int(factors[i + 1] * full_size)
 
