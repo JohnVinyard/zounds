@@ -352,6 +352,7 @@ class ZoundsDocsMock(mock.Mock):
     ndarray = object
     Module = object
     Node = object
+    Aggregator = str
 
     def __init__(self, *args, **kwargs):
         super(ZoundsDocsMock, self).__init__(side_effect=None)
@@ -368,7 +369,7 @@ class ZoundsDocsMock(mock.Mock):
     def __rfloordiv__(self, other):
         return ZoundsDocsMock()
 
-    def __div__(self, other):
+    def __truediv__(self, other):
         return ZoundsDocsMock()
 
     def __rdiv__(self, other):
@@ -379,6 +380,9 @@ class ZoundsDocsMock(mock.Mock):
 
     def __rtruediv__(self, other):
         return ZoundsDocsMock()
+
+    def __le__(self, other):
+        return None
 
 
 ZoundsDocsMock.timedelta64 = ZoundsDocsMock
