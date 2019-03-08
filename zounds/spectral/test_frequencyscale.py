@@ -21,6 +21,13 @@ class HertzTests(unittest2.TestCase):
 
 
 class FrequencyBandTests(unittest2.TestCase):
+
+    def test_can_create_frequency_band_with_hertz_instances(self):
+        fb = FrequencyBand(Hz(20), Hz(20000))
+        self.assertIsInstance(fb.center_frequency, float)
+        self.assertEqual(20, fb.start_hz)
+        self.assertEqual(20000, fb.stop_hz)
+
     def test_can_create_from_center_frequency(self):
         fb = FrequencyBand.from_center(1000, 50)
         self.assertEqual(FrequencyBand(975, 1025), fb)

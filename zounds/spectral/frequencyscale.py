@@ -5,17 +5,26 @@ import bisect
 
 class Hertz(float):
     def __init__(self, hz):
-        self.hz = hz
+        try:
+            self.hz = hz.hz
+        except AttributeError:
+            self.hz = hz
 
     def __neg__(self):
         return Hertz(-self.hz)
 
     def __add__(self, other):
-        return Hertz(self.hz + other.hz)
+        try:
+            other = other.hz
+        except AttributeError:
+            pass
+        return Hertz(self.hz + other)
 
-    
-class Hz(Hertz):
-    pass
+    def __float__(self):
+        return self.hz
+
+
+Hz = Hertz
 
 
 # TODO: What commonalities can be factored out of this class and TimeSlice?
