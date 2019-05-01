@@ -4,4 +4,4 @@ from .persistence import \
 
 from .handy import tuplify
 
-from .midi import note_to_midi, midi_to_note
+from .midi import note_to_midi, midi_to_note, midi_instrument
