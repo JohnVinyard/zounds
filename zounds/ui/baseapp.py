@@ -1,5 +1,7 @@
 import os
 import re
+
+import asyncio
 import tornado.ioloop
 import tornado.web
 import http.client
@@ -101,9 +103,9 @@ class BaseZoundsApp(object):
 
     def find_serializer(self, context):
         try:
-            return filter(
-                lambda x: x.matches(context), self.serializers)[0]
-        except IndexError:
+            return next(filter(
+                lambda x: x.matches(context), self.serializers))
+        except StopIteration:
             raise NoMatchingSerializerException()
 
     def serialize(self, context):
@@ -186,9 +188,6 @@ class BaseZoundsApp(object):
     def custom_routes(self):
         return []
 
-    def _start(self):
-        tornado.ioloop.IOLoop.instance().start()
-
     def _secure_route(self, route):
 
         pattern, handler_cls = route
@@ -244,9 +243,7 @@ class BaseZoundsApp(object):
             login_url='/zounds/login')
 
     def start_in_thread(self, port=8888):
-        app = self._make_app()
-        self.server = app.listen(port)
-        self.thread = threading.Thread(target=self._start)
+        self.thread = threading.Thread(target=self._start, args=(port,))
         self.thread.daemon = True
         self.thread.start()
         print('Interactive REPL at http://localhost:{port}'.format(port=port))
@@ -261,8 +258,12 @@ class BaseZoundsApp(object):
         self.server.stop()
         self.thread.join()
 
-    def start(self, port=8888):
+    def _start(self, port):
+        asyncio.set_event_loop(asyncio.new_event_loop())
         app = self._make_app()
         self.server = app.listen(port)
+        tornado.ioloop.IOLoop.instance().start()
+
+    def start(self, port=8888):
         print('Interactive REPL at http://localhost:{port}'.format(**locals()))
-        self._start()
+        self._start(port)
