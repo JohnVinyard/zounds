@@ -79,7 +79,6 @@ class ArrayWithUnits(np.ndarray):
     def reshape(self, shape, order='C'):
         non_one = lambda x: abs(x) != 1
 
-        print('IN RESHAPE', self.shape, shape)
         if tuple(shape) == tuple(filter(non_one, self.shape)):
             # the new shape is this array's shape will all ones removed
             return self.squeeze()
