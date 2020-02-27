@@ -3,7 +3,7 @@ import unittest2
 from .functional import \
     fft, stft, apply_scale, frequency_decomposition, phase_shift, rainbowgram, \
     fir_filter_bank, auto_correlogram, time_stretch, pitch_shift, \
-    morlet_filter_bank
+    morlet_filter_bank, mdct, imdct
 from zounds.core import ArrayWithUnits, IdentityDimension
 from zounds.synthesize import \
     SilenceSynthesizer, TickSynthesizer, SineSynthesizer, FFTSynthesizer
@@ -32,7 +32,6 @@ class FIRFilterBankTests(unittest2.TestCase):
 
 
 class MorletFilterBankTests(unittest2.TestCase):
-
     def test_raises_when_scale_factors_length_does_not_match_scale(self):
         sr = SR22050()
         band = FrequencyBand(1, sr.nyquist)
@@ -72,6 +71,7 @@ class MorletFilterBankTests(unittest2.TestCase):
             sr, 512, scale, scale_factors, normalize=True)
         norms = np.linalg.norm(filter_bank, axis=-1)
         np.testing.assert_allclose(norms, 1.0, rtol=1e-6)
+
 
 class AutoCorrelogramTests(unittest2.TestCase):
     @unittest2.skip
@@ -245,6 +245,32 @@ class PhaseShiftTests(unittest2.TestCase):
             lambda: phase_shift(samples, samplerate, Milliseconds(10)))
 
 
+class MDCTTests(unittest2.TestCase):
+    def test_can_perform_mdct_on_2d_data(self):
+        # (time, window_of_samples)
+        x = np.random.normal(0, 1, (133, 512))
+        coeffs = mdct(x)
+        self.assertEqual((133, 256), coeffs.shape)
+
+    def test_can_invert_2d_data(self):
+        # (time, window_of_samples)
+        x = np.random.normal(0, 1, (133, 512))
+        coeffs = mdct(x)
+        recon = imdct(coeffs)
+        self.assertEqual(x.shape, recon.shape)
+
+    def test_can_perform_mdct_on_3d_data(self):
+        x = np.random.normal(0, 1, (4, 133, 512))
+        coeffs = mdct(x)
+        self.assertEqual((4, 133, 256), coeffs.shape)
+
+    def test_can_invert_3d_data(self):
+        x = np.random.normal(0, 1, (4, 133, 512))
+        coeffs = mdct(x)
+        recon = imdct(coeffs)
+        self.assertEqual(x.shape, recon.shape)
+
+
 class STFTTests(unittest2.TestCase):
     def test_has_correct_number_of_bins(self):
         sr = SR22050()
@@ -322,9 +348,9 @@ class TimeStretchTests(unittest2.TestCase):
     def test_can_contract_audio_samples(self):
         sr = SR22050()
         samples = SilenceSynthesizer(sr).synthesize(Milliseconds(1000))
-        print('First',samples.shape, samples.dimensions)
+        print('First', samples.shape, samples.dimensions)
         stretched = time_stretch(samples, 2.0).squeeze()
-        print('Second',stretched.shape, stretched.dimensions)
+        print('Second', stretched.shape, stretched.dimensions)
         self.assertEqual(len(samples) // 2, len(stretched))
 
     def test_can_stretch_audio_batch(self):
