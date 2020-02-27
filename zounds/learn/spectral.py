@@ -43,6 +43,7 @@ class FilterBank(nn.Module):
 
         super(FilterBank, self).__init__()
 
+        self.samplerate = samplerate
         filter_bank = morlet_filter_bank(
             samplerate,
             kernel_size,
