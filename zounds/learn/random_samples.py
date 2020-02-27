@@ -20,8 +20,11 @@ class Reservoir(object):
         self.indices = set()
         self.dtype = dtype
 
+    def __len__(self):
+        return len(self.indices)
+
     def percent_full(self):
-        return float(len(self.indices)) / self.nsamples
+        return float(len(self)) / self.nsamples
 
     def _init_arr(self, samples):
         if self.arr is not None:
