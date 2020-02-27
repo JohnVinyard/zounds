@@ -100,7 +100,6 @@ class ArrayWithUnits(np.ndarray):
 
     def squeeze(self):
         zipped = [x for x in zip(self.shape, self.dimensions) if x[0] > 1]
-        print(self.shape, self.dimensions, zipped)
         return ArrayWithUnits(
             super().reshape([s for s, _ in zipped]),
             [d for _, d in zipped])
