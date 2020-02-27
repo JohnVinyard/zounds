@@ -7,7 +7,6 @@ TIMEDELTA_DTYPE_RE = re.compile(r'\[(?P<dtype>[^\]]+)\]')
 
 
 def encode_timedelta(td):
-    print(td)
     dtype = TIMEDELTA_DTYPE_RE.search(str(td.dtype)).groupdict()['dtype']
     # base64 encoded value, encoded as a utf-8
     encoded = base64.b64encode(td.astype(np.uint64).tostring()).decode()
