@@ -1,4 +1,3 @@
-
 from .frequencyscale import LinearScale, FrequencyBand, ExplicitScale
 from .tfrepresentation import FrequencyDimension
 from .frequencyadaptive import FrequencyAdaptive
@@ -7,7 +6,8 @@ from zounds.timeseries import \
     Milliseconds, SampleRate
 from zounds.core import ArrayWithUnits, IdentityDimension
 from .sliding_window import \
-    IdentityWindowingFunc, HanningWindowingFunc, WindowingFunc
+    IdentityWindowingFunc, HanningWindowingFunc, WindowingFunc, \
+    OggVorbisWindowingFunc
 from zounds.loudness import log_modulus, unit_scale
 import numpy as np
 from scipy.signal import resample, firwin2
@@ -47,7 +47,6 @@ def fft(x, axis=-1, padding_samples=0):
 
 
 def stft(x, window_sample_rate=HalfLapped(), window=HanningWindowingFunc()):
-    print(x.shape, x.ndim)
     duration = TimeSlice(window_sample_rate.duration)
     frequency = TimeSlice(window_sample_rate.frequency)
 
@@ -69,6 +68,29 @@ def stft(x, window_sample_rate=HalfLapped(), window=HanningWindowingFunc()):
     return fft(windowed)
 
 
+def mdct(data):
+    l = data.shape[-1] // 2
+    t = np.arange(0, 2 * l)
+    f = np.arange(0, l)
+    cpi = -1j * np.pi
+    a = data * np.exp(cpi * t / 2 / l)
+    b = np.fft.fft(a)
+    c = b[..., :l]
+    transformed = np.sqrt(2 / l) * np.real(
+        c * np.exp(cpi * (f + 0.5) * (l + 1) / 2 / l))
+    return transformed
+
+
+def imdct(frames):
+    l = frames.shape[-1]
+    t = np.arange(0, 2 * l)
+    f = np.arange(0, l)
+    cpi = -1j * np.pi
+    a = frames * np.exp(cpi * (f + 0.5) * (l + 1) / 2 / l)
+    b = np.fft.fft(a, 2 * l)
+    return np.sqrt(2 / l) * np.real(b * np.exp(cpi * t / 2 / l))
+
+
 def time_stretch(x, factor, frame_sample_rate=None):
     if frame_sample_rate is None:
         sr = HalfLapped()
@@ -83,7 +105,6 @@ def time_stretch(x, factor, frame_sample_rate=None):
     # to simplify, let's always compute the stft in "batch" mode
     if x.ndim == 1:
         x = x.reshape((1,) + x.shape)
-    print('In time_stretch', x.shape, x.dimensions)
 
     D = stft(x, sr, win)
 
