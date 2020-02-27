@@ -1,11 +1,10 @@
 
-
 import numpy as np
 from featureflow import Node
 from scipy.fftpack import dct
 from scipy.stats.mstats import gmean
 
-from .functional import fft
+from .functional import fft, mdct
 from .frequencyscale import LinearScale, ChromaScale, BarkScale
 from .weighting import AWeighting
 from .tfrepresentation import FrequencyDimension
@@ -145,20 +144,8 @@ class MDCT(Node):
     def __init__(self, needs=None):
         super(MDCT, self).__init__(needs=needs)
 
-    def _process_raw(self, data):
-        l = data.shape[1] // 2
-        t = np.arange(0, 2 * l)
-        f = np.arange(0, l)
-        cpi = -1j * np.pi
-        a = data * np.exp(cpi * t / 2 / l)
-        b = np.fft.fft(a)
-        c = b[:, :l]
-        transformed = np.sqrt(2 / l) * np.real(
-            c * np.exp(cpi * (f + 0.5) * (l + 1) / 2 / l))
-        return transformed
-
     def _process(self, data):
-        transformed = self._process_raw(data)
+        transformed = mdct(data)
 
         sr = audio_sample_rate(data.dimensions[1].samples_per_second)
         scale = LinearScale.from_sample_rate(sr, transformed.shape[1])
