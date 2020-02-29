@@ -84,9 +84,9 @@ setup(
         'matplotlib==1.5.0',
         'argparse',
         'ujson',
-        'numpy==1.15.3',
-        'scipy==1.2.1',
-        'torch==0.4.0'
+        'numpy>=1.15.3',
+        'scipy>=1.2.1',
+        'torch>=0.4.0'
     ],
     package_data={
         'nputil': ['*.pyx', '*.pyxbld'],
