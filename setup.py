@@ -74,7 +74,7 @@ setup(
         'zounds.util'
     ],
     install_requires=[
-        'featureflow>=3.0.2',
+        'featureflow>=3.0.3',
         'nose',
         'unittest2',
         'certifi==2017.7.27.1',
