@@ -171,7 +171,7 @@ class ArrayWithUnits(np.ndarray):
     def __array_wrap__(self, obj, context=None):
         if len(self.dimensions) != obj.ndim:
             if obj.ndim == 0:
-                return obj[0]
+                return obj.item()
             return np.asarray(obj)
         return np.ndarray.__array_wrap__(self, obj, context)
 

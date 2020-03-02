@@ -281,7 +281,7 @@ def fir_filter_bank(scale, taps, samplerate, window):
         start_hz = max(0, band.start_hz)
         stop_hz = min(nyq, band.stop_hz)
         freqs = np.linspace(
-            start_hz / nyq, stop_hz / nyq, len(win))
+            start_hz / nyq, stop_hz / nyq, len(win), endpoint=False)
         freqs = [0] + list(freqs) + [1]
         gains = [0] + list(win) + [0]
         basis[i] = firwin2(taps, freqs, gains)

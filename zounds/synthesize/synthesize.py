@@ -99,7 +99,7 @@ class FFTSynthesizer(ShortTimeTransformSynthesizer):
         return OggVorbisWindowingFunc()
 
     def _transform(self, frames):
-        return np.fft.fftpack.irfft(frames, norm='ortho')
+        return np.fft.irfft(frames, norm='ortho')
 
 
 class DCTSynthesizer(ShortTimeTransformSynthesizer):
