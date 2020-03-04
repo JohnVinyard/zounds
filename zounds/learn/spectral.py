@@ -55,13 +55,14 @@ class FilterBank(nn.Module):
             filter_bank *= AWeighting()
 
         self.scale = scale
-        self.filter_bank = torch.from_numpy(filter_bank).float() \
-            .view(len(scale), 1, kernel_size)
-        self.filter_bank.requires_grad = False
 
-    def to(self, *args, **kwargs):
-        self.filter_bank = self.filter_bank.to(*args, **kwargs)
-        return super(FilterBank, self).to(*args, **kwargs)
+        filter_bank = torch.from_numpy(filter_bank).float() \
+            .view(len(scale), 1, kernel_size)
+        self.register_buffer('filter_bank', filter_bank)
+
+    @property
+    def n_bands(self):
+        return len(self.scale)
 
     def convolve(self, x):
         x = x.view(-1, 1, x.shape[-1])
