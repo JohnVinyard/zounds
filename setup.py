@@ -52,6 +52,7 @@ setup(
     url='https://github.com/JohnVinyard/zounds',
     author='John Vinyard',
     author_email='john.vinyard@gmail.com',
+    description='Zounds is a python library for working with audio',
     long_description=long_description,
     download_url=download_url,
     ext_modules=extension_modules,
