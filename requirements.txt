@@ -5,7 +5,7 @@ certifi==2017.7.27.1
 requests
 tornado==4.5.3
 pysoundfile
-matplotlib==1.5.0
+matplotlib
 numpy>=1.15.3
 scipy>=1.2.1
 torch>=0.4.0
